@@ -1,0 +1,68 @@
+# SIAN — Auditoría automática de dependencias (documento 02, sección 9).
+#
+# Las actualizaciones llegan como pull request contra `develop`, nunca contra
+# `main`: producción solo recibe lo que ya pasó por QA (regla de gobierno 2 del
+# documento 08).
+
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /functions
+    schedule:
+      interval: weekly
+      day: monday
+      time: '07:00'
+      timezone: America/Guatemala
+    target-branch: develop
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: 'chore(deps)'
+    labels:
+      - dependencias
+    groups:
+      # Un solo PR para las herramientas de desarrollo: revisar cinco PR de
+      # tipos de TypeScript por separado no aporta nada.
+      herramientas-desarrollo:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '07:00'
+      timezone: America/Guatemala
+    target-branch: develop
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: 'chore(deps)'
+    labels:
+      - dependencias
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+      timezone: America/Guatemala
+    target-branch: develop
+    commit-message:
+      prefix: 'ci(deps)'
+    labels:
+      - dependencias
+
+  # `app/` aparece en la iteración 1.2; hasta entonces Dependabot lo ignora sin
+  # ruido porque no existe pubspec.yaml.
+  - package-ecosystem: pub
+    directory: /app
+    schedule:
+      interval: weekly
+      timezone: America/Guatemala
+    target-branch: develop
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: 'chore(deps)'
+    labels:
+      - dependencias
