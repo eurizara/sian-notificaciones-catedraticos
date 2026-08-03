@@ -6,8 +6,10 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/entorno.dart';
+import '../../infrastructure/firebase/inicializacion.dart';
 import 'textos.dart';
 
 enum EstadoPieza { listo, enCurso, pendiente }
@@ -25,10 +27,10 @@ class Pieza {
   final EstadoPieza estado;
 }
 
-class PantallaEstado extends StatelessWidget {
+class PantallaEstado extends ConsumerWidget {
   const PantallaEstado({super.key});
 
-  List<Pieza> _piezas() => <Pieza>[
+  List<Pieza> _piezas(ResultadoArranque arranque) => <Pieza>[
     const Pieza(
       nombre: Textos.cimientosListos,
       detalle: Textos.cimientosDetalle,
@@ -41,14 +43,13 @@ class PantallaEstado extends StatelessWidget {
     ),
     Pieza(
       nombre: Textos.firebasePendiente,
-      detalle: Entorno.usaEmulador
-          ? Textos.firebaseDetalleEmulador
-          : (Entorno.configuracionCompleta
-                ? Textos.firebaseDetalleNube
-                : Textos.firebaseDetallePendiente),
-      estado: Entorno.configuracionCompleta
-          ? EstadoPieza.enCurso
-          : EstadoPieza.pendiente,
+      detalle: switch (arranque.conexion) {
+        ConexionFirebase.emuladores => Textos.firebaseDetalleEmulador,
+        ConexionFirebase.nube => Textos.firebaseDetalleNube,
+        ConexionFirebase.fallida =>
+          arranque.detalle ?? Textos.firebaseDetalleFallido,
+      },
+      estado: arranque.correcto ? EstadoPieza.listo : EstadoPieza.pendiente,
     ),
     const Pieza(
       nombre: Textos.autenticacionPendiente,
@@ -68,8 +69,9 @@ class PantallaEstado extends StatelessWidget {
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData tema = Theme.of(context);
+    final ResultadoArranque arranque = ref.watch(arranqueProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -105,7 +107,7 @@ class PantallaEstado extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
-              for (final Pieza pieza in _piezas())
+              for (final Pieza pieza in _piezas(arranque))
                 _FilaPieza(key: ValueKey<String>(pieza.nombre), pieza: pieza),
               if (Entorno.usaEmulador) ...<Widget>[
                 const SizedBox(height: 24),
