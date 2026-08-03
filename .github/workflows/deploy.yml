@@ -46,6 +46,17 @@ jobs:
         with:
           flutter-version: '3.44.x'
 
+      - name: Generar firebase_options.dart
+        if: hashFiles('app/pubspec.yaml') != ''
+        run: bash scripts/generar-firebase-options.sh
+        env:
+          FIREBASE_API_KEY: ${{ vars.QA_API_KEY }}
+          FIREBASE_APP_ID: ${{ vars.QA_APP_ID }}
+          FIREBASE_MESSAGING_SENDER_ID: ${{ vars.QA_SENDER_ID }}
+          FIREBASE_PROJECT_ID: ${{ vars.QA_PROJECT_ID }}
+          FIREBASE_AUTH_DOMAIN: ${{ vars.QA_AUTH_DOMAIN }}
+          FIREBASE_STORAGE_BUCKET: ${{ vars.QA_STORAGE_BUCKET }}
+
       - name: Construir la PWA
         if: hashFiles('app/pubspec.yaml') != ''
         working-directory: app
@@ -100,6 +111,17 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.44.x'
+
+      - name: Generar firebase_options.dart
+        if: hashFiles('app/pubspec.yaml') != ''
+        run: bash scripts/generar-firebase-options.sh
+        env:
+          FIREBASE_API_KEY: ${{ vars.PROD_API_KEY }}
+          FIREBASE_APP_ID: ${{ vars.PROD_APP_ID }}
+          FIREBASE_MESSAGING_SENDER_ID: ${{ vars.PROD_SENDER_ID }}
+          FIREBASE_PROJECT_ID: ${{ vars.PROD_PROJECT_ID }}
+          FIREBASE_AUTH_DOMAIN: ${{ vars.PROD_AUTH_DOMAIN }}
+          FIREBASE_STORAGE_BUCKET: ${{ vars.PROD_STORAGE_BUCKET }}
 
       - name: Construir la PWA
         if: hashFiles('app/pubspec.yaml') != ''

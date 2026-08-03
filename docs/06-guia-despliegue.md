@@ -248,6 +248,20 @@ flutterfire configure --project=sian-umg-bdm-dev --platforms=web
 Esto genera `app/lib/firebase_options.dart`, que **está en el `.gitignore`** por contener
 identificadores de tu proyecto. Cada persona que replique el proyecto genera el suyo.
 
+> **Alternativa sin interacción.** `flutterfire configure` es interactivo y exige estar
+> autenticado contra el proyecto, lo que no sirve en un runner de integración continua ni
+> cuando se automatiza la réplica. Para esos casos:
+>
+> ```bash
+> firebase apps:sdkconfig WEB <appId> --project sian-umg-bdm-dev   # obtener los valores
+> bash scripts/generar-firebase-options.sh                          # generar el archivo
+> ```
+>
+> El script lee `.env.local`, o las variables de entorno si vienen dadas. Sin valores genera
+> marcadores de posición: el código compila y las pruebas pasan, pero la aplicación no puede
+> conectarse a nada. Es justo lo que se quiere en integración continua, donde un runner con
+> acceso real a Firebase sería un problema, no una ventaja.
+
 Crea `.env.local` en la raíz (ignorado por git):
 
 ```bash

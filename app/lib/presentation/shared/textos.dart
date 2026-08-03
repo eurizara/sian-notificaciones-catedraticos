@@ -31,6 +31,7 @@ abstract final class Textos {
   static const String firebaseDetalleNube = 'Apuntando al proyecto en la nube';
   static const String firebaseDetallePendiente =
       'Sin configurar: falta ejecutar flutterfire configure';
+  static const String firebaseDetalleFallido = 'No arrancó';
 
   static const String autenticacionPendiente = 'Autenticación';
   static const String autenticacionDetalle =

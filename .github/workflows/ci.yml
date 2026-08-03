@@ -122,6 +122,15 @@ jobs:
           flutter-version: '3.44.x'
           cache: true
 
+      # `firebase_options.dart` está en .gitignore: contiene los
+      # identificadores de un proyecto concreto (documento 06, C.5). Aquí se
+      # generan marcadores de posición, porque este trabajo solo necesita que
+      # el código COMPILE. Un runner que pudiera conectarse a Firebase sería
+      # un problema, no una ventaja.
+      - name: Generar firebase_options.dart
+        if: steps.comprobar.outputs.existe == 'true'
+        run: bash scripts/generar-firebase-options.sh
+
       - name: Dependencias
         if: steps.comprobar.outputs.existe == 'true'
         run: flutter pub get
