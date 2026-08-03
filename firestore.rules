@@ -48,11 +48,15 @@ service cloud.firestore {
       return autenticado() && request.auth.uid == uid;
     }
 
-    // Campos del perfil que el propio usuario nunca puede tocar: definen su
-    // identidad y sus privilegios (RN-01).
-    function camposProtegidosDelPerfil() {
-      return ['rol', 'activo', 'correo', 'puedeEmitirUrgentes',
-              'puedeCrearRecurrentes', 'creadoEn'];
+    // Lo que el propio usuario SÍ puede editar de su perfil (RF-USR-08).
+    //
+    // Es una lista blanca a propósito. Con una lista negra, cualquier campo
+    // nuevo que se añada al modelo de datos quedaría editable por el cliente
+    // hasta que alguien se acordara de prohibirlo; así, un campo nuevo nace
+    // cerrado. El resto —rol, activo, correo, las autorizaciones finas— define
+    // identidad y privilegios, y solo lo escriben las Cloud Functions (RN-01).
+    function camposEditablesDelPerfil() {
+      return ['nombre', 'unidadAcademica', 'zonaHoraria', 'actualizadoEn', 'ultimoAcceso'];
     }
 
     // ---------------------------------------------------------------------
@@ -69,9 +73,9 @@ service cloud.firestore {
 
       allow update: if esDueno(uid)
                     && activo()
-                    && !request.resource.data.diff(resource.data)
+                    && request.resource.data.diff(resource.data)
                          .affectedKeys()
-                         .hasAny(camposProtegidosDelPerfil());
+                         .hasOnly(camposEditablesDelPerfil());
 
       // dispositivos/{tokenId} — el cliente SÍ escribe aquí: es el único dato
       // que le pertenece por completo y que debe poder refrescar en cada

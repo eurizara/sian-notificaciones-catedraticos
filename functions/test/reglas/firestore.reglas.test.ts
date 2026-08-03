@@ -133,12 +133,24 @@ describe('Perfil de usuario', () => {
     const perfil = doc(db, 'usuarios', UID.catedratico);
 
     await assertSucceeds(updateDoc(perfil, { nombre: 'Nombre Actualizado' }));
+    await assertSucceeds(updateDoc(perfil, { unidadAcademica: 'Ingeniería en Sistemas' }));
 
     // Escalada de privilegios: es el ataque que estas reglas existen para parar.
     await assertFails(updateDoc(perfil, { rol: 'COORDINADOR' }));
     await assertFails(updateDoc(perfil, { activo: false }));
     await assertFails(updateDoc(perfil, { correo: 'otro@umg.edu.gt' }));
     await assertFails(updateDoc(perfil, { puedeEmitirUrgentes: true }));
+    await assertFails(updateDoc(perfil, { puedeCrearRecurrentes: true }));
+  });
+
+  it('la lista blanca de campos editables falla cerrado ante un campo nuevo', async () => {
+    // Si mañana el modelo de datos gana un campo y nadie se acuerda de
+    // protegerlo, el cliente sigue sin poder escribirlo. Ese es todo el motivo
+    // de usar `hasOnly` con lista blanca en vez de `hasAny` con lista negra.
+    const db = contexto(UID.catedratico, 'CATEDRATICO');
+    await assertFails(
+      updateDoc(doc(db, 'usuarios', UID.catedratico), { campoInventadoEnElFuturo: 'lo que sea' }),
+    );
   });
 
   it('nadie crea ni borra perfiles desde el cliente', async () => {
