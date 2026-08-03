@@ -1,0 +1,49 @@
+# SIAN — Analizador estático de Dart y Flutter.
+#
+# RNF-16 exige cero advertencias en la rama principal, y la integración continua
+# corre `flutter analyze --fatal-infos --fatal-warnings`. Por eso aquí no hay
+# reglas en modo «info decorativo»: lo que está encendido, bloquea.
+
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+
+  errors:
+    missing_required_param: error
+    todo: ignore
+
+  exclude:
+    - build/**
+    - '**/*.g.dart'
+    - '**/*.freezed.dart'
+
+linter:
+  rules:
+    # Corrección
+    always_declare_return_types: true
+    avoid_dynamic_calls: true
+    avoid_empty_else: true
+    avoid_slow_async_io: true
+    cancel_subscriptions: true
+    close_sinks: true
+    only_throw_errors: true
+    throw_in_finally: true
+    unawaited_futures: true
+
+    # Legibilidad
+    always_put_required_named_parameters_first: true
+    prefer_final_locals: true
+    prefer_single_quotes: true
+    require_trailing_commas: true
+    sort_child_properties_last: true
+
+    # Rendimiento en web, donde cada reconstrucción se nota (RNF-03)
+    prefer_const_constructors: true
+    prefer_const_constructors_in_immutables: true
+    prefer_const_declarations: true
+    prefer_const_literals_to_create_immutables: true
+    use_key_in_widget_constructors: true

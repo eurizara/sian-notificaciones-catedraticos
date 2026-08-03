@@ -8,8 +8,9 @@ trazabilidad completa con confirmación de lectura.
 > **Estado del proyecto:** Fase 1 · Iteración 1.1 — Cimientos.
 > La documentación de ingeniería (fase 0) está completa. Ya existen la capa de dominio en
 > TypeScript con sus pruebas, las reglas de seguridad con las suyas, la integración continua
-> y el entorno local con emuladores. Todavía **no** hay aplicación Flutter ni Cloud Functions
-> desplegadas: llegan en las iteraciones 1.2 a 1.4 del [plan](docs/08-plan-iteraciones.md).
+> el entorno local con emuladores y el esqueleto de la aplicación Flutter. Todavía **no** hay
+> autenticación ni Cloud Functions desplegadas: llegan en las iteraciones 1.2 a 1.4 del
+> [plan](docs/08-plan-iteraciones.md).
 
 ---
 
@@ -36,6 +37,7 @@ solo se verifica desplegando a `dev` (documento 06, etapa D.5).
 | 1.1 | Capa de dominio en TypeScript con pruebas unitarias | Hecho — 119 pruebas, cobertura 95% |
 | 1.1 | Reglas de seguridad con pruebas automatizadas | Hecho — 22 pruebas contra el emulador |
 | 1.1 | Emuladores locales con datos sembrados | Hecho |
+| 1.1 | Esqueleto Flutter: compila, PWA, analizador limpio | Hecho — 3 pruebas de widget |
 | 1.1 | Proyecto `sian-umg-bdm-dev` con Blaze y alerta de presupuesto | Pendiente — requiere cuenta de facturación |
 | 1.2 | Autenticación, lista blanca y administración de usuarios | Pendiente |
 | 1.3 | Composición de mensajes y entrega inmediata | Pendiente |
