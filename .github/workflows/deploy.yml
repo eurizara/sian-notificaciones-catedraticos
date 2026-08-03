@@ -19,13 +19,16 @@ permissions:
 jobs:
   qa:
     name: Desplegar a QA
-    if: github.ref == 'refs/heads/develop'
+    # `vars.QA_PROJECT_ID` actúa de interruptor: mientras el ambiente QA no
+    # exista (iteración 2.1 del documento 08), el trabajo se omite en vez de
+    # fallar. Un repositorio en rojo permanente enseña a ignorar el rojo.
+    if: github.ref == 'refs/heads/develop' && vars.QA_PROJECT_ID != ''
     runs-on: ubuntu-latest
     environment: qa
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '20'
           cache: npm
@@ -70,15 +73,17 @@ jobs:
 
   produccion:
     name: Desplegar a producción
-    if: github.ref == 'refs/heads/main'
+    # Mismo interruptor que en QA: producción se habilita en la iteración 3.1,
+    # y además exige aprobación manual por el ambiente `produccion`.
+    if: github.ref == 'refs/heads/main' && vars.PROD_PROJECT_ID != ''
     runs-on: ubuntu-latest
     # El ambiente `produccion` exige revisores obligatorios en
     # Settings → Environments: ningún despliegue ocurre sin aprobación explícita.
     environment: produccion
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '20'
           cache: npm
