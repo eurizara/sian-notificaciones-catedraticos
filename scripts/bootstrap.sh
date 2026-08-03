@@ -61,6 +61,10 @@ if [ ! -f .firebaserc ]; then
 fi
 
 echo
+echo "  → generando app/lib/firebase_options.dart"
+bash "$RAIZ/scripts/generar-firebase-options.sh"
+
+echo
 echo "Verificación rápida"
 npm run lint --prefix functions --silent && echo "  ✓ analizador estático"
 npm test --prefix functions --silent >/dev/null && echo "  ✓ pruebas unitarias"
