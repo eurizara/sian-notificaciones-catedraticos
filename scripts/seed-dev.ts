@@ -15,7 +15,7 @@ import { initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { Timestamp, getFirestore } from 'firebase-admin/firestore';
 
-const PROYECTO = process.env.FIREBASE_PROJECT_ID ?? 'sian-dev';
+const PROYECTO = process.env.FIREBASE_PROJECT_ID ?? 'sian-umg-bdm-dev';
 const ZONA = process.env.ZONA_HORARIA ?? 'America/Guatemala';
 
 if (!process.env.FIRESTORE_EMULATOR_HOST) {

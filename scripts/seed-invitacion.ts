@@ -7,7 +7,7 @@
  *
  * Uso:
  *   npm run seed:invitacion -- --correo=alguien@umg.edu.gt --rol=COORDINADOR
- *   npm run seed:invitacion -- --correo=... --rol=... --proyecto=sian-dev
+ *   npm run seed:invitacion -- --correo=... --rol=... --proyecto=sian-umg-bdm-dev
  *
  * Contra un proyecto real (sin FIRESTORE_EMULATOR_HOST) exige credenciales de
  * administración: `gcloud auth application-default login`, o la variable
@@ -36,7 +36,7 @@ function abortar(mensaje: string): never {
 const correoBruto = argumento('correo');
 const rolBruto = argumento('rol');
 const nombre = argumento('nombre') ?? '';
-const proyecto = argumento('proyecto') ?? process.env.FIREBASE_PROJECT_ID ?? 'sian-dev';
+const proyecto = argumento('proyecto') ?? process.env.FIREBASE_PROJECT_ID ?? 'sian-umg-bdm-dev';
 
 if (!correoBruto) {
   abortar('Falta --correo.');

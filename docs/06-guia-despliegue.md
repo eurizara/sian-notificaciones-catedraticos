@@ -32,7 +32,7 @@ funciona primero.
 |-------------|:---:|----------|
 | Git | 2.40 | Control de versiones |
 | Node.js | 20 LTS | Cloud Functions e interfaz de línea de comandos de Firebase |
-| Flutter SDK | 3.24 | Aplicación web y futura compilación nativa |
+| Flutter SDK | 3.24 (referencia: 3.44) | Aplicación web y futura compilación nativa |
 | Java JDK | 17 | Requerido por los emuladores de Firebase |
 | Firebase CLI | 13 | Despliegue y emuladores |
 | Un editor | — | VS Code con las extensiones de Flutter y Dart |
@@ -182,9 +182,9 @@ En `https://console.firebase.google.com`, crea **tres proyectos separados**:
 
 | Alias | Nombre sugerido | Cuándo crearlo |
 |-------|-----------------|----------------|
-| `dev` | `sian-dev` | Ahora |
-| `qa` | `sian-qa` | Al entrar a fase de pruebas |
-| `prod` | `sian-prod` | Al aprobar el paso a producción |
+| `dev` | `sian-umg-bdm-dev` | Ahora |
+| `qa` | `sian-umg-bdm-qa` | Al entrar a fase de pruebas |
+| `prod` | `sian-umg-bdm-prod` | Al aprobar el paso a producción |
 
 Desactiva Google Analytics en `dev` y `qa`; actívalo solo en `prod` si lo consideras útil.
 
@@ -231,9 +231,9 @@ Necesario para Cloud Functions, Cloud Storage y Cloud Scheduler.
 
 ```bash
 firebase login
-firebase use --add        # elige sian-dev, alias: dev
-firebase use --add        # elige sian-qa, alias: qa      (cuando exista)
-firebase use --add        # elige sian-prod, alias: prod  (cuando exista)
+firebase use --add        # elige sian-umg-bdm-dev, alias: dev
+firebase use --add        # elige sian-umg-bdm-qa, alias: qa      (cuando exista)
+firebase use --add        # elige sian-umg-bdm-prod, alias: prod  (cuando exista)
 firebase use dev          # trabaja en desarrollo por omisión
 ```
 
@@ -242,7 +242,7 @@ firebase use dev          # trabaja en desarrollo por omisión
 ```bash
 dart pub global activate flutterfire_cli
 cd app
-flutterfire configure --project=sian-dev --platforms=web
+flutterfire configure --project=sian-umg-bdm-dev --platforms=web
 ```
 
 Esto genera `app/lib/firebase_options.dart`, que **está en el `.gitignore`** por contener
@@ -252,7 +252,7 @@ Crea `.env.local` en la raíz (ignorado por git):
 
 ```bash
 FIREBASE_VAPID_KEY=BN...tu_clave_vapid_publica
-FIREBASE_PROJECT_ID=sian-dev
+FIREBASE_PROJECT_ID=sian-umg-bdm-dev
 ZONA_HORARIA=America/Guatemala
 ```
 
@@ -382,7 +382,7 @@ firebase deploy --only hosting
 ```
 
 Al terminar obtienes la URL de la demostración:
-`https://sian-dev.web.app`
+`https://sian-umg-bdm-dev.web.app`
 
 ### E.4 Crear el job de Cloud Scheduler
 
@@ -392,19 +392,19 @@ Si prefieres crearlo a mano:
 
 ```bash
 gcloud scheduler jobs create http sian-despachador-dev \
-  --project=sian-dev \
+  --project=sian-umg-bdm-dev \
   --location=us-central1 \
   --schedule="* * * * *" \
   --time-zone="America/Guatemala" \
-  --uri="https://us-central1-sian-dev.cloudfunctions.net/despachador" \
+  --uri="https://us-central1-sian-umg-bdm-dev.cloudfunctions.net/despachador" \
   --http-method=POST \
-  --oidc-service-account-email=sian-dev@appspot.gserviceaccount.com
+  --oidc-service-account-email=sian-umg-bdm-dev@appspot.gserviceaccount.com
 ```
 
 Verifica que solo exista **un job por proyecto**:
 
 ```bash
-gcloud scheduler jobs list --project=sian-dev --location=us-central1
+gcloud scheduler jobs list --project=sian-umg-bdm-dev --location=us-central1
 ```
 
 > **Vigila este número.** Tres jobs en total —uno por ambiente— es la cuota gratuita completa.
@@ -416,14 +416,14 @@ Como la lista blanca controla el acceso y aún está vacía, nadie podría entra
 propio correo:
 
 ```bash
-npx tsx scripts/seed-invitacion.ts --correo=eua031989@gmail.com --rol=COORDINADOR --proyecto=sian-dev
+npx tsx scripts/seed-invitacion.ts --correo=eua031989@gmail.com --rol=COORDINADOR --proyecto=sian-umg-bdm-dev
 ```
 
 ### E.6 Lista de verificación de la demostración
 
 Recorre esta lista en un teléfono real, no en el emulador del navegador:
 
-- [ ] Abro `https://sian-dev.web.app` en Chrome en Android e inicio sesión con Google
+- [ ] Abro `https://sian-umg-bdm-dev.web.app` en Chrome en Android e inicio sesión con Google
 - [ ] El sistema me reconoce como Coordinador y muestra el panel
 - [ ] Instalo la aplicación en la pantalla de inicio y llega la notificación de prueba
 - [ ] Repito lo anterior en Safari en iPhone: **instalar en la pantalla de inicio es
@@ -476,14 +476,14 @@ jobs:
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.QA_SERVICE_ACCOUNT }}
-          projectId: sian-qa
+          projectId: sian-umg-bdm-qa
           channelId: live
 
   produccion:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: produccion      # con aprobación manual obligatoria
-    steps: [ ... equivalente, apuntando a sian-prod ... ]
+    steps: [ ... equivalente, apuntando a sian-umg-bdm-prod ... ]
 ```
 
 En GitHub → Settings → Environments, crea el ambiente `produccion` y marca **Required

@@ -208,9 +208,27 @@ ambientes.
 
 | Ambiente | Proyecto Firebase | Propósito | Quién accede |
 |----------|-------------------|-----------|--------------|
-| **Desarrollo** | `sian-dev` | Trabajo diario. Se usan los emuladores locales siempre que sea posible | Equipo de desarrollo |
-| **Pruebas de calidad** | `sian-qa` | Validación funcional con el solicitante y con catedráticos voluntarios | Equipo + usuarios de prueba |
-| **Producción** | `sian-prod` | Operación real | Usuarios institucionales |
+| **Desarrollo** | `sian-umg-bdm-dev` | Trabajo diario. Se usan los emuladores locales siempre que sea posible | Equipo de desarrollo |
+| **Pruebas de calidad** | `sian-umg-bdm-qa` | Validación funcional con el solicitante y con catedráticos voluntarios | Equipo + usuarios de prueba |
+| **Producción** | `sian-umg-bdm-prod` | Operación real | Usuarios institucionales |
+
+### Convención de nombres
+
+`sian-umg-bdm-<ambiente>`, donde:
+
+| Segmento | Significado |
+|----------|-------------|
+| `sian` | El sistema. Por sí solo es demasiado genérico para un identificador global de Google Cloud |
+| `umg` | Universidad Mariano Gálvez |
+| `bdm` | Sede Boca del Monte, que es el alcance de esta implantación |
+| `<ambiente>` | `dev`, `qa` o `prod`, siempre presente |
+
+**El sufijo de ambiente nunca se omite, ni siquiera en el primero que se crea.** Un
+identificador de proyecto de Firebase es global, único e **inmutable**: si el proyecto de
+desarrollo naciera sin sufijo, en la consola aparecería como si fuera el principal, y esa
+ambigüedad solo se corrige creando otro proyecto y abandonando el anterior. Si mañana el
+sistema se extiende a otra sede, la convención admite `sian-umg-<sede>-<ambiente>` sin tocar
+nada de lo ya desplegado.
 
 ```mermaid
 flowchart LR
@@ -225,9 +243,9 @@ flowchart LR
         CI["GitHub Actions"]
     end
     subgraph FB["Firebase"]
-        D["sian-dev"]
-        Q["sian-qa"]
-        PR["sian-prod"]
+        D["sian-umg-bdm-dev"]
+        Q["sian-umg-bdm-qa"]
+        PR["sian-umg-bdm-prod"]
     end
 
     CODE --> EMU

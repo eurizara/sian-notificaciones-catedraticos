@@ -36,7 +36,7 @@ solo se verifica desplegando a `dev` (documento 06, etapa D.5).
 | 1.1 | Capa de dominio en TypeScript con pruebas unitarias | Hecho — 119 pruebas, cobertura 95% |
 | 1.1 | Reglas de seguridad con pruebas automatizadas | Hecho — 22 pruebas contra el emulador |
 | 1.1 | Emuladores locales con datos sembrados | Hecho |
-| 1.1 | Proyecto `sian-dev` con Blaze y alerta de presupuesto | Pendiente — requiere cuenta de facturación |
+| 1.1 | Proyecto `sian-umg-bdm-dev` con Blaze y alerta de presupuesto | Pendiente — requiere cuenta de facturación |
 | 1.2 | Autenticación, lista blanca y administración de usuarios | Pendiente |
 | 1.3 | Composición de mensajes y entrega inmediata | Pendiente |
 | 1.4 | Programación, recurrencia y confirmación de lectura | Pendiente |
