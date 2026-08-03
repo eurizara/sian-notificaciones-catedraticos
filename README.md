@@ -5,9 +5,41 @@ académico y a personal administrativo autorizado emitir notificaciones informat
 urgentes (texto, voz e imagen), programarlas, repetirlas con un patrón definido y llevar
 trazabilidad completa con confirmación de lectura.
 
-> **Estado del proyecto:** Fase 0 — Levantamiento de requerimientos y diseño.
-> Sin código de aplicación todavía. Este repositorio arranca con la documentación de
-> ingeniería que gobierna la construcción.
+> **Estado del proyecto:** Fase 1 · Iteración 1.1 — Cimientos.
+> La documentación de ingeniería (fase 0) está completa. Ya existen la capa de dominio en
+> TypeScript con sus pruebas, las reglas de seguridad con las suyas, la integración continua
+> y el entorno local con emuladores. Todavía **no** hay aplicación Flutter ni Cloud Functions
+> desplegadas: llegan en las iteraciones 1.2 a 1.4 del [plan](docs/08-plan-iteraciones.md).
+
+---
+
+## Empezar en cinco minutos
+
+Requiere Git, Node.js 20 y Java 17 (documento 06, etapa A).
+
+```bash
+bash scripts/bootstrap.sh   # comprueba herramientas e instala dependencias
+npm run verificar           # analizador, compilación, cobertura y reglas de seguridad
+npm run emu                 # emuladores en http://localhost:4000
+npm run seed:dev            # datos de prueba, en otra terminal
+```
+
+Los emuladores **no envían notificaciones push reales**: Firebase Cloud Messaging no tiene
+emulador. En local se prueba todo lo demás; la llegada de la notificación al dispositivo
+solo se verifica desplegando a `dev` (documento 06, etapa D.5).
+
+### Estado por iteración
+
+| Iteración | Entregable | Estado |
+|---|---|---|
+| 1.1 | Estructura del repositorio e integración continua | Hecho |
+| 1.1 | Capa de dominio en TypeScript con pruebas unitarias | Hecho — 119 pruebas, cobertura 95% |
+| 1.1 | Reglas de seguridad con pruebas automatizadas | Hecho — 22 pruebas contra el emulador |
+| 1.1 | Emuladores locales con datos sembrados | Hecho |
+| 1.1 | Proyecto `sian-dev` con Blaze y alerta de presupuesto | Pendiente — requiere cuenta de facturación |
+| 1.2 | Autenticación, lista blanca y administración de usuarios | Pendiente |
+| 1.3 | Composición de mensajes y entrega inmediata | Pendiente |
+| 1.4 | Programación, recurrencia y confirmación de lectura | Pendiente |
 
 ---
 

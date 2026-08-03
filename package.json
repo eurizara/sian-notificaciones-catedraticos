@@ -1,0 +1,22 @@
+{
+  "name": "sian",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SIAN — Sistema Institucional de Avisos y Notificaciones. Herramientas de repositorio.",
+  "license": "MIT",
+  "scripts": {
+    "emu": "firebase emulators:start --import=./emulator-data --export-on-exit=./emulator-data",
+    "emu:limpio": "firebase emulators:start",
+    "seed:dev": "tsx scripts/seed-dev.ts",
+    "seed:invitacion": "tsx scripts/seed-invitacion.ts",
+    "test:reglas": "firebase emulators:exec --only firestore \"npm --prefix functions run test:rules\"",
+    "verificar": "npm --prefix functions run verificar && npm run test:reglas",
+    "check:secrets": "bash scripts/check-secrets.sh"
+  },
+  "devDependencies": {
+    "firebase-admin": "^14.2.0",
+    "firebase-tools": "^13.35.1",
+    "tsx": "^4.23.5",
+    "typescript": "^5.9.3"
+  }
+}
