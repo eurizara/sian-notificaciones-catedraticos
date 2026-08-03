@@ -58,7 +58,7 @@ completo, confirmación y bitácora, programación y recurrencia, y adjuntos de 
 | Entregable | Requisitos |
 |------------|-----------|
 | Repositorio con la estructura definida y la integración continua funcionando | documento 02, sección 6 |
-| Proyecto `sian-dev` creado, Blaze activo, alerta de presupuesto configurada | documento 06, etapa C |
+| Proyecto `sian-umg-bdm-dev` creado, Blaze activo, alerta de presupuesto configurada | documento 06, etapa C |
 | Emuladores corriendo en local con datos sembrados | documento 06, etapa D |
 | Capa de dominio en TypeScript: entidades, máquinas de estado y estrategias de recurrencia, con pruebas unitarias | RF-PRG-05..09 |
 | Reglas de seguridad con sus pruebas automatizadas | RNF-08 |
@@ -131,11 +131,11 @@ callar sin avisar.
 ## Fase 2 — Pruebas de calidad
 
 **Objetivo:** verificar que el sistema aguanta el uso real, con gente real, en el ambiente
-`sian-qa`.
+`sian-umg-bdm-qa`.
 
 ### Iteración 2.1 — Habilitar el ambiente QA
 
-- Crear `sian-qa` con Blaze y alerta de presupuesto.
+- Crear `sian-umg-bdm-qa` con Blaze y alerta de presupuesto.
 - Configurar el despliegue automático desde `develop`.
 - Cargar la lista blanca con los correos de los participantes de la prueba.
 - Aplicar el branding institucional que proporciones.
@@ -184,7 +184,7 @@ muy bien que se vea en las demás pruebas.
 
 ### Iteración 3.1 — Habilitar producción
 
-- Crear `sian-prod` con Blaze y alerta de presupuesto.
+- Crear `sian-umg-bdm-prod` con Blaze y alerta de presupuesto.
 - Proteger `main` y exigir aprobación manual en el ambiente `produccion` de GitHub.
 - Ejecutar la lista de verificación completa del documento 06, sección F.3.
 - Cargar la lista blanca institucional definitiva.

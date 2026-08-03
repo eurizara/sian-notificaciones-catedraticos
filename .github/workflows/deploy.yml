@@ -2,8 +2,8 @@ name: Despliegue
 
 # Esquema del documento 06, etapa F.1.
 #
-#   develop → sian-qa   automático
-#   main    → sian-prod con aprobación manual obligatoria
+#   develop → sian-umg-bdm-qa   automático
+#   main    → sian-umg-bdm-prod con aprobación manual obligatoria
 #
 # Ningún secreto vive en el repositorio (RNF-10): todos entran por los secrets
 # de GitHub Actions declarados en el documento 06, etapa F.2.
@@ -44,7 +44,7 @@ jobs:
         if: hashFiles('app/pubspec.yaml') != ''
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.x'
+          flutter-version: '3.44.x'
 
       - name: Construir la PWA
         if: hashFiles('app/pubspec.yaml') != ''
@@ -99,7 +99,7 @@ jobs:
         if: hashFiles('app/pubspec.yaml') != ''
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.x'
+          flutter-version: '3.44.x'
 
       - name: Construir la PWA
         if: hashFiles('app/pubspec.yaml') != ''

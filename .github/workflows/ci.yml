@@ -119,7 +119,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         if: steps.comprobar.outputs.existe == 'true'
         with:
-          flutter-version: '3.24.x'
+          flutter-version: '3.44.x'
           cache: true
 
       - name: Dependencias
