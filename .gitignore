@@ -1,0 +1,38 @@
+# Secretos — jamás se versionan (RES-10, RNF-10)
+.env
+.env.local
+.env.*.local
+**/serviceAccountKey.json
+**/google-services.json
+**/GoogleService-Info.plist
+.firebaserc
+
+# Flutter
+app/build/
+app/.dart_tool/
+app/.flutter-plugins*
+app/lib/firebase_options.dart
+
+# Node
+functions/node_modules/
+functions/lib/
+node_modules/
+
+# Emuladores y registros
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+pubsub-debug.log
+.firebase/
+emulator-data/
+
+# Cobertura
+coverage/
+functions/coverage/
+app/coverage/
+
+# Sistema operativo y editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/settings.json
