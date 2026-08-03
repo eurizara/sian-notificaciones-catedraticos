@@ -1,0 +1,7 @@
+{
+  "projects": {
+    "dev": "TU-PROYECTO-DEV",
+    "qa": "TU-PROYECTO-QA",
+    "prod": "TU-PROYECTO-PROD"
+  }
+}
