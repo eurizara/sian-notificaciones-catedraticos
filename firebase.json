@@ -10,6 +10,20 @@
           { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
           { "key": "Service-Worker-Allowed", "value": "/" }
         ]
+      },
+      {
+        "//": "Flutter Web NO pone huella de contenido en estos archivos: el nombre es siempre el mismo aunque el contenido cambie. Con el max-age de 3600 que Firebase aplica por omisión, un despliegue tarda hasta una hora en verse, y mientras tanto se depura contra código viejo sin saberlo.",
+        "source": "**/@(index.html|flutter_bootstrap.js|main.dart.js|flutter_service_worker.js|manifest.json|version.json)",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+        ]
+      },
+      {
+        "//": "Estas sí llevan versión en la ruta y pueden cachearse a gusto.",
+        "source": "**/@(canvaskit|assets)/**",
+        "headers": [
+          { "key": "Cache-Control", "value": "public, max-age=604800" }
+        ]
       }
     ]
   },

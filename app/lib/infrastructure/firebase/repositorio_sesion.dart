@@ -26,6 +26,24 @@ class RepositorioSesionFirebase implements RepositorioSesion {
   final FirebaseFirestore _firestore;
   final FirebaseFunctions _functions;
 
+  /// Rechazo que la persona todavía no ha reconocido.
+  ///
+  /// ────────────────────────────────────────────────────────────────────────
+  /// Un rechazo NO se borra porque la credencial desaparezca.
+  /// ────────────────────────────────────────────────────────────────────────
+  ///
+  /// Al rechazar un acceso no autorizado, el servidor **borra la credencial
+  /// recién creada** para no dejar cuentas huérfanas. Firebase detecta la
+  /// desaparición y emite «sesión anónima» casi a la vez que llega el rechazo.
+  /// Sin esta memoria, el segundo evento pisaba al primero y la persona volvía
+  /// al formulario sin enterarse de nada.
+  ///
+  /// La credencial desaparece **a causa** del rechazo, así que su desaparición
+  /// no puede ser motivo para dejar de explicarlo. Se limpia únicamente cuando
+  /// se cierra sesión de forma explícita, que es lo que hace el botón «Volver
+  /// al inicio de sesión» — es decir, cuando ya se leyó el motivo (RF-AUT-03).
+  SesionRechazada? _rechazoSinReconocer;
+
   /// Emite el estado de sesión cada vez que cambia la autenticación.
   @override
   Stream<Sesion> observar() async* {
@@ -33,11 +51,21 @@ class RepositorioSesionFirebase implements RepositorioSesion {
 
     await for (final User? usuario in _auth.authStateChanges()) {
       if (usuario == null) {
-        yield const SesionAnonima();
+        yield _rechazoSinReconocer ?? const SesionAnonima();
         continue;
       }
+
       yield const SesionCargando();
-      yield await _resolver(usuario);
+      final Sesion resuelta = await _resolver(usuario);
+
+      if (resuelta is SesionRechazada) {
+        _rechazoSinReconocer = resuelta;
+      } else if (resuelta is SesionActiva) {
+        // Alguien entró de verdad: lo anterior deja de importar.
+        _rechazoSinReconocer = null;
+      }
+
+      yield resuelta;
     }
   }
 
@@ -166,8 +194,12 @@ class RepositorioSesionFirebase implements RepositorioSesion {
   }
 
   /// Cierre de sesión explícito (RF-AUT-07).
+  ///
+  /// Es también el punto donde se da por reconocido un rechazo: quien pulsa
+  /// «Volver al inicio de sesión» ya leyó el motivo.
   @override
   Future<void> salir() async {
+    _rechazoSinReconocer = null;
     await _auth.signOut();
   }
 }
