@@ -6,60 +6,60 @@
  * ESTE ARCHIVO NO SE FUSIONA JAMÁS CON `flutter_service_worker.js`.
  * ────────────────────────────────────────────────────────────────────────────
  *
- * Flutter Web genera su propio service worker para el almacenamiento en caché
- * de la aplicación. Mezclar la lógica de mensajería dentro de aquel archivo es
- * el riesgo R-03 del documento 02, sección 10, y la causa más frecuente de que
- * las notificaciones dejen de llegar tras una actualización, sin ningún error
- * visible.
+ * Mezclar la lógica de mensajería dentro del service worker que genera Flutter
+ * es el riesgo R-03 del documento 02, sección 10, y la causa más frecuente de
+ * que las notificaciones dejen de llegar tras una actualización, en silencio.
  *
- * `firebase.json` sirve este archivo con `Cache-Control: no-cache`, porque un
- * navegador que conserve una versión vieja deja de entregar notificaciones en
- * silencio (documento 06, etapa E.2).
+ * `firebase.json` lo sirve con `Cache-Control: no-cache`, porque un navegador
+ * que conserve una versión vieja deja de entregar notificaciones sin dar
+ * ningún error. Lo mismo aplica a los archivos de entrada de Flutter, lección
+ * que costó varias rondas de diagnóstico a ciegas.
  *
- * Estado: iteración 1.1 — la estructura está puesta; el manejador de segundo
- * plano se completa en la iteración 1.3, cuando exista el envío real.
+ * La configuración llega por `firebase-config.js`, que genera
+ * `scripts/generar-firebase-options.sh`: este worker corre **fuera** de la
+ * aplicación y no puede leer el archivo de Dart.
  */
 
 importScripts('https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js');
+importScripts('/firebase-config.js');
 
-// La configuración la inyecta el proceso de compilación. Los valores de web
-// son públicos por diseño (viajan al navegador), pero siguen siendo
-// configuración por ambiente: nunca se escriben a mano aquí.
-// PENDIENTE iteración 1.2: sustituir por la configuración real generada.
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (evento) => evento.waitUntil(self.clients.claim()));
 
-/**
- * Manejador de segundo plano — RF-ENT-06.
- *
- * Es lo que hace que la notificación llegue con la aplicación cerrada. Sin
- * esto, las notificaciones solo aparecen con la pestaña abierta, que es
- * exactamente el fallo descrito en el anexo del documento 06.
- *
- * Se activará en la iteración 1.3:
- *
- *   firebase.initializeApp(configuracion);
- *   const messaging = firebase.messaging();
- *   messaging.onBackgroundMessage((carga) => {
- *     const esUrgente = carga.data?.tipo === 'URGENTE';
- *     self.registration.showNotification(
- *       esUrgente ? `URGENTE · ${carga.data.titulo}` : carga.data.titulo,
- *       {
- *         body: carga.data.cuerpo,
- *         icon: '/icons/Icon-192.png',
- *         badge: '/icons/Icon-192.png',
- *         tag: carga.data.mensajeId,
- *         requireInteraction: esUrgente,
- *         data: { mensajeId: carga.data.mensajeId },
- *       },
- *     );
- *   });
- *
- * El prefijo «URGENTE» en el título no es cosmético: en iOS-PWA no se puede
- * definir sonido ni vibración propios, así que la distinción visible es la
- * única mitigación disponible (deuda DT-02).
- */
+if (self.SIAN_FIREBASE_CONFIG && self.SIAN_FIREBASE_CONFIG.apiKey !== 'SIN-CONFIGURAR') {
+  firebase.initializeApp(self.SIAN_FIREBASE_CONFIG);
+  const messaging = firebase.messaging();
+
+  /**
+   * Mensajes con la aplicación cerrada o en segundo plano (RF-ENT-06).
+   *
+   * Es lo que distingue un canal de avisos de una página web que hay que
+   * recordar abrir.
+   */
+  messaging.onBackgroundMessage((carga) => {
+    const datos = carga.data || {};
+    const esUrgente = datos.tipo === 'URGENTE';
+
+    // El prefijo «URGENTE» en el título no es cosmético: en iOS-PWA no se
+    // puede definir sonido ni vibración propios, así que la distinción visible
+    // es la única mitigación disponible (deuda DT-02).
+    const titulo = esUrgente
+      ? `URGENTE · ${datos.titulo || 'Alerta institucional'}`
+      : datos.titulo || 'SIAN UMG-BDM';
+
+    return self.registration.showNotification(titulo, {
+      body: datos.cuerpo || '',
+      icon: '/icons/Icon-192.png',
+      badge: '/icons/Icon-192.png',
+      // Agrupa por mensaje: un reintento no genera dos avisos en la pantalla.
+      tag: datos.mensajeId || 'sian',
+      // Una alerta urgente no se descarta sola: exige un gesto.
+      requireInteraction: esUrgente,
+      data: { mensajeId: datos.mensajeId || '' },
+    });
+  });
+}
 
 /** Abrir la notificación lleva al detalle del mensaje (RF-ENT-07). */
 self.addEventListener('notificationclick', (evento) => {
@@ -71,11 +71,13 @@ self.addEventListener('notificationclick', (evento) => {
     self.clients
       .matchAll({ type: 'window', includeUncontrolled: true })
       .then((ventanas) => {
-        // Si la aplicación ya está abierta, se reutiliza esa ventana en lugar
+        // Si la aplicación ya está abierta se reutiliza esa ventana, en lugar
         // de abrir una segunda.
         for (const ventana of ventanas) {
           if ('focus' in ventana) {
-            ventana.navigate(destino);
+            if ('navigate' in ventana) {
+              ventana.navigate(destino);
+            }
             return ventana.focus();
           }
         }

@@ -186,28 +186,62 @@ programación.
 
 ## Ronda 3 — Google, dispositivos e instalación en iOS
 
-**Pendiente.** Cierra la iteración 1.2 y **exige desplegar a `sian-umg-bdm-dev`**: los
-emuladores no sirven aquí.
+**Estado: desplegada y lista para probar** en **https://sian-umg-bdm-dev.web.app**
 
-### Qué desbloqueará
+> Esta ronda corre contra el proyecto real, no contra emuladores. FCM no tiene emulador, así
+> que la llegada de una notificación solo se comprueba aquí. Puedes probar desde cualquier
+> equipo o teléfono; no hace falta tener nada encendido en tu Mac.
+
+### Alcance
+
+**Sí se valida:** inicio de sesión con la cuenta de Google, la lista blanca aplicándose
+también a Google, permiso de notificaciones, registro del dispositivo, notificación de
+prueba real, guía para revertir un permiso denegado, e instructivo de instalación en iOS con
+detección automática.
+
+**No se valida todavía:** redactar y enviar mensajes, programación, recurrencia y
+confirmación de lectura. La notificación que llega en esta ronda es la **de prueba** que
+emite el registro del dispositivo, no un aviso redactado por nadie.
+
+### Qué desbloquea
 
 Entrar con la cuenta institucional de Google, registrar el dispositivo y recibir la primera
 notificación real.
 
-### Pasos previstos
+### Pasos
 
 | # | Acción | Resultado esperado |
 |---|---|---|
-| 3.1 | Entra con Google desde un correo invitado | Mismo resultado que con contraseña, mismo rol |
-| 3.2 | Entra con Google desde un correo **no** invitado | Rechazo, sin perfil, con asiento en bitácora |
-| 3.3 | Concede el permiso de notificaciones | Llega una **notificación de prueba** al registrar el dispositivo |
-| 3.4 | Deniega el permiso | La aplicación lo detecta y explica cómo revertirlo (RES-07) |
-| 3.5 | Abre en **Safari en iPhone** sin instalar | Aparece el instructivo de instalación **obligatorio** (RES-05) |
-| 3.6 | Instala en la pantalla de inicio y vuelve a entrar | El instructivo ya no aparece; el dispositivo queda registrado como PWA instalada |
+| 3.1 | Abre la aplicación | **Entrar con Google** aparece arriba, antes del formulario |
+| 3.2 | Entra con Google usando un correo **invitado** | Mismo resultado que con contraseña, mismo rol. El selector de cuenta aparece siempre |
+| 3.3 | Cierra sesión y entra con Google con un correo **no** invitado | Pantalla roja de acceso no autorizado. Sin perfil, y con asiento en bitácora |
+| 3.4 | Como coordinador, invita tu correo con rol **Catedrático** y entra con él | Aterrizas en la bandeja, con la tarjeta de notificaciones arriba |
+| 3.5 | Pulsa **Activar notificaciones** y concede el permiso | La tarjeta pasa a verde y **llega una notificación de prueba real** |
+| 3.6 | Revisa la bitácora como coordinador | Hay un asiento del registro del dispositivo, con plataforma y si la PWA está instalada |
+| 3.7 | Deniega el permiso en otro navegador | La tarjeta se pone roja y explica **dónde** desbloquearlo en ese navegador concreto (RES-07) |
+| 3.8 | Cierra la pestaña y pide que te vuelvan a registrar el dispositivo | Llega la notificación **con la aplicación cerrada** (RF-ENT-06) |
+| 3.9 | Abre la aplicación en **Safari en iPhone**, sin instalar | Aparece el **instructivo de instalación** antes que la bandeja, no escondido en una ayuda |
+| 3.10 | Ábrela en **Chrome en iPhone** | El instructivo avisa de que solo Safari puede añadir a la pantalla de inicio |
+| 3.11 | Pulsa «Seguir sin instalar» | Entras a la bandeja, con la advertencia de que no te avisará de nada |
+| 3.12 | Instala en la pantalla de inicio y abre desde el icono | El instructivo ya no aparece. El icono es el escudo y dice SIAN UMG-BDM |
+| 3.13 | Activa las notificaciones desde la PWA instalada | Ahora sí llegan. En bitácora el dispositivo consta como instalado |
+| 3.14 | Abre y cierra la aplicación varias veces | El identificador se refresca solo en cada apertura — mitigación del riesgo R-01 |
+
+### Criterio de salida
+
+- [ ] Google entra y respeta la lista blanca igual que el correo y contraseña (3.2, 3.3)
+- [ ] Llega una notificación real a un dispositivo real (3.5)
+- [ ] Un permiso denegado explica dónde revertirse, en ese navegador (3.7)
+- [ ] En iPhone sin instalar, el instructivo aparece solo (3.9)
+- [ ] Instalada en iPhone, las notificaciones llegan (3.13)
 
 ### Fuera de alcance
 
-Envío de mensajes reales. Aquí solo se prueba la notificación de registro.
+Redactar y enviar mensajes, programación, recurrencia y confirmación de lectura.
+
+> **La comparación que más importa de esta ronda es 3.9 contra 3.13.** Es donde se ve, en un
+> dispositivo real, que sin instalar la PWA un catedrático con iPhone está incomunicado sin
+> saberlo. Es el riesgo R-02 del documento 02, y el mayor riesgo de adopción del proyecto.
 
 > **Ojo con esta ronda.** Es donde se materializa o se descarta el riesgo R-02: si el
 > catedrático no instala la PWA, en iOS **no hay notificaciones en absoluto**.

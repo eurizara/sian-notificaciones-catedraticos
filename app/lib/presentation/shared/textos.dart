@@ -6,6 +6,8 @@
 /// la aplicación (deuda DT-09, en estado mitigado precisamente por esto).
 library;
 
+import 'package:flutter/material.dart' show IconData, Icons;
+
 import '../../domain/politica_contrasena.dart';
 
 abstract final class Textos {
@@ -255,6 +257,106 @@ abstract final class Textos {
   static const String estadoConfirmado = 'Confirmado';
   static const String estadoFallido = 'Falló la entrega';
   static const String estadoDescartado = 'Descartado';
+
+  // --- Google (RF-AUT-01) --------------------------------------------------
+  static const String botonEntrarConGoogle = 'Entrar con Google';
+  static const String separadorO = 'o';
+  static const String errorGoogleCancelado =
+      'Se cerró la ventana de Google antes de terminar.';
+  static const String errorGoogleBloqueado =
+      'El navegador bloqueó la ventana de Google. Permite las ventanas '
+      'emergentes de este sitio e inténtalo otra vez.';
+
+  // --- Notificaciones (RF-USR-09, RES-05, RES-07) ---------------------------
+  static const String botonActivarNotificaciones = 'Activar notificaciones';
+  static const String notificacionPruebaEnviada =
+      'Te enviamos una notificación de prueba. Si no llega, algo falla en el '
+      'canal y conviene decirlo antes de que haya un aviso real que perder.';
+
+  static const String notifActivasTitulo = 'Notificaciones activas';
+  static const String notifPendientesTitulo = 'Activa las notificaciones';
+  static const String notifPendientesDetalle =
+      'Sin ellas no recibirás avisos ni alertas urgentes. Es un solo toque.';
+  static const String notifDenegadasTitulo = 'Notificaciones bloqueadas';
+  static const String notifInstalarTitulo = 'Falta instalar la aplicación';
+  static const String notifInstalarDetalle =
+      'En iPhone las notificaciones solo funcionan con la aplicación añadida '
+      'a la pantalla de inicio. Sin ese paso no llegará ninguna.';
+  static const String notifSinSoporteTitulo = 'Este navegador no puede notificarte';
+  static const String notifSinSoporteIos =
+      'Tu versión de iOS es anterior a la 16.4, que es desde donde Apple '
+      'permite notificaciones web. Podrás leer tus mensajes al abrir la '
+      'aplicación, pero no te avisará.';
+  static const String notifSinSoporteNavegador =
+      'Podrás leer tus mensajes al abrir la aplicación, pero no te avisará. '
+      'Prueba con Chrome, Edge, Firefox o Safari.';
+
+  static String notifActivasDetalle(String navegador) =>
+      'Recibirás avisos y alertas urgentes en este dispositivo ($navegador).';
+
+  /// RES-07 — dónde se revierte un permiso denegado, que cambia en cada
+  /// navegador. Sin esta indicación, «bloqueado» es un callejón sin salida.
+  static String comoRevertirPermiso(String navegador) => switch (navegador) {
+    'Chrome' || 'Brave' || 'Vivaldi' || 'Opera' =>
+      'Pulsa el icono de candado a la izquierda de la dirección → '
+          'Configuración del sitio → Notificaciones → Permitir. Luego recarga.',
+    'Edge' =>
+      'Pulsa el candado junto a la dirección → Permisos para este sitio → '
+          'Notificaciones → Permitir. Luego recarga.',
+    'Firefox' =>
+      'Pulsa el candado junto a la dirección → Conexión segura → Más '
+          'información → Permisos → Notificaciones. Luego recarga.',
+    'Safari' =>
+      'Ve a Ajustes de Safari → Sitios web → Notificaciones → busca este '
+          'sitio y elige Permitir. Luego recarga.',
+    _ =>
+      'Busca los permisos de este sitio en los ajustes de tu navegador y '
+          'permite las notificaciones. Luego recarga la página.',
+  };
+
+  // --- Instructivo de instalación en iOS (RES-05, R-02) ---------------------
+  static const String instalarTitulo = 'Instala SIAN en tu iPhone';
+  static const String instalarPorQue =
+      'En iPhone, las notificaciones solo llegan si añades la aplicación a la '
+      'pantalla de inicio. Sin este paso no recibirás ninguna alerta, ni '
+      'siquiera las urgentes.';
+  static const String instalarIosAntiguo =
+      'Tu versión de iOS parece anterior a la 16.4. Las notificaciones web '
+      'necesitan esa versión o superior; considera actualizar el sistema.';
+  static const String botonYaLoHice = 'Ya lo hice';
+  static const String botonSeguirSinInstalar = 'Seguir sin instalar';
+  static const String avisoSeguirSinInstalar =
+      'Podrás leer tus mensajes al abrir la aplicación, pero no te avisará de '
+      'nada.';
+
+  static String instalarSoloSafari(String navegador) =>
+      'Estás usando $navegador. En iPhone, solo Safari puede añadir una '
+      'aplicación a la pantalla de inicio: abre este mismo enlace en Safari.';
+
+  static const List<({int numero, String texto, IconData icono})>
+  pasosInstalacionIos = <({int numero, String texto, IconData icono})>[
+    (
+      numero: 1,
+      texto: 'Abre este sitio en Safari, si no lo estás ya.',
+      icono: Icons.public,
+    ),
+    (
+      numero: 2,
+      texto: 'Pulsa el botón Compartir, el cuadrado con la flecha hacia arriba.',
+      icono: Icons.ios_share,
+    ),
+    (
+      numero: 3,
+      texto: 'Desliza y elige «Añadir a pantalla de inicio».',
+      icono: Icons.add_to_home_screen,
+    ),
+    (numero: 4, texto: 'Confirma con «Añadir».', icono: Icons.check_circle_outline),
+    (
+      numero: 5,
+      texto: 'Abre SIAN desde el icono nuevo y activa las notificaciones.',
+      icono: Icons.notifications_active_outlined,
+    ),
+  ];
 
   // --- Modo demostración (solo emuladores) ---------------------------------
   static const String demoTitulo = 'Modo demostración';

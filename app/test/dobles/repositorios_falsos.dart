@@ -8,7 +8,9 @@ library;
 import 'dart:async';
 
 import 'package:sian/domain/repositorios.dart';
+import 'package:sian/core/navegador.dart';
 import 'package:sian/infrastructure/firebase/repositorio_administracion.dart';
+import 'package:sian/infrastructure/firebase/repositorio_dispositivos.dart';
 import 'package:sian/domain/rol.dart';
 import 'package:sian/domain/sesion.dart';
 
@@ -82,6 +84,19 @@ class RepositorioSesionFalso implements RepositorioSesion {
   final Set<String> correosInvitados = <String>{};
 
   final List<String> correosRegistrados = <String>[];
+
+  /// Sesión que devuelve el inicio con Google, si se configuró.
+  Sesion? resultadoGoogle;
+  int vecesQueEntroConGoogle = 0;
+
+  @override
+  Future<void> entrarConGoogle() async {
+    vecesQueEntroConGoogle += 1;
+    final Sesion? r = resultadoGoogle;
+    if (r != null) {
+      emitir(r);
+    }
+  }
 
   @override
   Future<void> registrarConCorreo({
@@ -191,4 +206,38 @@ class RepositorioAdminFalso extends RepositorioAdministracion {
             ? asientos
             : asientos.where((AsientoVista a) => a.tipo == tipo).toList(),
       );
+}
+
+/// Doble del repositorio de dispositivos.
+///
+/// Extiende el real y sustituye únicamente lo que habla con Firebase Cloud
+/// Messaging, que no existe en la máquina virtual de las pruebas.
+class RepositorioDispositivosFalso extends RepositorioDispositivos {
+  RepositorioDispositivosFalso({
+    required EntornoNavegador entorno,
+    this.permiso = EstadoPermiso.pendiente,
+    this.resultado,
+  }) : super(entorno: entorno);
+
+  EstadoPermiso permiso;
+  ResultadoRegistro? resultado;
+  int vecesQuePidioPermiso = 0;
+
+  @override
+  Future<EstadoPermiso> consultarPermiso() async => permiso;
+
+  @override
+  Future<ResultadoRegistro> pedirPermisoYRegistrar() async {
+    vecesQuePidioPermiso += 1;
+    final ResultadoRegistro r =
+        resultado ??
+        const ResultadoRegistro(
+          permiso: EstadoPermiso.concedido,
+          registrado: true,
+          puedeRecibir: true,
+          pruebaEnviada: true,
+        );
+    permiso = r.permiso;
+    return r;
+  }
 }

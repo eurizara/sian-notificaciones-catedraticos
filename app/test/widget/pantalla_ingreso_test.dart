@@ -43,6 +43,11 @@ void main() {
     await tester.pumpWidget(montar());
     await tester.pump();
 
+    // Con el botón de Google la pantalla creció y el de entrar queda bajo el
+    // pliegue en la ventana de prueba: hay que desplazarlo, como haría una
+    // persona.
+    await tester.ensureVisible(find.text(Textos.botonEntrar));
+    await tester.pumpAndSettle();
     await tester.tap(find.text(Textos.botonEntrar));
     await tester.pump();
 
@@ -59,6 +64,8 @@ void main() {
 
       await tester.enterText(campoCorreo(), 'alguien@umg.edu.gt');
       await tester.enterText(campoContrasena(), 'ContraseñaMala#1');
+      await tester.ensureVisible(find.text(Textos.botonEntrar));
+      await tester.pumpAndSettle();
       await tester.tap(find.text(Textos.botonEntrar));
       await tester.pumpAndSettle();
     }
