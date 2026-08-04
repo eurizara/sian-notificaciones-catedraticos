@@ -114,6 +114,14 @@ class PanelAdmin extends StatefulWidget {
 class _PanelAdminState extends State<PanelAdmin> {
   int _indice = 0;
 
+  /// Por debajo de este ancho el menú lateral no cabe junto al contenido y se
+  /// convierte en cajón desplegable.
+  ///
+  /// No es un capricho de diseño: un coordinador puede tener que lanzar una
+  /// alerta de emergencia desde el teléfono, que es precisamente cuando no
+  /// está sentado frente a un escritorio.
+  static const double _anchoMinimoParaMenuLateral = 700;
+
   @override
   Widget build(BuildContext context) {
     final List<SeccionAdmin> visibles = seccionesPara(widget.usuario.rol);
@@ -122,45 +130,68 @@ class _PanelAdminState extends State<PanelAdmin> {
     // dice en lugar de reventar con un índice fuera de rango.
     if (visibles.isEmpty) {
       return Scaffold(
-        appBar: BarraSesion(
-          usuario: widget.usuario,
-          titulo: Textos.nombreApp,
-        ),
+        appBar: BarraSesion(usuario: widget.usuario, titulo: Textos.nombreApp),
         body: const Center(child: Text(Textos.sinSeccionesDisponibles)),
       );
     }
 
     final int indice = _indice.clamp(0, visibles.length - 1);
     final SeccionAdmin actual = visibles[indice];
+    final bool cabeElMenuLateral =
+        MediaQuery.sizeOf(context).width >= _anchoMinimoParaMenuLateral;
+
+    final Widget contenido = SingleChildScrollView(
+      child: SeccionPendiente(
+        key: ValueKey<String>(actual.etiqueta),
+        titulo: actual.titulo,
+        descripcion: actual.descripcion,
+        requisitos: actual.requisitos,
+        iteracion: actual.iteracion,
+      ),
+    );
 
     return Scaffold(
       appBar: BarraSesion(usuario: widget.usuario, titulo: Textos.panelTitulo),
-      body: Row(
-        children: <Widget>[
-          NavigationRail(
-            selectedIndex: indice,
-            onDestinationSelected: (int i) => setState(() => _indice = i),
-            labelType: NavigationRailLabelType.all,
-            destinations: <NavigationRailDestination>[
-              for (final SeccionAdmin s in visibles)
-                NavigationRailDestination(
-                  icon: Icon(s.icono),
-                  label: Text(s.etiqueta),
+      drawer: cabeElMenuLateral
+          ? null
+          : Drawer(
+              child: SafeArea(
+                child: ListView(
+                  children: <Widget>[
+                    for (int i = 0; i < visibles.length; i += 1)
+                      ListTile(
+                        leading: Icon(visibles[i].icono),
+                        title: Text(visibles[i].etiqueta),
+                        selected: i == indice,
+                        onTap: () {
+                          setState(() => _indice = i);
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                  ],
                 ),
-            ],
-          ),
-          const VerticalDivider(width: 1),
-          Expanded(
-            child: SeccionPendiente(
-              key: ValueKey<String>(actual.etiqueta),
-              titulo: actual.titulo,
-              descripcion: actual.descripcion,
-              requisitos: actual.requisitos,
-              iteracion: actual.iteracion,
+              ),
             ),
-          ),
-        ],
-      ),
+      body: cabeElMenuLateral
+          ? Row(
+              children: <Widget>[
+                NavigationRail(
+                  selectedIndex: indice,
+                  onDestinationSelected: (int i) => setState(() => _indice = i),
+                  labelType: NavigationRailLabelType.all,
+                  destinations: <NavigationRailDestination>[
+                    for (final SeccionAdmin s in visibles)
+                      NavigationRailDestination(
+                        icon: Icon(s.icono),
+                        label: Text(s.etiqueta),
+                      ),
+                  ],
+                ),
+                const VerticalDivider(width: 1),
+                Expanded(child: contenido),
+              ],
+            )
+          : contenido,
     );
   }
 }
