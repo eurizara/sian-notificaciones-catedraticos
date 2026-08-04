@@ -35,11 +35,26 @@ class RepositorioSesionFalso implements RepositorioSesion {
   final List<String> correosRecuperados = <String>[];
   int vecesQueSalio = 0;
 
+  /// Rechazo sin reconocer. Misma regla que el repositorio real: una sesión
+  /// anónima que llega tras un rechazo no lo borra, porque la credencial
+  /// desaparece precisamente a causa del rechazo.
+  SesionRechazada? _rechazoSinReconocer;
+
   /// Empuja un estado de sesión, como si Firebase hubiera cambiado.
   void emitir(Sesion sesion) {
-    _ultima = sesion;
+    Sesion efectiva = sesion;
+
+    if (sesion is SesionRechazada) {
+      _rechazoSinReconocer = sesion;
+    } else if (sesion is SesionActiva) {
+      _rechazoSinReconocer = null;
+    } else if (sesion is SesionAnonima && _rechazoSinReconocer != null) {
+      efectiva = _rechazoSinReconocer!;
+    }
+
+    _ultima = efectiva;
     if (_controlador.hasListener) {
-      _controlador.add(sesion);
+      _controlador.add(efectiva);
     }
   }
 
@@ -102,6 +117,7 @@ class RepositorioSesionFalso implements RepositorioSesion {
   @override
   Future<void> salir() async {
     vecesQueSalio += 1;
+    _rechazoSinReconocer = null;
     emitir(const SesionAnonima());
   }
 

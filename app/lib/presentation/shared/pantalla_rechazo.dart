@@ -8,6 +8,8 @@
 /// la Cloud Function, porque el cliente no puede escribir ahí (RF-BIT-03).
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -16,10 +18,18 @@ import '../../domain/sesion.dart';
 import 'textos.dart';
 
 class PantallaRechazo extends ConsumerWidget {
-  const PantallaRechazo({required this.motivo, required this.correo, super.key});
+  const PantallaRechazo({
+    required this.motivo,
+    required this.correo,
+    this.alReconocer,
+    super.key,
+  });
 
   final MotivoRechazo motivo;
   final String correo;
+
+  /// Se llama cuando la persona ya leyó el motivo y quiere volver.
+  final VoidCallback? alReconocer;
 
   ({String titulo, String explicacion, String salida}) _contenido() =>
       switch (motivo) {
@@ -90,7 +100,13 @@ class PantallaRechazo extends ConsumerWidget {
                 ),
                 const SizedBox(height: 24),
                 FilledButton.tonal(
-                  onPressed: () => ref.read(repositorioSesionProvider).salir(),
+                  onPressed: () {
+                    // Cerrar sesión es lo correcto aunque el servidor ya haya
+                    // borrado la credencial: deja el cliente en un estado
+                    // limpio para el siguiente intento.
+                    unawaited(ref.read(repositorioSesionProvider).salir());
+                    alReconocer?.call();
+                  },
                   child: const Text(Textos.botonVolverAIngreso),
                 ),
               ],

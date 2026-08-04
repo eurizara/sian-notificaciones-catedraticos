@@ -165,6 +165,82 @@ void main() {
       expect(find.text(Textos.rechazoSinRolSalida), findsOneWidget);
     });
 
+    testWidgets('el rechazo SOBREVIVE a que la sesión desaparezca', (
+      WidgetTester tester,
+    ) async {
+      // Regresión del fallo encontrado en la ronda 3.
+      //
+      // Al rechazar, el servidor BORRA la credencial recién creada para no
+      // dejar cuentas huérfanas. Eso hace que el cliente pierda la sesión por
+      // su cuenta, y la sesión anónima que llega detrás tapaba el rechazo
+      // antes de que nadie lo leyera: parpadeo y vuelta al formulario.
+      //
+      // RF-AUT-03 exige un rechazo EXPLICATIVO. Si no se ve, no existe.
+      await tester.pumpWidget(
+        montar(
+          const SesionRechazada(
+            motivo: MotivoRechazo.fueraDeListaBlanca,
+            correo: 'intruso@gmail.com',
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(find.byType(PantallaRechazo), findsOneWidget);
+
+      // El servidor borró la credencial: llega la sesión anónima.
+      sesionFalsa.emitir(const SesionAnonima());
+      await tester.pump();
+
+      // Y aun así el aviso sigue en pantalla.
+      expect(find.byType(PantallaRechazo), findsOneWidget);
+      expect(find.text(Textos.rechazoNoAutorizadoTitulo), findsOneWidget);
+      expect(find.byType(PantallaIngreso), findsNothing);
+    });
+
+    testWidgets('solo al reconocerlo se vuelve al formulario', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        montar(
+          const SesionRechazada(
+            motivo: MotivoRechazo.fueraDeListaBlanca,
+            correo: 'intruso@gmail.com',
+          ),
+        ),
+      );
+      await tester.pump();
+      sesionFalsa.emitir(const SesionAnonima());
+      await tester.pump();
+
+      await tester.ensureVisible(find.text(Textos.botonVolverAIngreso));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(Textos.botonVolverAIngreso));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PantallaIngreso), findsOneWidget);
+      expect(find.byType(PantallaRechazo), findsNothing);
+    });
+
+    testWidgets('entrar de verdad limpia cualquier rechazo anterior', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        montar(
+          const SesionRechazada(
+            motivo: MotivoRechazo.fueraDeListaBlanca,
+            correo: 'intruso@gmail.com',
+          ),
+        ),
+      );
+      await tester.pump();
+
+      sesionFalsa.emitir(SesionActiva(usuarioDePrueba(rol: Rol.coordinador)));
+      await tester.pump();
+
+      expect(find.byType(PanelAdmin), findsOneWidget);
+      expect(find.byType(PantallaRechazo), findsNothing);
+    });
+
     testWidgets('desde el rechazo se puede cerrar sesión', (
       WidgetTester tester,
     ) async {
