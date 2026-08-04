@@ -52,6 +52,37 @@ abstract final class Textos {
   static const String errorCorreoParaRecuperar =
       'Escribe tu correo para enviarte el enlace de recuperación.';
 
+  // --- Registro (RF-AUT-02, RF-AUT-06) -------------------------------------
+  static const String registroTitulo = 'Crear cuenta';
+  static const String botonCrearCuenta = 'Crear cuenta';
+  static const String botonYaTengoCuenta = 'Ya tengo cuenta';
+  static const String botonNoTengoCuenta = '¿No tienes cuenta? Regístrate';
+  static const String etiquetaRepetirContrasena = 'Repite la contraseña';
+
+  static const String registroAvisoListaBlanca =
+      'Solo pueden registrarse los correos institucionales previamente '
+      'autorizados por la coordinación académica. Si el tuyo no lo está, la '
+      'cuenta no se creará.';
+  static const String registroAyudaCorreo =
+      'El mismo que autorizó la coordinación académica';
+  static const String registroAyudaContrasena =
+      'Mínimo 10 caracteres, con mayúscula, minúscula y un número';
+
+  static const String politicaFalta = 'Le falta:';
+  static const String politica10 = '10 caracteres';
+  static const String politicaMayuscula = 'una mayúscula';
+  static const String politicaMinuscula = 'una minúscula';
+  static const String politicaDigito = 'un número';
+
+  static const String validacionContrasenasNoCoinciden =
+      'Las contraseñas no coinciden.';
+  static const String errorCorreoYaRegistrado =
+      'Ese correo ya tiene una cuenta. Inicia sesión en vez de registrarte.';
+  static const String errorContrasenaDebil =
+      'Esa contraseña es demasiado débil.';
+  static const String errorRegistroDeshabilitado =
+      'El registro con correo y contraseña no está habilitado.';
+
   // --- Rechazo de acceso (RF-AUT-03) ---------------------------------------
   static const String rechazoCorreoUsado = 'Correo con el que intentaste entrar';
   static const String botonVolverAIngreso = 'Volver al inicio de sesión';
@@ -123,6 +154,57 @@ abstract final class Textos {
   static const String iteracion12 = 'Llega en la iteración 1.2';
   static const String iteracion13 = 'Llega en la iteración 1.3';
   static const String iteracion14 = 'Llega en la iteración 1.4';
+
+  // --- Administración de usuarios ------------------------------------------
+  static const String pestanaInvitaciones = 'Invitaciones';
+  static const String pestanaUsuarios = 'Usuarios';
+  static const String botonInvitar = 'Invitar';
+  static const String botonRevocar = 'Revocar';
+  static const String botonCancelar = 'Cancelar';
+  static const String botonCerrar = 'Cerrar';
+  static const String botonVerDetalle = 'Ver detalle';
+  static const String tituloInvitar = 'Invitar a una persona';
+  static const String tituloCargaMasiva = 'Carga masiva por CSV';
+  static const String tituloLineasRechazadas = 'Líneas rechazadas';
+  static const String modoUnaAUna = 'Una a una';
+  static const String modoCsv = 'CSV';
+  static const String etiquetaNombre = 'Nombre';
+  static const String etiquetaRol = 'Rol';
+  static const String ayudaCsv =
+      'Una línea por persona, con el formato «correo,rol,nombre». El '
+      'encabezado es opcional. Una línea inválida no aborta la carga: se '
+      'rechaza esa sola y se informa con su número.';
+  static const String sinInvitaciones = 'Todavía no hay ninguna invitación.';
+  static const String sinUsuarios = 'Todavía no hay ningún usuario dado de alta.';
+  static const String invitacionConsumida = 'ya usada';
+  static const String invitacionPendiente = 'sin usar';
+  static const String invitacionRevocada = 'Invitación revocada.';
+  static const String usuarioDesactivado = 'desactivada';
+  static const String rolCambiado = 'Rol actualizado.';
+  static const String autorizacionActualizada = 'Autorización actualizada.';
+  static const String cuentaReactivada = 'Cuenta reactivada.';
+  static const String cuentaDesactivada = 'Cuenta desactivada.';
+  static const String cuentaActiva = 'Cuenta activa';
+  static const String cuentaActivaAyuda =
+      'Desactivar no borra nada: la persona deja de recibir mensajes y su '
+      'historial se conserva íntegro.';
+  static const String autorizacionUrgentes = 'Puede emitir alertas urgentes';
+  static const String autorizacionUrgentesAyuda =
+      'Autorización que concede el coordinador, según el documento 01';
+  static const String autorizacionRecurrentes = 'Puede crear mensajes recurrentes';
+  static const String errorOperacion = 'No se pudo completar:';
+  static const String errorCargarDatos = 'No se pudieron cargar los datos';
+
+  static String confirmarRevocar(String correo) =>
+      '¿Revocar la invitación de $correo? Podrá volver a invitarse después.';
+  static String cargaCorrecta(int creadas) =>
+      creadas == 1 ? '1 invitación creada.' : '$creadas invitaciones creadas.';
+  static String cargaParcial(int creadas, int rechazadas) =>
+      '$creadas creadas, $rechazadas rechazadas.';
+
+  // --- Bitácora ------------------------------------------------------------
+  static const String filtroTipoEvento = 'Tipo de evento';
+  static const String bitacoraVacia = 'No hay asientos para ese filtro.';
 
   // --- Bandeja del catedrático ---------------------------------------------
   static const String bandejaTitulo = 'Mis mensajes';

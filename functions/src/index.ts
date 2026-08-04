@@ -1,16 +1,31 @@
 /**
  * SIAN — Punto de entrada de las Cloud Functions.
  *
- * Estado: iteración 1.1 (Cimientos). Esta iteración entrega la capa de dominio
- * y las reglas de seguridad; todavía no hay disparadores desplegados, y eso es
- * intencional según el plan del documento 08:
+ * Iteración 1.2. Lo que hay desplegado hoy:
  *
- *   · 1.2 → onNuevoUsuario, registro de dispositivo, lista blanca
- *   · 1.3 → enviarInmediato, confirmarLectura
+ *   · activarSesion               La puerta del sistema (RF-AUT-03)
+ *   · crearInvitaciones           Lista blanca, suelta o por CSV (RF-USR-01)
+ *   · revocarInvitacion
+ *   · cambiarRol                  RF-USR-02
+ *   · cambiarEstadoUsuario        RF-AUT-08, RN-10
+ *   · cambiarAutorizacionesFinas  «Según autorización» del documento 01
+ *   · guardarGrupo                RF-USR-03, RF-USR-04
+ *
+ * Lo que llega después:
+ *
+ *   · 1.3 → enviarInmediato, confirmarLectura, registrarDispositivo
  *   · 1.4 → programarMensaje, despachador (Cloud Scheduler), limpiarTokens
- *
- * Mientras tanto se exporta el dominio para que las pruebas y los scripts lo
- * consuman como un módulo normal.
  */
 
+export { activarSesion } from './triggers/activarSesion';
+export {
+  cambiarAutorizacionesFinas,
+  cambiarEstadoUsuario,
+  cambiarRol,
+  crearInvitaciones,
+  guardarGrupo,
+  revocarInvitacion,
+} from './triggers/administracion';
+
+/** El dominio se exporta para que las pruebas y los scripts lo consuman. */
 export * as dominio from './domain';

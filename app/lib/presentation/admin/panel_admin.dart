@@ -14,6 +14,8 @@ import 'package:flutter/material.dart';
 import '../../domain/rol.dart';
 import '../../domain/sesion.dart';
 import '../shared/barra_sesion.dart';
+import 'seccion_bitacora.dart';
+import 'seccion_usuarios.dart';
 import '../shared/seccion_pendiente.dart';
 import '../shared/textos.dart';
 
@@ -27,6 +29,7 @@ class SeccionAdmin {
     required this.requisitos,
     required this.iteracion,
     required this.visiblePara,
+    this.construir,
   });
 
   final IconData icono;
@@ -38,6 +41,10 @@ class SeccionAdmin {
 
   /// Predicado sobre el rol. Refleja la matriz del documento 01, sección 2.2.
   final bool Function(Rol rol) visiblePara;
+
+  /// Contenido real de la sección. Si es `null`, se muestra el marcador que
+  /// declara qué hará y en qué iteración llega.
+  final Widget Function()? construir;
 }
 
 final List<SeccionAdmin> _secciones = <SeccionAdmin>[
@@ -75,6 +82,7 @@ final List<SeccionAdmin> _secciones = <SeccionAdmin>[
     descripcion: Textos.seccionUsuariosDescripcion,
     requisitos: const <String>['RF-USR-01', 'RF-USR-02', 'RF-AUT-03'],
     iteracion: Textos.iteracion12,
+    construir: SeccionUsuarios.new,
     // Solo el coordinador administra usuarios y roles.
     visiblePara: (Rol rol) => rol == Rol.coordinador,
   ),
@@ -94,6 +102,7 @@ final List<SeccionAdmin> _secciones = <SeccionAdmin>[
     descripcion: Textos.seccionBitacoraDescripcion,
     requisitos: const <String>['RF-BIT-01', 'RF-BIT-04', 'RF-BIT-05'],
     iteracion: Textos.iteracion14,
+    construir: SeccionBitacora.new,
     visiblePara: (Rol rol) => rol.veBitacoraCompleta,
   ),
 ];
@@ -140,15 +149,20 @@ class _PanelAdminState extends State<PanelAdmin> {
     final bool cabeElMenuLateral =
         MediaQuery.sizeOf(context).width >= _anchoMinimoParaMenuLateral;
 
-    final Widget contenido = SingleChildScrollView(
-      child: SeccionPendiente(
-        key: ValueKey<String>(actual.etiqueta),
-        titulo: actual.titulo,
-        descripcion: actual.descripcion,
-        requisitos: actual.requisitos,
-        iteracion: actual.iteracion,
-      ),
-    );
+    final Widget contenido = actual.construir != null
+        ? KeyedSubtree(
+            key: ValueKey<String>(actual.etiqueta),
+            child: actual.construir!(),
+          )
+        : SingleChildScrollView(
+            child: SeccionPendiente(
+              key: ValueKey<String>(actual.etiqueta),
+              titulo: actual.titulo,
+              descripcion: actual.descripcion,
+              requisitos: actual.requisitos,
+              iteracion: actual.iteracion,
+            ),
+          );
 
     return Scaffold(
       appBar: BarraSesion(usuario: widget.usuario, titulo: Textos.panelTitulo),

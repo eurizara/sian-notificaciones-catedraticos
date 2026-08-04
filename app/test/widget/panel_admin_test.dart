@@ -13,6 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sian/application/proveedores_sesion.dart';
 import 'package:sian/domain/rol.dart';
 import 'package:sian/presentation/admin/panel_admin.dart';
+import 'package:sian/presentation/admin/seccion_usuarios.dart';
 import 'package:sian/presentation/shared/tema.dart';
 import 'package:sian/presentation/shared/textos.dart';
 
@@ -64,6 +65,7 @@ void main() {
       return ProviderScope(
         overrides: [
           repositorioSesionProvider.overrideWithValue(RepositorioSesionFalso()),
+          repositorioAdminProvider.overrideWithValue(RepositorioAdminFalso()),
         ],
         child: MaterialApp(
           theme: TemaSian.claro(),
@@ -110,10 +112,15 @@ void main() {
       await tester.pumpWidget(montar(Rol.coordinador));
       await tester.pump();
 
-      await tester.tap(find.text(Textos.seccionUsuarios));
-      await tester.pumpAndSettle();
+      expect(find.text(Textos.seccionMensajesTitulo), findsOneWidget);
 
-      expect(find.text(Textos.seccionUsuariosTitulo), findsOneWidget);
+      await tester.tap(find.text(Textos.seccionUsuarios));
+      await tester.pump();
+      await tester.pump();
+
+      // Usuarios ya no es un marcador: muestra la sección real, con sus dos
+      // pestañas.
+      expect(find.text(Textos.pestanaInvitaciones), findsOneWidget);
       expect(find.text(Textos.seccionMensajesTitulo), findsNothing);
     });
 
