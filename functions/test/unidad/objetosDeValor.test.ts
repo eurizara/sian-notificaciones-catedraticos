@@ -8,7 +8,6 @@ import {
   Cuerpo,
   HoraLocal,
   Titulo,
-  evaluarContrasena,
 } from '../../src/domain/objetosDeValor';
 
 describe('Titulo · RF-MSG-06', () => {
@@ -90,21 +89,5 @@ describe('HoraLocal · RF-PRG-07, RF-PRG-08', () => {
   });
 });
 
-describe('Política de contraseña · RF-AUT-06', () => {
-  it('acepta una contraseña que cumple los cuatro criterios', () => {
-    expect(evaluarContrasena('Simulacro2026').valida).toBe(true);
-  });
-
-  it('enumera cada incumplimiento por separado', () => {
-    expect(evaluarContrasena('corta1A').incumplimientos).toContain('LONGITUD_MINIMA');
-    expect(evaluarContrasena('minusculas123').incumplimientos).toContain('FALTA_MAYUSCULA');
-    expect(evaluarContrasena('MAYUSCULAS123').incumplimientos).toContain('FALTA_MINUSCULA');
-    expect(evaluarContrasena('SinDigitosAqui').incumplimientos).toContain('FALTA_DIGITO');
-  });
-
-  it('acumula todos los incumplimientos de una contraseña muy pobre', () => {
-    expect(evaluarContrasena('abc').incumplimientos).toEqual(
-      expect.arrayContaining(['LONGITUD_MINIMA', 'FALTA_MAYUSCULA', 'FALTA_DIGITO']),
-    );
-  });
-});
+// La política de contraseñas tiene su propio archivo de pruebas:
+// `politicaContrasena.test.ts`. Creció lo bastante como para merecerlo.

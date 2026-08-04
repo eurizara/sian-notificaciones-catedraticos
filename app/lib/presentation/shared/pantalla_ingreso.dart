@@ -25,6 +25,7 @@ class _PantallaIngresoState extends ConsumerState<PantallaIngreso> {
   final GlobalKey<FormState> _formulario = GlobalKey<FormState>();
   final TextEditingController _correo = TextEditingController();
   final TextEditingController _contrasena = TextEditingController();
+  final FocusNode _focoCorreo = FocusNode();
 
   bool _enviando = false;
   bool _contrasenaVisible = false;
@@ -34,7 +35,21 @@ class _PantallaIngresoState extends ConsumerState<PantallaIngreso> {
   void dispose() {
     _correo.dispose();
     _contrasena.dispose();
+    _focoCorreo.dispose();
     super.dispose();
+  }
+
+  /// Deja el formulario en blanco y el cursor en el correo.
+  ///
+  /// Se borran **los dos** campos, no solo la contraseña: estos equipos son
+  /// compartidos —una sala de catedráticos, una oficina de coordinación—, y
+  /// dejar el correo de la persona anterior escrito en pantalla le dice al
+  /// siguiente quién estuvo ahí.
+  void _limpiarYVolverAlCorreo() {
+    _correo.clear();
+    _contrasena.clear();
+    _formulario.currentState?.reset();
+    FocusScope.of(context).requestFocus(_focoCorreo);
   }
 
   /// Traduce el código de Firebase a algo que una persona pueda leer.
@@ -72,10 +87,12 @@ class _PantallaIngresoState extends ConsumerState<PantallaIngreso> {
     } on FirebaseAuthException catch (e) {
       if (mounted) {
         setState(() => _error = _mensajeDeError(e));
+        _limpiarYVolverAlCorreo();
       }
     } on Object catch (_) {
       if (mounted) {
         setState(() => _error = Textos.errorInesperado);
+        _limpiarYVolverAlCorreo();
       }
     } finally {
       if (mounted) {
@@ -182,6 +199,8 @@ class _PantallaIngresoState extends ConsumerState<PantallaIngreso> {
                     children: <Widget>[
                       TextFormField(
                         controller: _correo,
+                        focusNode: _focoCorreo,
+                        autofocus: true,
                         autofillHints: const <String>[AutofillHints.email],
                         keyboardType: TextInputType.emailAddress,
                         textInputAction: TextInputAction.next,

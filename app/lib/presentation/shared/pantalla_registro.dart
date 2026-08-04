@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/proveedores_sesion.dart';
+import '../../domain/politica_contrasena.dart';
 import 'tema.dart';
 import 'textos.dart';
 
@@ -45,22 +46,28 @@ class _PantallaRegistroState extends ConsumerState<PantallaRegistro> {
     super.dispose();
   }
 
-  /// RF-AUT-06 — mínimo 10 caracteres, con mayúscula, minúscula y dígito.
+  /// RF-AUT-06 — la política completa, no solo contar tipos de carácter.
   ///
-  /// Es la misma política que aplica el servidor. Comprobarla aquí es
-  /// cortesía —evita un viaje de ida y vuelta—, no seguridad.
+  /// Es el espejo de la del servidor. Comprobarla aquí es cortesía —evita un
+  /// viaje de ida y vuelta—, no seguridad.
   String? _validarContrasena(String? valor) {
     final String v = valor ?? '';
     if (v.isEmpty) {
       return Textos.validacionContrasenaObligatoria;
     }
-    final List<String> faltan = <String>[
-      if (v.length < 10) Textos.politica10,
-      if (!RegExp('[A-ZÁÉÍÓÚÑÜ]').hasMatch(v)) Textos.politicaMayuscula,
-      if (!RegExp('[a-záéíóúñü]').hasMatch(v)) Textos.politicaMinuscula,
-      if (!RegExp(r'\d').hasMatch(v)) Textos.politicaDigito,
-    ];
-    return faltan.isEmpty ? null : '${Textos.politicaFalta} ${faltan.join(', ')}.';
+
+    final ResultadoPolitica r = evaluarContrasena(
+      v,
+      correo: _correo.text,
+      nombre: null,
+    );
+    if (r.valida) {
+      return null;
+    }
+
+    // Se enumeran TODOS los incumplimientos: soltar una regla cada vez es la
+    // forma más segura de que la persona acabe eligiendo algo malo.
+    return r.incumplimientos.map(Textos.explicarIncumplimiento).join(' ');
   }
 
   String? _validarCorreo(String? valor) {
@@ -185,7 +192,7 @@ class _PantallaRegistroState extends ConsumerState<PantallaRegistro> {
                           labelText: Textos.etiquetaContrasena,
                           prefixIcon: const Icon(Icons.lock_outline),
                           border: const OutlineInputBorder(),
-                          helperText: Textos.registroAyudaContrasena,
+                          helperText: Textos.registroAyudaContrasenaLarga,
                           helperMaxLines: 2,
                           suffixIcon: IconButton(
                             onPressed: () => setState(() => _visible = !_visible),
@@ -198,6 +205,15 @@ class _PantallaRegistroState extends ConsumerState<PantallaRegistro> {
                           ),
                         ),
                         validator: _validarContrasena,
+                        onChanged: (String _) => setState(() {}),
+                      ),
+                      const SizedBox(height: 8),
+                      _MedidorFuerza(
+                        resultado: evaluarContrasena(
+                          _contrasena.text,
+                          correo: _correo.text,
+                        ),
+                        vacia: _contrasena.text.isEmpty,
                       ),
                       const SizedBox(height: 20),
                       TextFormField(
@@ -267,6 +283,70 @@ class _PantallaRegistroState extends ConsumerState<PantallaRegistro> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Barra de fuerza orientativa.
+///
+/// No mide entropía real: es una señal para que se vea que **alargar la
+/// contraseña ayuda mucho más que añadirle otro signo de admiración**.
+class _MedidorFuerza extends StatelessWidget {
+  const _MedidorFuerza({required this.resultado, required this.vacia});
+
+  final ResultadoPolitica resultado;
+  final bool vacia;
+
+  @override
+  Widget build(BuildContext context) {
+    if (vacia) {
+      return const SizedBox(height: 24);
+    }
+
+    final ThemeData tema = Theme.of(context);
+    final ({double valor, Color color, String etiqueta}) v = switch (resultado.fuerza) {
+      FuerzaContrasena.insuficiente => (
+        valor: 0.2,
+        color: ColoresSian.urgente,
+        etiqueta: Textos.fuerzaInsuficiente,
+      ),
+      FuerzaContrasena.aceptable => (
+        valor: 0.5,
+        color: ColoresSian.dorado,
+        etiqueta: Textos.fuerzaAceptable,
+      ),
+      FuerzaContrasena.buena => (
+        valor: 0.8,
+        color: ColoresSian.primario,
+        etiqueta: Textos.fuerzaBuena,
+      ),
+      FuerzaContrasena.excelente => (
+        valor: 1,
+        color: ColoresSian.confirmado,
+        etiqueta: Textos.fuerzaExcelente,
+      ),
+    };
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: v.valor,
+            minHeight: 6,
+            color: v.color,
+            backgroundColor: tema.colorScheme.surfaceContainerHighest,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          v.etiqueta,
+          // La etiqueta acompaña al color: quien no distingue el verde del
+          // rojo no debería quedarse sin la información (RNF-13).
+          style: tema.textTheme.bodySmall?.copyWith(color: v.color),
+        ),
+      ],
     );
   }
 }

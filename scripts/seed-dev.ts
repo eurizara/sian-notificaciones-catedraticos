@@ -89,7 +89,7 @@ async function sembrarUsuarios(): Promise<void> {
         uid: u.uid,
         email: u.correo,
         emailVerified: true,
-        password: 'Simulacro2026',
+        password: 'Aula#Magna2047',
         displayName: u.nombre,
       })
       .catch(() => undefined); // ya existía: no es un error al re-sembrar
@@ -286,7 +286,7 @@ async function principal(): Promise<void> {
   await sembrarGrupos();
   await sembrarConfiguracion();
   await sembrarMensajes();
-  console.log('\nListo. Entra con cualquier correo sembrado y la contraseña Simulacro2026.');
+  console.log('\nListo. Entra con cualquier correo sembrado y la contraseña Aula#Magna2047.');
   console.log('Interfaz de emuladores: http://localhost:4000');
 }
 

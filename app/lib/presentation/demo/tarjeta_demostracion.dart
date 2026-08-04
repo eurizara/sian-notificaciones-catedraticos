@@ -44,7 +44,7 @@ class CuentaDemostracion {
 
   /// Contraseña común de las cuentas sembradas. Está a la vista en
   /// `scripts/seed-dev.ts`, y solo existe dentro del emulador.
-  static const String contrasena = 'Simulacro2026';
+  static const String contrasena = 'Aula#Magna2047';
 
   static const List<CuentaDemostracion> todas = <CuentaDemostracion>[
     CuentaDemostracion(

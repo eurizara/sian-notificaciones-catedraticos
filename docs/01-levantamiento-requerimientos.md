@@ -109,11 +109,16 @@ Notación: `RF-<módulo>-<número>`. Prioridad según MoSCoW —
 | RF-AUT-03 | El sistema restringe el acceso a correos previamente autorizados en la lista institucional, sea cual sea el proveedor de identidad | D |
 | RF-AUT-04 | El sistema asigna a cada usuario exactamente un rol, y lo refleja en el token de sesión | D |
 | RF-AUT-05 | El sistema permite recuperar la contraseña por correo electrónico | D |
-| RF-AUT-06 | El sistema exige contraseña de mínimo 10 caracteres con al menos una mayúscula, una minúscula y un dígito | D |
+| RF-AUT-06 | El sistema exige contraseña de mínimo 10 caracteres con al menos una mayúscula, una minúscula, un dígito y un símbolo; y rechaza además las que contienen datos personales del propio usuario, las de uso común y las secuencias o repeticiones obvias | D |
 | RF-AUT-07 | El sistema cierra sesión de forma explícita y revoca el token del dispositivo | D |
 | RF-AUT-08 | El coordinador puede desactivar una cuenta sin borrarla, conservando su historial | D |
 | RF-AUT-09 | El sistema bloquea el acceso tras 5 intentos fallidos consecutivos durante 15 minutos | B |
 | RF-AUT-10 | El sistema permite verificación en dos pasos para cuentas con rol Coordinador | P |
+
+**Criterio de aceptación de RF-AUT-06:** una contraseña que contenga el nombre o el correo de
+quien la elige se rechaza, aunque cumpla longitud y composición, y aunque el fragmento venga
+disfrazado con sustituciones del tipo `3` por `e`. El sistema informa de **todos** los
+incumplimientos a la vez, no de uno cada vez.
 
 **Criterio de aceptación de RF-AUT-03:** un usuario con correo no incluido en la lista de
 autorizados que complete correctamente el flujo de Google recibe un rechazo explicativo, no

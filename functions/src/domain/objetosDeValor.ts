@@ -142,38 +142,16 @@ export class HoraLocal extends ObjetoDeValor<string> {
 // ---------------------------------------------------------------------------
 // Contraseña — RF-AUT-06
 //
-// El dominio solo dicta la política. El hash y el almacenamiento son de
-// Firebase Authentication y no pasan jamás por aquí.
+// La política vive en `politicaContrasena.ts`: creció lo bastante como para
+// merecer su propio archivo, y mezclarla con los objetos de valor haría este
+// más difícil de leer sin ganar nada.
 // ---------------------------------------------------------------------------
 
-export const POLITICA_CONTRASENA = {
-  longitudMinima: 10,
-  exigeMayuscula: true,
-  exigeMinuscula: true,
-  exigeDigito: true,
-} as const;
-
-export interface ResultadoPolitica {
-  readonly valida: boolean;
-  readonly incumplimientos: readonly string[];
-}
-
-export function evaluarContrasena(bruto: string): ResultadoPolitica {
-  const v = bruto ?? '';
-  const incumplimientos: string[] = [];
-
-  if (v.length < POLITICA_CONTRASENA.longitudMinima) {
-    incumplimientos.push('LONGITUD_MINIMA');
-  }
-  if (!/[A-ZÁÉÍÓÚÑÜ]/.test(v)) {
-    incumplimientos.push('FALTA_MAYUSCULA');
-  }
-  if (!/[a-záéíóúñü]/.test(v)) {
-    incumplimientos.push('FALTA_MINUSCULA');
-  }
-  if (!/\d/.test(v)) {
-    incumplimientos.push('FALTA_DIGITO');
-  }
-
-  return { valida: incumplimientos.length === 0, incumplimientos };
-}
+export {
+  POLITICA_CONTRASENA,
+  evaluarContrasena,
+  type ContextoContrasena,
+  type Fuerza,
+  type IncumplimientoContrasena,
+  type ResultadoPolitica,
+} from './politicaContrasena';
