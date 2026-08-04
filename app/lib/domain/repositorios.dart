@@ -18,6 +18,12 @@ abstract interface class RepositorioSesion {
     required String contrasena,
   });
 
+  /// Inicio de sesión con la cuenta institucional de Google (RF-AUT-01).
+  ///
+  /// Autenticar con Google **no** concede acceso: el correo tiene que estar
+  /// en la lista blanca igual que con cualquier otro proveedor (RF-AUT-03).
+  Future<void> entrarConGoogle();
+
   /// Registro con correo y contraseña (RF-AUT-02).
   ///
   /// Crear la credencial no concede acceso: el alta solo se completa si el

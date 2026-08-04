@@ -104,4 +104,23 @@ class DefaultFirebaseOptions {
 }
 DART
 
+# El service worker de mensajería no puede leer el archivo de Dart: corre
+# fuera de la aplicación. Se le deja la misma configuración en un archivo
+# aparte que él importa (documento 02, riesgo R-03).
+CONFIG_SW="$RAIZ/app/web/firebase-config.js"
+cat > "$CONFIG_SW" <<JS
+// GENERADO por scripts/generar-firebase-options.sh — no editar a mano.
+// Lo consume firebase-messaging-sw.js, que corre fuera de la aplicación y no
+// puede leer el archivo de Dart. Está en .gitignore por la misma razón.
+self.SIAN_FIREBASE_CONFIG = {
+  apiKey: '$API_KEY',
+  appId: '$APP_ID',
+  messagingSenderId: '$SENDER_ID',
+  projectId: '$PROJECT_ID',
+  authDomain: '$AUTH_DOMAIN',
+  storageBucket: '$STORAGE_BUCKET',
+};
+JS
+
 echo "Generado: app/lib/firebase_options.dart  (proyecto: $PROJECT_ID)"
+echo "Generado: app/web/firebase-config.js"

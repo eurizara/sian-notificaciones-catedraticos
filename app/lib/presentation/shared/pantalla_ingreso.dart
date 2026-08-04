@@ -101,6 +101,36 @@ class _PantallaIngresoState extends ConsumerState<PantallaIngreso> {
     }
   }
 
+  Future<void> _entrarConGoogle() async {
+    setState(() {
+      _enviando = true;
+      _error = null;
+    });
+
+    try {
+      await ref.read(repositorioSesionProvider).entrarConGoogle();
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        setState(
+          () => _error = switch (e.code) {
+            'popup-closed-by-user' => Textos.errorGoogleCancelado,
+            'popup-blocked' => Textos.errorGoogleBloqueado,
+            'network-request-failed' => Textos.errorSinRed,
+            _ => Textos.errorInesperado,
+          },
+        );
+      }
+    } on Object catch (_) {
+      if (mounted) {
+        setState(() => _error = Textos.errorInesperado);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _enviando = false);
+      }
+    }
+  }
+
   Future<void> _recuperar() async {
     final String correo = _correo.text.trim();
     if (correo.isEmpty) {
@@ -191,6 +221,34 @@ class _PantallaIngresoState extends ConsumerState<PantallaIngreso> {
                   ),
                 ),
                 const SizedBox(height: 32),
+
+                // Google va PRIMERO: es el camino que la institución quiere
+                // por omisión, y el que no obliga a inventar otra contraseña.
+                OutlinedButton.icon(
+                  onPressed: _enviando ? null : _entrarConGoogle,
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(88, 52),
+                  ),
+                  icon: const Icon(Icons.account_circle_outlined),
+                  label: const Text(Textos.botonEntrarConGoogle),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: <Widget>[
+                    const Expanded(child: Divider()),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(
+                        Textos.separadorO,
+                        style: tema.textTheme.bodySmall?.copyWith(
+                          color: tema.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                    const Expanded(child: Divider()),
+                  ],
+                ),
+                const SizedBox(height: 20),
 
                 Form(
                   key: _formulario,

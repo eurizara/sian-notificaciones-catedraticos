@@ -10,6 +10,7 @@
  *   · cambiarEstadoUsuario        RF-AUT-08, RN-10
  *   · cambiarAutorizacionesFinas  «Según autorización» del documento 01
  *   · guardarGrupo                RF-USR-03, RF-USR-04
+ *   · registrarDispositivo        RF-USR-09, RES-05, mitigación de R-01
  *
  * Lo que llega después:
  *
@@ -18,6 +19,7 @@
  */
 
 export { activarSesion } from './triggers/activarSesion';
+export { registrarDispositivo } from './triggers/dispositivos';
 export {
   cambiarAutorizacionesFinas,
   cambiarEstadoUsuario,

@@ -9,6 +9,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../../core/plataforma/consola.dart';
 import '../../domain/repositorios.dart';
 import '../../domain/rol.dart';
 import '../../domain/sesion.dart';
@@ -43,6 +44,20 @@ class RepositorioSesionFirebase implements RepositorioSesion {
   /// se cierra sesión de forma explícita, que es lo que hace el botón «Volver
   /// al inicio de sesión» — es decir, cuando ya se leyó el motivo (RF-AUT-03).
   SesionRechazada? _rechazoSinReconocer;
+
+  /// Traza del flujo de sesión, visible en la consola del navegador.
+  ///
+  /// No es andamio temporal. El flujo de entrada es el único del sistema que
+  /// atraviesa tres servicios —Auth, una Function y Firestore— y cuando falla
+  /// lo hace en el navegador de otra persona. Sin estas líneas, cada
+  /// diagnóstico vuelve a ser adivinanza; con ellas se ve en qué paso exacto
+  /// se desvía. Cuesta una llamada por cambio de sesión.
+  void _trazar(String paso, [Map<String, Object?> datos = const {}]) {
+    final String extra = datos.entries
+        .map((MapEntry<String, Object?> e) => '${e.key}=${e.value}')
+        .join(' ');
+    consolaError('SIAN.sesion $paso ${extra.isEmpty ? '' : '| $extra'}');
+  }
 
   /// Emite el estado de sesión cada vez que cambia la autenticación.
   @override
@@ -175,6 +190,22 @@ class RepositorioSesionFirebase implements RepositorioSesion {
   @override
   Future<void> recuperarContrasena(String correo) async {
     await _auth.sendPasswordResetEmail(email: correo.trim().toLowerCase());
+  }
+
+  /// Inicio de sesión con Google (RF-AUT-01).
+  ///
+  /// Se usa ventana emergente y no redirección: la redirección pierde el
+  /// estado de la aplicación y, en iOS instalado como PWA, saca a la persona
+  /// de la aplicación y no siempre la devuelve.
+  @override
+  Future<void> entrarConGoogle() async {
+    _trazar('google:intento');
+    final GoogleAuthProvider proveedor = GoogleAuthProvider()
+      // Fuerza el selector de cuenta: en un equipo compartido, entrar con la
+      // sesión de Google de la persona anterior sería un accidente serio.
+      ..setCustomParameters(<String, String>{'prompt': 'select_account'});
+
+    await _auth.signInWithPopup(proveedor);
   }
 
   /// Registro con correo y contraseña (RF-AUT-02).

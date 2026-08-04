@@ -13,7 +13,10 @@ import '../../core/entorno.dart';
 import '../../domain/repositorios.dart';
 import '../../domain/sesion.dart';
 import '../../infrastructure/firebase/repositorio_bandeja.dart';
+import '../../core/navegador.dart';
 import '../shared/barra_sesion.dart';
+import 'instructivo_ios.dart';
+import 'tarjeta_notificaciones.dart';
 import '../shared/tema.dart';
 import '../shared/textos.dart';
 
@@ -25,13 +28,38 @@ final historialProvider =
       return ref.watch(repositorioBandejaProvider).observarHistorial(uid);
     });
 
-class BandejaDocente extends ConsumerWidget {
+class BandejaDocente extends ConsumerStatefulWidget {
   const BandejaDocente({required this.usuario, super.key});
 
   final UsuarioSesion usuario;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<BandejaDocente> createState() => _BandejaDocenteState();
+}
+
+class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
+  /// El instructivo de iOS se muestra una vez por sesión y se puede omitir.
+  ///
+  /// Bloquear la aplicación hasta instalarla dejaría al catedrático sin poder
+  /// ni leer sus mensajes, que es peor que dejarlo sin notificaciones (R-02).
+  bool _instructivoOmitido = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final UsuarioSesion usuario = widget.usuario;
+    final EntornoNavegador entorno = ref
+        .read(repositorioDispositivosProvider)
+        .entorno;
+
+    // RES-05: en iPhone sin instalar no llega ninguna notificación, así que
+    // el instructivo aparece solo, antes que nada.
+    if (entorno.necesitaInstructivoInstalacion && !_instructivoOmitido) {
+      return InstructivoIos(
+        entorno: entorno,
+        alOmitir: () => setState(() => _instructivoOmitido = true),
+      );
+    }
+
     final AsyncValue<List<MensajeRecibido>> historial = ref.watch(
       historialProvider(usuario.uid),
     );
@@ -47,9 +75,16 @@ class BandejaDocente extends ConsumerWidget {
           child: historial.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (Object e, StackTrace _) => _Error(detalle: e.toString()),
-            data: (List<MensajeRecibido> mensajes) => mensajes.isEmpty
-                ? const _BandejaVacia()
-                : _Lista(mensajes: mensajes),
+            data: (List<MensajeRecibido> mensajes) => ListView(
+              padding: const EdgeInsets.all(16),
+              children: <Widget>[
+                const TarjetaNotificaciones(),
+                if (mensajes.isEmpty)
+                  const _BandejaVacia()
+                else
+                  ...filasDeMensajes(context, mensajes),
+              ],
+            ),
           ),
         ),
       ),
@@ -57,46 +92,42 @@ class BandejaDocente extends ConsumerWidget {
   }
 }
 
-class _Lista extends StatelessWidget {
-  const _Lista({required this.mensajes});
+/// Construye las filas de la bandeja.
+///
+/// Devuelve widgets sueltos en vez de su propio `ListView` para poder
+/// convivir con la tarjeta de notificaciones dentro de una sola lista
+/// desplazable: dos listas anidadas se desplazarían por separado, que es
+/// exactamente lo que nadie espera al deslizar.
+List<Widget> filasDeMensajes(
+  BuildContext context,
+  List<MensajeRecibido> mensajes,
+) {
+  final int sinConfirmar = mensajes
+      .where((MensajeRecibido m) => m.exigeAtencion)
+      .length;
 
-  final List<MensajeRecibido> mensajes;
-
-  @override
-  Widget build(BuildContext context) {
-    final int sinConfirmar = mensajes
-        .where((MensajeRecibido m) => m.exigeAtencion)
-        .length;
-
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: <Widget>[
-        if (sinConfirmar > 0)
-          Card(
-            color: Theme.of(context).colorScheme.errorContainer,
-            child: ListTile(
-              leading: const Icon(Icons.priority_high),
-              title: Text(
-                sinConfirmar == 1
-                    ? Textos.bandejaPendienteUno
-                    : Textos.bandejaPendienteVarios(sinConfirmar),
-              ),
-              subtitle: const Text(Textos.bandejaPendienteDetalle),
-            ),
+  return <Widget>[
+    if (sinConfirmar > 0)
+      Card(
+        color: Theme.of(context).colorScheme.errorContainer,
+        child: ListTile(
+          leading: const Icon(Icons.priority_high),
+          title: Text(
+            sinConfirmar == 1
+                ? Textos.bandejaPendienteUno
+                : Textos.bandejaPendienteVarios(sinConfirmar),
           ),
-        for (final MensajeRecibido mensaje in mensajes)
-          _Fila(key: ValueKey<String>(mensaje.mensajeId), mensaje: mensaje),
-        if (Entorno.usaEmulador)
-          const Padding(
-            padding: EdgeInsets.only(top: 16),
-            child: Text(
-              Textos.avisoEmuladorSinPush,
-              textAlign: TextAlign.center,
-            ),
-          ),
-      ],
-    );
-  }
+          subtitle: const Text(Textos.bandejaPendienteDetalle),
+        ),
+      ),
+    for (final MensajeRecibido mensaje in mensajes)
+      _Fila(key: ValueKey<String>(mensaje.mensajeId), mensaje: mensaje),
+    if (Entorno.usaEmulador)
+      const Padding(
+        padding: EdgeInsets.only(top: 16),
+        child: Text(Textos.avisoEmuladorSinPush, textAlign: TextAlign.center),
+      ),
+  ];
 }
 
 class _Fila extends StatelessWidget {
