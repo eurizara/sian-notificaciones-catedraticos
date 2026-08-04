@@ -44,6 +44,17 @@ class AplicacionSian extends ConsumerWidget {
       title: Textos.nombreApp,
       theme: TemaSian.claro(),
       darkTheme: TemaSian.oscuro(),
+      // Tema claro fijo, sin seguir la preferencia del sistema.
+      //
+      // El escudo institucional tiene fondo blanco y un anillo rojo que sobre
+      // superficies oscuras pierde definición, y el azul #1C72A5 se aclara
+      // tanto en modo oscuro que deja de ser el color de la universidad. Hasta
+      // tener una paleta oscura verificada contra WCAG 2.1 AA (RNF-13), es más
+      // honesto servir siempre el tema que sí está comprobado.
+      //
+      // `darkTheme` queda declarado a propósito: reactivarlo es cambiar esta
+      // línea por `ThemeMode.system`.
+      themeMode: ThemeMode.light,
       debugShowCheckedModeBanner: false,
       // Si Firebase no arrancó no hay sesión que resolver, así que se muestra
       // el diagnóstico en vez de un formulario que no podría funcionar.
