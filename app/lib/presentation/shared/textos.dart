@@ -8,10 +8,18 @@ library;
 
 abstract final class Textos {
   // --- Identidad -----------------------------------------------------------
-  static const String nombreApp = 'SIAN';
+  /// Nombre corto del sistema, con la sede que le da alcance.
+  static const String nombreApp = 'SIAN UMG-BDM';
+
   static const String nombreCompleto =
       'Sistema Institucional de Avisos y Notificaciones';
-  static const String institucionMarcador = 'Universidad Mariano Gálvez';
+
+  static const String institucion = 'Universidad Mariano Gálvez de Guatemala';
+  static const String sede = 'Sede Boca del Monte';
+
+  /// Lema institucional que aparece en el escudo.
+  static const String lema =
+      'Y conoceréis la verdad, y la verdad os hará libres';
 
   // --- Inicio de sesión ----------------------------------------------------
   static const String etiquetaCorreo = 'Correo institucional';

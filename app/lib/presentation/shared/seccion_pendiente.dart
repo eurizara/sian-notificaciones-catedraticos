@@ -64,10 +64,14 @@ class SeccionPendiente extends StatelessWidget {
                     color: tema.colorScheme.onSurfaceVariant,
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    iteracion,
-                    style: tema.textTheme.bodyMedium?.copyWith(
-                      color: tema.colorScheme.onSurfaceVariant,
+                  // Flexible y no fijo: con el texto ampliado por
+                  // accesibilidad (RNF-13), una fila rígida desborda.
+                  Flexible(
+                    child: Text(
+                      iteracion,
+                      style: tema.textTheme.bodyMedium?.copyWith(
+                        color: tema.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
                 ],

@@ -126,5 +126,24 @@ void main() {
       expect(find.text('Persona de Prueba'), findsOneWidget);
       expect(find.text(Rol.auditor.etiqueta), findsOneWidget);
     });
+
+    testWidgets('en pantalla estrecha la barra no desborda', (
+      WidgetTester tester,
+    ) async {
+      // Regresión: con el escudo institucional en el título, la fila reclamaba
+      // todo el ancho y empujaba las acciones fuera de la pantalla. En un
+      // teléfono, que es donde más se usa, la barra reventaba.
+      tester.view.physicalSize = const Size(390, 844); // iPhone
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(montar(Rol.coordinador));
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      // El nombre cede el sitio; la identidad se conserva en la ayuda del
+      // botón de salir.
+      expect(find.text('Persona de Prueba'), findsNothing);
+    });
   });
 }

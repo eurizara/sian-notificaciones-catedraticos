@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/proveedores_sesion.dart';
 import '../../core/entorno.dart';
 import '../demo/tarjeta_demostracion.dart';
+import 'tema.dart';
 import 'textos.dart';
 
 class PantallaIngreso extends ConsumerStatefulWidget {
@@ -136,18 +137,14 @@ class _PantallaIngresoState extends ConsumerState<PantallaIngreso> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                Icon(
-                  Icons.campaign_outlined,
-                  size: 56,
-                  color: tema.colorScheme.primary,
-                ),
-                const SizedBox(height: 16),
+                const Center(child: EscudoUmg(tamano: 132)),
+                const SizedBox(height: 20),
                 Text(
                   Textos.nombreApp,
                   textAlign: TextAlign.center,
                   style: tema.textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.w700,
-                    color: tema.colorScheme.primary,
+                    color: ColoresSian.primarioOscuro,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -155,6 +152,21 @@ class _PantallaIngresoState extends ConsumerState<PantallaIngreso> {
                   Textos.nombreCompleto,
                   textAlign: TextAlign.center,
                   style: tema.textTheme.bodyMedium?.copyWith(
+                    color: tema.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  Textos.institucion,
+                  textAlign: TextAlign.center,
+                  style: tema.textTheme.labelLarge?.copyWith(
+                    color: ColoresSian.doradoTexto,
+                  ),
+                ),
+                Text(
+                  Textos.sede,
+                  textAlign: TextAlign.center,
+                  style: tema.textTheme.bodySmall?.copyWith(
                     color: tema.colorScheme.onSurfaceVariant,
                   ),
                 ),
