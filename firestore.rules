@@ -127,6 +127,34 @@ service cloud.firestore {
     }
 
     // ---------------------------------------------------------------------
+    // Consulta por grupo de colecciones sobre `entregas`.
+    //
+    // El historial del catedrático (RF-ENT-12) y el reporte de confirmación
+    // (RF-CNF-06) son consultas de grupo de colecciones, y esas **no** las
+    // cubre la regla anidada de arriba: una regla escrita sobre la ruta
+    // completa nunca se evalúa en una consulta de grupo. Sin esta declaración,
+    // el catedrático no podría leer su propio historial.
+    //
+    // La comprobación NO puede usar el comodín de ruta: en una consulta de
+    // grupo no hay un documento concreto todavía, así que el segmento del
+    // identificador llega nulo y la evaluación falla con «Null value error».
+    //
+    // Se usa `resource.data.uid`, el campo que el documento 05, sección 2.7,
+    // duplica dentro de la entrega «a propósito» por exactamente este motivo.
+    // Para una consulta, Firestore exige que el filtro garantice que todo lo
+    // devuelto cumple la regla: `where('uid','==',miUid)` lo garantiza, y una
+    // consulta sin ese filtro se rechaza entera en lugar de recortarse.
+    // ---------------------------------------------------------------------
+
+    match /{rutaEntregas=**}/entregas/{entregaId} {
+      allow read: if (autenticado() && resource.data.uid == request.auth.uid)
+                  || esCoordinador()
+                  || esAuditor()
+                  || esEmisor();
+      allow write: if false;
+    }
+
+    // ---------------------------------------------------------------------
     // bitacora/{eventoId} — inmutable (RF-BIT-03), legible solo por
     // Coordinador y Auditor (RF-BIT-04).
     // ---------------------------------------------------------------------
