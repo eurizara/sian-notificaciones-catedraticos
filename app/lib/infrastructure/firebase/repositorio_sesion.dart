@@ -53,12 +53,17 @@ class RepositorioSesionFirebase implements RepositorioSesion {
     try {
       await _functions.httpsCallable('activarSesion').call<Object?>();
     } on FirebaseFunctionsException catch (e) {
-      final Sesion rechazo = _interpretarRechazo(e, correo);
-      // La credencial ya no sirve de nada: si el servidor no la borró —caso
-      // de cuenta desactivada—, al menos se cierra la sesión local para que
-      // el siguiente intento parta de cero.
-      await _auth.signOut().catchError((_) {});
-      return rechazo;
+      // NO se cierra la sesión aquí, y es deliberado.
+      //
+      // `signOut()` dispara `authStateChanges`, que emite de inmediato una
+      // sesión anónima y pisa este rechazo antes de que llegue a dibujarse.
+      // El usuario veía un parpadeo y volvía al formulario, sin enterarse de
+      // por qué. RF-AUT-03 exige un rechazo EXPLICATIVO: si no se ve, no
+      // existe.
+      //
+      // La sesión se cierra cuando la persona pulsa «Volver al inicio de
+      // sesión» en la pantalla de rechazo, que es cuando ya leyó el motivo.
+      return _interpretarRechazo(e, correo);
     } on Object {
       // Un fallo de red no es un rechazo. Se trata como sesión sin resolver
       // en lugar de acusar a nadie de no estar autorizado.
