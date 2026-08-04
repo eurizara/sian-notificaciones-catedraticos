@@ -57,6 +57,7 @@ solo se verifica desplegando a `dev` (documento 06, etapa D.5).
 | 06 | [Guía de despliegue](docs/06-guia-despliegue.md) | Copia local, GitHub, Firebase por ambiente y checklist de demo |
 | 07 | [Deuda técnica](docs/07-deuda-tecnica.md) | Registro formal de deuda técnica con causa, impacto y plan de pago |
 | 08 | [Plan de iteraciones](docs/08-plan-iteraciones.md) | Prototipo → QA → producción, con criterios de salida por fase |
+| 09 | [Guion de pruebas](docs/09-guion-de-pruebas.md) | Qué probar en cada ronda, paso a paso, con su alcance y lo que queda fuera |
 
 ---
 
