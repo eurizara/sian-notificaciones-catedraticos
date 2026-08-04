@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'infrastructure/firebase/inicializacion.dart';
+import 'presentation/shared/enrutador.dart';
 import 'presentation/shared/pantalla_estado.dart';
 import 'presentation/shared/tema.dart';
 import 'presentation/shared/textos.dart';
@@ -32,17 +33,21 @@ Future<void> main() async {
   );
 }
 
-class AplicacionSian extends StatelessWidget {
+class AplicacionSian extends ConsumerWidget {
   const AplicacionSian({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ResultadoArranque arranque = ref.watch(arranqueProvider);
+
     return MaterialApp(
       title: Textos.nombreApp,
       theme: TemaSian.claro(),
       darkTheme: TemaSian.oscuro(),
       debugShowCheckedModeBanner: false,
-      home: const PantallaEstado(),
+      // Si Firebase no arrancó no hay sesión que resolver, así que se muestra
+      // el diagnóstico en vez de un formulario que no podría funcionar.
+      home: arranque.correcto ? const Enrutador() : const PantallaEstado(),
     );
   }
 }

@@ -18,7 +18,17 @@ import {
   initializeTestEnvironment,
   type RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import {
+  collectionGroup,
+  doc,
+  getDoc,
+  getDocs,
+  orderBy,
+  query,
+  setDoc,
+  updateDoc,
+  where,
+} from 'firebase/firestore';
 
 const ID_PROYECTO = 'sian-reglas-test';
 
@@ -87,7 +97,11 @@ beforeEach(async () => {
     await setDoc(doc(db, 'mensajes', 'm-1', 'ocurrencias', 'o-1'), { numero: 1 });
     await setDoc(doc(db, 'mensajes', 'm-1', 'ocurrencias', 'o-1', 'entregas', UID.catedratico), {
       uid: UID.catedratico,
+      mensajeId: 'm-1',
       estado: 'ENTREGADO',
+      // Sin `entregadoEn` la consulta del historial no devolvería nada: ordena
+      // por ese campo, y Firestore excluye los documentos que no lo tienen.
+      entregadoEn: new Date('2026-08-03T13:00:00Z'),
     });
 
     await setDoc(doc(db, 'bitacora', 'b-1'), { tipo: 'MENSAJE_CREADO', actorUid: UID.administradora });
@@ -225,6 +239,49 @@ describe('Entregas y confirmación de lectura', () => {
         confirmadoEn: new Date(),
       }),
     );
+  });
+});
+
+describe('RF-ENT-12 · historial del catedrático por grupo de colecciones', () => {
+  // Es la consulta que declara el documento 05, sección 4. Las consultas de
+  // grupo de colecciones NO evalúan las reglas escritas sobre la ruta
+  // completa: necesitan su propia declaración. Sin ella, el catedrático no
+  // podría leer su propio historial y nadie se enteraría hasta construir la
+  // bandeja.
+  const historialDe = (db: ReturnType<typeof contexto>, uid: string) =>
+    getDocs(
+      query(
+        collectionGroup(db, 'entregas'),
+        where('uid', '==', uid),
+        orderBy('entregadoEn', 'desc'),
+      ),
+    );
+
+  it('el catedrático lee su propio historial', async () => {
+    const db = contexto(UID.catedratico, 'CATEDRATICO');
+    await assertSucceeds(historialDe(db, UID.catedratico));
+  });
+
+  it('un catedrático no puede pedir el historial de otro', async () => {
+    const db = contexto(UID.otroCatedratico, 'CATEDRATICO');
+    await assertFails(historialDe(db, UID.catedratico));
+  });
+
+  it('RF-CNF-06 · el emisor y el auditor sí consultan entregas ajenas', async () => {
+    await assertSucceeds(
+      historialDe(contexto(UID.administradora, 'ADMINISTRADORA'), UID.catedratico),
+    );
+    await assertSucceeds(
+      historialDe(contexto(UID.auditor, 'AUDITOR'), UID.catedratico),
+    );
+  });
+
+  it('sin filtrar por uid, la consulta se rechaza entera', async () => {
+    // Sin el filtro, las reglas no pueden garantizar que todo lo devuelto sea
+    // suyo, así que Firestore rechaza la consulta completa en vez de recortar
+    // el resultado.
+    const db = contexto(UID.catedratico, 'CATEDRATICO');
+    await assertFails(getDocs(query(collectionGroup(db, 'entregas'))));
   });
 });
 
