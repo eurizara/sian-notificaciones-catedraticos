@@ -8,6 +8,7 @@ library;
 import 'dart:async';
 
 import 'package:sian/domain/repositorios.dart';
+import 'package:sian/infrastructure/firebase/repositorio_administracion.dart';
 import 'package:sian/domain/rol.dart';
 import 'package:sian/domain/sesion.dart';
 
@@ -61,6 +62,38 @@ class RepositorioSesionFalso implements RepositorioSesion {
     emitir(resultado);
   }
 
+  /// Correos que el doble acepta registrar. Los demás se rechazan, como haría
+  /// la lista blanca.
+  final Set<String> correosInvitados = <String>{};
+
+  final List<String> correosRegistrados = <String>[];
+
+  @override
+  Future<void> registrarConCorreo({
+    required String correo,
+    required String contrasena,
+  }) async {
+    final String normalizado = correo.trim().toLowerCase();
+    correosRegistrados.add(normalizado);
+
+    if (!correosInvitados.contains(normalizado)) {
+      // Igual que en producción: la credencial se crea, pero el servidor la
+      // rechaza y la borra por no estar en la lista blanca.
+      emitir(
+        SesionRechazada(
+          motivo: MotivoRechazo.fueraDeListaBlanca,
+          correo: normalizado,
+        ),
+      );
+      return;
+    }
+
+    final Sesion? resultado = credenciales[normalizado];
+    if (resultado != null) {
+      emitir(resultado);
+    }
+  }
+
   @override
   Future<void> recuperarContrasena(String correo) async {
     correosRecuperados.add(correo);
@@ -109,4 +142,37 @@ UsuarioSesion usuarioDePrueba({
     puedeEmitirUrgentes: puedeEmitirUrgentes,
     puedeCrearRecurrentes: puedeCrearRecurrentes,
   );
+}
+
+/// Doble del repositorio de administración.
+///
+/// Extiende el real en lugar de reimplementarlo: solo se sustituyen las
+/// lecturas, que son las únicas que una prueba de widget necesita. Las
+/// escrituras van a Cloud Functions y no se ejercitan aquí.
+class RepositorioAdminFalso extends RepositorioAdministracion {
+  RepositorioAdminFalso({
+    this.invitaciones = const <InvitacionVista>[],
+    this.usuarios = const <UsuarioVista>[],
+    this.asientos = const <AsientoVista>[],
+  });
+
+  final List<InvitacionVista> invitaciones;
+  final List<UsuarioVista> usuarios;
+  final List<AsientoVista> asientos;
+
+  @override
+  Stream<List<InvitacionVista>> observarInvitaciones() =>
+      Stream<List<InvitacionVista>>.value(invitaciones);
+
+  @override
+  Stream<List<UsuarioVista>> observarUsuarios() =>
+      Stream<List<UsuarioVista>>.value(usuarios);
+
+  @override
+  Stream<List<AsientoVista>> observarBitacora({String? tipo, int limite = 100}) =>
+      Stream<List<AsientoVista>>.value(
+        tipo == null || tipo.isEmpty
+            ? asientos
+            : asientos.where((AsientoVista a) => a.tipo == tipo).toList(),
+      );
 }

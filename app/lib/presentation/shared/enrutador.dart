@@ -18,18 +18,34 @@ import '../admin/panel_admin.dart';
 import '../docente/bandeja_docente.dart';
 import 'pantalla_ingreso.dart';
 import 'pantalla_rechazo.dart';
+import 'pantalla_registro.dart';
 import 'textos.dart';
 
-class Enrutador extends ConsumerWidget {
+class Enrutador extends ConsumerStatefulWidget {
   const Enrutador({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<Enrutador> createState() => _EnrutadorState();
+}
+
+class _EnrutadorState extends ConsumerState<Enrutador> {
+  /// Alterna entre ingresar y registrarse. Es la única navegación que no
+  /// depende del estado de sesión, porque ocurre antes de que haya sesión.
+  bool _mostrandoRegistro = false;
+
+  @override
+  Widget build(BuildContext context) {
     final Sesion sesion = ref.watch(sesionActualProvider);
 
     return switch (sesion) {
       SesionCargando() => const _PantallaCargando(),
-      SesionAnonima() => const PantallaIngreso(),
+      SesionAnonima() => _mostrandoRegistro
+          ? PantallaRegistro(
+              alVolver: () => setState(() => _mostrandoRegistro = false),
+            )
+          : PantallaIngreso(
+              alRegistrarse: () => setState(() => _mostrandoRegistro = true),
+            ),
       SesionRechazada(:final motivo, :final correo) => PantallaRechazo(
         motivo: motivo,
         correo: correo,

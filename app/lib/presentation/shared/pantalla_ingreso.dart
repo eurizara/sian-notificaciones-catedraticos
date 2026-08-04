@@ -12,7 +12,10 @@ import 'tema.dart';
 import 'textos.dart';
 
 class PantallaIngreso extends ConsumerStatefulWidget {
-  const PantallaIngreso({super.key});
+  const PantallaIngreso({this.alRegistrarse, super.key});
+
+  /// Lleva a la pantalla de registro (RF-AUT-02).
+  final VoidCallback? alRegistrarse;
 
   @override
   ConsumerState<PantallaIngreso> createState() => _PantallaIngresoState();
@@ -264,6 +267,11 @@ class _PantallaIngresoState extends ConsumerState<PantallaIngreso> {
                   onPressed: _enviando ? null : _recuperar,
                   child: const Text(Textos.botonOlvideContrasena),
                 ),
+                if (widget.alRegistrarse != null)
+                  TextButton(
+                    onPressed: _enviando ? null : widget.alRegistrarse,
+                    child: const Text(Textos.botonNoTengoCuenta),
+                  ),
 
                 // Solo con emuladores. Cuando USE_EMULATOR es false esta rama
                 // no se compila: el modo demostración no puede llegar a

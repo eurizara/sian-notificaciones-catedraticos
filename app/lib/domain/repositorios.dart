@@ -18,6 +18,15 @@ abstract interface class RepositorioSesion {
     required String contrasena,
   });
 
+  /// Registro con correo y contraseña (RF-AUT-02).
+  ///
+  /// Crear la credencial no concede acceso: el alta solo se completa si el
+  /// correo está en la lista blanca (RF-AUT-03).
+  Future<void> registrarConCorreo({
+    required String correo,
+    required String contrasena,
+  });
+
   /// Recuperación de contraseña por correo (RF-AUT-05).
   Future<void> recuperarContrasena(String correo);
 

@@ -178,19 +178,19 @@ momento de tomarla**, no después.
 
 ---
 
-### DT-11 · Firebase CLI anclada a la versión 13 por el requisito de JDK
+### DT-11 · SDK de Firebase anclado por el requisito de JDK
 
 | | |
 |---|---|
 | **Origen** | Plataforma y tiempo |
-| **Severidad** | Baja |
+| **Severidad** | Media |
 | **Estado** | Abierta |
-| **Decisión** | `firebase-tools` queda fijada a `^13.35.1` en lugar de la última versión mayor |
+| **Decisión** | `firebase-tools` queda fijada a `^13.35.1`, y con ella `firebase-functions` a `^6` y `firebase-admin` a `^13` en lugar de la última versión mayor |
 | **Motivo** | A partir de la versión 14, `firebase-tools` exige **JDK 21 o superior** para levantar los emuladores. El documento 06, etapa A.1, fija **JDK 17** como requisito del entorno, y esa es la versión instalada en las máquinas de desarrollo actuales. Subir la CLI obligaría a subir el JDK de todo el que replique el proyecto, en mitad de la iteración de cimientos |
-| **Consecuencia** | El proyecto no recibe correcciones ni funcionalidad nueva de la línea 14/15 de la CLI. Las versiones 13.x siguen recibiendo mantenimiento, pero no indefinidamente |
+| **Consecuencia** | El proyecto no recibe correcciones ni funcionalidad nueva de la línea 14/15 de la CLI. Las versiones 13.x siguen recibiendo mantenimiento, pero no indefinidamente. **Y arrastra al resto del SDK:** el emulador de la CLI 13 no puede cargar Functions escritas con `firebase-functions` 7 —falla con `functions.config() has been removed`—, así que `firebase-functions` queda en `^6` y `firebase-admin` en `^13`. Un ancla se convirtió en tres |
 | **Mitigación actual** | La versión está fijada explícitamente en `package.json` y en el flujo de integración continua, de modo que el entorno local y el de CI usan exactamente lo mismo |
-| **Plan de pago** | Actualizar a JDK 21 en el documento 06 (etapas A.1 y A.2), subir `firebase-tools` a la última versión mayor y volver a ejecutar las pruebas de reglas. Costo: 0 USD. Esfuerzo estimado: menos de medio día |
-| **Disparador para pagarla** | Cuando la línea 13.x deje de recibir correcciones de seguridad, o cuando se necesite una funcionalidad de la CLI que solo exista en la 14 o posterior |
+| **Plan de pago** | Actualizar a JDK 21 en el documento 06 (etapas A.1 y A.2), y subir **a la vez** `firebase-tools` a 15, `firebase-functions` a 7 y `firebase-admin` a 14. Van juntas: subir una sola rompe el emulador. Costo: 0 USD. Esfuerzo estimado: menos de medio día |
+| **Disparador para pagarla** | Cuando la línea 13.x deje de recibir correcciones de seguridad, o cuando se necesite una funcionalidad que solo exista en las versiones nuevas. Descubierto al desplegar las primeras Functions en la iteración 1.2 |
 
 ---
 
@@ -224,7 +224,7 @@ momento de tomarla**, no después.
 | DT-08 | Grupos limitados a 200 miembros | Alcance | Baja | Aceptada | 0 USD |
 | DT-09 | Sin multi-idioma | Alcance | Baja | Mitigada | 0 USD |
 | DT-10 | Sin cifrado de extremo a extremo | Alcance | Baja | Aceptada | — |
-| DT-11 | Firebase CLI anclada a la versión 13 | Plataforma | Baja | Abierta | 0 USD |
+| DT-11 | SDK de Firebase anclado por el requisito de JDK | Plataforma | **Media** | Abierta | 0 USD |
 | DT-12 | Vulnerabilidades moderadas de `firebase-admin` | Plataforma | Baja | Abierta | 0 USD |
 
 **Prioridad de pago recomendada, en orden:** DT-03 → DT-07 → DT-04 → DT-01.

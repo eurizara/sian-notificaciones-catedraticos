@@ -6,6 +6,7 @@
 library;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../domain/repositorios.dart';
@@ -13,12 +14,17 @@ import '../../domain/rol.dart';
 import '../../domain/sesion.dart';
 
 class RepositorioSesionFirebase implements RepositorioSesion {
-  RepositorioSesionFirebase({FirebaseAuth? auth, FirebaseFirestore? firestore})
-    : _auth = auth ?? FirebaseAuth.instance,
-      _firestore = firestore ?? FirebaseFirestore.instance;
+  RepositorioSesionFirebase({
+    FirebaseAuth? auth,
+    FirebaseFirestore? firestore,
+    FirebaseFunctions? functions,
+  }) : _auth = auth ?? FirebaseAuth.instance,
+       _firestore = firestore ?? FirebaseFirestore.instance,
+       _functions = functions ?? FirebaseFunctions.instance;
 
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
+  final FirebaseFunctions _functions;
 
   /// Emite el estado de sesión cada vez que cambia la autenticación.
   @override
@@ -36,13 +42,35 @@ class RepositorioSesionFirebase implements RepositorioSesion {
   }
 
   /// Convierte un usuario autenticado en una sesión del dominio.
+  ///
+  /// El paso decisivo es la llamada a `activarSesion`: hasta que esa Function
+  /// responde, la credencial no vale nada. Es ella quien comprueba la lista
+  /// blanca, crea el perfil en el primer acceso y siembra los custom claims
+  /// (RF-AUT-03, ADR-008).
   Future<Sesion> _resolver(User usuario) async {
     final String correo = usuario.email ?? '';
 
-    // `forceRefresh` no es opcional: si los claims se sembraron después de
-    // emitirse el token —que es lo normal en el primer acceso—, el token en
-    // memoria todavía no trae el rol. Es la causa de «el token de sesión no
-    // trae el rol» del anexo del documento 06.
+    try {
+      await _functions.httpsCallable('activarSesion').call<Object?>();
+    } on FirebaseFunctionsException catch (e) {
+      final Sesion rechazo = _interpretarRechazo(e, correo);
+      // La credencial ya no sirve de nada: si el servidor no la borró —caso
+      // de cuenta desactivada—, al menos se cierra la sesión local para que
+      // el siguiente intento parta de cero.
+      await _auth.signOut().catchError((_) {});
+      return rechazo;
+    } on Object {
+      // Un fallo de red no es un rechazo. Se trata como sesión sin resolver
+      // en lugar de acusar a nadie de no estar autorizado.
+      return SesionRechazada(
+        motivo: MotivoRechazo.sinRolEnElToken,
+        correo: correo,
+      );
+    }
+
+    // `forceRefresh` no es opcional: los claims acaban de sembrarse desde el
+    // servidor y el token en memoria todavía no los trae. Es la causa de «el
+    // token de sesión no trae el rol» del anexo del documento 06.
     final IdTokenResult token = await usuario.getIdTokenResult(true);
     final Rol? rol = Rol.desdeClaim(token.claims?['rol']);
 
@@ -53,21 +81,11 @@ class RepositorioSesionFirebase implements RepositorioSesion {
       );
     }
 
-    final bool activoEnToken = token.claims?['activo'] == true;
-    if (!activoEnToken) {
-      return SesionRechazada(
-        motivo: MotivoRechazo.cuentaDesactivada,
-        correo: correo,
-      );
-    }
-
     final DocumentSnapshot<Map<String, dynamic>> perfil = await _firestore
         .doc('usuarios/${usuario.uid}')
         .get();
 
     if (!perfil.exists) {
-      // Token con rol pero sin perfil: el alta no se completó, o el correo
-      // nunca estuvo en la lista blanca (RF-AUT-03).
       return SesionRechazada(
         motivo: MotivoRechazo.fueraDeListaBlanca,
         correo: correo,
@@ -98,6 +116,21 @@ class RepositorioSesionFirebase implements RepositorioSesion {
     );
   }
 
+  /// Traduce el error de la Function al motivo del dominio.
+  Sesion _interpretarRechazo(FirebaseFunctionsException e, String correo) {
+    final Object? detalles = e.details;
+    final String motivo = detalles is Map
+        ? (detalles['motivo'] as String? ?? '')
+        : '';
+
+    return SesionRechazada(
+      motivo: motivo == 'CUENTA_DESACTIVADA'
+          ? MotivoRechazo.cuentaDesactivada
+          : MotivoRechazo.fueraDeListaBlanca,
+      correo: correo,
+    );
+  }
+
   /// Inicio de sesión con correo y contraseña (RF-AUT-02).
   @override
   Future<void> entrarConCorreo({
@@ -114,6 +147,22 @@ class RepositorioSesionFirebase implements RepositorioSesion {
   @override
   Future<void> recuperarContrasena(String correo) async {
     await _auth.sendPasswordResetEmail(email: correo.trim().toLowerCase());
+  }
+
+  /// Registro con correo y contraseña (RF-AUT-02).
+  ///
+  /// Crear la credencial **no** concede acceso: el alta solo se completa si
+  /// ese correo ya estaba en la lista blanca, y si no lo está el servidor
+  /// borra la credencial recién creada (RF-AUT-03).
+  @override
+  Future<void> registrarConCorreo({
+    required String correo,
+    required String contrasena,
+  }) async {
+    await _auth.createUserWithEmailAndPassword(
+      email: correo.trim().toLowerCase(),
+      password: contrasena,
+    );
   }
 
   /// Cierre de sesión explícito (RF-AUT-07).
