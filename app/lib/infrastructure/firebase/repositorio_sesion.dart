@@ -5,6 +5,8 @@
 /// existe Firebase (RNF-19).
 library;
 
+import 'dart:js_interop';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -44,6 +46,28 @@ class RepositorioSesionFirebase implements RepositorioSesion {
   /// al inicio de sesión» — es decir, cuando ya se leyó el motivo (RF-AUT-03).
   SesionRechazada? _rechazoSinReconocer;
 
+  /// Traza del flujo de sesión, visible en la consola del navegador.
+  ///
+  /// No es depuración temporal: el flujo de entrada es el único del sistema
+  /// que atraviesa tres servicios —Auth, una Function y Firestore— y cuando
+  /// falla, lo hace en el navegador de otra persona. Sin estas líneas, cada
+  /// diagnóstico exige adivinar. Cuestan una llamada por cambio de sesión.
+  void _trazar(String paso, [Map<String, Object?> datos = const {}]) {
+    final String extra = datos.entries
+        .map((MapEntry<String, Object?> e) => '${e.key}=${e.value}')
+        .join(' ');
+    final String linea = 'SIAN.sesion $paso ${extra.isEmpty ? '' : '| $extra'}';
+
+    // Se emite como ERROR, no como log, a propósito.
+    //
+    // `dart:developer.log` es una función vacía en compilación de producción
+    // para web, y `print` sale por `console.log`, que muchas consolas ocultan
+    // por omisión. Una traza que no se ve no sirve de nada, y diagnosticar el
+    // flujo de entrada —el único que atraviesa Auth, una Function y
+    // Firestore— sin trazas es adivinar.
+    _consoleError(linea.toJS);
+  }
+
   /// Emite el estado de sesión cada vez que cambia la autenticación.
   @override
   Stream<Sesion> observar() async* {
@@ -51,12 +75,16 @@ class RepositorioSesionFirebase implements RepositorioSesion {
 
     await for (final User? usuario in _auth.authStateChanges()) {
       if (usuario == null) {
+        final bool hayRechazo = _rechazoSinReconocer != null;
+        _trazar('auth:null', <String, Object?>{'rechazoPendiente': hayRechazo});
         yield _rechazoSinReconocer ?? const SesionAnonima();
         continue;
       }
 
+      _trazar('auth:usuario', <String, Object?>{'correo': usuario.email});
       yield const SesionCargando();
       final Sesion resuelta = await _resolver(usuario);
+      _trazar('resuelta', <String, Object?>{'tipo': resuelta.runtimeType});
 
       if (resuelta is SesionRechazada) {
         _rechazoSinReconocer = resuelta;
@@ -81,13 +109,18 @@ class RepositorioSesionFirebase implements RepositorioSesion {
     try {
       await _functions.httpsCallable('activarSesion').call<Object?>();
     } on FirebaseFunctionsException catch (e) {
+      _trazar('function:rechazo', <String, Object?>{
+        'code': e.code,
+        'details': e.details,
+      });
       final Sesion rechazo = _interpretarRechazo(e, correo);
       // La credencial ya no sirve de nada: si el servidor no la borró —caso
       // de cuenta desactivada—, al menos se cierra la sesión local para que
       // el siguiente intento parta de cero.
       await _auth.signOut().catchError((_) {});
       return rechazo;
-    } on Object {
+    } on Object catch (e) {
+      _trazar('function:errorInesperado', <String, Object?>{'error': '$e'});
       // Un fallo de red no es un rechazo. Se trata como sesión sin resolver
       // en lugar de acusar a nadie de no estar autorizado.
       return SesionRechazada(
@@ -165,6 +198,7 @@ class RepositorioSesionFirebase implements RepositorioSesion {
     required String correo,
     required String contrasena,
   }) async {
+    _trazar('ingreso:intento', <String, Object?>{'correo': correo.trim()});
     await _auth.signInWithEmailAndPassword(
       email: correo.trim().toLowerCase(),
       password: contrasena,
@@ -187,6 +221,7 @@ class RepositorioSesionFirebase implements RepositorioSesion {
     required String correo,
     required String contrasena,
   }) async {
+    _trazar('registro:intento', <String, Object?>{'correo': correo.trim()});
     await _auth.createUserWithEmailAndPassword(
       email: correo.trim().toLowerCase(),
       password: contrasena,
@@ -203,3 +238,7 @@ class RepositorioSesionFirebase implements RepositorioSesion {
     await _auth.signOut();
   }
 }
+
+/// Escribe en la consola del navegador por el canal de errores.
+@JS('console.error')
+external void _consoleError(JSAny? mensaje);
