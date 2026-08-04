@@ -10,6 +10,7 @@
 export * from './tipos';
 export * from './errores';
 export * from './objetosDeValor';
+export * from './politicaContrasena';
 export * from './autorizacion';
 export * from './mensaje';
 export * from './bitacora';

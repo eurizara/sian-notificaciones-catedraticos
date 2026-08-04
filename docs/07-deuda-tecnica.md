@@ -210,6 +210,22 @@ momento de tomarla**, no después.
 
 ---
 
+### DT-13 · La política de contraseñas se aplica solo en el cliente
+
+| | |
+|---|---|
+| **Origen** | Plataforma |
+| **Severidad** | Media |
+| **Estado** | Abierta |
+| **Decisión** | La política reforzada de RF-AUT-06 —longitud, composición, datos personales, listas de uso común, secuencias y repeticiones— se comprueba en la aplicación, no en el servidor |
+| **Motivo** | Firebase Authentication crea la credencial **desde el cliente** con `createUserWithEmailAndPassword`: la contraseña viaja directa al servicio de Google y nunca pasa por nuestras Cloud Functions, así que no hay dónde interceptarla. La política del lado del servidor la ofrece Identity Platform, que ADR-008 descartó por su modelo de precios |
+| **Consecuencia** | Quien invoque la API de Firebase directamente, saltándose la aplicación, puede registrarse con una contraseña débil. **Contradice el espíritu de RN-01**, que exige que la autorización no dependa de la buena fe del cliente. El alcance del daño es acotado: sigue necesitando estar en la lista blanca, y la contraseña débil solo compromete su propia cuenta |
+| **Mitigación actual** | La política se comprueba en la aplicación y está duplicada palabra por palabra en el dominio de TypeScript, con una prueba de paridad que compara los mismos casos en ambas implementaciones. El día que exista un camino de servidor, la regla ya está escrita y probada ahí |
+| **Plan de pago** | Dos opciones. **(a)** Habilitar la política de contraseñas de Identity Platform, que sí se aplica del lado del servicio; revisar antes su impacto en el costo. **(b)** Mover el registro a una Cloud Function que valide y cree la credencial con el SDK de administración, lo que exige extremar el cuidado para no registrar jamás la contraseña en un log. Esfuerzo estimado: 1 día cualquiera de las dos |
+| **Disparador para pagarla** | Antes de abrir el registro a toda la institución, o al primer indicio de cuentas con contraseñas débiles |
+
+---
+
 ## Resumen
 
 | ID | Deuda | Origen | Severidad | Estado | Costo de pagarla |
@@ -226,6 +242,7 @@ momento de tomarla**, no después.
 | DT-10 | Sin cifrado de extremo a extremo | Alcance | Baja | Aceptada | — |
 | DT-11 | SDK de Firebase anclado por el requisito de JDK | Plataforma | **Media** | Abierta | 0 USD |
 | DT-12 | Vulnerabilidades moderadas de `firebase-admin` | Plataforma | Baja | Abierta | 0 USD |
+| DT-13 | Política de contraseñas solo en el cliente | Plataforma | Media | Abierta | 0 USD |
 
 **Prioridad de pago recomendada, en orden:** DT-03 → DT-07 → DT-04 → DT-01.
 

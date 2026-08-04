@@ -50,7 +50,7 @@ Si cambias el código y usas la vía compilada, hay que reconstruir:
 
 ### Cuentas sembradas
 
-Todas con contraseña **`Simulacro2026`**:
+Todas con contraseña **`Aula#Magna2047`**:
 
 | Correo | Rol | Particularidad |
 |---|---|---|
@@ -144,14 +144,19 @@ notificaciones y programación.
 | 2.1 | Entra como `coordinacion@umg.edu.gt` → **Usuarios** → pestaña Invitaciones | Ves las invitaciones sembradas, las no usadas primero |
 | 2.2 | Pulsa **Invitar**, modo «Una a una». Correo `nuevo.docente@umg.edu.gt`, rol Catedrático | Aparece en la lista como **sin usar** |
 | 2.3 | Cierra sesión → **¿No tienes cuenta? Regístrate** | El aviso de lista blanca aparece **antes** del formulario, no después de fallar |
-| 2.4 | Registra `nuevo.docente@umg.edu.gt` con contraseña `Simulacro2026` | Entra directo a su bandeja, ya con rol de catedrático |
-| 2.5 | Prueba una contraseña débil, por ejemplo `abc` | Dice exactamente qué le falta: caracteres, mayúscula, minúscula o número (RF-AUT-06) |
+| 2.4 | Registra `nuevo.docente@umg.edu.gt` con contraseña `Aula#Magna2047` | Entra directo a su bandeja, ya con rol de catedrático |
+| 2.5 | Prueba una contraseña débil, por ejemplo `abc` | Enumera **todos** los incumplimientos de una vez, no uno cada vez |
+| 2.5a | Prueba `Password#2047` | Rechazada por **demasiado conocida**, aunque cumpla longitud y composición |
+| 2.5b | Prueba una que contenga tu propio correo, por ejemplo `Nuevo.Docente#47` | Rechazada: sería lo primero que probaría quien te conoce |
+| 2.5c | Prueba `Xk#Trueno1234` | Rechazada por **secuencia obvia** |
+| 2.5d | Escribe `Trueno#47x` y ve alargándola | La barra de fuerza sube al alargar. Es la señal: **la longitud pesa más que añadir otro símbolo** |
 | 2.6 | Vuelve como coordinador → Usuarios → Invitaciones | La invitación de 2.2 aparece ahora como **ya usada**, y sin botón de revocar |
 | 2.7 | Pestaña Usuarios | `nuevo.docente` aparece en la lista con su rol |
 | 2.8 | **Bitácora** → filtro «Altas de usuario» | Hay un `USUARIO_CREADO` con actor, rol y fecha |
 | 2.9 | Cierra sesión y regístrate con `intruso@gmail.com` | **Rechazo explicativo.** No se crea perfil, y la credencial se borra |
 | 2.10 | Vuelve como coordinador → Bitácora → filtro «Accesos rechazados» | Hay un `SESION_RECHAZADA` **destacado en rojo**, con el correo del intento. Es el criterio de aceptación literal de RF-AUT-03 |
 | 2.11 | Repite 2.9 con el mismo correo | Vuelve a rechazarse. No queda ninguna cuenta huérfana acumulándose |
+| 2.11a | En el ingreso, escribe un usuario y contraseña incorrectos | **Ambos campos se borran** y el cursor vuelve al correo. El mensaje de error sigue visible |
 | 2.12 | Usuarios → despliega `admin2` → activa «Puede emitir alertas urgentes» | Confirmación. En Bitácora queda el cambio anotado |
 | 2.13 | Despliega un catedrático → cambia su rol a Auditor | Se aplica, y al volver a entrar esa cuenta ve solo Entregas y Bitácora |
 | 2.14 | Intenta cambiar **tu propio** rol | Se rechaza: dejarías el sistema sin quien lo administre |
@@ -168,6 +173,8 @@ notificaciones y programación.
 - [ ] Un correo **no** invitado es rechazado, sin perfil y con asiento (2.9, 2.10)
 - [ ] La desactivación se distingue del no autorizado y es reversible (2.15 a 2.17)
 - [ ] El CSV informa cada línea rechazada con su número (2.18)
+- [ ] Ninguna contraseña débil, conocida o personal se acepta (2.5 a 2.5d)
+- [ ] Un fallo de credenciales limpia el formulario y devuelve el foco (2.11a)
 - [ ] Ningún rol ve secciones que no le corresponden (2.20)
 
 ### Fuera de alcance

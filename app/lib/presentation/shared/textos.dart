@@ -6,6 +6,8 @@
 /// la aplicación (deuda DT-09, en estado mitigado precisamente por esto).
 library;
 
+import '../../domain/politica_contrasena.dart';
+
 abstract final class Textos {
   // --- Identidad -----------------------------------------------------------
   /// Nombre corto del sistema, con la sede que le da alcance.
@@ -68,11 +70,36 @@ abstract final class Textos {
   static const String registroAyudaContrasena =
       'Mínimo 10 caracteres, con mayúscula, minúscula y un número';
 
-  static const String politicaFalta = 'Le falta:';
-  static const String politica10 = '10 caracteres';
-  static const String politicaMayuscula = 'una mayúscula';
-  static const String politicaMinuscula = 'una minúscula';
-  static const String politicaDigito = 'un número';
+  static const String registroAyudaContrasenaLarga =
+      'Mínimo 10 caracteres con mayúscula, minúscula, número y símbolo. No '
+      'puede contener tu nombre ni tu correo.';
+
+  static const String fuerzaInsuficiente = 'No cumple la política';
+  static const String fuerzaAceptable = 'Aceptable — alargarla la mejora mucho';
+  static const String fuerzaBuena = 'Buena';
+  static const String fuerzaExcelente = 'Excelente';
+
+  /// Explica un incumplimiento en lenguaje llano.
+  static String explicarIncumplimiento(IncumplimientoContrasena i) =>
+      switch (i) {
+        IncumplimientoContrasena.longitudMinima =>
+          'Necesita al menos 10 caracteres.',
+        IncumplimientoContrasena.faltaMayuscula => 'Le falta una mayúscula.',
+        IncumplimientoContrasena.faltaMinuscula => 'Le falta una minúscula.',
+        IncumplimientoContrasena.faltaDigito => 'Le falta un número.',
+        IncumplimientoContrasena.faltaSimbolo =>
+          'Le falta un símbolo, por ejemplo # o \$.',
+        IncumplimientoContrasena.contieneDatosPersonales =>
+          'No puede contener tu nombre ni tu correo: sería lo primero que '
+              'probaría quien te conoce.',
+        IncumplimientoContrasena.demasiadoComun =>
+          'Es una contraseña demasiado conocida o contiene el nombre de la '
+              'institución.',
+        IncumplimientoContrasena.secuenciaObvia =>
+          'Contiene una secuencia obvia, como «1234» o «abcd».',
+        IncumplimientoContrasena.caracterRepetido =>
+          'Repite el mismo carácter demasiadas veces seguidas.',
+      };
 
   static const String validacionContrasenasNoCoinciden =
       'Las contraseñas no coinciden.';
