@@ -33,9 +33,53 @@ class _EnrutadorState extends ConsumerState<Enrutador> {
   /// depende del estado de sesión, porque ocurre antes de que haya sesión.
   bool _mostrandoRegistro = false;
 
+  /// Último rechazo recibido, si todavía no se ha reconocido.
+  ///
+  /// ────────────────────────────────────────────────────────────────────────
+  /// Un rechazo es un EVENTO, no un estado de sesión.
+  /// ────────────────────────────────────────────────────────────────────────
+  ///
+  /// Cuando el servidor rechaza un acceso no autorizado, **borra la credencial
+  /// recién creada** para no dejar cuentas huérfanas. Eso hace que el cliente
+  /// pierda la sesión por su cuenta, y la sesión anónima que llega detrás
+  /// tapaba el rechazo antes de que nadie lo leyera: se veía un parpadeo y
+  /// vuelta al formulario.
+  ///
+  /// Guardarlo aquí hace que el aviso **sobreviva a la desaparición de la
+  /// sesión**, que es justo lo que RF-AUT-03 exige al pedir un rechazo
+  /// explicativo. Se limpia cuando la persona lo reconoce, o en cuanto alguien
+  /// entra de verdad.
+  SesionRechazada? _rechazoPendiente;
+
   @override
   Widget build(BuildContext context) {
+    ref.listen<AsyncValue<Sesion>>(sesionProvider, (
+      AsyncValue<Sesion>? _,
+      AsyncValue<Sesion> siguiente,
+    ) {
+      final Sesion? s = siguiente.value;
+      if (s is SesionRechazada) {
+        setState(() => _rechazoPendiente = s);
+      } else if (s is SesionActiva) {
+        setState(() => _rechazoPendiente = null);
+      }
+    });
+
     final Sesion sesion = ref.watch(sesionActualProvider);
+    final SesionRechazada? rechazo = _rechazoPendiente;
+
+    // El rechazo tiene prioridad sobre cualquier pantalla anónima: si hay algo
+    // que explicar, se explica antes de volver a pedir credenciales.
+    if (rechazo != null && sesion is! SesionActiva) {
+      return PantallaRechazo(
+        motivo: rechazo.motivo,
+        correo: rechazo.correo,
+        alReconocer: () => setState(() {
+          _rechazoPendiente = null;
+          _mostrandoRegistro = false;
+        }),
+      );
+    }
 
     return switch (sesion) {
       SesionCargando() => const _PantallaCargando(),
@@ -49,6 +93,7 @@ class _EnrutadorState extends ConsumerState<Enrutador> {
       SesionRechazada(:final motivo, :final correo) => PantallaRechazo(
         motivo: motivo,
         correo: correo,
+        alReconocer: () => setState(() => _rechazoPendiente = null),
       ),
       SesionActiva(:final usuario) => usuario.rol.usaPanelAdministrativo
           ? PanelAdmin(usuario: usuario)
