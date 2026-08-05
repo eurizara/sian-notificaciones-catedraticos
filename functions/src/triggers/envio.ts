@@ -37,7 +37,7 @@ import { crearAsiento } from '../domain/bitacora';
 import { exigirPermiso, type Sujeto } from '../domain/autorizacion';
 import { ErrorAutorizacion, ErrorDominio } from '../domain/errores';
 import { MensajeFactory, type Mensaje } from '../domain/mensaje';
-import type { Destinatarios, Rol, TipoMensaje } from '../domain/tipos';
+import type { Adjuntos, Destinatarios, Rol, TipoMensaje } from '../domain/tipos';
 import { FieldValue, OPCIONES_FUNCION, RUTAS, aTimestamp, db } from '../infrastructure/firebase';
 import { escribirAsiento } from '../infrastructure/repositorios';
 
@@ -54,6 +54,16 @@ interface PeticionEnvio {
   requiereConfirmacion?: boolean;
   destinatarios?: Destinatarios;
   confirmacionUrgente?: boolean;
+  /**
+   * Identificador reservado por el cliente ANTES de subir los adjuntos.
+   *
+   * Los adjuntos viven en `mensajes/{id}/…` y las reglas de Storage dependen
+   * de esa ruta, pero el mensaje se crea aquí, después. Por eso el cliente lo
+   * reserva y lo declara. Se escribe con `create`, que falla si el documento
+   * ya existe: sin eso, pasar el identificador de un mensaje ajeno lo pisaría.
+   */
+  mensajeId?: string;
+  adjuntos?: Adjuntos;
 }
 
 /** Lee el sujeto del token. La fuente de verdad son los custom claims (RN-01). */
@@ -163,6 +173,10 @@ export const enviarInmediato = onCall(OPCIONES_FUNCION, async (peticion) => {
       exigirPermiso(sujeto, 'EXIGIR_CONFIRMACION');
     }
 
+    if (datos.adjuntos?.audio || datos.adjuntos?.imagen) {
+      exigirPermiso(sujeto, 'ADJUNTAR_MULTIMEDIA');
+    }
+
     // RN-06 / RF-MSG-13. El diálogo de la interfaz no basta: quien llame a la
     // Function directamente tiene que pasar por lo mismo.
     if (tipo === 'URGENTE' && datos.confirmacionUrgente !== true) {
@@ -183,6 +197,10 @@ export const enviarInmediato = onCall(OPCIONES_FUNCION, async (peticion) => {
       titulo: datos.titulo ?? '',
       cuerpo: datos.cuerpo ?? '',
       tipo,
+      // La fábrica valida peso, duración y formato (RF-MSG-07, RF-MSG-08) y
+      // deduce el `formato` de lo que haya: es imposible declarar «lleva voz»
+      // y no adjuntarla.
+      adjuntos: datos.adjuntos,
       requiereConfirmacion: datos.requiereConfirmacion ?? false,
       destinatarios,
       programacion: { modo: 'INMEDIATO', zonaHoraria: 'America/Guatemala' },
@@ -199,11 +217,17 @@ export const enviarInmediato = onCall(OPCIONES_FUNCION, async (peticion) => {
       );
     }
 
-    const refMensaje = db.collection(RUTAS.mensajes).doc();
+    // Si el cliente reservó identificador para subir adjuntos, se respeta.
+    const refMensaje = datos.mensajeId
+      ? db.collection(RUTAS.mensajes).doc(datos.mensajeId)
+      : db.collection(RUTAS.mensajes).doc();
 
     // Primero el mensaje y sus entregas; después FCM. Si esto muriera a mitad,
     // queda algo recuperable en vez de un aviso entregado sin rastro.
-    await refMensaje.set({
+    //
+    // `create` y no `set`: falla si el documento ya existe, que es lo que
+    // impide pisar un mensaje ajeno pasando su identificador.
+    await refMensaje.create({
       ...mensaje,
       creadoEn: aTimestamp(mensaje.creadoEn),
       estado: 'EN_ENVIO',
@@ -350,6 +374,8 @@ async function despachar(
     titulo: mensaje.titulo,
     cuerpo: mensaje.cuerpo,
     mensajeId,
+    // Para que la notificación pueda decir «lleva nota de voz» sin abrir nada.
+    formato: mensaje.formato.join(','),
   };
 
   let entregados = 0;

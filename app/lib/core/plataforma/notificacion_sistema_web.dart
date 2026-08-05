@@ -36,12 +36,8 @@ Future<bool> mostrarNotificacionDelSistema({
       return false;
     }
 
-    final web.ServiceWorkerRegistration registro = await web
-        .window
-        .navigator
-        .serviceWorker
-        .ready
-        .toDart;
+    final web.ServiceWorkerRegistration registro =
+        await web.window.navigator.serviceWorker.ready.toDart;
 
     consolaError('SIAN.notif registro | alcance=${registro.scope}');
 

@@ -22,12 +22,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/proveedores_sesion.dart';
 import '../../domain/sesion.dart';
+import '../../infrastructure/firebase/repositorio_adjuntos.dart';
 import '../../infrastructure/firebase/repositorio_envio.dart';
+import 'adjuntos_mensaje.dart';
 import '../shared/tema.dart';
 import '../shared/textos.dart';
 
 final Provider<RepositorioEnvio> repositorioEnvioProvider =
     Provider<RepositorioEnvio>((Ref ref) => RepositorioEnvio());
+
+final Provider<RepositorioAdjuntos> repositorioAdjuntosProvider =
+    Provider<RepositorioAdjuntos>((Ref ref) => RepositorioAdjuntos());
 
 final gruposProvider = StreamProvider<List<GrupoVista>>(
   (Ref ref) => ref.watch(repositorioEnvioProvider).observarGrupos(),
@@ -49,7 +54,9 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
   bool _requiereConfirmacion = false;
   bool _aTodos = true;
   final Set<String> _gruposElegidos = <String>{};
+  AdjuntosEnCurso _adjuntos = const AdjuntosEnCurso();
   bool _enviando = false;
+  bool _subiendo = false;
 
   @override
   void initState() {
@@ -110,6 +117,39 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
         return;
       }
 
+      // Los adjuntos se suben ANTES de llamar al envío, contra un
+      // identificador reservado: las reglas de Storage dependen de la ruta
+      // `mensajes/{id}/…`, y el mensaje todavía no existe.
+      String? mensajeId;
+      AdjuntoSubido? voz;
+      AdjuntoSubido? imagen;
+
+      if (_adjuntos.hayAlgo) {
+        setState(() => _subiendo = true);
+        final RepositorioAdjuntos adj = ref.read(repositorioAdjuntosProvider);
+        mensajeId = adj.reservarIdMensaje();
+
+        if (_adjuntos.voz != null) {
+          voz = await adj.subirVoz(
+            mensajeId: mensajeId,
+            bytes: _adjuntos.voz!.bytes,
+            tipoMime: _adjuntos.voz!.tipoMime,
+            duracionSeg: _adjuntos.voz!.duracionSeg,
+          );
+        }
+        if (_adjuntos.imagen != null) {
+          imagen = await adj.subirImagen(
+            mensajeId: mensajeId,
+            bytes: _adjuntos.imagen!.bytes,
+            tipoMime: _adjuntos.imagen!.tipoMime,
+            nombreOriginal: _adjuntos.imagen!.nombre,
+          );
+        }
+        if (mounted) {
+          setState(() => _subiendo = false);
+        }
+      }
+
       final ResultadoEnvio r = await ref
           .read(repositorioEnvioProvider)
           .enviarInmediato(
@@ -120,6 +160,9 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
             destinatarios: _destinatarios(),
             // Solo llega en true si la persona pasó por el segundo diálogo.
             confirmacionUrgente: _urgente,
+            mensajeId: mensajeId,
+            voz: voz,
+            imagen: imagen,
           );
 
       if (!mounted) {
@@ -148,7 +191,10 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
       }
     } finally {
       if (mounted) {
-        setState(() => _enviando = false);
+        setState(() {
+          _enviando = false;
+          _subiendo = false;
+        });
       }
     }
   }
@@ -159,6 +205,7 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
     setState(() {
       _urgente = false;
       _requiereConfirmacion = false;
+      _adjuntos = const AdjuntosEnCurso();
     });
   }
 
@@ -232,8 +279,14 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
   @override
   Widget build(BuildContext context) {
     final Sesion sesion = ref.watch(sesionActualProvider);
+    // Se consulta la MATRIZ, no la bandera suelta: el coordinador puede
+    // siempre, y la bandera existe para que él decida qué administradoras
+    // pueden (documento 01, sección 2.2).
     final bool puedeUrgentes =
-        sesion is SesionActiva && sesion.usuario.puedeEmitirUrgentes;
+        sesion is SesionActiva &&
+        sesion.usuario.rol.puedeEmitirUrgentes(
+          autorizacionFina: sesion.usuario.puedeEmitirUrgentes,
+        );
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -298,6 +351,13 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
                 ),
                 const SizedBox(height: 24),
 
+                PanelAdjuntos(
+                  adjuntos: _adjuntos,
+                  alCambiar: (AdjuntosEnCurso a) =>
+                      setState(() => _adjuntos = a),
+                ),
+                const SizedBox(height: 24),
+
                 _Clasificacion(
                   urgente: _urgente,
                   puedeUrgentes: puedeUrgentes,
@@ -341,11 +401,11 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.send),
-                  label: Text(
-                    _enviando
-                        ? Textos.contandoDestinatarios
-                        : Textos.botonEnviarAhora,
-                  ),
+                  label: Text(switch ((_enviando, _subiendo)) {
+                    (_, true) => Textos.subiendoAdjuntos,
+                    (true, _) => Textos.contandoDestinatarios,
+                    _ => Textos.botonEnviarAhora,
+                  }),
                 ),
               ],
             ),

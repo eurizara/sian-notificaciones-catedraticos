@@ -26,6 +26,54 @@ import 'package:sian/presentation/shared/textos.dart';
 import '../dobles/repositorios_falsos.dart';
 
 void main() {
+  group('matriz de autorización · RF-MSG-02, documento 01 §2.2', () {
+    // Fijada como prueba pura porque es la regla, no la pantalla. La fila
+    // CREAR_ALERTA_URGENTE da alcance TODO al coordinador y CONDICIONADO a la
+    // administradora: la bandera existe para que él decida quién más puede.
+    test('el coordinador puede, tenga o no la bandera', () {
+      expect(
+        Rol.coordinador.puedeEmitirUrgentes(autorizacionFina: false),
+        isTrue,
+      );
+      expect(
+        Rol.coordinador.puedeEmitirUrgentes(autorizacionFina: true),
+        isTrue,
+      );
+    });
+
+    test('la administradora depende de la bandera', () {
+      expect(
+        Rol.administradora.puedeEmitirUrgentes(autorizacionFina: false),
+        isFalse,
+      );
+      expect(
+        Rol.administradora.puedeEmitirUrgentes(autorizacionFina: true),
+        isTrue,
+      );
+    });
+
+    test('nadie más puede, ni con la bandera puesta', () {
+      for (final Rol rol in <Rol>[Rol.catedratico, Rol.auditor]) {
+        expect(
+          rol.puedeEmitirUrgentes(autorizacionFina: true),
+          isFalse,
+          reason: '$rol',
+        );
+      }
+    });
+
+    test('los recurrentes siguen la misma forma', () {
+      expect(
+        Rol.coordinador.puedeCrearRecurrentes(autorizacionFina: false),
+        isTrue,
+      );
+      expect(
+        Rol.administradora.puedeCrearRecurrentes(autorizacionFina: false),
+        isFalse,
+      );
+    });
+  });
+
   late RepositorioSesionFalso sesion;
   late RepositorioEnvioFalso envio;
 
@@ -35,13 +83,10 @@ void main() {
   });
   tearDown(() => sesion.cerrar());
 
-  Widget montar({bool puedeUrgentes = true}) {
+  Widget montar({bool puedeUrgentes = true, Rol rol = Rol.administradora}) {
     sesion.emitir(
       SesionActiva(
-        usuarioDePrueba(
-          rol: Rol.administradora,
-          puedeEmitirUrgentes: puedeUrgentes,
-        ),
+        usuarioDePrueba(rol: rol, puedeEmitirUrgentes: puedeUrgentes),
       ),
     );
     return ProviderScope(
@@ -283,6 +328,29 @@ void main() {
         find.widgetWithText(RadioListTile<bool>, Textos.tipoUrgente),
       );
       expect(opcion.enabled, isFalse);
+    });
+
+    testWidgets('el COORDINADOR puede siempre, sin bandera', (
+      WidgetTester tester,
+    ) async {
+      // ────────────────────────────────────────────────────────────────────
+      // La bandera fina no aplica a todos los roles.
+      // ────────────────────────────────────────────────────────────────────
+      //
+      // En la matriz del documento 01, `CREAR_ALERTA_URGENTE` es TODO para el
+      // coordinador y CONDICIONADO para la administradora: la bandera existe
+      // para que ÉL decida quién más puede. Mirar solo la bandera lo dejaba
+      // bloqueado en pantalla mientras el servidor se lo habría aceptado.
+      await tester.pumpWidget(
+        montar(rol: Rol.coordinador, puedeUrgentes: false),
+      );
+      await asentar(tester);
+
+      final RadioListTile<bool> opcion = tester.widget<RadioListTile<bool>>(
+        find.widgetWithText(RadioListTile<bool>, Textos.tipoUrgente),
+      );
+      expect(opcion.enabled, isTrue);
+      expect(find.text(Textos.noPuedeUrgentes), findsNothing);
     });
 
     testWidgets('con autorización, se puede elegir', (
