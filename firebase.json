@@ -46,6 +46,8 @@
       "source": "functions",
       "codebase": "default",
       "runtime": "nodejs20",
+      "//": "Sin este predeploy, `firebase deploy` sube lo que hubiera en lib/ de una compilación anterior. No falla: despliega código viejo y dice «Deploy complete». Una función nueva simplemente no aparece, y se diagnostica a ciegas.",
+      "predeploy": ["npm --prefix \"$RESOURCE_DIR\" run build"],
       "ignore": ["node_modules", ".git", "**/*.test.ts", "test/**"]
     }
   ],

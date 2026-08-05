@@ -12,6 +12,7 @@ import 'package:sian/domain/repositorios.dart';
 import 'package:sian/core/navegador.dart';
 import 'package:sian/infrastructure/firebase/repositorio_administracion.dart';
 import 'package:sian/infrastructure/firebase/repositorio_dispositivos.dart';
+import 'package:sian/infrastructure/firebase/repositorio_envio.dart';
 import 'package:sian/domain/rol.dart';
 import 'package:sian/domain/sesion.dart';
 
@@ -226,12 +227,14 @@ class RepositorioAdminFalso extends RepositorioAdministracion {
       Stream<List<UsuarioVista>>.value(usuarios);
 
   @override
-  Stream<List<AsientoVista>> observarBitacora({String? tipo, int limite = 100}) =>
-      Stream<List<AsientoVista>>.value(
-        tipo == null || tipo.isEmpty
-            ? asientos
-            : asientos.where((AsientoVista a) => a.tipo == tipo).toList(),
-      );
+  Stream<List<AsientoVista>> observarBitacora({
+    String? tipo,
+    int limite = 100,
+  }) => Stream<List<AsientoVista>>.value(
+    tipo == null || tipo.isEmpty
+        ? asientos
+        : asientos.where((AsientoVista a) => a.tipo == tipo).toList(),
+  );
 }
 
 /// Doble del repositorio de dispositivos.
@@ -281,5 +284,61 @@ class RepositorioDispositivosFalso extends RepositorioDispositivos {
         );
     permiso = r.permiso;
     return r;
+  }
+}
+
+/// Doble del repositorio de envío: registra lo que se le pidió.
+class RepositorioEnvioFalso extends RepositorioEnvio {
+  RepositorioEnvioFalso({this.conteo = 3, this.grupos = const <GrupoVista>[]});
+
+  final int conteo;
+  final List<GrupoVista> grupos;
+
+  Map<String, int> motivos = <String, int>{};
+  int excluidos = 0;
+
+  int vecesQueConto = 0;
+  int vecesQueEnvio = 0;
+  bool? ultimaUrgente;
+  bool? ultimaConfirmacionUrgente;
+  String? ultimoTitulo;
+  ResultadoEnvio? resultado;
+
+  @override
+  Stream<List<GrupoVista>> observarGrupos() =>
+      Stream<List<GrupoVista>>.value(grupos);
+
+  @override
+  Future<ConteoDestinatarios> contar(Destinatarios destinatarios) async {
+    vecesQueConto += 1;
+    return ConteoDestinatarios(
+      total: conteo,
+      excluidos: excluidos,
+      motivos: motivos,
+    );
+  }
+
+  @override
+  Future<ResultadoEnvio> enviarInmediato({
+    required String titulo,
+    required String cuerpo,
+    required bool urgente,
+    required bool requiereConfirmacion,
+    required Destinatarios destinatarios,
+    bool confirmacionUrgente = false,
+  }) async {
+    vecesQueEnvio += 1;
+    ultimaUrgente = urgente;
+    ultimaConfirmacionUrgente = confirmacionUrgente;
+    ultimoTitulo = titulo;
+
+    return resultado ??
+        ResultadoEnvio(
+          mensajeId: 'm1',
+          estado: 'ENVIADO',
+          total: conteo,
+          entregados: conteo,
+          fallidos: 0,
+        );
   }
 }

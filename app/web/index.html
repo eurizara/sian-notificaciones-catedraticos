@@ -37,6 +37,29 @@
 
   <title>SIAN UMG-BDM — Avisos y Notificaciones</title>
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    /*
+      Deslizar de lado no puede sacarte de la aplicación.
+
+      En móvil, un arrastre horizontal sobre la página activa la navegación
+      atrás/adelante del navegador. SIAN es una sola página: al «avanzar» no
+      hay ninguna entrada de historial a la que ir, y la pantalla se queda en
+      blanco. Desde dentro parece que la aplicación se rompió.
+
+      `overscroll-behavior-x: none` cancela ese gesto sin tocar el
+      desplazamiento vertical ni el menú lateral, que se abre con su propio
+      arrastre desde el borde izquierdo.
+    */
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      overscroll-behavior-x: none;
+      overscroll-behavior-y: contain;
+    }
+  </style>
 </head>
 <body>
   <!--
