@@ -595,6 +595,10 @@ abstract final class Textos {
   static const String entregasVacia =
       'Todavía no hay mensajes enviados. Aquí verás quién recibió cada aviso y '
       'quién lo confirmó.';
+  static String enviadoEl(String cuando) => 'Enviado el $cuando';
+  static String ultimaSalidaEl(String cuando) => 'Última salida el $cuando';
+  static const String sinFechaDeEnvio = 'Todavía sin enviar';
+
   static const String entregasSinConfirmacion =
       'Este aviso no exigía confirmación.';
 

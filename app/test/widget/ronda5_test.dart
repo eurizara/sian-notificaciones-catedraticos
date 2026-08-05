@@ -31,6 +31,7 @@ MensajeProgramado programado({
   String estado = 'PROGRAMADO',
   String modo = 'UNICO',
   DateTime? proxima,
+  DateTime? enviado,
   int total = 0,
   int entregados = 0,
   int confirmados = 0,
@@ -45,6 +46,7 @@ MensajeProgramado programado({
     creadoPor: 'uid-1',
     requiereConfirmacion: requiereConfirmacion,
     proximaOcurrencia: proxima ?? DateTime.utc(2026, 9, 1, 13),
+    enviadoEn: enviado,
     totalDestinatarios: total,
     entregados: entregados,
     confirmados: confirmados,
@@ -298,6 +300,64 @@ void main() {
         find.text(Textos.entregasPendientes(6), skipOffstage: false),
         findsOneWidget,
       );
+    });
+
+    testWidgets('enseña CUÁNDO se envió, no cuándo saldrá', (
+      WidgetTester tester,
+    ) async {
+      // Es la primera pregunta al abrir este reporte: «¿cuándo se avisó?».
+      // Antes se mostraba la próxima ocurrencia, que en un envío inmediato ni
+      // siquiera existe: esos aparecían sin fecha ninguna.
+      await tester.pumpWidget(
+        montar(<MensajeProgramado>[
+          programado(
+            total: 5,
+            entregados: 5,
+            enviado: DateTime(2026, 8, 5, 14, 35),
+          ),
+        ]),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(Textos.enviadoEl('05/08/2026 · 14:35')), findsOneWidget);
+    });
+
+    testWidgets('un recurrente dice ÚLTIMA salida, y también la próxima', (
+      WidgetTester tester,
+    ) async {
+      // «Enviado el…» sería engañoso en algo que sale una y otra vez.
+      await tester.pumpWidget(
+        montar(<MensajeProgramado>[
+          programado(
+            modo: 'RECURRENTE',
+            total: 5,
+            entregados: 5,
+            enviado: DateTime(2026, 8, 5, 7),
+            proxima: DateTime(2026, 8, 6, 7),
+          ),
+        ]),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(Textos.ultimaSalidaEl('05/08/2026 · 07:00')),
+        findsOneWidget,
+      );
+      expect(
+        find.text(Textos.proximaSalida('06/08/2026 · 07:00')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('uno que aún no ha salido lo dice, en vez de callar', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        montar(<MensajeProgramado>[programado(total: 5, entregados: 0)]),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(Textos.sinFechaDeEnvio), findsOneWidget);
     });
 
     testWidgets('sin confirmación exigida NO dice que falten confirmaciones', (

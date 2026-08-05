@@ -469,6 +469,8 @@ vista** en vez de a una hora.
 | 5.25 | Confirma de verdad | Mensaje de éxito, y el botón desaparece |
 | 5.26 | Vuelve a intentarlo desde otro dispositivo | «Ya estaba confirmado». Una confirmación no se repite (RF-CNF-05) |
 | 5.27 | Como coordinador, ve a **Entregas** | Barra de progreso, entregados y **porcentaje de confirmación** |
+| 5.27a | Mira la fecha de cada aviso | Dice **cuándo se envió**, no cuándo saldrá. Un envío inmediato también la tiene |
+| 5.27b | Mira un aviso recurrente | Dice **última salida** y, aparte, la próxima. «Enviado el…» sería engañoso en algo que sale una y otra vez |
 | 5.28 | Con 1 de 2 confirmados, mira el porcentaje | **50 %**, no 100 %. Se calcula sobre el TOTAL, no sobre los entregados |
 | 5.28a | Mira ahora un aviso que **no** exigía confirmación | Dice «no exigía confirmación» y su barra mide **entrega**. **No** dice «faltan N por confirmar»: nadie tenía que confirmarlo |
 | 5.28b | Comprueba que tampoco marca 100 % de confirmación | Sería igual de falso: afirmaría que confirmaron algo que nunca se les pidió |
