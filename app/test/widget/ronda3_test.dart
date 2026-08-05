@@ -300,13 +300,16 @@ void main() {
   });
 
   group('detección de entorno', () {
-    test('el valor por omisión fuera del navegador no promete notificaciones', () {
-      // En pruebas y herramientas no hay navegador: mentir aquí haría que la
-      // interfaz mostrara «notificaciones activas» donde no puede haberlas.
-      const EntornoNavegador e = EntornoNavegador.desconocido;
-      expect(e.soportaNotificaciones, isFalse);
-      expect(e.necesitaInstructivoInstalacion, isFalse);
-    });
+    test(
+      'el valor por omisión fuera del navegador no promete notificaciones',
+      () {
+        // En pruebas y herramientas no hay navegador: mentir aquí haría que la
+        // interfaz mostrara «notificaciones activas» donde no puede haberlas.
+        const EntornoNavegador e = EntornoNavegador.desconocido;
+        expect(e.soportaNotificaciones, isFalse);
+        expect(e.necesitaInstructivoInstalacion, isFalse);
+      },
+    );
 
     test('solo iOS sin instalar necesita el instructivo', () {
       expect(
@@ -321,7 +324,9 @@ void main() {
         isFalse,
       );
       expect(
-        entorno(plataforma: PlataformaWeb.android).necesitaInstructivoInstalacion,
+        entorno(
+          plataforma: PlataformaWeb.android,
+        ).necesitaInstructivoInstalacion,
         isFalse,
       );
     });
@@ -343,16 +348,24 @@ void main() {
 
     test('iOS anterior a la 16 se marca como demasiado antiguo', () {
       expect(
-        entorno(plataforma: PlataformaWeb.ios, versionIos: 15).iosDemasiadoAntiguo,
+        entorno(
+          plataforma: PlataformaWeb.ios,
+          versionIos: 15,
+        ).iosDemasiadoAntiguo,
         isTrue,
       );
       expect(
-        entorno(plataforma: PlataformaWeb.ios, versionIos: 17).iosDemasiadoAntiguo,
+        entorno(
+          plataforma: PlataformaWeb.ios,
+          versionIos: 17,
+        ).iosDemasiadoAntiguo,
         isFalse,
       );
       expect(
-        entorno(plataforma: PlataformaWeb.android, versionIos: 15)
-            .iosDemasiadoAntiguo,
+        entorno(
+          plataforma: PlataformaWeb.android,
+          versionIos: 15,
+        ).iosDemasiadoAntiguo,
         isFalse,
       );
     });

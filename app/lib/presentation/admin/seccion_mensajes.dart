@@ -20,9 +20,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/proveedores_grupos.dart';
 import '../../application/proveedores_sesion.dart';
 import '../../domain/sesion.dart';
 import '../../infrastructure/firebase/repositorio_adjuntos.dart';
+import '../../infrastructure/firebase/repositorio_grupos.dart';
 import '../../infrastructure/firebase/repositorio_envio.dart';
 import 'adjuntos_mensaje.dart';
 import '../shared/tema.dart';
@@ -33,10 +35,6 @@ final Provider<RepositorioEnvio> repositorioEnvioProvider =
 
 final Provider<RepositorioAdjuntos> repositorioAdjuntosProvider =
     Provider<RepositorioAdjuntos>((Ref ref) => RepositorioAdjuntos());
-
-final gruposProvider = StreamProvider<List<GrupoVista>>(
-  (Ref ref) => ref.watch(repositorioEnvioProvider).observarGrupos(),
-);
 
 class SeccionMensajes extends ConsumerStatefulWidget {
   const SeccionMensajes({super.key});
@@ -492,7 +490,11 @@ class _Destinatarios extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData tema = Theme.of(context);
-    final AsyncValue<List<GrupoVista>> grupos = ref.watch(gruposProvider);
+    // Solo los activos: ofrecer uno desactivado sería tender la trampa,
+    // porque el servidor rechaza el envío a un grupo inactivo.
+    final AsyncValue<List<GrupoDetalle>> grupos = ref.watch(
+      gruposActivosProvider,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -524,7 +526,7 @@ class _Destinatarios extends ConsumerWidget {
               child: LinearProgressIndicator(),
             ),
             error: (Object e, StackTrace _) => Text('$e'),
-            data: (List<GrupoVista> lista) => lista.isEmpty
+            data: (List<GrupoDetalle> lista) => lista.isEmpty
                 ? const Padding(
                     padding: EdgeInsets.only(left: 16, top: 8),
                     child: Text(Textos.sinGruposTodavia),
@@ -532,7 +534,7 @@ class _Destinatarios extends ConsumerWidget {
                 : Wrap(
                     spacing: 8,
                     children: <Widget>[
-                      for (final GrupoVista g in lista)
+                      for (final GrupoDetalle g in lista)
                         FilterChip(
                           label: Text('${g.nombre} (${g.totalMiembros})'),
                           selected: elegidos.contains(g.id),

@@ -392,3 +392,52 @@ export const guardarGrupo = onCall(OPCIONES_FUNCION, async (peticion) => {
     throw comoHttps(e);
   }
 });
+
+/**
+ * Activa o desactiva un grupo (RF-USR-04).
+ *
+ * No se borra: un grupo borrado dejaría mensajes históricos apuntando a algo
+ * que ya no existe, y el reporte de entregas de un simulacro pasado tiene que
+ * poder decir a qué grupo se envió. Desactivar lo saca de la lista de
+ * destinatarios elegibles y conserva el rastro (RN-03 aplicado a grupos).
+ */
+export const cambiarEstadoGrupo = onCall(OPCIONES_FUNCION, async (peticion) => {
+  const solicitante = await exigir(peticion, 'ADMINISTRAR_GRUPOS');
+  const { grupoId, activo } = peticion.data as {
+    grupoId?: string;
+    activo?: boolean;
+  };
+
+  if (!grupoId) {
+    throw new HttpsError('invalid-argument', 'Falta el identificador del grupo.');
+  }
+
+  try {
+    const ref = db.collection(RUTAS.grupos).doc(grupoId);
+    const instantanea = await ref.get();
+
+    if (!instantanea.exists) {
+      throw new HttpsError('not-found', 'Ese grupo no existe.');
+    }
+
+    await ref.update({
+      activo: activo === true,
+      actualizadoEn: FieldValue.serverTimestamp(),
+    });
+
+    await escribirAsiento(
+      asiento(
+        'GRUPO_MODIFICADO',
+        solicitante,
+        'GRUPO',
+        grupoId,
+        `${activo === true ? 'Reactivación' : 'Desactivación'} del grupo «${instantanea.get('nombre') as string}»`,
+        { activo: activo === true },
+      ),
+    );
+
+    return { grupoId, activo: activo === true };
+  } catch (e) {
+    throw comoHttps(e);
+  }
+});

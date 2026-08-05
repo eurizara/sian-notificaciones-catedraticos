@@ -331,12 +331,36 @@ notificaciones: sin dispositivo registrado no hay a dónde entregar (RN-02).
 | 4.8 | Redacta una **alerta urgente** y envíala | Tras el conteo pide una **segunda confirmación distinta**, en rojo (RF-MSG-13) |
 | 4.9 | Cancela en esa segunda confirmación | No se envía. El botón de enviar **no cuenta** como confirmación |
 | 4.10 | Envíala de verdad | Llega con **«URGENTE ·»** delante y no se descarta sola |
-| 4.11 | Crea un grupo, mete a un catedrático y envía **solo a ese grupo** | El conteo refleja el grupo, no a todos |
+| 4.11 | En **Grupos**, crea uno con un catedrático dentro y envía **solo a ese grupo** | El conteo refleja el grupo, no a todos |
 | 4.12 | Mete al mismo catedrático en dos grupos y envía a ambos | Recibe **un solo aviso**, no dos |
 | 4.13 | Como `admin2` **sin** autorización de urgentes, mira la clasificación | La opción **Urgente** está bloqueada y explica por qué |
 | 4.13a | Como **coordinador**, mira la misma opción | **Disponible**, sin necesidad de bandera: la matriz le da alcance total (documento 01, §2.2) |
 | 4.14 | Envía a alguien que nunca registró dispositivo | Consta como **no entregado**, con el motivo, y a los demás sí les llega |
 | 4.15 | Revisa la **bitácora** | Hay dos asientos por envío: creación y resultado, con cuántos y a cuántos |
+
+### Grupos de destinatarios (RF-USR-03, RF-USR-04, DT-08)
+
+Un grupo decide a quién le llega una alerta de emergencia. Equivocarse de grupo al redactar es
+enviar un aviso a veinte personas creyendo que van cuarenta y cinco, y eso no se descubre hasta
+que alguien pregunta por qué no le avisaron.
+
+| # | Acción | Resultado esperado |
+|---|---|---|
+| 4.29 | Entra en **Grupos** por primera vez | Explica para qué sirven, en vez de una lista vacía sin más |
+| 4.30 | **Nuevo grupo**, ponle nombre y guarda sin elegir a nadie | No lo guarda: un grupo vacío no le llegaría a nadie |
+| 4.31 | Guarda sin nombre | Tampoco. Dice qué falta |
+| 4.32 | Elige dos catedráticos y guarda | Aparece en la lista con el **número de miembros** visible en el círculo |
+| 4.33 | Fíjate en la lista de personas del editor | Las cuentas **desactivadas** y el auditor no aparecen: no reciben mensajes |
+| 4.34 | Usa el buscador con un nombre o un correo | Filtra por ambos |
+| 4.35 | Edita el grupo, quita a uno y guarda | El número baja en la lista |
+| 4.36 | Pulsa **Desactivar** | Pide confirmación y explica que **no se borra**, para que los avisos ya enviados sigan diciendo a quién fueron |
+| 4.37 | Cancela esa confirmación | Sigue activo |
+| 4.38 | Desactívalo de verdad y ve a **Mensajes** → Grupos concretos | **No aparece** como destinatario |
+| 4.39 | Vuelve a Grupos y **Reactiva** | Sin confirmación —no destruye nada— y vuelve a estar disponible al redactar |
+
+> **El paso que más enseña es 4.38.** Un grupo desactivado sigue en la lista de administración
+> —tachado, con su historia— pero desaparece de los destinatarios elegibles. Ofrecerlo sería
+> tender la trampa: el servidor rechaza el envío a un grupo inactivo.
 
 ### Nota de voz e imagen (RF-MSG-03, 04, 05, 07, 08 · RF-ENT-08, 09)
 
@@ -369,6 +393,7 @@ fuga de gas no va a redactar 500 caracteres.
       aplicación cerrada, en menos de 30 segundos (4.25, 4.26) — es el criterio de la
       iteración 1.3
 - [ ] El micrófono se suelta siempre (4.20)
+- [ ] Un grupo desactivado desaparece de los destinatarios elegibles (4.38)
 - [ ] Cada envío deja su rastro en bitácora (4.15)
 
 ### Fuera de alcance

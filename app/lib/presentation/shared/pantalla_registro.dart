@@ -103,7 +103,10 @@ class _PantallaRegistroState extends ConsumerState<PantallaRegistro> {
     try {
       await ref
           .read(repositorioSesionProvider)
-          .registrarConCorreo(correo: _correo.text, contrasena: _contrasena.text);
+          .registrarConCorreo(
+            correo: _correo.text,
+            contrasena: _contrasena.text,
+          );
       // No se navega desde aquí: el enrutador observa la sesión y decide. Si
       // el correo no estaba invitado, aterrizará en la pantalla de rechazo.
     } on FirebaseAuthException catch (e) {
@@ -195,9 +198,12 @@ class _PantallaRegistroState extends ConsumerState<PantallaRegistro> {
                           helperText: Textos.registroAyudaContrasenaLarga,
                           helperMaxLines: 2,
                           suffixIcon: IconButton(
-                            onPressed: () => setState(() => _visible = !_visible),
+                            onPressed: () =>
+                                setState(() => _visible = !_visible),
                             icon: Icon(
-                              _visible ? Icons.visibility_off : Icons.visibility,
+                              _visible
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
                             ),
                             tooltip: _visible
                                 ? Textos.ocultarContrasena
@@ -304,28 +310,29 @@ class _MedidorFuerza extends StatelessWidget {
     }
 
     final ThemeData tema = Theme.of(context);
-    final ({double valor, Color color, String etiqueta}) v = switch (resultado.fuerza) {
-      FuerzaContrasena.insuficiente => (
-        valor: 0.2,
-        color: ColoresSian.urgente,
-        etiqueta: Textos.fuerzaInsuficiente,
-      ),
-      FuerzaContrasena.aceptable => (
-        valor: 0.5,
-        color: ColoresSian.dorado,
-        etiqueta: Textos.fuerzaAceptable,
-      ),
-      FuerzaContrasena.buena => (
-        valor: 0.8,
-        color: ColoresSian.primario,
-        etiqueta: Textos.fuerzaBuena,
-      ),
-      FuerzaContrasena.excelente => (
-        valor: 1,
-        color: ColoresSian.confirmado,
-        etiqueta: Textos.fuerzaExcelente,
-      ),
-    };
+    final ({double valor, Color color, String etiqueta}) v =
+        switch (resultado.fuerza) {
+          FuerzaContrasena.insuficiente => (
+            valor: 0.2,
+            color: ColoresSian.urgente,
+            etiqueta: Textos.fuerzaInsuficiente,
+          ),
+          FuerzaContrasena.aceptable => (
+            valor: 0.5,
+            color: ColoresSian.dorado,
+            etiqueta: Textos.fuerzaAceptable,
+          ),
+          FuerzaContrasena.buena => (
+            valor: 0.8,
+            color: ColoresSian.primario,
+            etiqueta: Textos.fuerzaBuena,
+          ),
+          FuerzaContrasena.excelente => (
+            valor: 1,
+            color: ColoresSian.confirmado,
+            etiqueta: Textos.fuerzaExcelente,
+          ),
+        };
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

@@ -24,18 +24,13 @@ void main() {
   }) {
     return ProviderScope(
       overrides: [arranqueProvider.overrideWithValue(arranque)],
-      child: MaterialApp(
-        theme: TemaSian.claro(),
-        home: const PantallaEstado(),
-      ),
+      child: MaterialApp(theme: TemaSian.claro(), home: const PantallaEstado()),
     );
   }
 
   /// Encuentra la fila de una pieza por su nombre.
-  Finder filaDe(String nombre) => find.ancestor(
-    of: find.text(nombre),
-    matching: find.byType(ListTile),
-  );
+  Finder filaDe(String nombre) =>
+      find.ancestor(of: find.text(nombre), matching: find.byType(ListTile));
 
   testWidgets('muestra la identidad del sistema', (WidgetTester tester) async {
     await tester.pumpWidget(envolver());

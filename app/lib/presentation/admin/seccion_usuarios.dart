@@ -12,7 +12,9 @@ import '../../infrastructure/firebase/repositorio_administracion.dart';
 import '../shared/textos.dart';
 
 final Provider<RepositorioAdministracion> repositorioAdminProvider =
-    Provider<RepositorioAdministracion>((Ref ref) => RepositorioAdministracion());
+    Provider<RepositorioAdministracion>(
+      (Ref ref) => RepositorioAdministracion(),
+    );
 
 final invitacionesProvider = StreamProvider<List<InvitacionVista>>(
   (Ref ref) => ref.watch(repositorioAdminProvider).observarInvitaciones(),
@@ -33,14 +35,18 @@ class SeccionUsuarios extends ConsumerWidget {
         children: <Widget>[
           TabBar(
             tabs: <Widget>[
-              Tab(text: Textos.pestanaInvitaciones, icon: Icon(Icons.mail_outline)),
-              Tab(text: Textos.pestanaUsuarios, icon: Icon(Icons.people_outline)),
+              Tab(
+                text: Textos.pestanaInvitaciones,
+                icon: Icon(Icons.mail_outline),
+              ),
+              Tab(
+                text: Textos.pestanaUsuarios,
+                icon: Icon(Icons.people_outline),
+              ),
             ],
           ),
           Expanded(
-            child: TabBarView(
-              children: <Widget>[_Invitaciones(), _Usuarios()],
-            ),
+            child: TabBarView(children: <Widget>[_Invitaciones(), _Usuarios()]),
           ),
         ],
       ),
@@ -57,7 +63,9 @@ class _Invitaciones extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AsyncValue<List<InvitacionVista>> lista = ref.watch(invitacionesProvider);
+    final AsyncValue<List<InvitacionVista>> lista = ref.watch(
+      invitacionesProvider,
+    );
 
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
@@ -79,7 +87,9 @@ class _Invitaciones extends ConsumerWidget {
                     margin: const EdgeInsets.only(bottom: 8),
                     child: ListTile(
                       leading: Icon(
-                        inv.consumida ? Icons.how_to_reg : Icons.mark_email_unread_outlined,
+                        inv.consumida
+                            ? Icons.how_to_reg
+                            : Icons.mark_email_unread_outlined,
                         color: inv.consumida
                             ? Theme.of(c).colorScheme.primary
                             : Theme.of(c).colorScheme.tertiary,
@@ -98,7 +108,8 @@ class _Invitaciones extends ConsumerWidget {
                           : IconButton(
                               icon: const Icon(Icons.delete_outline),
                               tooltip: Textos.botonRevocar,
-                              onPressed: () => _revocar(context, ref, inv.correo),
+                              onPressed: () =>
+                                  _revocar(context, ref, inv.correo),
                             ),
                     ),
                   );
@@ -108,7 +119,11 @@ class _Invitaciones extends ConsumerWidget {
     );
   }
 
-  Future<void> _revocar(BuildContext context, WidgetRef ref, String correo) async {
+  Future<void> _revocar(
+    BuildContext context,
+    WidgetRef ref,
+    String correo,
+  ) async {
     final bool? confirmado = await showDialog<bool>(
       context: context,
       builder: (BuildContext c) => AlertDialog(
@@ -158,8 +173,14 @@ class _Invitaciones extends ConsumerWidget {
                 children: <Widget>[
                   SegmentedButton<bool>(
                     segments: const <ButtonSegment<bool>>[
-                      ButtonSegment<bool>(value: false, label: Text(Textos.modoUnaAUna)),
-                      ButtonSegment<bool>(value: true, label: Text(Textos.modoCsv)),
+                      ButtonSegment<bool>(
+                        value: false,
+                        label: Text(Textos.modoUnaAUna),
+                      ),
+                      ButtonSegment<bool>(
+                        value: true,
+                        label: Text(Textos.modoCsv),
+                      ),
                     ],
                     selected: <bool>{masiva},
                     onSelectionChanged: (Set<bool> s) =>
@@ -218,7 +239,8 @@ class _Invitaciones extends ConsumerWidget {
                       maxLines: 10,
                       decoration: const InputDecoration(
                         border: OutlineInputBorder(),
-                        hintText: 'correo,rol,nombre\nana@umg.edu.gt,CATEDRATICO,Ana Pérez',
+                        hintText:
+                            'correo,rol,nombre\nana@umg.edu.gt,CATEDRATICO,Ana Pérez',
                       ),
                     ),
                   ],
@@ -281,7 +303,8 @@ class _Invitaciones extends ConsumerWidget {
                         child: ListView(
                           shrinkWrap: true,
                           children: <Widget>[
-                            for (final ({int numero, String error}) x in r.rechazadas)
+                            for (final ({int numero, String error}) x
+                                in r.rechazadas)
                               ListTile(
                                 dense: true,
                                 leading: Text('${x.numero}'),
@@ -303,9 +326,9 @@ class _Invitaciones extends ConsumerWidget {
       );
     } on Object catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${Textos.errorOperacion} $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('${Textos.errorOperacion} $e')));
       }
     }
   }
@@ -366,13 +389,22 @@ class _FilaUsuario extends ConsumerWidget {
             trailing: DropdownButton<String>(
               value: usuario.rol.isEmpty ? null : usuario.rol,
               items: const <DropdownMenuItem<String>>[
-                DropdownMenuItem<String>(value: 'CATEDRATICO', child: Text('Catedrático')),
+                DropdownMenuItem<String>(
+                  value: 'CATEDRATICO',
+                  child: Text('Catedrático'),
+                ),
                 DropdownMenuItem<String>(
                   value: 'ADMINISTRADORA',
                   child: Text('Administradora'),
                 ),
-                DropdownMenuItem<String>(value: 'AUDITOR', child: Text('Auditor')),
-                DropdownMenuItem<String>(value: 'COORDINADOR', child: Text('Coordinador')),
+                DropdownMenuItem<String>(
+                  value: 'AUDITOR',
+                  child: Text('Auditor'),
+                ),
+                DropdownMenuItem<String>(
+                  value: 'COORDINADOR',
+                  child: Text('Coordinador'),
+                ),
               ],
               onChanged: (String? v) {
                 if (v == null || v == usuario.rol) {
@@ -441,13 +473,15 @@ Future<void> _ejecutar(
   try {
     await accion();
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(exito)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(exito)));
     }
   } on Object catch (e) {
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${Textos.errorOperacion} $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('${Textos.errorOperacion} $e')));
     }
   }
 }

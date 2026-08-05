@@ -13,6 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sian/application/proveedores_sesion.dart';
 import 'package:sian/domain/rol.dart';
 import 'package:sian/presentation/admin/panel_admin.dart';
+import 'package:sian/application/proveedores_grupos.dart';
 import 'package:sian/presentation/admin/seccion_mensajes.dart';
 import 'package:sian/presentation/admin/seccion_usuarios.dart';
 import 'package:sian/presentation/shared/tema.dart';
@@ -36,17 +37,20 @@ void main() {
       ]);
     });
 
-    test('la administradora emite, pero no administra usuarios ni ve bitácora', () {
-      final List<String> etiquetas = etiquetasPara(Rol.administradora);
+    test(
+      'la administradora emite, pero no administra usuarios ni ve bitácora',
+      () {
+        final List<String> etiquetas = etiquetasPara(Rol.administradora);
 
-      expect(etiquetas, contains(Textos.seccionMensajes));
-      expect(etiquetas, contains(Textos.seccionGrupos));
-      expect(etiquetas, contains(Textos.seccionEntregas));
+        expect(etiquetas, contains(Textos.seccionMensajes));
+        expect(etiquetas, contains(Textos.seccionGrupos));
+        expect(etiquetas, contains(Textos.seccionEntregas));
 
-      // Las dos exclusiones que marca la matriz del documento 01.
-      expect(etiquetas, isNot(contains(Textos.seccionUsuarios)));
-      expect(etiquetas, isNot(contains(Textos.seccionBitacora)));
-    });
+        // Las dos exclusiones que marca la matriz del documento 01.
+        expect(etiquetas, isNot(contains(Textos.seccionUsuarios)));
+        expect(etiquetas, isNot(contains(Textos.seccionBitacora)));
+      },
+    );
 
     test('el auditor solo observa: bitácora y entregas', () {
       expect(etiquetasPara(Rol.auditor), <String>[
@@ -70,6 +74,7 @@ void main() {
           // Mensajes ya no es un marcador: monta la pantalla real, que lee
           // grupos. Sin doble, construirla tocaría Firestore.
           repositorioEnvioProvider.overrideWithValue(RepositorioEnvioFalso()),
+          repositorioGruposProvider.overrideWithValue(RepositorioGruposFalso()),
         ],
         child: MaterialApp(
           theme: TemaSian.claro(),

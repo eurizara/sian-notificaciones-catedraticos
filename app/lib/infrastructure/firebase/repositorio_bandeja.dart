@@ -124,6 +124,7 @@ String? _rutaDe(Map<String, dynamic> mensaje, String clave) {
 int? _duracionDe(Map<String, dynamic> mensaje) {
   final Map<String, dynamic>? adjuntos =
       mensaje['adjuntos'] as Map<String, dynamic>?;
-  final Map<String, dynamic>? audio = adjuntos?['audio'] as Map<String, dynamic>?;
+  final Map<String, dynamic>? audio =
+      adjuntos?['audio'] as Map<String, dynamic>?;
   return (audio?['duracionSeg'] as num?)?.toInt();
 }

@@ -49,12 +49,13 @@ class ResultadoArranque {
 /// `main` lo sobrescribe con el valor real. Que exista un valor por defecto
 /// permite montar cualquier pantalla en una prueba de widget sin tocar la red
 /// ni levantar un emulador.
-final Provider<ResultadoArranque> arranqueProvider = Provider<ResultadoArranque>(
-  (Ref ref) => const ResultadoArranque(
-    conexion: ConexionFirebase.fallida,
-    detalle: 'Sin inicializar',
-  ),
-);
+final Provider<ResultadoArranque> arranqueProvider =
+    Provider<ResultadoArranque>(
+      (Ref ref) => const ResultadoArranque(
+        conexion: ConexionFirebase.fallida,
+        detalle: 'Sin inicializar',
+      ),
+    );
 
 /// Inicializa Firebase y, en desarrollo, redirige todo a los emuladores.
 ///
@@ -99,7 +100,16 @@ Future<void> _conectarEmuladores() async {
   const String host = Entorno.hostEmulador;
 
   await FirebaseAuth.instance.useAuthEmulator(host, Entorno.puertoAuth);
-  FirebaseFirestore.instance.useFirestoreEmulator(host, Entorno.puertoFirestore);
-  FirebaseFunctions.instance.useFunctionsEmulator(host, Entorno.puertoFunctions);
-  await FirebaseStorage.instance.useStorageEmulator(host, Entorno.puertoStorage);
+  FirebaseFirestore.instance.useFirestoreEmulator(
+    host,
+    Entorno.puertoFirestore,
+  );
+  FirebaseFunctions.instance.useFunctionsEmulator(
+    host,
+    Entorno.puertoFunctions,
+  );
+  await FirebaseStorage.instance.useStorageEmulator(
+    host,
+    Entorno.puertoStorage,
+  );
 }

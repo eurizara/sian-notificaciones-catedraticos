@@ -23,6 +23,7 @@ export { registrarDispositivo } from './triggers/dispositivos';
 export { contarDestinatarios, enviarInmediato } from './triggers/envio';
 export {
   cambiarAutorizacionesFinas,
+  cambiarEstadoGrupo,
   cambiarEstadoUsuario,
   cambiarRol,
   crearInvitaciones,
