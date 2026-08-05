@@ -7,6 +7,7 @@ library;
 
 import 'dart:async';
 
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:sian/domain/repositorios.dart';
 import 'package:sian/core/navegador.dart';
 import 'package:sian/infrastructure/firebase/repositorio_administracion.dart';
@@ -247,6 +248,22 @@ class RepositorioDispositivosFalso extends RepositorioDispositivos {
   EstadoPermiso permiso;
   ResultadoRegistro? resultado;
   int vecesQuePidioPermiso = 0;
+
+  /// Mensajes que llegan con la aplicación en primer plano.
+  ///
+  /// El repositorio real devuelve `FirebaseMessaging.onMessage`, que en las
+  /// pruebas no existe. Este controlador permite empujar uno a mano y
+  /// comprobar que la aplicación lo hace visible — porque el navegador no lo
+  /// hace, y durante una ronda entera nadie estaba escuchando.
+  // ignore: close_sinks — lo cierra cada prueba en su `tearDown`.
+  final StreamController<RemoteMessage> mensajes =
+      StreamController<RemoteMessage>.broadcast();
+
+  @override
+  Stream<RemoteMessage> mensajesEnPrimerPlano() => mensajes.stream;
+
+  /// Lo llama el `tearDown` de la prueba.
+  Future<void> cerrar() => mensajes.close();
 
   @override
   Future<EstadoPermiso> consultarPermiso() async => permiso;

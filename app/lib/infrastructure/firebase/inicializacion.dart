@@ -66,6 +66,12 @@ Future<ResultadoArranque> inicializarFirebase() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
 
+    // Los correos que manda Firebase —restablecer contraseña, verificar
+    // dirección— salen en el idioma que se fije aquí. Sin esto llegan en
+    // inglés, y un correo en inglés que dice «project-863854823370» es
+    // indistinguible de una suplantación para quien lo recibe.
+    await FirebaseAuth.instance.setLanguageCode('es');
+
     if (Entorno.usaEmulador) {
       await _conectarEmuladores();
       return const ResultadoArranque(conexion: ConexionFirebase.emuladores);

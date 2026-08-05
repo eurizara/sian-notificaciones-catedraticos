@@ -15,6 +15,7 @@ import '../../domain/sesion.dart';
 import '../../infrastructure/firebase/repositorio_bandeja.dart';
 import '../../core/navegador.dart';
 import '../shared/barra_sesion.dart';
+import 'aviso_en_primer_plano.dart';
 import 'instructivo_ios.dart';
 import 'tarjeta_notificaciones.dart';
 import '../shared/tema.dart';
@@ -23,10 +24,12 @@ import '../shared/textos.dart';
 final Provider<RepositorioBandeja> repositorioBandejaProvider =
     Provider<RepositorioBandeja>((Ref ref) => RepositorioBandejaFirebase());
 
-final historialProvider =
-    StreamProvider.family<List<MensajeRecibido>, String>((Ref ref, String uid) {
-      return ref.watch(repositorioBandejaProvider).observarHistorial(uid);
-    });
+final historialProvider = StreamProvider.family<List<MensajeRecibido>, String>((
+  Ref ref,
+  String uid,
+) {
+  return ref.watch(repositorioBandejaProvider).observarHistorial(uid);
+});
 
 class BandejaDocente extends ConsumerStatefulWidget {
   const BandejaDocente({required this.usuario, super.key});
@@ -64,26 +67,28 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
       historialProvider(usuario.uid),
     );
 
-    return Scaffold(
-      appBar: BarraSesion(
-        usuario: usuario,
-        titulo: Textos.bandejaTitulo,
-      ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 720),
-          child: historial.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (Object e, StackTrace _) => _Error(detalle: e.toString()),
-            data: (List<MensajeRecibido> mensajes) => ListView(
-              padding: const EdgeInsets.all(16),
-              children: <Widget>[
-                const TarjetaNotificaciones(),
-                if (mensajes.isEmpty)
-                  const _BandejaVacia()
-                else
-                  ...filasDeMensajes(context, mensajes),
-              ],
+    // Con la bandeja abierta, el navegador no muestra ninguna notificación del
+    // sistema: entrega el mensaje a la aplicación y se desentiende. Es la
+    // aplicación la que tiene que hacerse notar.
+    return AvisoEnPrimerPlano(
+      child: Scaffold(
+        appBar: BarraSesion(usuario: usuario, titulo: Textos.bandejaTitulo),
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: historial.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (Object e, StackTrace _) => _Error(detalle: e.toString()),
+              data: (List<MensajeRecibido> mensajes) => ListView(
+                padding: const EdgeInsets.all(16),
+                children: <Widget>[
+                  const TarjetaNotificaciones(),
+                  if (mensajes.isEmpty)
+                    const _BandejaVacia()
+                  else
+                    ...filasDeMensajes(context, mensajes),
+                ],
+              ),
             ),
           ),
         ),

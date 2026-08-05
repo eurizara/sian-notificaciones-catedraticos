@@ -314,6 +314,8 @@ abstract final class Textos {
           'permite las notificaciones. Luego recarga la página.',
   };
 
+  static const String botonCerrarAviso = 'Cerrar';
+
   // --- Instructivo de instalación en iOS (RES-05, R-02) ---------------------
   static const String ingresoInstalarTitulo = 'Instálala en tu iPhone';
   static const String ingresoInstalarDetalle =

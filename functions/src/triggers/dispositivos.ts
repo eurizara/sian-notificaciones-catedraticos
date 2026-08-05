@@ -83,15 +83,29 @@ export const registrarDispositivo = onCall(OPCIONES_FUNCION, async (peticion) =>
 
     if (datos.enviarPrueba !== false && puedeRecibirNotificaciones(dispositivo)) {
       try {
+        // Mensaje SOLO de datos, a propósito.
+        //
+        // ──────────────────────────────────────────────────────────────────
+        // Con un bloque `notification`, quien decide cómo se ve es el
+        // navegador. Con datos, decidimos nosotros.
+        // ──────────────────────────────────────────────────────────────────
+        //
+        // Y hay cosas que no se pueden delegar: el prefijo «URGENTE» del
+        // título y el `requireInteraction` que impide que una alerta se
+        // descarte sola son la única distinción disponible en iOS-PWA, donde
+        // no se puede definir sonido ni vibración propios (deuda DT-02).
+        //
+        // El service worker es quien pinta la notificación, y lee estos
+        // mismos nombres. Enviar `notification` dejaba el cuerpo vacío
+        // porque buscaba `data.cuerpo` y nadie lo mandaba.
         await getMessaging().send({
           token: dispositivo.tokenFCM,
-          notification: {
-            title: 'SIAN UMG-BDM',
-            body: 'Tu dispositivo quedó registrado. Aquí llegarán los avisos.',
+          data: {
+            tipo: 'PRUEBA_REGISTRO',
+            titulo: 'SIAN UMG-BDM',
+            cuerpo: 'Tu dispositivo quedó registrado. Aquí llegarán los avisos.',
           },
-          data: { tipo: 'PRUEBA_REGISTRO' },
           webpush: {
-            notification: { icon: '/icons/Icon-192.png', tag: 'sian-prueba' },
             fcmOptions: { link: '/' },
           },
         });
