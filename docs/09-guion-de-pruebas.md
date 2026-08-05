@@ -246,29 +246,15 @@ Redactar y enviar mensajes, programación, recurrencia y confirmación de lectur
 > **Ojo con esta ronda.** Es donde se materializa o se descarta el riesgo R-02: si el
 > catedrático no instala la PWA, en iOS **no hay notificaciones en absoluto**.
 
-### Instalar en Android, con Chrome
+### Android y escritorio: nada que probar aquí
 
-En Android **sí existe** un botón de instalar, y las notificaciones funcionan en pestaña sin
-instalar nada. Por eso SIAN no muestra ningún instructivo aquí: insistir sería estorbar. Aun
-así conviene probar la instalación, porque es como lo va a usar la mayoría.
+Las notificaciones llegan **en una pestaña normal, sin instalar nada**. Instalar es opcional y
+lo resuelve el propio navegador con su botón. No hay nada que SIAN tenga que explicar, así que
+no se prueba ni se muestra ningún aviso: sería estorbar sin motivo.
 
-| # | Acción | Resultado esperado |
-|---|---|---|
-| 3.21 | Abre el sitio en **Chrome en Android** | Puede aparecer sola una barra inferior de «Añadir a la pantalla principal» |
-| 3.22 | Si no aparece: menú **⋮** → **Añadir a la pantalla principal** o **Instalar aplicación** | Ofrece instalar, con el escudo y el nombre SIAN UMG-BDM |
-| 3.23 | Confirma **Instalar** | Queda un icono en el lanzador, junto al resto de aplicaciones |
-| 3.24 | Ábrela desde ese icono | Abre a pantalla completa, sin barra de direcciones |
-| 3.25 | Activa las notificaciones **sin instalar**, en una pestaña normal | **Llegan igual.** Es la diferencia de fondo con iPhone, donde no llegaría ninguna |
-| 3.26 | Con la aplicación cerrada del todo, pide que te registren el dispositivo | La notificación llega igual: en Android el sistema la entrega aunque Chrome esté cerrado |
-
-> **La comparación que importa aquí es 3.25 contra el paso 3.9 de iPhone.** En Android las
-> notificaciones llegan sin instalar; en iPhone no llega ninguna. Es la misma aplicación y el
-> mismo código: la diferencia la pone Apple, y es la razón de que el instructivo exista solo
-> en iOS.
-
-> **Si el menú no ofrece instalar**, casi siempre es que el navegador no es Chrome —Firefox y
-> Samsung Internet lo hacen en otro sitio o no lo hacen— o que la página no terminó de cargar.
-> No es un fallo del sistema: en Android la instalación es opcional de verdad.
+Que en iPhone no llegue **ninguna** notificación sin instalar es precisamente lo que hace de
+iOS el único caso especial, y lo único que justifica el instructivo. Los pasos 3.9 a 3.13 lo
+cubren.
 
 ### Ronda 3-bis — reprueba de lo corregido (4 de agosto de 2026)
 
