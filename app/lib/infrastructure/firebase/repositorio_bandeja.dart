@@ -9,6 +9,7 @@ library;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../core/plataforma/consola.dart';
 import '../../domain/repositorios.dart';
 
 class RepositorioBandejaFirebase implements RepositorioBandeja {
@@ -90,6 +91,17 @@ class RepositorioBandejaFirebase implements RepositorioBandeja {
         continue;
       }
 
+      final String? rutaVoz = _rutaDe(mensaje, 'audio');
+      final String? rutaImagen = _rutaDe(mensaje, 'imagen');
+
+      if (mensaje['adjuntos'] != null) {
+        consolaError(
+          'SIAN.bandeja adjuntos | mensaje=$mensajeId '
+          'crudo=${mensaje['adjuntos'].runtimeType} '
+          'voz=${rutaVoz != null} imagen=${rutaImagen != null}',
+        );
+      }
+
       recibidos.add(
         MensajeRecibido(
           mensajeId: mensajeId,
@@ -101,9 +113,9 @@ class RepositorioBandejaFirebase implements RepositorioBandeja {
           entregadoEn: (datos['entregadoEn'] as Timestamp?)?.toDate(),
           abiertoEn: (datos['abiertoEn'] as Timestamp?)?.toDate(),
           confirmadoEn: (datos['confirmadoEn'] as Timestamp?)?.toDate(),
-          rutaVoz: _rutaDe(mensaje, 'audio'),
+          rutaVoz: rutaVoz,
           duracionVozSeg: _duracionDe(mensaje),
-          rutaImagen: _rutaDe(mensaje, 'imagen'),
+          rutaImagen: rutaImagen,
         ),
       );
     }
@@ -112,19 +124,36 @@ class RepositorioBandejaFirebase implements RepositorioBandeja {
   }
 }
 
+/// Lee un mapa anidado sin presuponer el tipo de sus claves.
+///
+/// ────────────────────────────────────────────────────────────────────────────
+/// `as Map<String, dynamic>` sobre un mapa anidado NO es seguro en web.
+/// ────────────────────────────────────────────────────────────────────────────
+///
+/// Firestore entrega el documento como `Map<String, dynamic>`, pero lo que hay
+/// dentro pasa por la conversión desde JavaScript y puede llegar como
+/// `Map<Object?, Object?>`. Según la versión del complemento, ese `as` o bien
+/// lanza —y entonces se cae la bandeja entera, no solo el adjunto— o bien
+/// devuelve algo que luego no encuentra la clave.
+///
+/// Leerlo así cuesta lo mismo y funciona en los dos casos. Es el tipo de
+/// suposición que solo falla en producción, sobre un dispositivo ajeno.
+Map<Object?, Object?>? _comoMapa(Object? valor) =>
+    valor is Map ? valor.cast<Object?, Object?>() : null;
+
 /// Ruta de un adjunto dentro del mapa `adjuntos` del mensaje.
 String? _rutaDe(Map<String, dynamic> mensaje, String clave) {
-  final Map<String, dynamic>? adjuntos =
-      mensaje['adjuntos'] as Map<String, dynamic>?;
-  final Map<String, dynamic>? uno = adjuntos?[clave] as Map<String, dynamic>?;
-  final String? ruta = uno?['ruta'] as String?;
-  return (ruta == null || ruta.isEmpty) ? null : ruta;
+  final Map<Object?, Object?>? uno = _comoMapa(
+    _comoMapa(mensaje['adjuntos'])?[clave],
+  );
+  final Object? ruta = uno?['ruta'];
+  return (ruta is String && ruta.isNotEmpty) ? ruta : null;
 }
 
 int? _duracionDe(Map<String, dynamic> mensaje) {
-  final Map<String, dynamic>? adjuntos =
-      mensaje['adjuntos'] as Map<String, dynamic>?;
-  final Map<String, dynamic>? audio =
-      adjuntos?['audio'] as Map<String, dynamic>?;
-  return (audio?['duracionSeg'] as num?)?.toInt();
+  final Map<Object?, Object?>? audio = _comoMapa(
+    _comoMapa(mensaje['adjuntos'])?['audio'],
+  );
+  final Object? d = audio?['duracionSeg'];
+  return d is num ? d.toInt() : null;
 }

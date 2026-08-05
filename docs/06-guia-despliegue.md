@@ -309,6 +309,26 @@ Y versiona `.env.example` con las mismas llaves vacías y un comentario que expl
 > FIREBASE_AUTH_DOMAIN=sian-umg-bdm-dev.firebaseapp.com
 > ```
 
+> **CORS del bucket: se aplica aparte, y sin esto las imágenes no se ven.**
+>
+> Flutter web descarga los bytes de una imagen con `fetch` para decodificarla, y el navegador
+> bloquea esa descarga si el bucket no declara CORS. La nota de voz sí funciona, porque un
+> elemento `<audio>` reproduce sin pedir permiso de origen. El síntoma resultante despista
+> mucho: **la voz se escucha y la imagen no**, y parece un problema de la imagen o de la red.
+>
+> No lo despliega `firebase deploy`: la configuración vive en el bucket, no en
+> `storage.rules`. Se aplica una vez por ambiente:
+>
+> ```bash
+> bash scripts/aplicar-cors-storage.sh sian-umg-bdm-dev
+> ```
+>
+> Y se comprueba así — sin `access-control-allow-origin` en la respuesta, no hay imágenes:
+>
+> ```bash
+> curl -sI -H 'Origin: https://sian-umg-bdm-dev.web.app' '<url-de-descarga>' | grep -i access-control
+> ```
+
 ---
 
 ## Etapa D — Ejecución local con emuladores

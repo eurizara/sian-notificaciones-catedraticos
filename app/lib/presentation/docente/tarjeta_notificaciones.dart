@@ -52,7 +52,14 @@ class _TarjetaNotificacionesState extends ConsumerState<TarjetaNotificaciones> {
     // Si ya estaba concedido, se refresca el identificador sin preguntar
     // nada. En iOS cambia solo, y refrescarlo en cada apertura es la
     // mitigación principal del riesgo R-01.
-    if (p == EstadoPermiso.concedido) {
+    //
+    // Una vez por apertura, no por cada vez que esta tarjeta se construye:
+    // vive dentro de la lista de mensajes, así que desplazarse abajo y volver
+    // arriba la destruye y la recrea. El repositorio recuerda si ya se hizo.
+    final RepositorioDispositivos repo = ref.read(
+      repositorioDispositivosProvider,
+    );
+    if (p == EstadoPermiso.concedido && !repo.yaRefrescado) {
       await _activar(silencioso: true);
     }
   }
@@ -64,14 +71,30 @@ class _TarjetaNotificacionesState extends ConsumerState<TarjetaNotificaciones> {
 
     final ResultadoRegistro r = await ref
         .read(repositorioDispositivosProvider)
-        .pedirPermisoYRegistrar();
+        // La prueba solo se envía cuando alguien pulsa «Activar»: en el
+        // refresco automático es ruido.
+        .pedirPermisoYRegistrar(enviarPrueba: !silencioso);
 
-    if (mounted) {
-      setState(() {
-        _resultado = r;
-        _permisoActual = r.permiso;
-        _trabajando = false;
-      });
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _resultado = r;
+      _permisoActual = r.permiso;
+      _trabajando = false;
+    });
+
+    // «Te enviamos una prueba» es información de un momento, no un estado.
+    // Vivía en la tarjeta y se quedaba ahí para siempre, ocupando sitio y
+    // repitiendo algo ya resuelto. Como aviso pasajero dice lo mismo y se va.
+    if (!silencioso && r.pruebaEnviada) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(Textos.notificacionPruebaEnviada),
+          duration: Duration(seconds: 8),
+        ),
+      );
     }
   }
 
@@ -91,6 +114,21 @@ class _TarjetaNotificacionesState extends ConsumerState<TarjetaNotificaciones> {
       bool accion,
     })
     estado = _estado(entorno, r);
+
+    // ────────────────────────────────────────────────────────────────────────
+    // Cuando todo está bien, esta tarjeta no tiene nada que decir.
+    // ────────────────────────────────────────────────────────────────────────
+    //
+    // Su trabajo es avisar de que un aviso NO va a llegar. Con las
+    // notificaciones activas, ocupar el primer tercio de la bandeja de forma
+    // permanente empuja los mensajes hacia abajo —que es justo lo que la
+    // persona vino a leer— para repetir cada vez algo que ya está resuelto.
+    //
+    // Se queda en una línea, plegada. Sigue estando —hace falta poder
+    // comprobar el estado— pero deja de estorbar, y se despliega al tocarla.
+    if (!estado.accion && estado.color == ColoresSian.confirmado) {
+      return _LineaCompacta(estado: estado, detalle: estado.detalle);
+    }
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -124,17 +162,6 @@ class _TarjetaNotificacionesState extends ConsumerState<TarjetaNotificaciones> {
                       )
                     : const Icon(Icons.notifications_active_outlined),
                 label: const Text(Textos.botonActivarNotificaciones),
-              ),
-            ],
-
-            if (r != null && r.pruebaEnviada) ...<Widget>[
-              const SizedBox(height: 12),
-              const Row(
-                children: <Widget>[
-                  Icon(Icons.send_outlined, size: 16),
-                  SizedBox(width: 8),
-                  Expanded(child: Text(Textos.notificacionPruebaEnviada)),
-                ],
               ),
             ],
           ],
@@ -195,5 +222,86 @@ class _TarjetaNotificacionesState extends ConsumerState<TarjetaNotificaciones> {
         accion: true,
       ),
     };
+  }
+}
+
+/// Estado plegado: una línea, sin tarjeta ni relleno.
+///
+/// Se despliega al tocarla. Que se pueda comprobar no significa que tenga que
+/// estar gritándolo: el sitio de la pantalla es para los mensajes.
+class _LineaCompacta extends StatefulWidget {
+  const _LineaCompacta({required this.estado, required this.detalle});
+
+  final ({
+    IconData icono,
+    Color color,
+    String titulo,
+    String detalle,
+    bool accion,
+  })
+  estado;
+  final String detalle;
+
+  @override
+  State<_LineaCompacta> createState() => _LineaCompactaState();
+}
+
+class _LineaCompactaState extends State<_LineaCompacta> {
+  bool _desplegada = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData tema = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: InkWell(
+        onTap: () => setState(() => _desplegada = !_desplegada),
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  Icon(
+                    widget.estado.icono,
+                    size: 18,
+                    color: widget.estado.color,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      widget.estado.titulo,
+                      style: tema.textTheme.bodySmall?.copyWith(
+                        color: tema.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    _desplegada ? Icons.expand_less : Icons.expand_more,
+                    size: 18,
+                    color: tema.colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
+              if (_desplegada) ...<Widget>[
+                const SizedBox(height: 6),
+                Padding(
+                  padding: const EdgeInsets.only(left: 26),
+                  child: Text(
+                    widget.detalle,
+                    style: tema.textTheme.bodySmall?.copyWith(
+                      color: tema.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

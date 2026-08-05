@@ -273,9 +273,18 @@ class RepositorioDispositivosFalso extends RepositorioDispositivos {
   @override
   Future<EstadoPermiso> consultarPermiso() async => permiso;
 
+  /// Cuántas veces se pidió con notificación de prueba. Es lo que se disparaba
+  /// de más al desplazar la pantalla.
+  int vecesConPrueba = 0;
+
   @override
-  Future<ResultadoRegistro> pedirPermisoYRegistrar() async {
+  Future<ResultadoRegistro> pedirPermisoYRegistrar({
+    bool enviarPrueba = true,
+  }) async {
     vecesQuePidioPermiso += 1;
+    if (enviarPrueba) {
+      vecesConPrueba += 1;
+    }
     final ResultadoRegistro r =
         resultado ??
         const ResultadoRegistro(
@@ -285,8 +294,14 @@ class RepositorioDispositivosFalso extends RepositorioDispositivos {
           pruebaEnviada: true,
         );
     permiso = r.permiso;
+    refrescado = true;
     return r;
   }
+
+  bool refrescado = false;
+
+  @override
+  bool get yaRefrescado => refrescado;
 }
 
 /// Doble del repositorio de envío: registra lo que se le pidió.
