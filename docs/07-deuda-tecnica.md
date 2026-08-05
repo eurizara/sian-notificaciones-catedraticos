@@ -243,12 +243,29 @@ momento de tomarla**, no después.
 | DT-11 | SDK de Firebase anclado por el requisito de JDK | Plataforma | **Media** | Abierta | 0 USD |
 | DT-12 | Vulnerabilidades moderadas de `firebase-admin` | Plataforma | Baja | Abierta | 0 USD |
 | DT-13 | Política de contraseñas solo en el cliente | Plataforma | Media | Abierta | 0 USD |
+| DT-14 | Los correos salen del dominio de Firebase y caen en No deseado | Plataforma | **Media** | Abierta | 0 USD |
 
 **Prioridad de pago recomendada, en orden:** DT-03 → DT-07 → DT-04 → DT-01.
 
 Las tres primeras cuestan cero y eliminan los riesgos operativos más serios. DT-02 es la
 única deuda que exige presupuesto real, y solo se paga si la institución decide que las
 alertas de emergencia deben sonar distinto en iPhone sin excepción.
+
+---
+
+### DT-14 · Los correos de la cuenta salen del dominio de Firebase y caen en No deseado
+
+| | |
+|---|---|
+| **Origen** | Plataforma |
+| **Severidad** | Media |
+| **Estado** | Abierta |
+| **Decisión** | Los correos de restablecimiento de contraseña se envían con el remitente que Firebase da por omisión, `noreply@sian-umg-bdm-dev.firebaseapp.com`, sin servidor de correo propio |
+| **Motivo** | Usar un remitente `@umg.edu.gt` exige un servidor SMTP y control del DNS del dominio institucional para publicar SPF y DKIM. Ninguna de las dos cosas está al alcance de un proyecto de cátedra, y ADR-008 ya descartó pagar servicios adicionales |
+| **Consecuencia** | **Comprobado en pruebas reales:** los correos llegan a *No deseado* en `miumg.edu.gt`, que es Google Workspace. El catedrático que olvide su contraseña concluye que la recuperación «no funciona» —exactamente lo que ocurrió en las pruebas de la ronda 3— y llama a coordinación. Agravado porque la pantalla responde lo mismo exista o no la cuenta (RF-AUT-05), así que no hay forma de distinguir «no llegó» de «no existe» |
+| **Mitigación actual** | Tres cosas, ninguna suficiente por sí sola: **(a)** los correos salen en español, fijando el idioma al arrancar, porque un correo en inglés parece más una suplantación; **(b)** el nombre público del proyecto sustituye a `project-863854823370`, que era lo que más lo delataba; **(c)** el guion de pruebas avisa de mirar en No deseado antes de dar por rota la recuperación |
+| **Plan de pago** | Configurar SMTP propio en Firebase Authentication → Plantillas → Configuración de SMTP, con un buzón institucional y los registros SPF y DKIM del dominio publicados. Depende de que Sistemas de la UMG ceda un buzón y una entrada de DNS, no de programación. Esfuerzo: 2 horas de configuración, más el tiempo institucional de conseguir el acceso |
+| **Disparador para pagarla** | Antes de abrir el sistema a catedráticos reales. Mientras solo se prueba con cuentas propias es un incordio; con cien catedráticos es una avalancha de llamadas a coordinación |
 
 ---
 

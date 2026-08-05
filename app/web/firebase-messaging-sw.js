@@ -41,15 +41,21 @@ if (self.SIAN_FIREBASE_CONFIG && self.SIAN_FIREBASE_CONFIG.apiKey !== 'SIN-CONFI
     const datos = carga.data || {};
     const esUrgente = datos.tipo === 'URGENTE';
 
+    // Se acepta también el bloque `notification` por si algo lo enviara así.
+    // El servidor manda solo datos —para que el prefijo y el
+    // `requireInteraction` los decidamos aquí—, pero una notificación sin
+    // cuerpo por un desajuste de nombres es un fallo mudo, y ya costó una
+    // ronda de pruebas.
+    const deNotificacion = carga.notification || {};
+
     // El prefijo «URGENTE» en el título no es cosmético: en iOS-PWA no se
     // puede definir sonido ni vibración propios, así que la distinción visible
     // es la única mitigación disponible (deuda DT-02).
-    const titulo = esUrgente
-      ? `URGENTE · ${datos.titulo || 'Alerta institucional'}`
-      : datos.titulo || 'SIAN UMG-BDM';
+    const base = datos.titulo || deNotificacion.title || 'SIAN UMG-BDM';
+    const titulo = esUrgente ? `URGENTE · ${base}` : base;
 
     return self.registration.showNotification(titulo, {
-      body: datos.cuerpo || '',
+      body: datos.cuerpo || deNotificacion.body || '',
       icon: '/icons/Icon-192.png',
       badge: '/icons/Icon-192.png',
       // Agrupa por mensaje: un reintento no genera dos avisos en la pantalla.
