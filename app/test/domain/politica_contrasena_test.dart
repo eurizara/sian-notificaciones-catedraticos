@@ -80,7 +80,10 @@ void main() {
 
     test('rechaza la que contiene el nombre', () {
       expect(
-        evaluarContrasena('Lopez#Cielo47', nombre: 'Ana Pérez López').incumplimientos,
+        evaluarContrasena(
+          'Lopez#Cielo47',
+          nombre: 'Ana Pérez López',
+        ).incumplimientos,
         contains(IncumplimientoContrasena.contieneDatosPersonales),
       );
     });
@@ -147,8 +150,14 @@ void main() {
 
   group('fuerza orientativa', () {
     test('premia la longitud por encima de la variedad', () {
-      expect(evaluarContrasena('Trueno#47x').fuerza, FuerzaContrasena.aceptable);
-      expect(evaluarContrasena('Trueno#Violet47').fuerza, FuerzaContrasena.buena);
+      expect(
+        evaluarContrasena('Trueno#47x').fuerza,
+        FuerzaContrasena.aceptable,
+      );
+      expect(
+        evaluarContrasena('Trueno#Violet47').fuerza,
+        FuerzaContrasena.buena,
+      );
       expect(
         evaluarContrasena('Trueno#Violeta47Nube').fuerza,
         FuerzaContrasena.excelente,

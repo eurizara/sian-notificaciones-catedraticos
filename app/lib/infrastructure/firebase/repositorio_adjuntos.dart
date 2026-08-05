@@ -63,8 +63,10 @@ class RepositorioAdjuntos {
   final FirebaseStorage? _storageDado;
   final FirebaseFirestore? _firestoreDado;
 
-  late final FirebaseStorage _storage = _storageDado ?? FirebaseStorage.instance;
-  late final FirebaseFirestore _db = _firestoreDado ?? FirebaseFirestore.instance;
+  late final FirebaseStorage _storage =
+      _storageDado ?? FirebaseStorage.instance;
+  late final FirebaseFirestore _db =
+      _firestoreDado ?? FirebaseFirestore.instance;
 
   /// Reserva el identificador del mensaje antes de subir.
   ///

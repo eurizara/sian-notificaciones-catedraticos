@@ -14,6 +14,7 @@ import 'package:sian/infrastructure/firebase/repositorio_administracion.dart';
 import 'package:sian/infrastructure/firebase/repositorio_dispositivos.dart';
 import 'package:sian/infrastructure/firebase/repositorio_adjuntos.dart';
 import 'package:sian/infrastructure/firebase/repositorio_envio.dart';
+import 'package:sian/infrastructure/firebase/repositorio_grupos.dart';
 import 'package:sian/domain/rol.dart';
 import 'package:sian/domain/sesion.dart';
 
@@ -290,10 +291,9 @@ class RepositorioDispositivosFalso extends RepositorioDispositivos {
 
 /// Doble del repositorio de envío: registra lo que se le pidió.
 class RepositorioEnvioFalso extends RepositorioEnvio {
-  RepositorioEnvioFalso({this.conteo = 3, this.grupos = const <GrupoVista>[]});
+  RepositorioEnvioFalso({this.conteo = 3});
 
   final int conteo;
-  final List<GrupoVista> grupos;
 
   Map<String, int> motivos = <String, int>{};
   int excluidos = 0;
@@ -306,10 +306,6 @@ class RepositorioEnvioFalso extends RepositorioEnvio {
   AdjuntoSubido? ultimaVoz;
   AdjuntoSubido? ultimaImagen;
   ResultadoEnvio? resultado;
-
-  @override
-  Stream<List<GrupoVista>> observarGrupos() =>
-      Stream<List<GrupoVista>>.value(grupos);
 
   @override
   Future<ConteoDestinatarios> contar(Destinatarios destinatarios) async {
@@ -348,5 +344,49 @@ class RepositorioEnvioFalso extends RepositorioEnvio {
           entregados: conteo,
           fallidos: 0,
         );
+  }
+}
+
+/// Doble del repositorio de grupos.
+///
+/// Extiende el real: solo se sustituyen la lectura y las dos escrituras, que
+/// es todo lo que una prueba de widget necesita.
+class RepositorioGruposFalso extends RepositorioGrupos {
+  RepositorioGruposFalso({this.grupos = const <GrupoDetalle>[]});
+
+  final List<GrupoDetalle> grupos;
+
+  int vecesQueGuardo = 0;
+  String? ultimoNombre;
+  List<String>? ultimosMiembros;
+  String? ultimoGrupoId;
+
+  final List<({String grupoId, bool activo})> cambiosDeEstado =
+      <({String grupoId, bool activo})>[];
+
+  @override
+  Stream<List<GrupoDetalle>> observarGrupos() =>
+      Stream<List<GrupoDetalle>>.value(grupos);
+
+  @override
+  Future<String> guardar({
+    required String nombre,
+    required String descripcion,
+    required List<String> miembros,
+    String? grupoId,
+  }) async {
+    vecesQueGuardo += 1;
+    ultimoNombre = nombre;
+    ultimosMiembros = miembros;
+    ultimoGrupoId = grupoId;
+    return grupoId ?? 'g-nuevo';
+  }
+
+  @override
+  Future<void> cambiarEstado({
+    required String grupoId,
+    required bool activo,
+  }) async {
+    cambiosDeEstado.add((grupoId: grupoId, activo: activo));
   }
 }

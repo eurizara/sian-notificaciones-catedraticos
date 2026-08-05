@@ -15,6 +15,7 @@ import '../../domain/rol.dart';
 import '../../domain/sesion.dart';
 import '../shared/barra_sesion.dart';
 import 'seccion_bitacora.dart';
+import 'seccion_grupos.dart';
 import 'seccion_mensajes.dart';
 import 'seccion_usuarios.dart';
 import '../shared/seccion_pendiente.dart';
@@ -75,6 +76,7 @@ final List<SeccionAdmin> _secciones = <SeccionAdmin>[
     descripcion: Textos.seccionGruposDescripcion,
     requisitos: const <String>['RF-USR-03', 'RF-USR-04', 'DT-08'],
     iteracion: Textos.iteracion12,
+    construir: SeccionGrupos.new,
     visiblePara: (Rol rol) => rol.esEmisor,
   ),
   SeccionAdmin(

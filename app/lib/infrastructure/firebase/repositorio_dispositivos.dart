@@ -59,7 +59,8 @@ class RepositorioDispositivos {
 
   late final FirebaseMessaging _mensajeria =
       _mensajeriaDada ?? FirebaseMessaging.instance;
-  late final FirebaseFunctions _fn = _functionsDado ?? FirebaseFunctions.instance;
+  late final FirebaseFunctions _fn =
+      _functionsDado ?? FirebaseFunctions.instance;
 
   EntornoNavegador get entorno => _entorno;
 
@@ -87,7 +88,8 @@ class RepositorioDispositivos {
     }
 
     try {
-      final NotificationSettings ajustes = await _mensajeria.requestPermission();
+      final NotificationSettings ajustes = await _mensajeria
+          .requestPermission();
       final EstadoPermiso permiso = _traducir(ajustes.authorizationStatus);
       consolaError('SIAN.dispositivo permiso | estado=$permiso');
 
@@ -164,8 +166,8 @@ class RepositorioDispositivos {
   Stream<RemoteMessage> mensajesEnPrimerPlano() => FirebaseMessaging.onMessage;
 
   EstadoPermiso _traducir(AuthorizationStatus estado) => switch (estado) {
-    AuthorizationStatus.authorized || AuthorizationStatus.provisional =>
-      EstadoPermiso.concedido,
+    AuthorizationStatus.authorized ||
+    AuthorizationStatus.provisional => EstadoPermiso.concedido,
     AuthorizationStatus.denied => EstadoPermiso.denegado,
     AuthorizationStatus.notDetermined => EstadoPermiso.pendiente,
   };

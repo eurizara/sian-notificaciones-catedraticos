@@ -75,14 +75,16 @@ class SeccionBitacora extends ConsumerWidget {
                     isDense: true,
                   ),
                   items: <DropdownMenuItem<String>>[
-                    for (final ({String valor, String etiqueta}) t in _tiposFiltrables)
+                    for (final ({String valor, String etiqueta}) t
+                        in _tiposFiltrables)
                       DropdownMenuItem<String>(
                         value: t.valor,
                         child: Text(t.etiqueta),
                       ),
                   ],
-                  onChanged: (String? v) =>
-                      ref.read(filtroBitacoraProvider.notifier).cambiar(v ?? ''),
+                  onChanged: (String? v) => ref
+                      .read(filtroBitacoraProvider.notifier)
+                      .cambiar(v ?? ''),
                 ),
               ),
             ],
@@ -94,7 +96,10 @@ class SeccionBitacora extends ConsumerWidget {
             error: (Object e, StackTrace _) => Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
-                child: Text('${Textos.errorCargarDatos}\n\n$e', textAlign: TextAlign.center),
+                child: Text(
+                  '${Textos.errorCargarDatos}\n\n$e',
+                  textAlign: TextAlign.center,
+                ),
               ),
             ),
             data: (List<AsientoVista> lista) => lista.isEmpty
@@ -102,7 +107,8 @@ class SeccionBitacora extends ConsumerWidget {
                 : ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     itemCount: lista.length,
-                    itemBuilder: (BuildContext c, int i) => _Asiento(asiento: lista[i]),
+                    itemBuilder: (BuildContext c, int i) =>
+                        _Asiento(asiento: lista[i]),
                   ),
           ),
         ),
@@ -128,7 +134,9 @@ class _Asiento extends StatelessWidget {
           _icono(asiento.tipo),
           // Los rechazos de acceso se destacan: son el evento que más interesa
           // auditar (criterio de aceptación de RF-AUT-03).
-          color: asiento.esRechazo ? ColoresSian.urgente : tema.colorScheme.primary,
+          color: asiento.esRechazo
+              ? ColoresSian.urgente
+              : tema.colorScheme.primary,
         ),
         title: Text(asiento.resumen),
         subtitle: Text(

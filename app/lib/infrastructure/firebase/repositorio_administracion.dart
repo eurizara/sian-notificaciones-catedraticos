@@ -96,8 +96,10 @@ class RepositorioAdministracion {
   // Resolución perezosa a propósito: construir el repositorio no debe tocar
   // Firebase. Así una prueba de widget puede sustituirlo por un doble sin que
   // el simple hecho de instanciarlo reviente por falta de inicialización.
-  late final FirebaseFirestore _db = _firestoreDado ?? FirebaseFirestore.instance;
-  late final FirebaseFunctions _fn = _functionsDado ?? FirebaseFunctions.instance;
+  late final FirebaseFirestore _db =
+      _firestoreDado ?? FirebaseFirestore.instance;
+  late final FirebaseFunctions _fn =
+      _functionsDado ?? FirebaseFunctions.instance;
 
   // --- Lecturas ------------------------------------------------------------
 
@@ -148,13 +150,18 @@ class RepositorioAdministracion {
         );
       }).toList();
 
-      lista.sort((UsuarioVista a, UsuarioVista b) => a.correo.compareTo(b.correo));
+      lista.sort(
+        (UsuarioVista a, UsuarioVista b) => a.correo.compareTo(b.correo),
+      );
       return lista;
     });
   }
 
   /// Bitácora, de lo más reciente a lo más antiguo (RF-BIT-05).
-  Stream<List<AsientoVista>> observarBitacora({String? tipo, int limite = 100}) {
+  Stream<List<AsientoVista>> observarBitacora({
+    String? tipo,
+    int limite = 100,
+  }) {
     Query<Map<String, dynamic>> consulta = _db.collection('bitacora');
     if (tipo != null && tipo.isNotEmpty) {
       consulta = consulta.where('tipo', isEqualTo: tipo);
@@ -162,20 +169,19 @@ class RepositorioAdministracion {
     consulta = consulta.orderBy('ocurridoEn', descending: true).limit(limite);
 
     return consulta.snapshots().map(
-      (QuerySnapshot<Map<String, dynamic>> s) => s.docs.map((
-        QueryDocumentSnapshot<Map<String, dynamic>> d,
-      ) {
-        final Map<String, dynamic> x = d.data();
-        return AsientoVista(
-          tipo: (x['tipo'] as String?) ?? '',
-          actorCorreo: (x['actorCorreo'] as String?) ?? '',
-          actorRol: (x['actorRol'] as String?) ?? '',
-          entidad: (x['entidad'] as String?) ?? '',
-          entidadId: (x['entidadId'] as String?) ?? '',
-          resumen: (x['resumen'] as String?) ?? '',
-          ocurridoEn: (x['ocurridoEn'] as Timestamp?)?.toDate(),
-        );
-      }).toList(),
+      (QuerySnapshot<Map<String, dynamic>> s) =>
+          s.docs.map((QueryDocumentSnapshot<Map<String, dynamic>> d) {
+            final Map<String, dynamic> x = d.data();
+            return AsientoVista(
+              tipo: (x['tipo'] as String?) ?? '',
+              actorCorreo: (x['actorCorreo'] as String?) ?? '',
+              actorRol: (x['actorRol'] as String?) ?? '',
+              entidad: (x['entidad'] as String?) ?? '',
+              entidadId: (x['entidadId'] as String?) ?? '',
+              resumen: (x['resumen'] as String?) ?? '',
+              ocurridoEn: (x['ocurridoEn'] as Timestamp?)?.toDate(),
+            );
+          }).toList(),
     );
   }
 
@@ -204,13 +210,16 @@ class RepositorioAdministracion {
   }
 
   ResultadoCarga _interpretarCarga(Object? datos) {
-    final Map<Object?, Object?> m = (datos as Map<Object?, Object?>?) ?? <Object?, Object?>{};
-    final List<Object?> rechazadas = (m['rechazadas'] as List<Object?>?) ?? <Object?>[];
+    final Map<Object?, Object?> m =
+        (datos as Map<Object?, Object?>?) ?? <Object?, Object?>{};
+    final List<Object?> rechazadas =
+        (m['rechazadas'] as List<Object?>?) ?? <Object?>[];
 
     return ResultadoCarga(
       creadas: (m['creadas'] as num?)?.toInt() ?? 0,
       rechazadas: rechazadas.map((Object? e) {
-        final Map<Object?, Object?> x = (e as Map<Object?, Object?>?) ?? <Object?, Object?>{};
+        final Map<Object?, Object?> x =
+            (e as Map<Object?, Object?>?) ?? <Object?, Object?>{};
         return (
           numero: (x['numero'] as num?)?.toInt() ?? 0,
           error: (x['error'] as String?) ?? '',
@@ -220,9 +229,9 @@ class RepositorioAdministracion {
   }
 
   Future<void> revocarInvitacion(String correo) async {
-    await _fn.httpsCallable('revocarInvitacion').call<Object?>(<String, Object?>{
-      'correo': correo,
-    });
+    await _fn.httpsCallable('revocarInvitacion').call<Object?>(
+      <String, Object?>{'correo': correo},
+    );
   }
 
   Future<void> cambiarRol({required String uid, required String rol}) async {
@@ -232,11 +241,13 @@ class RepositorioAdministracion {
     });
   }
 
-  Future<void> cambiarEstado({required String uid, required bool activo}) async {
-    await _fn.httpsCallable('cambiarEstadoUsuario').call<Object?>(<String, Object?>{
-      'uid': uid,
-      'activo': activo,
-    });
+  Future<void> cambiarEstado({
+    required String uid,
+    required bool activo,
+  }) async {
+    await _fn.httpsCallable('cambiarEstadoUsuario').call<Object?>(
+      <String, Object?>{'uid': uid, 'activo': activo},
+    );
   }
 
   Future<void> cambiarAutorizaciones({
@@ -244,10 +255,12 @@ class RepositorioAdministracion {
     bool? puedeEmitirUrgentes,
     bool? puedeCrearRecurrentes,
   }) async {
-    await _fn.httpsCallable('cambiarAutorizacionesFinas').call<Object?>(<String, Object?>{
-      'uid': uid,
-      'puedeEmitirUrgentes': ?puedeEmitirUrgentes,
-      'puedeCrearRecurrentes': ?puedeCrearRecurrentes,
-    });
+    await _fn
+        .httpsCallable('cambiarAutorizacionesFinas')
+        .call<Object?>(<String, Object?>{
+          'uid': uid,
+          'puedeEmitirUrgentes': ?puedeEmitirUrgentes,
+          'puedeCrearRecurrentes': ?puedeCrearRecurrentes,
+        });
   }
 }

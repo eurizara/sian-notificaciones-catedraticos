@@ -69,10 +69,8 @@ class NotaDeVoz extends ConsumerWidget {
                   color: ColoresSian.urgente,
                 ),
               ),
-              data: (String u) => SizedBox(
-                height: 56,
-                child: ReproductorAudio(url: u),
-              ),
+              data: (String u) =>
+                  SizedBox(height: 56, child: ReproductorAudio(url: u)),
             ),
           ],
         ),

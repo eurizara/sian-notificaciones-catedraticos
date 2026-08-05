@@ -83,7 +83,13 @@ class _TarjetaNotificacionesState extends ConsumerState<TarjetaNotificaciones> {
         .entorno;
     final ResultadoRegistro? r = _resultado;
 
-    final ({IconData icono, Color color, String titulo, String detalle, bool accion})
+    final ({
+      IconData icono,
+      Color color,
+      String titulo,
+      String detalle,
+      bool accion,
+    })
     estado = _estado(entorno, r);
 
     return Card(
@@ -142,10 +148,8 @@ class _TarjetaNotificacionesState extends ConsumerState<TarjetaNotificaciones> {
   /// Los tres «no» no son equivalentes y no se pueden mezclar: uno se arregla
   /// con un botón, otro exige ir a los ajustes del navegador (RES-07), y el
   /// tercero exige instalar la aplicación (RES-05).
-  ({IconData icono, Color color, String titulo, String detalle, bool accion}) _estado(
-    EntornoNavegador entorno,
-    ResultadoRegistro? r,
-  ) {
+  ({IconData icono, Color color, String titulo, String detalle, bool accion})
+  _estado(EntornoNavegador entorno, ResultadoRegistro? r) {
     if (!entorno.soportaNotificaciones) {
       return (
         icono: Icons.notifications_off_outlined,

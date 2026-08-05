@@ -63,10 +63,7 @@ class InstructivoIos extends StatelessWidget {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        Icon(
-                          Icons.priority_high,
-                          color: ColoresSian.urgente,
-                        ),
+                        Icon(Icons.priority_high, color: ColoresSian.urgente),
                         SizedBox(width: 12),
                         Expanded(child: Text(Textos.instalarPorQue)),
                       ],

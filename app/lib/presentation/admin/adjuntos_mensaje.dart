@@ -120,9 +120,7 @@ class _PanelAdjuntosState extends State<PanelAdjuntos> {
     });
 
     if (g != null && g.esValida) {
-      widget.alCambiar(
-        AdjuntosEnCurso(voz: g, imagen: widget.adjuntos.imagen),
-      );
+      widget.alCambiar(AdjuntosEnCurso(voz: g, imagen: widget.adjuntos.imagen));
     }
   }
 

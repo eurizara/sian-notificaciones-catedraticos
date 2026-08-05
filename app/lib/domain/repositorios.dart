@@ -96,5 +96,6 @@ class MensajeRecibido {
 
   /// Urgente, exige confirmación y todavía no se ha confirmado: es sobre lo
   /// que la aplicación tiene que insistir (RF-CNF-10).
-  bool get exigeAtencion => esUrgente && requiereConfirmacion && !estaConfirmado;
+  bool get exigeAtencion =>
+      esUrgente && requiereConfirmacion && !estaConfirmado;
 }

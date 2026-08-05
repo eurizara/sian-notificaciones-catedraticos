@@ -48,17 +48,48 @@ class ResultadoPolitica {
 }
 
 const List<String> _comunes = <String>[
-  'password', 'contrasena', 'contraseña', '123456', '12345678', '123456789',
-  'qwerty', 'qwertyui', 'abc123', 'iloveyou', 'admin', 'administrador',
-  'usuario', 'bienvenido', 'sian', 'umg', 'umgbdm', 'marianogalvez',
-  'universidad', 'guatemala', 'catedratico', 'coordinacion', 'bocadelmonte',
-  'simulacro', 'letmein', 'welcome',
+  'password',
+  'contrasena',
+  'contraseña',
+  '123456',
+  '12345678',
+  '123456789',
+  'qwerty',
+  'qwertyui',
+  'abc123',
+  'iloveyou',
+  'admin',
+  'administrador',
+  'usuario',
+  'bienvenido',
+  'sian',
+  'umg',
+  'umgbdm',
+  'marianogalvez',
+  'universidad',
+  'guatemala',
+  'catedratico',
+  'coordinacion',
+  'bocadelmonte',
+  'simulacro',
+  'letmein',
+  'welcome',
 ];
 
 String _normalizar(String texto) {
   const Map<String, String> tildes = <String, String>{
-    'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u', 'ü': 'u',
-    'Á': 'a', 'É': 'e', 'Í': 'i', 'Ó': 'o', 'Ú': 'u', 'Ü': 'u',
+    'á': 'a',
+    'é': 'e',
+    'í': 'i',
+    'ó': 'o',
+    'ú': 'u',
+    'ü': 'u',
+    'Á': 'a',
+    'É': 'e',
+    'Í': 'i',
+    'Ó': 'o',
+    'Ú': 'u',
+    'Ü': 'u',
   };
   final StringBuffer sb = StringBuffer();
   for (final String c in texto.toLowerCase().split('')) {
@@ -92,7 +123,9 @@ List<String> _fragmentosPersonales({String? correo, String? nombre}) {
 
   return crudos
       .map(_normalizar)
-      .where((String f) => f.length >= PoliticaContrasena.fragmentoPersonalMinimo)
+      .where(
+        (String f) => f.length >= PoliticaContrasena.fragmentoPersonalMinimo,
+      )
       .toList();
 }
 
@@ -179,7 +212,9 @@ ResultadoPolitica evaluarContrasena(
   final String invertida = desustituida.split('').reversed.join();
   if (_comunes.any(
     (String c) =>
-        desustituida.contains(c) || normalizada.contains(c) || invertida.contains(c),
+        desustituida.contains(c) ||
+        normalizada.contains(c) ||
+        invertida.contains(c),
   )) {
     fallos.add(IncumplimientoContrasena.demasiadoComun);
   }

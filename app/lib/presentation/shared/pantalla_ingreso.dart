@@ -81,10 +81,7 @@ class _PantallaIngresoState extends ConsumerState<PantallaIngreso> {
     try {
       await ref
           .read(repositorioSesionProvider)
-          .entrarConCorreo(
-            correo: _correo.text,
-            contrasena: _contrasena.text,
-          );
+          .entrarConCorreo(correo: _correo.text, contrasena: _contrasena.text);
       // No se navega aquí: el cambio de sesión lo observa el enrutador, que es
       // el único que decide qué pantalla toca (RN-01 aplicado a la interfaz).
     } on FirebaseAuthException catch (e) {

@@ -6,23 +6,9 @@
 /// criterio de quien tenga abierta la consola del navegador.
 library;
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
 import 'repositorio_adjuntos.dart';
-
-/// Grupo tal como se elige al redactar.
-class GrupoVista {
-  const GrupoVista({
-    required this.id,
-    required this.nombre,
-    required this.totalMiembros,
-  });
-
-  final String id;
-  final String nombre;
-  final int totalMiembros;
-}
 
 /// A quién va dirigido un mensaje (documento 05, sección 2.4).
 class Destinatarios {
@@ -85,38 +71,13 @@ class ResultadoEnvio {
 }
 
 class RepositorioEnvio {
-  RepositorioEnvio({FirebaseFirestore? firestore, FirebaseFunctions? functions})
-    : _firestoreDado = firestore,
-      _functionsDado = functions;
+  RepositorioEnvio({FirebaseFunctions? functions}) : _functionsDado = functions;
 
-  final FirebaseFirestore? _firestoreDado;
   final FirebaseFunctions? _functionsDado;
 
   // Resolución perezosa: construir el repositorio no debe tocar Firebase.
-  late final FirebaseFirestore _db = _firestoreDado ?? FirebaseFirestore.instance;
-  late final FirebaseFunctions _fn = _functionsDado ?? FirebaseFunctions.instance;
-
-  /// Grupos disponibles para elegir como destinatarios.
-  Stream<List<GrupoVista>> observarGrupos() {
-    return _db
-        .collection('grupos')
-        .where('activo', isEqualTo: true)
-        .snapshots()
-        .map((QuerySnapshot<Map<String, dynamic>> s) {
-          final List<GrupoVista> lista = s.docs.map((
-            QueryDocumentSnapshot<Map<String, dynamic>> d,
-          ) {
-            final Map<String, dynamic> x = d.data();
-            return GrupoVista(
-              id: d.id,
-              nombre: (x['nombre'] as String?) ?? d.id,
-              totalMiembros: (x['totalMiembros'] as num?)?.toInt() ?? 0,
-            );
-          }).toList();
-          lista.sort((GrupoVista a, GrupoVista b) => a.nombre.compareTo(b.nombre));
-          return lista;
-        });
-  }
+  late final FirebaseFunctions _fn =
+      _functionsDado ?? FirebaseFunctions.instance;
 
   /// Cuántos recibirían este mensaje, sin enviar nada (RF-USR-07).
   ///
@@ -127,7 +88,9 @@ class RepositorioEnvio {
   Future<ConteoDestinatarios> contar(Destinatarios destinatarios) async {
     final HttpsCallableResult<Object?> r = await _fn
         .httpsCallable('contarDestinatarios')
-        .call<Object?>(<String, Object?>{'destinatarios': destinatarios.aMapa()});
+        .call<Object?>(<String, Object?>{
+          'destinatarios': destinatarios.aMapa(),
+        });
 
     final Map<Object?, Object?> d =
         (r.data as Map<Object?, Object?>?) ?? <Object?, Object?>{};

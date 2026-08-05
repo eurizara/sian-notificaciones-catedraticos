@@ -89,9 +89,10 @@ class _EnrutadorState extends ConsumerState<Enrutador> {
       // parecía un botón muerto. El estado de sesión aún dice «rechazada»
       // porque el rechazo es lo último que ocurrió, no lo que toca mostrar.
       SesionRechazada() => _pantallaSinSesion(),
-      SesionActiva(:final usuario) => usuario.rol.usaPanelAdministrativo
-          ? PanelAdmin(usuario: usuario)
-          : BandejaDocente(usuario: usuario),
+      SesionActiva(:final usuario) =>
+        usuario.rol.usaPanelAdministrativo
+            ? PanelAdmin(usuario: usuario)
+            : BandejaDocente(usuario: usuario),
     };
   }
 

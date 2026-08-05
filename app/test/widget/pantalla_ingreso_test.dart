@@ -19,13 +19,11 @@ void main() {
 
   Widget montar() => ProviderScope(
     overrides: [repositorioSesionProvider.overrideWithValue(sesion)],
-    child: MaterialApp(
-      theme: TemaSian.claro(),
-      home: const PantallaIngreso(),
-    ),
+    child: MaterialApp(theme: TemaSian.claro(), home: const PantallaIngreso()),
   );
 
-  Finder campoCorreo() => find.widgetWithText(TextFormField, Textos.etiquetaCorreo);
+  Finder campoCorreo() =>
+      find.widgetWithText(TextFormField, Textos.etiquetaCorreo);
   Finder campoContrasena() =>
       find.widgetWithText(TextFormField, Textos.etiquetaContrasena);
 
@@ -91,7 +89,10 @@ void main() {
         find.descendant(of: campoCorreo(), matching: find.byType(EditableText)),
       );
       final EditableText contrasena = tester.widget<EditableText>(
-        find.descendant(of: campoContrasena(), matching: find.byType(EditableText)),
+        find.descendant(
+          of: campoContrasena(),
+          matching: find.byType(EditableText),
+        ),
       );
 
       expect(correo.controller.text, isEmpty);

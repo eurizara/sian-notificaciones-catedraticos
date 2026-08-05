@@ -39,8 +39,10 @@ abstract final class Textos {
       'Si ese correo tiene cuenta, recibirás un enlace para restablecerla.';
 
   static const String validacionCorreoObligatorio = 'Escribe tu correo.';
-  static const String validacionCorreoInvalido = 'Ese correo no tiene forma válida.';
-  static const String validacionContrasenaObligatoria = 'Escribe tu contraseña.';
+  static const String validacionCorreoInvalido =
+      'Ese correo no tiene forma válida.';
+  static const String validacionContrasenaObligatoria =
+      'Escribe tu contraseña.';
 
   // Deliberadamente sin distinguir «no existe» de «contraseña incorrecta»:
   // hacerlo permitiría averiguar qué correos tienen cuenta probando uno a uno.
@@ -114,7 +116,8 @@ abstract final class Textos {
       'El registro con correo y contraseña no está habilitado.';
 
   // --- Rechazo de acceso (RF-AUT-03) ---------------------------------------
-  static const String rechazoCorreoUsado = 'Correo con el que intentaste entrar';
+  static const String rechazoCorreoUsado =
+      'Correo con el que intentaste entrar';
   static const String botonVolverAIngreso = 'Volver al inicio de sesión';
 
   static const String rechazoNoAutorizadoTitulo = 'Acceso no autorizado';
@@ -205,7 +208,8 @@ abstract final class Textos {
       'encabezado es opcional. Una línea inválida no aborta la carga: se '
       'rechaza esa sola y se informa con su número.';
   static const String sinInvitaciones = 'Todavía no hay ninguna invitación.';
-  static const String sinUsuarios = 'Todavía no hay ningún usuario dado de alta.';
+  static const String sinUsuarios =
+      'Todavía no hay ningún usuario dado de alta.';
   static const String invitacionConsumida = 'ya usada';
   static const String invitacionPendiente = 'sin usar';
   static const String invitacionRevocada = 'Invitación revocada.';
@@ -221,7 +225,8 @@ abstract final class Textos {
   static const String autorizacionUrgentes = 'Puede emitir alertas urgentes';
   static const String autorizacionUrgentesAyuda =
       'Autorización que concede el coordinador, según el documento 01';
-  static const String autorizacionRecurrentes = 'Puede crear mensajes recurrentes';
+  static const String autorizacionRecurrentes =
+      'Puede crear mensajes recurrentes';
   static const String errorOperacion = 'No se pudo completar:';
   static const String errorCargarDatos = 'No se pudieron cargar los datos';
 
@@ -283,7 +288,8 @@ abstract final class Textos {
   static const String notifInstalarDetalle =
       'En iPhone las notificaciones solo funcionan con la aplicación añadida '
       'a la pantalla de inicio. Sin ese paso no llegará ninguna.';
-  static const String notifSinSoporteTitulo = 'Este navegador no puede notificarte';
+  static const String notifSinSoporteTitulo =
+      'Este navegador no puede notificarte';
   static const String notifSinSoporteIos =
       'Tu versión de iOS es anterior a la 16.4, que es desde donde Apple '
       'permite notificaciones web. Podrás leer tus mensajes al abrir la '
@@ -327,7 +333,8 @@ abstract final class Textos {
   static const String etiquetaTipo = 'Clasificación';
   static const String tipoInformativo = 'Informativo';
   static const String tipoUrgente = 'Urgente';
-  static const String tipoInformativoDetalle = 'Aviso ordinario. Llega como una notificación normal.';
+  static const String tipoInformativoDetalle =
+      'Aviso ordinario. Llega como una notificación normal.';
   static const String tipoUrgenteDetalle =
       'Alerta institucional. Se muestra con «URGENTE» delante y no se descarta sola.';
   static const String etiquetaDestinatarios = 'Destinatarios';
@@ -345,7 +352,8 @@ abstract final class Textos {
       'Tu cuenta no tiene autorización para emitir alertas urgentes. Pídesela a la coordinación.';
 
   static const String validacionTituloObligatorio = 'El título es obligatorio.';
-  static const String validacionCuerpoObligatorio = 'El mensaje no puede ir vacío.';
+  static const String validacionCuerpoObligatorio =
+      'El mensaje no puede ir vacío.';
   static const String validacionElijeGrupo = 'Elige al menos un grupo.';
 
   static String validacionTituloLargo(int actual) =>
@@ -384,7 +392,8 @@ abstract final class Textos {
   static String envioConFallos(int entregados, int total, int fallidos) =>
       'Enviado a $entregados de $total. $fallidos sin entregar: '
       'revisa en la bitácora quién no tiene dispositivo registrado.';
-  static const String envioFallido = 'No se pudo enviar. Nada quedó registrado.';
+  static const String envioFallido =
+      'No se pudo enviar. Nada quedó registrado.';
 
   // --- Adjuntos: nota de voz e imagen (RF-MSG-03, 04, 07, 08) ---------------
   static const String etiquetaAdjuntos = 'Nota de voz e imagen';
@@ -416,8 +425,7 @@ abstract final class Textos {
     FalloGrabacion.permisoDenegado =>
       'No diste permiso al micrófono. Búscalo en los ajustes del sitio, '
           'permítelo y vuelve a intentarlo.',
-    FalloGrabacion.sinMicrofono =>
-      'No se encontró ningún micrófono conectado.',
+    FalloGrabacion.sinMicrofono => 'No se encontró ningún micrófono conectado.',
     FalloGrabacion.error =>
       'No se pudo iniciar la grabación. Inténtalo de nuevo.',
   };
@@ -440,6 +448,42 @@ abstract final class Textos {
   }
 
   static const String subiendoAdjuntos = 'Subiendo adjuntos…';
+
+  // --- Grupos de destinatarios (RF-USR-03, RF-USR-04, DT-08) ----------------
+  static const String grupoNuevo = 'Nuevo grupo';
+  static const String grupoEditar = 'Editar grupo';
+  static const String grupoNombre = 'Nombre del grupo';
+  static const String grupoDescripcion = 'Descripción (opcional)';
+  static const String grupoBuscar = 'Buscar por nombre o correo';
+  static const String grupoQuitarTodos = 'Quitar todos';
+  static const String grupoGuardar = 'Guardar';
+  static const String grupoGuardando = 'Guardando…';
+  static const String grupoDesactivar = 'Desactivar';
+  static const String grupoReactivar = 'Reactivar';
+  static const String grupoDesactivarTitulo = '¿Desactivar el grupo?';
+  static const String grupoSinElegibles =
+      'No hay personas disponibles. Invítalas primero desde Usuarios.';
+  static const String grupoNinguno =
+      'Todavía no hay grupos. Créalos para poder enviar avisos a un conjunto '
+      'concreto de catedráticos en vez de a todos.';
+  static const String grupoErrorGuardar =
+      'No se pudo guardar el grupo. Inténtalo de nuevo.';
+  static const String grupoValidacionNombre = 'El grupo necesita un nombre.';
+  static const String grupoValidacionSinMiembros =
+      'Elige al menos una persona. Un grupo vacío no le llegaría a nadie.';
+
+  static String grupoMiembros(int cuantos) =>
+      cuantos == 1 ? '1 miembro' : '$cuantos miembros';
+  static String grupoInactivo(int cuantos) =>
+      'Desactivado · ${grupoMiembros(cuantos)}';
+  static String grupoElegidos(int cuantos) =>
+      cuantos == 0 ? 'Nadie elegido todavía' : '$cuantos elegidos';
+  static String grupoRozaElLimite(int maximo) =>
+      'Este grupo se acerca al máximo de $maximo miembros.';
+  static String grupoDesactivarAviso(String nombre) =>
+      'No se borra: «$nombre» dejará de aparecer al redactar, pero se conserva '
+      'para que los avisos ya enviados sigan diciendo a quién fueron. '
+      'Puedes reactivarlo cuando quieras.';
 
   // --- Detalle del mensaje (RF-ENT-07, 08, 09) ------------------------------
   static const String detalleTitulo = 'Detalle del aviso';
@@ -482,7 +526,8 @@ abstract final class Textos {
     ),
     (
       numero: 2,
-      texto: 'Pulsa el botón Compartir, el cuadrado con la flecha hacia arriba.',
+      texto:
+          'Pulsa el botón Compartir, el cuadrado con la flecha hacia arriba.',
       icono: Icons.ios_share,
     ),
     (
@@ -490,7 +535,11 @@ abstract final class Textos {
       texto: 'Desliza y elige «Añadir a pantalla de inicio».',
       icono: Icons.add_to_home_screen,
     ),
-    (numero: 4, texto: 'Confirma con «Añadir».', icono: Icons.check_circle_outline),
+    (
+      numero: 4,
+      texto: 'Confirma con «Añadir».',
+      icono: Icons.check_circle_outline,
+    ),
     (
       numero: 5,
       texto: 'Abre SIAN desde el icono nuevo y activa las notificaciones.',
