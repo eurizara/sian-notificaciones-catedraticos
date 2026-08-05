@@ -22,6 +22,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/proveedores_dispositivos.dart';
+import '../../core/plataforma/notificacion_sistema.dart';
 import '../shared/tema.dart';
 import '../shared/textos.dart';
 
@@ -62,45 +63,90 @@ class _AvisoEnPrimerPlanoState extends ConsumerState<AvisoEnPrimerPlano> {
       mensaje,
     );
 
+    // Se le pide al sistema operativo que la muestre él, con su banner, su
+    // sonido y su vibración. Sin esto, un mensaje que llega con la aplicación
+    // abierta se queda dentro de la pantalla y no se nota: exactamente lo que
+    // no puede pasar con una alerta de emergencia.
+    //
+    // No se espera el resultado ni se condiciona nada a él: si el sistema la
+    // suprime —iOS lo hace a menudo con la aplicación en foco, igual que con
+    // las nativas—, la tarjeta de aquí abajo es el respaldo, y verlas las dos
+    // es mejor que arriesgarse a no ver ninguna.
+    unawaited(
+      mostrarNotificacionDelSistema(
+        titulo: aviso.titulo,
+        cuerpo: aviso.cuerpo,
+        urgente: aviso.urgente,
+        etiqueta: mensaje.data['mensajeId'] as String?,
+      ),
+    );
+
+    final Color acento = aviso.urgente
+        ? ColoresSian.urgente
+        : ColoresSian.primario;
+    final ThemeData tema = Theme.of(context);
+
     ScaffoldMessenger.of(context)
       ..clearMaterialBanners()
       ..showMaterialBanner(
         MaterialBanner(
-          backgroundColor: aviso.urgente
-              ? ColoresSian.urgente
-              : ColoresSian.primario,
-          leading: Icon(
-            aviso.urgente ? Icons.priority_high : Icons.notifications_active,
-            color: Colors.white,
-          ),
-          content: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Text(
-                aviso.titulo,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              if (aviso.cuerpo.isNotEmpty) ...<Widget>[
-                const SizedBox(height: 4),
-                Text(
-                  aviso.cuerpo,
-                  style: const TextStyle(color: Colors.white),
+          // Fondo claro y franja de color: con el mismo azul de la barra
+          // superior el aviso parecía parte de la cabecera, en vez de algo que
+          // acaba de llegar.
+          backgroundColor: tema.colorScheme.surface,
+          padding: EdgeInsets.zero,
+          content: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Container(width: 6, color: acento),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Icon(
+                          aviso.urgente
+                              ? Icons.priority_high
+                              : Icons.notifications_active,
+                          color: acento,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              Text(
+                                aviso.titulo,
+                                style: tema.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: aviso.urgente ? acento : null,
+                                ),
+                              ),
+                              if (aviso.cuerpo.isNotEmpty) ...<Widget>[
+                                const SizedBox(height: 4),
+                                Text(
+                                  aviso.cuerpo,
+                                  style: tema.textTheme.bodyMedium,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
-            ],
+            ),
           ),
           actions: <Widget>[
             TextButton(
               onPressed: () =>
                   ScaffoldMessenger.of(context).hideCurrentMaterialBanner(),
-              child: const Text(
-                Textos.botonCerrarAviso,
-                style: TextStyle(color: Colors.white),
-              ),
+              child: const Text(Textos.botonCerrarAviso),
             ),
           ],
         ),

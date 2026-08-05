@@ -44,7 +44,7 @@ momento de tomarla**, no después.
 | **Decisión** | En iOS-PWA, las alertas urgentes se distinguen por prefijo visible en el título y por tratamiento diferenciado dentro de la aplicación |
 | **Motivo** | La implementación de Web Push de Safari no expone control de sonido personalizado ni patrones de vibración. No es una limitación del proyecto sino de la plataforma |
 | **Consecuencia** | Un catedrático con iPhone recibe la alerta de simulacro con el mismo sonido que cualquier otra notificación. En una emergencia real, eso importa |
-| **Mitigación actual** | Prefijo visible «URGENTE» en el título. Sonido reproducido desde la aplicación cuando está en primer plano. Insistencia visual sobre mensajes urgentes no confirmados |
+| **Mitigación actual** | Prefijo visible «URGENTE» en el título y `requireInteraction`, para que una alerta urgente no se descarte sola. Con la aplicación en primer plano se le pide igualmente al sistema operativo que muestre la notificación, usando el mismo registro de service worker que la entrega en segundo plano: así suena y vibra con los ajustes del dispositivo, en vez de quedarse dentro de la pantalla. Insistencia visual sobre mensajes urgentes no confirmados |
 | **Plan de pago** | Solo se resuelve con aplicación nativa en iOS, lo que exige App Store. Costo: 99 USD anuales más el esfuerzo de publicación |
 | **Disparador para pagarla** | Decisión institucional de que las alertas de emergencia deben tener tratamiento diferenciado en toda plataforma sin excepción |
 

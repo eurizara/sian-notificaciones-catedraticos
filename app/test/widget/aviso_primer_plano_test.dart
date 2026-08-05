@@ -19,6 +19,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sian/application/proveedores_dispositivos.dart';
 import 'package:sian/application/proveedores_sesion.dart';
 import 'package:sian/core/navegador.dart';
+import 'package:sian/core/plataforma/notificacion_sistema.dart';
 import 'package:sian/domain/repositorios.dart';
 import 'package:sian/domain/rol.dart';
 import 'package:sian/infrastructure/firebase/repositorio_dispositivos.dart';
@@ -68,6 +69,20 @@ void main() {
       );
       expect(aviso.titulo, 'Aviso');
       expect(aviso.cuerpo, 'Contenido');
+    });
+  });
+
+  group('notificación del sistema', () {
+    test('fuera del navegador no finge haberla mostrado', () async {
+      // Quien llama tiene que poder distinguir «la mostró el sistema» de «no
+      // se pudo»: de eso depende si además hace falta enseñar algo dentro de
+      // la aplicación. Devolver `true` por comodidad dejaría avisos mudos.
+      final bool mostrada = await mostrarNotificacionDelSistema(
+        titulo: 'Prueba',
+        cuerpo: 'Contenido',
+        urgente: false,
+      );
+      expect(mostrada, isFalse);
     });
   });
 
