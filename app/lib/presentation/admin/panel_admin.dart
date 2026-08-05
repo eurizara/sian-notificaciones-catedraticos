@@ -15,7 +15,9 @@ import '../../domain/rol.dart';
 import '../../domain/sesion.dart';
 import '../shared/barra_sesion.dart';
 import 'seccion_bitacora.dart';
+import 'seccion_entregas.dart';
 import 'seccion_grupos.dart';
+import 'seccion_programacion.dart';
 import 'seccion_mensajes.dart';
 import 'seccion_usuarios.dart';
 import '../shared/seccion_pendiente.dart';
@@ -67,6 +69,7 @@ final List<SeccionAdmin> _secciones = <SeccionAdmin>[
     descripcion: Textos.seccionProgramacionDescripcion,
     requisitos: const <String>['RF-PRG-02', 'RF-PRG-05', 'RF-PRG-09'],
     iteracion: Textos.iteracion14,
+    construir: SeccionProgramacion.new,
     visiblePara: (Rol rol) => rol.esEmisor,
   ),
   SeccionAdmin(
@@ -97,6 +100,7 @@ final List<SeccionAdmin> _secciones = <SeccionAdmin>[
     descripcion: Textos.seccionEntregasDescripcion,
     requisitos: const <String>['RF-CNF-06', 'RF-CNF-07', 'RF-BIT-08'],
     iteracion: Textos.iteracion14,
+    construir: SeccionEntregas.new,
     visiblePara: (Rol rol) => rol.esEmisor || rol == Rol.auditor,
   ),
   SeccionAdmin(

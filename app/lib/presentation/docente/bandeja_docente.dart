@@ -5,10 +5,14 @@
 /// ve aquí un mensaje, es porque las reglas lo dejaron leerlo.
 library;
 
+import 'dart:async';
+
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../application/proveedores_programacion.dart';
 import '../../core/entorno.dart';
 import '../../domain/repositorios.dart';
 import '../../domain/sesion.dart';
@@ -136,13 +140,94 @@ List<Widget> filasDeMensajes(
   ];
 }
 
-class _Fila extends StatelessWidget {
+class _Fila extends ConsumerStatefulWidget {
   const _Fila({required this.mensaje, super.key});
 
   final MensajeRecibido mensaje;
 
   @override
+  ConsumerState<_Fila> createState() => _FilaState();
+}
+
+class _FilaState extends ConsumerState<_Fila> {
+  bool _confirmando = false;
+
+  /// Marca el mensaje como abierto al pintarlo (RF-CNF-02).
+  ///
+  /// Abrir NO es confirmar: dice que la aplicación lo mostró, no que alguien
+  /// declarara haberlo leído. Mantenerlos separados es lo que convierte la
+  /// confirmación en evidencia y no en suposición.
+  @override
+  void initState() {
+    super.initState();
+    if (widget.mensaje.estado == 'ENTREGADO') {
+      unawaited(
+        ref
+            .read(repositorioProgramacionProvider)
+            .marcarAbierto(widget.mensaje.mensajeId)
+            .catchError((Object _) {
+              // Que no se pueda marcar no puede impedir leer el mensaje.
+            }),
+      );
+    }
+  }
+
+  Future<void> _confirmar() async {
+    final bool? seguro = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext c) => AlertDialog(
+        title: const Text(Textos.confirmarTitulo),
+        content: const Text(Textos.confirmarAviso),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(c).pop(false),
+            child: const Text(Textos.botonCancelar),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(c).pop(true),
+            child: const Text(Textos.confirmarSi),
+          ),
+        ],
+      ),
+    );
+
+    if (seguro != true || !mounted) {
+      return;
+    }
+
+    setState(() => _confirmando = true);
+
+    try {
+      await ref
+          .read(repositorioProgramacionProvider)
+          .confirmarLectura(
+            mensajeId: widget.mensaje.mensajeId,
+            dispositivo: EntornoNavegador.detectar().navegador,
+          );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(Textos.confirmacionHecha),
+            backgroundColor: ColoresSian.confirmado,
+          ),
+        );
+      }
+    } on FirebaseFunctionsException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? Textos.errorInesperado)),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _confirmando = false);
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final MensajeRecibido mensaje = widget.mensaje;
     final ThemeData tema = Theme.of(context);
     // Patrón numérico a propósito: `DateFormat` con nombre de locale exige
     // inicializar los datos de `intl`, y sin eso lanza en tiempo de ejecución.
@@ -235,19 +320,21 @@ class _Fila extends StatelessWidget {
             ),
             if (mensaje.requiereConfirmacion && !mensaje.estaConfirmado) ...[
               const SizedBox(height: 12),
-              // Deshabilitado a propósito: confirmar es un acto irreversible
-              // con valor probatorio, y solo lo escribe el servidor
-              // (RF-CNF-04). La Function llega en la iteración 1.4.
+              // Confirmar es irreversible y con valor probatorio: lo escribe
+              // el servidor, nunca el cliente (RF-CNF-04). Aquí solo se pide.
               FilledButton.icon(
-                onPressed: null,
-                icon: const Icon(Icons.check),
-                label: const Text(Textos.botonConfirmarLectura),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                Textos.confirmacionEnIteracion14,
-                style: tema.textTheme.bodySmall?.copyWith(
-                  color: tema.colorScheme.onSurfaceVariant,
+                onPressed: _confirmando ? null : _confirmar,
+                icon: _confirmando
+                    ? const SizedBox(
+                        height: 16,
+                        width: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.check),
+                label: Text(
+                  _confirmando
+                      ? Textos.confirmandoLectura
+                      : Textos.botonConfirmarLectura,
                 ),
               ),
             ],

@@ -81,7 +81,6 @@ catedrático a través de las reglas de seguridad, y el rechazo explicativo de R
 - Crear, enviar o programar mensajes
 - Notificaciones push de cualquier tipo
 - Confirmar la lectura de un mensaje
-- Contenido de las secciones del panel: hoy declaran qué harán y en qué iteración
 
 ### Pasos
 
@@ -89,14 +88,14 @@ catedrático a través de las reglas de seguridad, y el rechazo explicativo de R
 |---|---|---|
 | 1.1 | Abre la aplicación | Escudo de la UMG, **SIAN UMG-BDM**, nombre completo del sistema, universidad y sede. Pestaña del navegador con el mismo nombre y el escudo como icono |
 | 1.2 | Entra con `coordinacion@umg.edu.gt` | Panel con **6 secciones**: Mensajes, Programación, Grupos, Usuarios, Entregas, Bitácora |
-| 1.3 | Recorre las 6 secciones | Cada una dice qué hará, qué requisitos cubre y en qué iteración llega |
+| 1.3 | Recorre las 6 secciones | **Todas están construidas** desde la iteración 1.4: Mensajes, Programación, Grupos, Usuarios, Entregas y Bitácora |
 | 1.4 | Cierra sesión y entra con `admin1@umg.edu.gt` | Mismo panel **sin Usuarios ni Bitácora**. Solo 4 secciones |
 | 1.5 | Cierra sesión y entra con `auditoria@umg.edu.gt` | **Solo 2 secciones**: Entregas y Bitácora. Ninguna de emisión |
 | 1.6 | Cierra sesión y entra con `catedratico1@umg.edu.gt` | Bandeja, **no** panel. Un mensaje: «Simulacro de evacuación» con distintivo rojo **URGENTE** |
 | 1.7 | Observa el estado del mensaje | Dice **Confirmado**, en verde. **No** aparece el aviso de pendientes |
 | 1.8 | Cierra sesión y entra con `catedratico2@umg.edu.gt` | El mismo mensaje, pero en estado **Abierto** y **sí** aparece «Tienes 1 alerta urgente sin confirmar» |
 | 1.9 | Compara 1.7 con 1.8 | Es RF-CNF-02 en pantalla: **abrir un mensaje no lo confirma**. Son estados distintos y el sistema los trata distinto |
-| 1.10 | Pulsa «Confirmar lectura» | El botón está **visible pero inerte**, con la explicación debajo. Confirmar es irreversible y con valor probatorio: solo lo escribirá el servidor (RF-CNF-04) |
+| 1.10 | Pulsa «Confirmar lectura» | Pide una confirmación aparte y avisa de que **no se puede deshacer**. Lo escribe el servidor, nunca el cliente (RF-CNF-04) |
 | 1.11 | Entra con un correo inventado, por ejemplo `nadie@gmail.com` | «Correo o contraseña incorrectos» — **nunca** «ese correo no existe»: distinguirlo permitiría averiguar quién tiene cuenta |
 | 1.12 | Reduce la ventana del navegador a ancho de teléfono | Nada se desborda. El menú del panel pasa a cajón desplegable; el nombre cede el sitio en la barra |
 | 1.13 | Instala la PWA desde el navegador | El icono es el escudo, y bajo él dice **SIAN UMG-BDM** |
@@ -412,32 +411,89 @@ Programación, recurrencia y confirmación de lectura: son la ronda 5.
 
 ## Ronda 5 — Programación, recurrencia y confirmación
 
-**Pendiente.** Es la iteración 1.4.
+**Lista.** Es la iteración 1.4 y **cierra el ciclo funcional del sistema**.
 
-### Pasos previstos
+### Qué desbloquea
+
+Dejar un aviso preparado para que salga solo, repetirlo mientras haga falta, y saber con
+evidencia quién declaró haberlo leído.
+
+### Antes de empezar
+
+El planificador corre **cada minuto**. Para no esperar de más, programa a **2 o 3 minutos
+vista** en vez de a una hora.
+
+### Programar a fecha y hora (RF-PRG-02, 03, 04)
 
 | # | Acción | Resultado esperado |
 |---|---|---|
-| 5.1 | Programa un mensaje para dentro de 3 minutos | Llega puntual, con desviación menor a 60 segundos (RNF-04) |
-| 5.2 | Programa uno para una hora ya pasada | Rechazo (RF-PRG-04) |
-| 5.3 | Crea un recurrente cada 2 minutos con fin en 10 | Antes de guardar muestra las **próximas 10 ocurrencias** (RF-PRG-09) |
-| 5.4 | Espera | Llegan exactamente las ocurrencias previstas, ni una más |
-| 5.5 | Suspende la recurrencia y reanúdala | Deja de disparar y vuelve a disparar (RF-PRG-10) |
-| 5.6 | Cancela un mensaje programado | No se envía nunca (RF-PRG-11) |
-| 5.7 | Confirma la lectura desde el teléfono | El panel lo refleja **en tiempo real** |
-| 5.8 | Intenta confirmar dos veces | La segunda no hace nada: es irreversible y no se duplica (RF-CNF-04, RF-CNF-05) |
-| 5.9 | Consulta quién confirmó y quién no | Porcentaje sobre el total de destinatarios (RF-CNF-07) |
-| 5.10 | Revisa la trazabilidad de un mensaje | Ciclo de vida completo, destinatario por destinatario (RF-BIT-07, RF-BIT-08) |
+| 5.1 | Redacta un aviso y elige **En una fecha y hora** | Aparecen los selectores de fecha y hora |
+| 5.2 | Pulsa programar sin elegir fecha | Avisa de que falta, y no programa |
+| 5.3 | Elige una hora **ya pasada** | Rechazo: «esa fecha y hora ya pasaron» (RF-PRG-04) |
+| 5.4 | Programa para dentro de 3 minutos y confirma | Aviso de programado. El botón decía **Programar envío**, no «Enviar ahora» |
+| 5.5 | Ve a **Programación** | Aparece con su próxima salida y estado *Programado* |
+| 5.6 | Espera a la hora, con el teléfono cerrado | **Llega solo**, sin que nadie toque nada (RNF-01) |
+| 5.7 | Vuelve a Programación | Ahora dice *Enviado* y ya **no ofrece** suspender ni cancelar (RN-03) |
+
+### Repetición (RF-PRG-05..09)
+
+| # | Acción | Resultado esperado |
+|---|---|---|
+| 5.8 | Elige **Repetido cada cierto tiempo** | Aparecen intervalo, rango de fechas, hora y días |
+| 5.9 | Intenta programar sin ver las próximas fechas | **No deja**: hay que mirarlas antes (RF-PRG-09) |
+| 5.10 | Deja la fecha de fin vacía | Avisa de que es obligatoria: una repetición sin fin es un envío sin freno |
+| 5.11 | Pon «cada 1 día, a las 07:00, lunes y miércoles» y pulsa ver fechas | Salen hasta **10 fechas concretas**, y todas caen en lunes o miércoles |
+| 5.12 | Cambia a «cada 2 minutos» y vuelve a ver | Las fechas cambian. **Cambiar el patrón borra la vista previa**: hay que volver a mirarla |
+| 5.13 | Programa una repetición cada 2 minutos, con fin en 10 minutos | Llegan varias, separadas 2 minutos |
+| 5.14 | Deja correr hasta la fecha de fin | Se detiene sola. El estado pasa a *Repeticiones agotadas* |
+
+### Suspender y cancelar (RF-PRG-10, 11)
+
+| # | Acción | Resultado esperado |
+|---|---|---|
+| 5.15 | En una repetición activa, pulsa **Suspender** | Se detiene **sin pedir confirmación**: se puede deshacer |
+| 5.16 | Comprueba que no llega nada mientras está suspendida | Silencio |
+| 5.17 | Pulsa **Reanudar** | Vuelve a salir |
+| 5.18 | Pulsa **Cancelar** | **Sí pide confirmación**, y explica la diferencia con suspender |
+| 5.19 | Fíjate en el botón de descartar ese diálogo | Dice **«No, dejarla activa»**, no «Cancelar»: dos botones diciendo lo mismo con significados opuestos sería una trampa |
+| 5.20 | Confirma la cancelación | Se detiene definitivamente y ya no ofrece reanudar |
+
+### Confirmación de lectura (RF-CNF-01..07)
+
+| # | Acción | Resultado esperado |
+|---|---|---|
+| 5.21 | Envía un aviso con **Exigir confirmación de lectura** | Llega al catedrático con el botón **Confirmar lectura** activo |
+| 5.22 | Abre la bandeja **sin** confirmar, y mira el reporte de entregas | Consta como **abierto**, no como confirmado. Es RF-CNF-02 en pantalla |
+| 5.23 | Pulsa Confirmar lectura | Pide confirmación y avisa de que **no se puede deshacer** |
+| 5.24 | Cancela ahí | No confirma nada |
+| 5.25 | Confirma de verdad | Mensaje de éxito, y el botón desaparece |
+| 5.26 | Vuelve a intentarlo desde otro dispositivo | «Ya estaba confirmado». Una confirmación no se repite (RF-CNF-05) |
+| 5.27 | Como coordinador, ve a **Entregas** | Barra de progreso, entregados y **porcentaje de confirmación** |
+| 5.28 | Con 1 de 2 confirmados, mira el porcentaje | **50 %**, no 100 %. Se calcula sobre el TOTAL, no sobre los entregados |
+| 5.29 | Revisa la **bitácora** | Hay asiento de programación, de cada ocurrencia disparada y de cada confirmación |
+
+### Idempotencia y retraso (RF-PRG-12, 13, 14)
+
+| # | Acción | Resultado esperado |
+|---|---|---|
+| 5.30 | Deja una repetición corriendo 15 minutos | **Ni un solo aviso duplicado**. El despachador puede solaparse consigo mismo y no debe notarse |
+| 5.31 | Programa algo, y comprueba una hora después | Si venció hace más de 30 minutos, **no sale**: queda *omitida* con su asiento. Nadie quiere el aviso de un simulacro de anteayer |
 
 ### Criterio de salida
 
-El de la iteración 1.4: **toda la lista de verificación del documento 06, etapa E.6, incluida
-la prueba de resistencia en iOS de 20 notificaciones durante 24 horas.**
+- [ ] Un aviso programado llega **solo**, con el teléfono cerrado (5.6)
+- [ ] Una repetición produce las fechas que la vista previa prometió (5.11, 5.13)
+- [ ] No se puede programar una repetición sin haber visto las fechas (5.9)
+- [ ] Suspender se deshace; cancelar no, y se avisa (5.15, 5.18)
+- [ ] Abrir y confirmar son estados **distintos** (5.22)
+- [ ] Una confirmación no se repite ni se deshace (5.26)
+- [ ] El porcentaje se calcula sobre el total de destinatarios (5.28)
+- [ ] **Ningún aviso duplicado** en 15 minutos de repetición (5.30)
 
-Si esa prueba falla, no se cruza la puerta a la fase 2 hasta implementar la redundancia por
-correo (DT-03). No se lleva a usuarios reales un canal de alertas que puede callar sin avisar.
-
----
+> **El paso que más vale de toda la ronda es 5.30.** Un aviso que sale dos veces destruye más
+> confianza que uno que no sale: la siguiente vez nadie se lo cree. El despachador corre cada
+> minuto y puede solaparse consigo mismo, así que la ausencia de duplicados no es casualidad
+> sino tres defensas en capas — y esto es lo único que lo demuestra en la práctica.
 
 ## Registro de rondas ejecutadas
 

@@ -15,6 +15,7 @@ import 'package:sian/infrastructure/firebase/repositorio_dispositivos.dart';
 import 'package:sian/infrastructure/firebase/repositorio_adjuntos.dart';
 import 'package:sian/infrastructure/firebase/repositorio_envio.dart';
 import 'package:sian/infrastructure/firebase/repositorio_grupos.dart';
+import 'package:sian/infrastructure/firebase/repositorio_programacion.dart';
 import 'package:sian/domain/rol.dart';
 import 'package:sian/domain/sesion.dart';
 
@@ -403,5 +404,51 @@ class RepositorioGruposFalso extends RepositorioGrupos {
     required bool activo,
   }) async {
     cambiosDeEstado.add((grupoId: grupoId, activo: activo));
+  }
+}
+
+/// Doble del repositorio de programación y confirmación.
+class RepositorioProgramacionFalso extends RepositorioProgramacion {
+  RepositorioProgramacionFalso({
+    this.programados = const <MensajeProgramado>[],
+  });
+
+  final List<MensajeProgramado> programados;
+
+  final List<String> abiertos = <String>[];
+  final List<String> confirmados = <String>[];
+  final List<({String mensajeId, String accion})> cambios =
+      <({String mensajeId, String accion})>[];
+
+  /// Error que devolverá la próxima confirmación, si se configura.
+  Exception? errorAlConfirmar;
+
+  @override
+  Stream<List<MensajeProgramado>> observarProgramados() =>
+      Stream<List<MensajeProgramado>>.value(programados);
+
+  @override
+  Future<void> marcarAbierto(String mensajeId) async {
+    abiertos.add(mensajeId);
+  }
+
+  @override
+  Future<void> confirmarLectura({
+    required String mensajeId,
+    required String dispositivo,
+  }) async {
+    final Exception? e = errorAlConfirmar;
+    if (e != null) {
+      throw e;
+    }
+    confirmados.add(mensajeId);
+  }
+
+  @override
+  Future<void> cambiar({
+    required String mensajeId,
+    required String accion,
+  }) async {
+    cambios.add((mensajeId: mensajeId, accion: accion));
   }
 }

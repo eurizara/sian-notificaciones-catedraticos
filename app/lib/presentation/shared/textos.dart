@@ -490,6 +490,124 @@ abstract final class Textos {
   static const String detalleNotaDeVoz = 'Nota de voz';
   static const String detalleImagen = 'Imagen adjunta';
   static const String detalleSinAdjuntos = 'Este aviso es solo de texto.';
+  // --- Programación y recurrencia (RF-PRG-02..11) ---------------------------
+  static const String cuandoEnviar = '¿Cuándo se envía?';
+  static const String cuandoAhora = 'Ahora mismo';
+  static const String cuandoProgramado = 'En una fecha y hora';
+  static const String cuandoRecurrente = 'Repetido cada cierto tiempo';
+  static const String elegirFecha = 'Elegir fecha';
+  static const String elegirHora = 'Elegir hora';
+  static const String botonProgramar = 'Programar envío';
+  static const String programandoEnvio = 'Programando…';
+
+  static const String repetirCada = 'Repetir cada';
+  static const String repetirDesde = 'Desde';
+  static const String repetirHasta = 'Hasta';
+  static const String repetirHora = 'A las';
+  static const String repetirDias = 'Solo estos días';
+  static const String repetirTodosLosDias = 'Sin restricción: todos los días';
+  static const String vistaPreviaTitulo = 'Próximas ocurrencias';
+  static const String vistaPreviaCalcular = 'Ver las próximas fechas';
+  static const String vistaPreviaCalculando = 'Calculando…';
+  static const String vistaPreviaVacia =
+      'Ese patrón no produce ninguna fecha. Revisa el rango, los días y la hora.';
+  static const String vistaPreviaPorQue =
+      'Un patrón de repetición es fácil de equivocar. Diez fechas concretas '
+      'contestan lo que ninguna descripción contesta.';
+  static const String vistaPreviaObligatoria =
+      'Mira las próximas fechas antes de programar la repetición.';
+
+  static const String validacionFechaObligatoria = 'Elige la fecha y la hora.';
+  static const String validacionFechaPasada =
+      'Esa fecha y hora ya pasaron. Elige un momento futuro.';
+  static const String validacionRangoInvalido =
+      'La fecha de fin tiene que ser posterior a la de inicio.';
+  static const String recurrenciaFinObligatoria =
+      'Toda repetición necesita una fecha de fin. Sin ella sería un envío sin '
+      'freno esperando a que alguien se acuerde de pararlo.';
+
+  static String diaSemanaCorto(int dia) => switch (dia) {
+    1 => 'Lun',
+    2 => 'Mar',
+    3 => 'Mié',
+    4 => 'Jue',
+    5 => 'Vie',
+    6 => 'Sáb',
+    _ => 'Dom',
+  };
+
+  static String programadoCorrecto(String cuando) =>
+      'Programado. Saldrá el $cuando.';
+  static String recurrenteCorrecto(String primera) =>
+      'Repetición programada. La primera vez será el $primera.';
+
+  // --- Lista de programados (RF-PRG-10, 11) ---------------------------------
+  static const String programadosTitulo = 'Mensajes programados';
+  static const String programadosVacia =
+      'No hay nada programado. Los envíos que dejes preparados aparecerán aquí, '
+      'con su próxima fecha.';
+  static const String accionSuspender = 'Suspender';
+  static const String accionReanudar = 'Reanudar';
+  static const String accionCancelar = 'Cancelar';
+  static const String cancelarTitulo = '¿Cancelar la programación?';
+
+  /// El botón de descartar el diálogo NO puede decir «Cancelar».
+  ///
+  /// En el diálogo de cancelar una programación habría dos botones diciendo
+  /// lo mismo con significados opuestos: uno cancela la programación y el
+  /// otro cancela la cancelación. Se nombra por lo que hace.
+  static const String noCancelarNada = 'No, dejarla activa';
+  static const String cancelarAviso =
+      'Cancelar es definitivo: la programación se detiene y no se puede '
+      'retomar. Si solo quieres pausarla, usa Suspender.';
+  static const String suspenderAviso =
+      'Se detiene sin perderse. Puedes reanudarla cuando quieras.';
+  static const String yaEnviadoNoSeToca =
+      'Ya se envió. Lo enviado no se cancela ni se edita.';
+
+  static String proximaSalida(String cuando) => 'Próxima salida: $cuando';
+  static String estadoProgramacion(String estado) => switch (estado) {
+    'PROGRAMADO' => 'Programado',
+    'RECURRENTE_PENDIENTE' => 'Repitiéndose',
+    'SUSPENDIDO' => 'Suspendido',
+    'CANCELADO' => 'Cancelado',
+    'ENVIADO' => 'Enviado',
+    'ENVIADO_CON_FALLOS' => 'Enviado con fallos',
+    'AGOTADO' => 'Repeticiones agotadas',
+    'EN_ENVIO' => 'Enviando…',
+    'FALLIDO' => 'Falló',
+    _ => estado,
+  };
+
+  // --- Confirmación de lectura (RF-CNF-01..07) ------------------------------
+  static const String confirmandoLectura = 'Confirmando…';
+  static const String confirmacionHecha =
+      'Confirmado. Queda constancia de que lo leíste.';
+  static const String confirmacionYaHecha =
+      'Este mensaje ya estaba confirmado. Una confirmación no se repite.';
+  static const String confirmarTitulo = '¿Confirmar que lo leíste?';
+  static const String confirmarAviso =
+      'Queda registrado con tu nombre, la hora exacta y este dispositivo. '
+      'No se puede deshacer.';
+  static const String confirmarSi = 'Sí, lo leí';
+
+  static const String entregasTitulo = 'Reporte de entregas';
+  static const String entregasVacia =
+      'Todavía no hay mensajes enviados. Aquí verás quién recibió cada aviso y '
+      'quién lo confirmó.';
+  static const String entregasSinConfirmacion =
+      'Este aviso no exigía confirmación.';
+
+  static String entregasResumen(int entregados, int total) =>
+      'Entregado a $entregados de $total';
+  static String entregasConfirmados(
+    int confirmados,
+    int total,
+    int porcentaje,
+  ) => 'Confirmado por $confirmados de $total · $porcentaje %';
+  static String entregasPendientes(int cuantos) =>
+      cuantos == 1 ? 'Falta 1 por confirmar' : 'Faltan $cuantos por confirmar';
+
   static const String detalleErrorAdjunto =
       'No se pudo cargar el adjunto. Revisa tu conexión.';
 
