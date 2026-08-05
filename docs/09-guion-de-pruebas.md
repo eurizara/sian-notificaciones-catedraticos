@@ -246,6 +246,23 @@ Redactar y enviar mensajes, programación, recurrencia y confirmación de lectur
 > **Ojo con esta ronda.** Es donde se materializa o se descarta el riesgo R-02: si el
 > catedrático no instala la PWA, en iOS **no hay notificaciones en absoluto**.
 
+### Ronda 3-bis — reprueba de lo corregido (4 de agosto de 2026)
+
+Tres hallazgos de la primera pasada, ya corregidos. Estos pasos son los que los verifican.
+
+| # | Qué hacer | Qué debe ocurrir |
+|---|---|---|
+| 3.15 | Entra con un correo **no invitado** y pulsa «Volver al inicio de sesión» | Vuelve al formulario. Antes el botón no hacía nada: la pantalla se quedaba clavada |
+| 3.16 | Repite 3.15 con Google en vez de correo | Mismo resultado: el botón funciona en los dos caminos |
+| 3.17 | En iPhone, **primer** intento de «Entrar con Google» del día | Abre el selector de cuenta de Google. Antes moría en un `400. That's an error` y solo funcionaba al segundo intento |
+| 3.18 | Abre el sitio en Safari en iPhone, **sin entrar** | Al pie del formulario aparece «Instálala en tu iPhone». Antes no había ninguna pista, y en iPhone ningún navegador ofrece botón de instalar |
+| 3.19 | Toca ese aviso | Se abre el instructivo, con el paso de **Compartir** explícito — el botón del cuadrado con la flecha, no el menú de los tres puntos |
+| 3.20 | Repite 3.18 desde Chrome en iPhone | Avisa de que solo Safari puede añadir a la pantalla de inicio. En Chrome para iOS **no se puede**, es una restricción de Apple |
+
+> **Si 3.17 vuelve a fallar**, anótalo pero sigue: el segundo intento entra igual. La causa era
+> que la autenticación viajaba por un dominio distinto al del sitio y Safari lo bloqueaba la
+> primera vez; ya apuntan al mismo, pero conviene confirmarlo en un iPhone real y en frío.
+
 ---
 
 ## Ronda 4 — Composición y envío inmediato
