@@ -19,6 +19,8 @@ import 'dart:js_interop';
 
 import 'package:web/web.dart' as web;
 
+import 'consola.dart';
+
 Future<bool> mostrarNotificacionDelSistema({
   required String titulo,
   required String cuerpo,
@@ -28,7 +30,9 @@ Future<bool> mostrarNotificacionDelSistema({
   try {
     // Sin permiso concedido no se intenta: pedirlo aquí sería pedirlo sin que
     // nadie lo haya provocado, y el navegador lo rechazaría.
-    if (web.Notification.permission != 'granted') {
+    final String permiso = web.Notification.permission;
+    if (permiso != 'granted') {
+      consolaError('SIAN.notif sin-permiso | estado=$permiso');
       return false;
     }
 
@@ -39,6 +43,8 @@ Future<bool> mostrarNotificacionDelSistema({
         .ready
         .toDart;
 
+    consolaError('SIAN.notif registro | alcance=${registro.scope}');
+
     await registro
         .showNotification(
           titulo,
@@ -46,7 +52,8 @@ Future<bool> mostrarNotificacionDelSistema({
             body: cuerpo,
             icon: '/icons/Icon-192.png',
             badge: '/icons/Icon-192.png',
-            // Agrupa por mensaje: un reintento no deja dos avisos en pantalla.
+            // Misma etiqueta que usa el service worker: si las dos rutas
+            // muestran el mismo aviso, se reemplazan en vez de duplicarse.
             tag: etiqueta ?? 'sian',
             // Una alerta urgente no se descarta sola: exige un gesto.
             requireInteraction: urgente,
@@ -54,10 +61,13 @@ Future<bool> mostrarNotificacionDelSistema({
         )
         .toDart;
 
+    consolaError('SIAN.notif mostrada | titulo=$titulo');
     return true;
-  } on Object {
+  } on Object catch (e) {
     // Que el sistema no la muestre no puede tumbar la aplicación: el aviso
-    // dentro de la pantalla sigue siendo el respaldo.
+    // dentro de la pantalla sigue siendo el respaldo. Pero sí se deja dicho,
+    // porque un `false` mudo es lo que impidió ver por qué no salía.
+    consolaError('SIAN.notif falló | $e');
     return false;
   }
 }
