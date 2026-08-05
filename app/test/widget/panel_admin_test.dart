@@ -102,21 +102,13 @@ void main() {
       expect(find.text(Textos.seccionBitacora), findsOneWidget);
     });
 
-    testWidgets('una sección aún no construida declara qué hará y cuándo', (
-      WidgetTester tester,
-    ) async {
-      // Programación llega en la 1.4. Hasta entonces dice qué cubrirá, en vez
-      // de ser una maqueta vacía o, peor, un botón que no hace nada.
-      await tester.pumpWidget(montar(Rol.coordinador));
-      await tester.pump();
-
-      await tester.tap(find.text(Textos.seccionProgramacion));
-      await tester.pump();
-      await tester.pump();
-
-      expect(find.text(Textos.seccionProgramacionTitulo), findsOneWidget);
-      expect(find.text(Textos.iteracion14), findsOneWidget);
-      expect(find.text('RF-PRG-05'), findsOneWidget);
+    test('ya no queda ninguna sección sin construir', () {
+      // Al cerrar la iteración 1.4 las seis secciones son reales. Un marcador
+      // que declara «llega más adelante» es honesto mientras es cierto; una
+      // vez construido todo, dejarlo sería mentir en la otra dirección.
+      for (final SeccionAdmin s in seccionesPara(Rol.coordinador)) {
+        expect(s.construir, isNotNull, reason: s.etiqueta);
+      }
     });
 
     testWidgets('arranca en Mensajes, ya construida', (

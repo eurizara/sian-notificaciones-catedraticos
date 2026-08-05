@@ -21,12 +21,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/proveedores_grupos.dart';
+import '../../application/proveedores_programacion.dart';
 import '../../application/proveedores_sesion.dart';
 import '../../domain/sesion.dart';
 import '../../infrastructure/firebase/repositorio_adjuntos.dart';
 import '../../infrastructure/firebase/repositorio_grupos.dart';
 import '../../infrastructure/firebase/repositorio_envio.dart';
 import 'adjuntos_mensaje.dart';
+import 'programador.dart';
 import '../shared/tema.dart';
 import '../shared/textos.dart';
 
@@ -53,6 +55,7 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
   bool _aTodos = true;
   final Set<String> _gruposElegidos = <String>{};
   AdjuntosEnCurso _adjuntos = const AdjuntosEnCurso();
+  EleccionEnvio _cuando = const EleccionEnvio(modo: ModoEnvio.ahora);
   bool _enviando = false;
   bool _subiendo = false;
 
@@ -89,6 +92,23 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
     if (!_aTodos && _gruposElegidos.isEmpty) {
       _avisar(Textos.validacionElijeGrupo, error: true);
       return;
+    }
+
+    // Programar exige fecha; repetir exige haber mirado las próximas. Sin lo
+    // segundo, RF-PRG-09 sería un botón decorativo.
+    if (_cuando.modo == ModoEnvio.programado && _cuando.fecha == null) {
+      _avisar(Textos.validacionFechaObligatoria, error: true);
+      return;
+    }
+    if (_cuando.modo == ModoEnvio.recurrente) {
+      if (_cuando.patron == null) {
+        _avisar(Textos.validacionRangoInvalido, error: true);
+        return;
+      }
+      if (!_cuando.vistaPreviaVista) {
+        _avisar(Textos.vistaPreviaObligatoria, error: true);
+        return;
+      }
     }
 
     setState(() => _enviando = true);
@@ -148,6 +168,33 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
         }
       }
 
+      // Programado o recurrente: no se despacha nada ahora, se encola.
+      if (!_cuando.esAhora) {
+        await ref
+            .read(repositorioProgramacionProvider)
+            .programar(
+              titulo: _titulo.text,
+              cuerpo: _cuerpo.text,
+              urgente: _urgente,
+              requiereConfirmacion: _requiereConfirmacion,
+              destinatarios: _destinatarios().aMapa(),
+              ejecutarEn: _cuando.fecha,
+              recurrencia: _cuando.patron,
+              confirmacionUrgente: _urgente,
+            );
+
+        if (!mounted) {
+          return;
+        }
+        _avisar(
+          _cuando.modo == ModoEnvio.recurrente
+              ? Textos.recurrenteCorrecto(_cuando.patron!.horaDelDia)
+              : Textos.programadoCorrecto('${_cuando.fecha}'),
+        );
+        _limpiar();
+        return;
+      }
+
       final ResultadoEnvio r = await ref
           .read(repositorioEnvioProvider)
           .enviarInmediato(
@@ -204,6 +251,7 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
       _urgente = false;
       _requiereConfirmacion = false;
       _adjuntos = const AdjuntosEnCurso();
+      _cuando = const EleccionEnvio(modo: ModoEnvio.ahora);
     });
   }
 
@@ -346,6 +394,12 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
                   validator: (String? v) => (v ?? '').trim().isEmpty
                       ? Textos.validacionCuerpoObligatorio
                       : null,
+                ),
+                const SizedBox(height: 24),
+
+                Programador(
+                  eleccion: _cuando,
+                  alCambiar: (EleccionEnvio e) => setState(() => _cuando = e),
                 ),
                 const SizedBox(height: 24),
 

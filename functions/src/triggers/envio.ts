@@ -261,33 +261,12 @@ export const enviarInmediato = onCall(OPCIONES_FUNCION, async (peticion) => {
       }),
     );
 
-    const refOcurrencia = refMensaje.collection('ocurrencias').doc(OCURRENCIA_INMEDIATA);
-    await refOcurrencia.set({
-      estado: 'EN_ENVIO',
-      programadaPara: FieldValue.serverTimestamp(),
-      totalDestinatarios: resolucion.uids.length,
-    });
-
-    await escribirEntregasPendientes(refOcurrencia, refMensaje.id, resolucion.uids);
-
-    const { entregados, fallidos } = await despachar(
-      refOcurrencia,
-      refMensaje.id,
+    const { entregados, fallidos, estadoFinal } = await ejecutarDespacho(
+      refMensaje,
+      OCURRENCIA_INMEDIATA,
       mensaje,
       resolucion.uids,
     );
-
-    const estadoFinal = fallidos === 0 ? 'ENVIADO' : 'ENVIADO_CON_FALLOS';
-
-    await refMensaje.update({
-      estado: estadoFinal,
-      enviadoEn: FieldValue.serverTimestamp(),
-      'resumenEntrega.entregados': entregados,
-      'resumenEntrega.fallidos': fallidos,
-    });
-    await refOcurrencia.update({
-      estado: fallidos === 0 ? 'COMPLETADA' : 'COMPLETADA_CON_FALLOS',
-    });
 
     await escribirAsiento(
       crearAsiento({
@@ -361,7 +340,12 @@ async function escribirEntregasPendientes(
 async function despachar(
   refOcurrencia: DocumentReference,
   mensajeId: string,
-  mensaje: Mensaje,
+  mensaje: {
+    titulo: string;
+    cuerpo: string;
+    tipo: TipoMensaje;
+    formato: readonly string[];
+  },
   uids: readonly string[],
 ): Promise<{ entregados: number; fallidos: number }> {
   const esUrgente = mensaje.tipo === 'URGENTE';
@@ -507,4 +491,102 @@ function traducirError(e: unknown): HttpsError {
   }
   logger.error('Fallo enviando el mensaje', { error: String(e) });
   return new HttpsError('internal', 'No se pudo enviar el mensaje.');
+}
+
+/**
+ * Despacha una ocurrencia concreta de un mensaje que ya existe.
+ *
+ * ───────────────────────────────────────────────────────────────────────────
+ * Los destinatarios se resuelven AHORA, no cuando se programó.
+ * ───────────────────────────────────────────────────────────────────────────
+ *
+ * Entre programar un simulacro y el día del simulacro puede entrar personal
+ * nuevo o desactivarse una cuenta. Lo que importa es quién está cuando el
+ * aviso sale, no quién estaba cuando alguien lo escribió.
+ *
+ * La usa el despachador programado (RF-PRG-12) y la comparte con el envío
+ * inmediato, para que una alerta programada y una inmediata lleguen
+ * exactamente igual.
+ */
+export async function despacharMensaje(
+  refMensaje: DocumentReference,
+  ocurrenciaId: string,
+): Promise<{ total: number; entregados: number; fallidos: number }> {
+  const doc = await refMensaje.get();
+
+  const mensaje = {
+    titulo: doc.get('titulo') as string,
+    cuerpo: doc.get('cuerpo') as string,
+    tipo: doc.get('tipo') as TipoMensaje,
+    formato: (doc.get('formato') as string[] | undefined) ?? ['TEXTO'],
+  };
+
+  const destinatarios = doc.get('destinatarios') as Destinatarios;
+  const { usuarios, grupos } = await leerPadron(destinatarios);
+  const resolucion = resolverDestinatarios(destinatarios, usuarios, grupos);
+
+  if (resolucion.uids.length === 0) {
+    await refMensaje.update({ estado: 'FALLIDO' });
+    return { total: 0, entregados: 0, fallidos: 0 };
+  }
+
+  // La lista plana se actualiza en cada ocurrencia: es lo que permite a las
+  // reglas decidir si quien lee es destinatario (documento 05, 2.4).
+  await refMensaje.update({
+    destinatariosUids: resolucion.uids,
+    totalDestinatarios: resolucion.uids.length,
+  });
+
+  const { entregados, fallidos } = await ejecutarDespacho(
+    refMensaje,
+    ocurrenciaId,
+    mensaje,
+    resolucion.uids,
+  );
+
+  return { total: resolucion.uids.length, entregados, fallidos };
+}
+
+/** Crea la ocurrencia, sus entregas, despacha y deja el resultado escrito. */
+async function ejecutarDespacho(
+  refMensaje: DocumentReference,
+  ocurrenciaId: string,
+  mensaje: {
+    titulo: string;
+    cuerpo: string;
+    tipo: TipoMensaje;
+    formato: readonly string[];
+  },
+  uids: readonly string[],
+): Promise<{ entregados: number; fallidos: number; estadoFinal: string }> {
+  const refOcurrencia = refMensaje.collection('ocurrencias').doc(ocurrenciaId);
+
+  await refOcurrencia.set({
+    estado: 'EN_ENVIO',
+    programadaPara: FieldValue.serverTimestamp(),
+    totalDestinatarios: uids.length,
+  });
+
+  await escribirEntregasPendientes(refOcurrencia, refMensaje.id, uids);
+
+  const { entregados, fallidos } = await despachar(
+    refOcurrencia,
+    refMensaje.id,
+    mensaje,
+    uids,
+  );
+
+  const estadoFinal = fallidos === 0 ? 'ENVIADO' : 'ENVIADO_CON_FALLOS';
+
+  await refMensaje.update({
+    estado: estadoFinal,
+    enviadoEn: FieldValue.serverTimestamp(),
+    'resumenEntrega.entregados': FieldValue.increment(entregados),
+    'resumenEntrega.fallidos': FieldValue.increment(fallidos),
+  });
+  await refOcurrencia.update({
+    estado: fallidos === 0 ? 'COMPLETADA' : 'COMPLETADA_CON_FALLOS',
+  });
+
+  return { entregados, fallidos, estadoFinal };
 }

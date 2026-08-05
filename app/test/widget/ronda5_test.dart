@@ -1,0 +1,266 @@
+/// Pruebas de la ronda 5 — programación, recurrencia y confirmación.
+///
+/// RF-PRG-02, 04, 09, 10, 11 · RF-CNF-01, 02, 04, 07.
+///
+/// ────────────────────────────────────────────────────────────────────────────
+/// Aquí lo que se prueba es lo que impide un desastre silencioso.
+/// ────────────────────────────────────────────────────────────────────────────
+///
+/// Un patrón de repetición mal puesto no falla: funciona, y manda avisos a
+/// horas absurdas durante meses. Una confirmación que se pudiera fabricar no
+/// da error: da una evidencia falsa. Por eso las pruebas se centran en las
+/// puertas —la vista previa obligatoria, el diálogo antes de confirmar, la
+/// diferencia entre suspender y cancelar— y no en el camino feliz.
+library;
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:sian/application/proveedores_programacion.dart';
+import 'package:sian/infrastructure/firebase/repositorio_programacion.dart';
+import 'package:sian/presentation/admin/seccion_entregas.dart';
+import 'package:sian/presentation/admin/seccion_programacion.dart';
+import 'package:sian/presentation/shared/tema.dart';
+import 'package:sian/presentation/shared/textos.dart';
+
+import '../dobles/repositorios_falsos.dart';
+
+MensajeProgramado programado({
+  String id = 'm1',
+  String titulo = 'Simulacro',
+  String estado = 'PROGRAMADO',
+  String modo = 'UNICO',
+  DateTime? proxima,
+  int total = 0,
+  int entregados = 0,
+  int confirmados = 0,
+}) {
+  return MensajeProgramado(
+    id: id,
+    titulo: titulo,
+    tipo: 'INFORMATIVO',
+    estado: estado,
+    modo: modo,
+    creadoPor: 'uid-1',
+    proximaOcurrencia: proxima ?? DateTime.utc(2026, 9, 1, 13),
+    totalDestinatarios: total,
+    entregados: entregados,
+    confirmados: confirmados,
+  );
+}
+
+void main() {
+  group('estado de un mensaje programado', () {
+    test('lo ya enviado no se puede tocar (RN-03)', () {
+      for (final String e in <String>[
+        'ENVIADO',
+        'ENVIADO_CON_FALLOS',
+        'AGOTADO',
+      ]) {
+        final MensajeProgramado m = programado(estado: e);
+        expect(m.yaSalio, isTrue, reason: e);
+        expect(m.sePuedeIntervenir, isFalse, reason: e);
+      }
+    });
+
+    test('lo programado y lo suspendido sí', () {
+      expect(programado(estado: 'PROGRAMADO').sePuedeIntervenir, isTrue);
+      expect(programado(estado: 'SUSPENDIDO').sePuedeIntervenir, isTrue);
+    });
+
+    test('lo cancelado ya no admite más acciones', () {
+      expect(programado(estado: 'CANCELADO').sePuedeIntervenir, isFalse);
+    });
+  });
+
+  group('RF-CNF-07 · el porcentaje se calcula sobre el TOTAL', () {
+    test('no sobre los entregados', () {
+      // Con denominador «entregados» esto daría 100 % teniendo 5 personas sin
+      // enterarse, que es justo el dato por el que se hace un simulacro.
+      final MensajeProgramado m = programado(
+        total: 10,
+        entregados: 5,
+        confirmados: 5,
+      );
+      expect(m.porcentajeConfirmado, 50);
+    });
+
+    test('sin destinatarios es 0 y no revienta', () {
+      expect(programado().porcentajeConfirmado, 0);
+    });
+  });
+
+  group('RF-PRG-10 y 11 · suspender NO es cancelar', () {
+    late RepositorioProgramacionFalso repo;
+
+    Widget montar(List<MensajeProgramado> lista) {
+      repo = RepositorioProgramacionFalso(programados: lista);
+      return ProviderScope(
+        overrides: [repositorioProgramacionProvider.overrideWithValue(repo)],
+        child: MaterialApp(
+          theme: TemaSian.claro(),
+          home: const Scaffold(body: SeccionProgramacion()),
+        ),
+      );
+    }
+
+    testWidgets('sin nada programado lo explica', (WidgetTester tester) async {
+      await tester.pumpWidget(montar(const <MensajeProgramado>[]));
+      await tester.pumpAndSettle();
+
+      expect(find.text(Textos.programadosVacia), findsOneWidget);
+    });
+
+    testWidgets('suspender no pide confirmación: se puede deshacer', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(montar(<MensajeProgramado>[programado()]));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(Textos.accionSuspender));
+      await tester.pumpAndSettle();
+
+      expect(repo.cambios, <({String mensajeId, String accion})>[
+        (mensajeId: 'm1', accion: 'SUSPENDER'),
+      ]);
+    });
+
+    testWidgets('cancelar SÍ la pide, y explica la diferencia', (
+      WidgetTester tester,
+    ) async {
+      // Cancelar es definitivo. Que la diferencia con suspender se explique
+      // justo donde hay que decidirla, y no en un manual, es el punto.
+      await tester.pumpWidget(montar(<MensajeProgramado>[programado()]));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(Textos.accionCancelar));
+      await tester.pumpAndSettle();
+
+      expect(find.text(Textos.cancelarTitulo), findsOneWidget);
+      expect(find.text(Textos.cancelarAviso), findsOneWidget);
+      expect(repo.cambios, isEmpty, reason: 'todavía no debe haber actuado');
+    });
+
+    testWidgets('cancelar y arrepentirse no cambia nada', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(montar(<MensajeProgramado>[programado()]));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(Textos.accionCancelar));
+      await tester.pumpAndSettle();
+
+      // El botón de descartar NO dice «Cancelar»: en este diálogo habría dos
+      // botones diciendo lo mismo con significados opuestos.
+      expect(find.text(Textos.noCancelarNada), findsOneWidget);
+      await tester.tap(find.text(Textos.noCancelarNada));
+      await tester.pumpAndSettle();
+
+      expect(repo.cambios, isEmpty);
+    });
+
+    testWidgets('uno suspendido ofrece reanudar, no suspender otra vez', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        montar(<MensajeProgramado>[programado(estado: 'SUSPENDIDO')]),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(Textos.accionReanudar), findsOneWidget);
+      expect(find.text(Textos.accionSuspender), findsNothing);
+    });
+
+    testWidgets('uno ya enviado no ofrece ninguna acción', (
+      WidgetTester tester,
+    ) async {
+      // Un botón inerte invita a pulsarlo más fuerte. Mejor que no esté, con
+      // la razón escrita.
+      await tester.pumpWidget(
+        montar(<MensajeProgramado>[programado(estado: 'ENVIADO', total: 5)]),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(Textos.accionSuspender), findsNothing);
+      expect(find.text(Textos.accionCancelar), findsNothing);
+      expect(find.text(Textos.yaEnviadoNoSeToca), findsOneWidget);
+    });
+
+    testWidgets('los envíos inmediatos no aparecen aquí', (
+      WidgetTester tester,
+    ) async {
+      // Un inmediato ya enviado no es «programación»: su sitio es el reporte
+      // de entregas.
+      await tester.pumpWidget(
+        montar(<MensajeProgramado>[programado(modo: 'INMEDIATO')]),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(Textos.programadosVacia), findsOneWidget);
+    });
+  });
+
+  group('RF-CNF-06 · reporte de entregas', () {
+    Widget montar(List<MensajeProgramado> lista) => ProviderScope(
+      overrides: [
+        repositorioProgramacionProvider.overrideWithValue(
+          RepositorioProgramacionFalso(programados: lista),
+        ),
+      ],
+      child: MaterialApp(
+        theme: TemaSian.claro(),
+        home: const Scaffold(body: SeccionEntregas()),
+      ),
+    );
+
+    testWidgets('sin envíos lo explica', (WidgetTester tester) async {
+      await tester.pumpWidget(montar(const <MensajeProgramado>[]));
+      await tester.pumpAndSettle();
+
+      expect(find.text(Textos.entregasVacia), findsOneWidget);
+    });
+
+    testWidgets('enseña entregados, confirmados y porcentaje', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        montar(<MensajeProgramado>[
+          programado(total: 10, entregados: 9, confirmados: 4),
+        ]),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(Textos.entregasResumen(9, 10)), findsOneWidget);
+      expect(find.text(Textos.entregasConfirmados(4, 10, 40)), findsOneWidget);
+    });
+
+    testWidgets('dice cuántos faltan por confirmar', (
+      WidgetTester tester,
+    ) async {
+      // «4 de 10» obliga a restar. Decir cuántos faltan es lo que se necesita
+      // para saber a quién perseguir.
+      await tester.pumpWidget(
+        montar(<MensajeProgramado>[
+          programado(total: 10, entregados: 10, confirmados: 4),
+        ]),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(Textos.entregasPendientes(6), skipOffstage: false),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('lo no enviado todavía no aparece en el reporte', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        montar(<MensajeProgramado>[programado(total: 0)]),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(Textos.entregasVacia), findsOneWidget);
+    });
+  });
+}
