@@ -272,6 +272,29 @@ ZONA_HORARIA=America/Guatemala
 
 Y versiona `.env.example` con las mismas llaves vacías y un comentario que explique cada una.
 
+> **`FIREBASE_AUTH_DOMAIN` no es el que propone la consola.**
+>
+> La consola sugiere `<proyecto>.firebaseapp.com`, pero el sitio se sirve desde
+> `<proyecto>.web.app`. Con dos dominios distintos, todo el intercambio con Google pasa por un
+> origen ajeno al de la aplicación, y Safari —que reparte el almacenamiento por origen— lo
+> bloquea la primera vez. El síntoma es desconcertante porque parece intermitente: el primer
+> intento de entrar con Google muere en un `400. That's an error` de `accounts.google.com`, y
+> el segundo funciona, porque para entonces Safari ya considera conocido ese origen.
+>
+> Firebase Hosting sirve el manejador `/__/auth/` en **todos** los dominios del proyecto, así
+> que basta apuntar `FIREBASE_AUTH_DOMAIN` al mismo desde el que se sirve el sitio para que no
+> haya ningún tercero en el flujo:
+>
+> ```bash
+> FIREBASE_AUTH_DOMAIN=sian-umg-bdm-dev.web.app     # NO .firebaseapp.com
+> ```
+>
+> Comprobación rápida de que el manejador responde en ese dominio:
+>
+> ```bash
+> curl -s -o /dev/null -w "%{http_code}\n" https://sian-umg-bdm-dev.web.app/__/auth/handler
+> ```
+
 ---
 
 ## Etapa D — Ejecución local con emuladores

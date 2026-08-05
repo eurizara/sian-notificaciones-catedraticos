@@ -315,6 +315,11 @@ abstract final class Textos {
   };
 
   // --- Instructivo de instalación en iOS (RES-05, R-02) ---------------------
+  static const String ingresoInstalarTitulo = 'Instálala en tu iPhone';
+  static const String ingresoInstalarDetalle =
+      'En iPhone no hay botón de instalar: se hace desde Compartir, en Safari. '
+      'Sin ese paso no te llegará ninguna notificación. Toca para ver cómo.';
+
   static const String instalarTitulo = 'Instala SIAN en tu iPhone';
   static const String instalarPorQue =
       'En iPhone, las notificaciones solo llegan si añades la aplicación a la '

@@ -241,9 +241,20 @@ void main() {
       expect(find.byType(PantallaRechazo), findsNothing);
     });
 
-    testWidgets('desde el rechazo se puede cerrar sesión', (
+    testWidgets('«Volver al inicio de sesión» DEVUELVE al formulario', (
       WidgetTester tester,
     ) async {
+      // ────────────────────────────────────────────────────────────────────
+      // Esta prueba existía y pasaba mientras el botón estaba muerto.
+      // ────────────────────────────────────────────────────────────────────
+      //
+      // Solo comprobaba que se llamara a `salir()`. Y se llamaba: lo que no
+      // ocurría era nada visible después. Al llegar aquí ya no queda
+      // credencial —el servidor la borró al rechazar—, así que cerrar sesión
+      // no es ningún cambio y Firebase no emite nada; la pantalla se quedaba
+      // clavada y el botón parecía roto.
+      //
+      // Comprobar el efecto y no la llamada es la diferencia entre las dos.
       await tester.pumpWidget(
         montar(
           const SesionRechazada(
@@ -259,9 +270,48 @@ void main() {
       await tester.ensureVisible(find.text(Textos.botonVolverAIngreso));
       await tester.pumpAndSettle();
       await tester.tap(find.text(Textos.botonVolverAIngreso));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(sesionFalsa.vecesQueSalio, 1);
+      expect(find.byType(PantallaRechazo), findsNothing);
+      expect(find.byType(PantallaIngreso), findsOneWidget);
+      expect(find.text(Textos.botonEntrar), findsOneWidget);
+    });
+
+    testWidgets('reconocido el rechazo, no reaparece al reconstruir', (
+      WidgetTester tester,
+    ) async {
+      // El estado de sesión sigue diciendo «rechazada» —es lo último que
+      // ocurrió—, pero eso ya se explicó. Volver a mostrarlo sería otra vez
+      // un botón que no lleva a ninguna parte.
+      await tester.pumpWidget(
+        montar(
+          const SesionRechazada(
+            motivo: MotivoRechazo.fueraDeListaBlanca,
+            correo: 'ajeno@gmail.com',
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.ensureVisible(find.text(Textos.botonVolverAIngreso));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(Textos.botonVolverAIngreso));
+      await tester.pumpAndSettle();
+
+      // Una reconstrucción cualquiera, como la que provoca girar el teléfono.
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            repositorioSesionProvider.overrideWithValue(sesionFalsa),
+            repositorioBandejaProvider.overrideWithValue(bandejaFalsa),
+          ],
+          child: MaterialApp(theme: TemaSian.claro(), home: const Enrutador()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PantallaRechazo), findsNothing);
     });
   });
 }

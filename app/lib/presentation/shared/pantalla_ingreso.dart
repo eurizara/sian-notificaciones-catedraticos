@@ -5,9 +5,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/proveedores_dispositivos.dart';
 import '../../application/proveedores_sesion.dart';
 import '../../core/entorno.dart';
+import '../../core/navegador.dart';
 import '../demo/tarjeta_demostracion.dart';
+import '../docente/instructivo_ios.dart';
 import 'tema.dart';
 import 'textos.dart';
 
@@ -173,6 +176,11 @@ class _PantallaIngresoState extends ConsumerState<PantallaIngreso> {
     }
     return null;
   }
+
+  EntornoNavegador _entorno() =>
+      ref.read(repositorioDispositivosProvider).entorno;
+
+  bool _necesitaInstalar() => _entorno().necesitaInstructivoInstalacion;
 
   @override
   Widget build(BuildContext context) {
@@ -350,6 +358,15 @@ class _PantallaIngresoState extends ConsumerState<PantallaIngreso> {
                     child: const Text(Textos.botonNoTengoCuenta),
                   ),
 
+                // En iPhone no existe ningún botón de instalar: se hace desde
+                // el menú Compartir de Safari, y quien no lo sepa no lo va a
+                // encontrar. El instructivo estaba solo tras el ingreso, que
+                // es tarde y además inalcanzable para quien todavía no entró.
+                if (_necesitaInstalar()) ...<Widget>[
+                  const SizedBox(height: 16),
+                  _AvisoInstalarIos(entorno: _entorno()),
+                ],
+
                 // Solo con emuladores. Cuando USE_EMULATOR es false esta rama
                 // no se compila: el modo demostración no puede llegar a
                 // producción ni por descuido (RF-AUT-03).
@@ -359,6 +376,62 @@ class _PantallaIngresoState extends ConsumerState<PantallaIngreso> {
                 ],
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Invitación a instalar, en la pantalla de ingreso y solo en iPhone.
+///
+/// No bloquea: quien tenga prisa entra igual y lee sus mensajes. Pero deja de
+/// ser invisible, que era el problema — en iPhone ningún navegador ofrece un
+/// botón de instalar, así que sin decirlo nadie lo descubre.
+class _AvisoInstalarIos extends StatelessWidget {
+  const _AvisoInstalarIos({required this.entorno});
+
+  final EntornoNavegador entorno;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData tema = Theme.of(context);
+
+    return Card(
+      color: ColoresSian.dorado.withValues(alpha: 0.12),
+      child: InkWell(
+        onTap: () => Navigator.of(context).push<void>(
+          MaterialPageRoute<void>(
+            builder: (BuildContext _) => InstructivoIos(entorno: entorno),
+          ),
+        ),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: <Widget>[
+              const Icon(Icons.add_to_home_screen, color: ColoresSian.dorado),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      Textos.ingresoInstalarTitulo,
+                      style: tema.textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      Textos.ingresoInstalarDetalle,
+                      style: tema.textTheme.bodySmall?.copyWith(
+                        color: tema.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right),
+            ],
           ),
         ),
       ),
