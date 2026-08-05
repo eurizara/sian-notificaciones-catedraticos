@@ -272,27 +272,41 @@ ZONA_HORARIA=America/Guatemala
 
 Y versiona `.env.example` con las mismas llaves vacías y un comentario que explique cada una.
 
-> **`FIREBASE_AUTH_DOMAIN` no es el que propone la consola.**
+> **`FIREBASE_AUTH_DOMAIN` debe quedarse en `.firebaseapp.com`. No lo cambies solo.**
 >
-> La consola sugiere `<proyecto>.firebaseapp.com`, pero el sitio se sirve desde
-> `<proyecto>.web.app`. Con dos dominios distintos, todo el intercambio con Google pasa por un
-> origen ajeno al de la aplicación, y Safari —que reparte el almacenamiento por origen— lo
-> bloquea la primera vez. El síntoma es desconcertante porque parece intermitente: el primer
-> intento de entrar con Google muere en un `400. That's an error` de `accounts.google.com`, y
-> el segundo funciona, porque para entonces Safari ya considera conocido ese origen.
+> Es tentador apuntarlo a `<proyecto>.web.app`, que es de donde se sirve el sitio: dejaría todo
+> el flujo de Google en un único origen y evitaría que Safari lo trate como un tercero. **Y
+> Hosting sirve el manejador `/__/auth/` en todos los dominios del proyecto, así que parece que
+> basta con cambiarlo.** No basta, y el fallo es total:
 >
-> Firebase Hosting sirve el manejador `/__/auth/` en **todos** los dominios del proyecto, así
-> que basta apuntar `FIREBASE_AUTH_DOMAIN` al mismo desde el que se sirve el sitio para que no
-> haya ningún tercero en el flujo:
->
-> ```bash
-> FIREBASE_AUTH_DOMAIN=sian-umg-bdm-dev.web.app     # NO .firebaseapp.com
+> ```
+> Error 400: redirect_uri_mismatch
 > ```
 >
-> Comprobación rápida de que el manejador responde en ese dominio:
+> Firebase crea en Google Cloud un cliente de OAuth que autoriza **un solo** redirector, el de
+> `.firebaseapp.com`. Al cambiar el dominio, la aplicación pide uno que ese cliente no conoce y
+> Google bloquea el acceso por completo — peor que el problema que se quería resolver.
+>
+> Que el manejador responda no significa que Google lo acepte; son dos comprobaciones
+> distintas y solo la primera se puede hacer con `curl`:
 >
 > ```bash
 > curl -s -o /dev/null -w "%{http_code}\n" https://sian-umg-bdm-dev.web.app/__/auth/handler
+> ```
+>
+> Para cambiarlo de verdad hay que **añadir antes** el redirector nuevo al cliente de OAuth, en
+> Google Cloud → APIs y servicios → Credenciales → el cliente web de Firebase → URI de
+> redireccionamiento autorizados:
+>
+> ```
+> https://sian-umg-bdm-dev.web.app/__/auth/handler
+> ```
+>
+> Y solo después tocar `FIREBASE_AUTH_DOMAIN`. Mientras no se haga ese paso en la consola, el
+> valor correcto es el que da Firebase:
+>
+> ```bash
+> FIREBASE_AUTH_DOMAIN=sian-umg-bdm-dev.firebaseapp.com
 > ```
 
 ---
