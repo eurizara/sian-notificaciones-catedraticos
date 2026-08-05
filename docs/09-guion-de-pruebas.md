@@ -246,6 +246,30 @@ Redactar y enviar mensajes, programación, recurrencia y confirmación de lectur
 > **Ojo con esta ronda.** Es donde se materializa o se descarta el riesgo R-02: si el
 > catedrático no instala la PWA, en iOS **no hay notificaciones en absoluto**.
 
+### Instalar en Android, con Chrome
+
+En Android **sí existe** un botón de instalar, y las notificaciones funcionan en pestaña sin
+instalar nada. Por eso SIAN no muestra ningún instructivo aquí: insistir sería estorbar. Aun
+así conviene probar la instalación, porque es como lo va a usar la mayoría.
+
+| # | Acción | Resultado esperado |
+|---|---|---|
+| 3.21 | Abre el sitio en **Chrome en Android** | Puede aparecer sola una barra inferior de «Añadir a la pantalla principal» |
+| 3.22 | Si no aparece: menú **⋮** → **Añadir a la pantalla principal** o **Instalar aplicación** | Ofrece instalar, con el escudo y el nombre SIAN UMG-BDM |
+| 3.23 | Confirma **Instalar** | Queda un icono en el lanzador, junto al resto de aplicaciones |
+| 3.24 | Ábrela desde ese icono | Abre a pantalla completa, sin barra de direcciones |
+| 3.25 | Activa las notificaciones **sin instalar**, en una pestaña normal | **Llegan igual.** Es la diferencia de fondo con iPhone, donde no llegaría ninguna |
+| 3.26 | Con la aplicación cerrada del todo, pide que te registren el dispositivo | La notificación llega igual: en Android el sistema la entrega aunque Chrome esté cerrado |
+
+> **La comparación que importa aquí es 3.25 contra el paso 3.9 de iPhone.** En Android las
+> notificaciones llegan sin instalar; en iPhone no llega ninguna. Es la misma aplicación y el
+> mismo código: la diferencia la pone Apple, y es la razón de que el instructivo exista solo
+> en iOS.
+
+> **Si el menú no ofrece instalar**, casi siempre es que el navegador no es Chrome —Firefox y
+> Samsung Internet lo hacen en otro sitio o no lo hacen— o que la página no terminó de cargar.
+> No es un fallo del sistema: en Android la instalación es opcional de verdad.
+
 ### Ronda 3-bis — reprueba de lo corregido (4 de agosto de 2026)
 
 Tres hallazgos de la primera pasada, ya corregidos. Estos pasos son los que los verifican.
@@ -259,9 +283,37 @@ Tres hallazgos de la primera pasada, ya corregidos. Estos pasos son los que los 
 | 3.19 | Toca ese aviso | Se abre el instructivo, con el paso de **Compartir** explícito — el botón del cuadrado con la flecha, no el menú de los tres puntos |
 | 3.20 | Repite 3.18 desde Chrome en iPhone | Avisa de que solo Safari puede añadir a la pantalla de inicio. En Chrome para iOS **no se puede**, es una restricción de Apple |
 
-> **Si 3.17 vuelve a fallar**, anótalo pero sigue: el segundo intento entra igual. La causa era
-> que la autenticación viajaba por un dominio distinto al del sitio y Safari lo bloqueaba la
-> primera vez; ya apuntan al mismo, pero conviene confirmarlo en un iPhone real y en frío.
+> **Sobre 3.17.** Se intentó arreglar apuntando la autenticación al mismo dominio del sitio, y
+> el remedio fue peor: el cliente de OAuth en Google Cloud solo autoriza el redirector de
+> `.firebaseapp.com`, así que entrar con Google dejó de funcionar del todo con
+> `Error 400: redirect_uri_mismatch`. Está revertido. El primer intento en Safari puede volver
+> a fallar; el segundo entra. Ver la nota al final de esta sección.
+
+### Antes de probar el ingreso con correo y contraseña
+
+**Comprueba primero que esa cuenta existe con contraseña.** Es la causa más frecuente de
+«no me reconoce las credenciales», y no es un fallo:
+
+- Entrar con Google **no crea contraseña**. Una cuenta creada así solo entra por Google.
+- Un correo que no estaba en la lista blanca queda **sin credencial**: el servidor la borra al
+  rechazarlo, para no dejar cuentas huérfanas. Volver a intentarlo con ese correo dará
+  «credenciales incorrectas», que es lo correcto.
+
+Para tener una cuenta con contraseña: invítala primero desde Usuarios, y **regístrala** con
+«¿No tienes cuenta? Regístrate», no con «Entrar».
+
+Puedes ver qué credenciales existen de verdad:
+
+```bash
+npx firebase auth:export /tmp/usuarios.json --project sian-umg-bdm-dev --format=json
+```
+
+> **La recuperación de contraseña responde lo mismo exista o no la cuenta.** Es deliberado
+> (RF-AUT-05): si dijera «ese correo no está registrado», cualquiera podría averiguar qué
+> correos tienen cuenta probando uno por uno. El coste es que, al probar, un correo que no
+> llega es indistinguible de un fallo. Si no llega nada, comprueba con el comando de arriba que
+> la cuenta existe **y tiene contraseña**, y mira la carpeta de correo no deseado: el remitente
+> es `noreply@sian-umg-bdm-dev.firebaseapp.com` y los filtros lo mandan ahí a menudo.
 
 ---
 
