@@ -34,6 +34,7 @@ MensajeProgramado programado({
   int total = 0,
   int entregados = 0,
   int confirmados = 0,
+  bool requiereConfirmacion = true,
 }) {
   return MensajeProgramado(
     id: id,
@@ -42,6 +43,7 @@ MensajeProgramado programado({
     estado: estado,
     modo: modo,
     creadoPor: 'uid-1',
+    requiereConfirmacion: requiereConfirmacion,
     proximaOcurrencia: proxima ?? DateTime.utc(2026, 9, 1, 13),
     totalDestinatarios: total,
     entregados: entregados,
@@ -70,6 +72,52 @@ void main() {
 
     test('lo cancelado ya no admite más acciones', () {
       expect(programado(estado: 'CANCELADO').sePuedeIntervenir, isFalse);
+    });
+  });
+
+  group('un aviso SIN confirmación no se mide en confirmaciones', () {
+    // ──────────────────────────────────────────────────────────────────────
+    // Mezclarlos convertía un dato correcto en una alarma falsa.
+    // ──────────────────────────────────────────────────────────────────────
+    //
+    // Un aviso informativo aparecía para siempre «al 0 %, faltan 40 por
+    // confirmar», como si algo hubiera salido mal. No había salido mal: es
+    // que nadie tenía que confirmarlo.
+    test('no le faltan confirmaciones a nadie', () {
+      final MensajeProgramado m = programado(
+        total: 40,
+        entregados: 40,
+        confirmados: 0,
+        requiereConfirmacion: false,
+      );
+      expect(m.faltanPorConfirmar, 0);
+    });
+
+    test('su avance se mide por entrega', () {
+      final MensajeProgramado m = programado(
+        total: 40,
+        entregados: 40,
+        requiereConfirmacion: false,
+      );
+      expect(m.porcentajeEntregado, 100);
+    });
+
+    test('entregado a medias es medio avance, no cero', () {
+      final MensajeProgramado m = programado(
+        total: 40,
+        entregados: 20,
+        requiereConfirmacion: false,
+      );
+      expect(m.porcentajeEntregado, 50);
+    });
+
+    test('uno CON confirmación sí cuenta lo que falta', () {
+      final MensajeProgramado m = programado(
+        total: 40,
+        entregados: 40,
+        confirmados: 15,
+      );
+      expect(m.faltanPorConfirmar, 25);
     });
   });
 
@@ -250,6 +298,51 @@ void main() {
         find.text(Textos.entregasPendientes(6), skipOffstage: false),
         findsOneWidget,
       );
+    });
+
+    testWidgets('sin confirmación exigida NO dice que falten confirmaciones', (
+      WidgetTester tester,
+    ) async {
+      // Era el defecto reportado: aparecía «faltan 40 por confirmar» de un
+      // aviso que nunca la pidió.
+      await tester.pumpWidget(
+        montar(<MensajeProgramado>[
+          programado(
+            total: 40,
+            entregados: 40,
+            confirmados: 0,
+            requiereConfirmacion: false,
+          ),
+        ]),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(Textos.entregasPendientes(40)), findsNothing);
+      expect(find.text(Textos.entregasSinConfirmacion), findsOneWidget);
+    });
+
+    testWidgets('tampoco se inventa un 100 % de confirmación', (
+      WidgetTester tester,
+    ) async {
+      // Sería igual de falso en la otra dirección: afirmaría que cuarenta
+      // personas confirmaron algo que nunca se les pidió, en un reporte que
+      // existe para sostener esa clase de afirmación.
+      await tester.pumpWidget(
+        montar(<MensajeProgramado>[
+          programado(
+            total: 40,
+            entregados: 40,
+            confirmados: 0,
+            requiereConfirmacion: false,
+          ),
+        ]),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(Textos.entregasConfirmados(0, 40, 0)), findsNothing);
+      expect(find.text(Textos.entregasConfirmados(40, 40, 100)), findsNothing);
+      // Lo que sí dice es cuántos lo recibieron.
+      expect(find.text(Textos.entregasResumen(40, 40)), findsOneWidget);
     });
 
     testWidgets('lo no enviado todavía no aparece en el reporte', (

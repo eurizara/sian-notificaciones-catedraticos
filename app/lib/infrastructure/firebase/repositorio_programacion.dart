@@ -80,6 +80,7 @@ class MensajeProgramado {
     required this.estado,
     required this.modo,
     required this.creadoPor,
+    required this.requiereConfirmacion,
     this.proximaOcurrencia,
     this.totalDestinatarios = 0,
     this.entregados = 0,
@@ -92,6 +93,15 @@ class MensajeProgramado {
   final String estado;
   final String modo;
   final String creadoPor;
+
+  /// Si el aviso pedía confirmación de lectura (RF-MSG-12).
+  ///
+  /// Sin esto, el reporte mezclaba dos cosas incomparables: un aviso que nadie
+  /// tenía que confirmar aparecía eternamente «al 0 %, faltan 40 por
+  /// confirmar», como si algo hubiera salido mal. No había salido mal: es que
+  /// nunca iba a confirmarse nadie.
+  final bool requiereConfirmacion;
+
   final DateTime? proximaOcurrencia;
   final int totalDestinatarios;
   final int entregados;
@@ -115,9 +125,27 @@ class MensajeProgramado {
   /// El denominador es el total y no los entregados: a quien no le llegó el
   /// aviso tampoco lo confirmó, y esconderlo daría un 100 % con gente sin
   /// enterarse.
+  /// Solo tiene sentido si el aviso pedía confirmación. Para el resto, la
+  /// medida que importa es cuántos lo recibieron.
   int get porcentajeConfirmado => totalDestinatarios == 0
       ? 0
       : ((confirmados / totalDestinatarios) * 100).round();
+
+  /// Porcentaje de entrega.
+  ///
+  /// Es la única medida de avance que tiene un aviso que no pedía
+  /// confirmación: o llegó, o no llegó.
+  int get porcentajeEntregado => totalDestinatarios == 0
+      ? 0
+      : ((entregados / totalDestinatarios) * 100).round();
+
+  /// Cuántos quedan por confirmar.
+  ///
+  /// Cero si el aviso no lo pedía: nadie está pendiente de nada, y decir
+  /// «faltan 40 por confirmar» de algo que nunca se pidió confirmar convierte
+  /// un dato correcto en una alarma falsa.
+  int get faltanPorConfirmar =>
+      requiereConfirmacion ? totalDestinatarios - confirmados : 0;
 }
 
 class RepositorioProgramacion {
@@ -212,6 +240,7 @@ class RepositorioProgramacion {
               estado: (x['estado'] as String?) ?? '',
               modo: (prog['modo'] as String?) ?? 'INMEDIATO',
               creadoPor: (x['creadoPor'] as String?) ?? '',
+              requiereConfirmacion: x['requiereConfirmacion'] == true,
               proximaOcurrencia: (x['proximaOcurrencia'] as Timestamp?)
                   ?.toDate(),
               totalDestinatarios:

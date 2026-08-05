@@ -470,6 +470,8 @@ vista** en vez de a una hora.
 | 5.26 | Vuelve a intentarlo desde otro dispositivo | «Ya estaba confirmado». Una confirmación no se repite (RF-CNF-05) |
 | 5.27 | Como coordinador, ve a **Entregas** | Barra de progreso, entregados y **porcentaje de confirmación** |
 | 5.28 | Con 1 de 2 confirmados, mira el porcentaje | **50 %**, no 100 %. Se calcula sobre el TOTAL, no sobre los entregados |
+| 5.28a | Mira ahora un aviso que **no** exigía confirmación | Dice «no exigía confirmación» y su barra mide **entrega**. **No** dice «faltan N por confirmar»: nadie tenía que confirmarlo |
+| 5.28b | Comprueba que tampoco marca 100 % de confirmación | Sería igual de falso: afirmaría que confirmaron algo que nunca se les pidió |
 | 5.29 | Revisa la **bitácora** | Hay asiento de programación, de cada ocurrencia disparada y de cada confirmación |
 
 ### Idempotencia y retraso (RF-PRG-12, 13, 14)
@@ -488,6 +490,7 @@ vista** en vez de a una hora.
 - [ ] Abrir y confirmar son estados **distintos** (5.22)
 - [ ] Una confirmación no se repite ni se deshace (5.26)
 - [ ] El porcentaje se calcula sobre el total de destinatarios (5.28)
+- [ ] Un aviso sin confirmación exigida se mide por entrega, no por confirmación (5.28a)
 - [ ] **Ningún aviso duplicado** en 15 minutos de repetición (5.30)
 
 > **El paso que más vale de toda la ronda es 5.30.** Un aviso que sale dos veces destruye más
