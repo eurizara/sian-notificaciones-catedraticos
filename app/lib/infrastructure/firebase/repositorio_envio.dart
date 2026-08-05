@@ -9,6 +9,8 @@ library;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
+import 'repositorio_adjuntos.dart';
+
 /// Grupo tal como se elige al redactar.
 class GrupoVista {
   const GrupoVista({
@@ -154,6 +156,9 @@ class RepositorioEnvio {
     required bool requiereConfirmacion,
     required Destinatarios destinatarios,
     bool confirmacionUrgente = false,
+    String? mensajeId,
+    AdjuntoSubido? voz,
+    AdjuntoSubido? imagen,
   }) async {
     final HttpsCallableResult<Object?> r = await _fn
         .httpsCallable('enviarInmediato')
@@ -164,6 +169,12 @@ class RepositorioEnvio {
           'requiereConfirmacion': requiereConfirmacion,
           'destinatarios': destinatarios.aMapa(),
           'confirmacionUrgente': confirmacionUrgente,
+          'mensajeId': ?mensajeId,
+          if (voz != null || imagen != null)
+            'adjuntos': <String, Object?>{
+              if (voz != null) 'audio': voz.aMapa(),
+              if (imagen != null) 'imagen': imagen.aMapa(),
+            },
         });
 
     final Map<Object?, Object?> d =

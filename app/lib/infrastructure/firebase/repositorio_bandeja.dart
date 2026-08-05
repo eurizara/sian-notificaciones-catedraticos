@@ -101,10 +101,29 @@ class RepositorioBandejaFirebase implements RepositorioBandeja {
           entregadoEn: (datos['entregadoEn'] as Timestamp?)?.toDate(),
           abiertoEn: (datos['abiertoEn'] as Timestamp?)?.toDate(),
           confirmadoEn: (datos['confirmadoEn'] as Timestamp?)?.toDate(),
+          rutaVoz: _rutaDe(mensaje, 'audio'),
+          duracionVozSeg: _duracionDe(mensaje),
+          rutaImagen: _rutaDe(mensaje, 'imagen'),
         ),
       );
     }
 
     return recibidos;
   }
+}
+
+/// Ruta de un adjunto dentro del mapa `adjuntos` del mensaje.
+String? _rutaDe(Map<String, dynamic> mensaje, String clave) {
+  final Map<String, dynamic>? adjuntos =
+      mensaje['adjuntos'] as Map<String, dynamic>?;
+  final Map<String, dynamic>? uno = adjuntos?[clave] as Map<String, dynamic>?;
+  final String? ruta = uno?['ruta'] as String?;
+  return (ruta == null || ruta.isEmpty) ? null : ruta;
+}
+
+int? _duracionDe(Map<String, dynamic> mensaje) {
+  final Map<String, dynamic>? adjuntos =
+      mensaje['adjuntos'] as Map<String, dynamic>?;
+  final Map<String, dynamic>? audio = adjuntos?['audio'] as Map<String, dynamic>?;
+  return (audio?['duracionSeg'] as num?)?.toInt();
 }

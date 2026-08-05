@@ -61,6 +61,9 @@ class MensajeRecibido {
     this.entregadoEn,
     this.abiertoEn,
     this.confirmadoEn,
+    this.rutaVoz,
+    this.duracionVozSeg,
+    this.rutaImagen,
   });
 
   final String mensajeId;
@@ -77,6 +80,16 @@ class MensajeRecibido {
   final DateTime? entregadoEn;
   final DateTime? abiertoEn;
   final DateTime? confirmadoEn;
+
+  /// Rutas en Cloud Storage de los adjuntos (RF-ENT-08, RF-ENT-09). Nulas si
+  /// el aviso es solo de texto.
+  final String? rutaVoz;
+  final int? duracionVozSeg;
+  final String? rutaImagen;
+
+  bool get llevaVoz => rutaVoz != null;
+  bool get llevaImagen => rutaImagen != null;
+  bool get llevaAdjuntos => llevaVoz || llevaImagen;
 
   bool get esUrgente => tipo == 'URGENTE';
   bool get estaConfirmado => estado == 'CONFIRMADO';

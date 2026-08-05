@@ -17,6 +17,7 @@ import '../../core/navegador.dart';
 import '../shared/barra_sesion.dart';
 import 'aviso_en_primer_plano.dart';
 import 'instructivo_ios.dart';
+import 'reproductor_adjuntos.dart';
 import 'tarjeta_notificaciones.dart';
 import '../shared/tema.dart';
 import '../shared/textos.dart';
@@ -187,6 +188,22 @@ class _Fila extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(mensaje.cuerpo),
+
+            // RF-ENT-08 y RF-ENT-09. Van bajo el texto y no tras un botón:
+            // una nota de voz que hay que buscar es una nota de voz que no se
+            // escucha, y en un aviso urgente puede ser lo único que importa.
+            if (mensaje.llevaVoz) ...<Widget>[
+              const SizedBox(height: 12),
+              NotaDeVoz(
+                ruta: mensaje.rutaVoz!,
+                duracionSeg: mensaje.duracionVozSeg,
+              ),
+            ],
+            if (mensaje.llevaImagen) ...<Widget>[
+              const SizedBox(height: 12),
+              ImagenAdjunta(ruta: mensaje.rutaImagen!),
+            ],
+
             const SizedBox(height: 12),
             Row(
               children: <Widget>[

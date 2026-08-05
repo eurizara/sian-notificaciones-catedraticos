@@ -333,9 +333,31 @@ notificaciones: sin dispositivo registrado no hay a dónde entregar (RN-02).
 | 4.10 | Envíala de verdad | Llega con **«URGENTE ·»** delante y no se descarta sola |
 | 4.11 | Crea un grupo, mete a un catedrático y envía **solo a ese grupo** | El conteo refleja el grupo, no a todos |
 | 4.12 | Mete al mismo catedrático en dos grupos y envía a ambos | Recibe **un solo aviso**, no dos |
-| 4.13 | Como `admin2` **sin** autorización de urgentes, mira la clasificación | La opción **Urgente** está bloqueada y explica por qué (paso 4.9 del plan original) |
+| 4.13 | Como `admin2` **sin** autorización de urgentes, mira la clasificación | La opción **Urgente** está bloqueada y explica por qué |
+| 4.13a | Como **coordinador**, mira la misma opción | **Disponible**, sin necesidad de bandera: la matriz le da alcance total (documento 01, §2.2) |
 | 4.14 | Envía a alguien que nunca registró dispositivo | Consta como **no entregado**, con el motivo, y a los demás sí les llega |
 | 4.15 | Revisa la **bitácora** | Hay dos asientos por envío: creación y resultado, con cuántos y a cuántos |
+
+### Nota de voz e imagen (RF-MSG-03, 04, 05, 07, 08 · RF-ENT-08, 09)
+
+Una nota de voz existe porque **escribir con prisa es difícil**: quien tiene que avisar de una
+fuga de gas no va a redactar 500 caracteres.
+
+| # | Acción | Resultado esperado |
+|---|---|---|
+| 4.16 | Pulsa **Grabar nota de voz** y concede el micrófono | Empieza a contar, con barra y segundos restantes |
+| 4.17 | Habla unos segundos y detén | Queda adjunta, con su duración y su peso |
+| 4.18 | Graba y **deja pasar los 60 segundos** | Se **corta sola** al llegar al límite y lo dice. La grabación se conserva (RF-MSG-07) |
+| 4.19 | Deniega el permiso del micrófono y vuelve a intentarlo | Explica **dónde** se vuelve a permitir, no un «no se pudo» |
+| 4.20 | Mientras grabas, mira el indicador del teléfono | Al detener o salir de la pantalla, **se apaga**. El micrófono no puede quedarse abierto |
+| 4.21 | **Adjuntar imagen** y elige una foto | Aparece con vista previa, nombre y peso |
+| 4.22 | Intenta adjuntar un PDF | Rechazo con motivo: solo JPEG, PNG y WebP (RF-MSG-08) |
+| 4.23 | Intenta una imagen de más de 5 MB | Rechazo con motivo, **antes** de subir nada |
+| 4.24 | Quita un adjunto con la ✕ | Desaparece. El texto sigue intacto |
+| 4.25 | Envía un aviso con **texto, voz e imagen** a la vez | Se suben los dos y el aviso sale (RF-MSG-05) |
+| 4.26 | En el teléfono del catedrático, abre la bandeja | La nota de voz **se reproduce** y la imagen se ve (RF-ENT-08, 09) |
+| 4.27 | Toca la imagen | Se amplía a pantalla completa y se puede acercar |
+| 4.28 | Graba en **Safari** y escucha en **Chrome**, y al revés | Se oye en los dos. Safari graba `mp4` y Chrome `webm`, y el reproductor entiende ambos |
 
 ### Criterio de salida
 
@@ -343,15 +365,15 @@ notificaciones: sin dispositivo registrado no hay a dónde entregar (RN-02).
 - [ ] Una urgente exige **dos** confirmaciones y cancelar en la segunda no envía (4.8, 4.9)
 - [ ] El conteo previo coincide con lo que de verdad se envía (4.3, 4.11)
 - [ ] Quien está en dos grupos recibe **una** vez (4.12)
+- [ ] Una alerta urgente **con voz e imagen** llega a un Android y a un iPhone reales, con la
+      aplicación cerrada, en menos de 30 segundos (4.25, 4.26) — es el criterio de la
+      iteración 1.3
+- [ ] El micrófono se suelta siempre (4.20)
 - [ ] Cada envío deja su rastro en bitácora (4.15)
 
 ### Fuera de alcance
 
-**Nota de voz e imagen** (RF-MSG-03, 04, 07, 08), y el detalle del mensaje con reproductor.
-El dominio ya los valida —longitud, peso y formato están probados—, pero la grabación, la
-subida a Storage y el reproductor quedan para la segunda mitad de esta iteración.
-
-También fuera: programación, recurrencia y confirmación de lectura, que son la ronda 5.
+Programación, recurrencia y confirmación de lectura: son la ronda 5.
 
 > **Lo que de verdad se pone a prueba aquí es 4.7.** Todo lo demás es interfaz; ese paso es el
 > criterio de la iteración 1.3 y la razón de ser del sistema. Si un aviso no llega a un

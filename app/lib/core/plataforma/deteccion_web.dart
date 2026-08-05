@@ -84,9 +84,9 @@ bool _tieneNotificaciones() => globalContext.has('Notification');
 /// `navigator.standalone` — propiedad exclusiva de Safari en iOS, y la que de
 /// verdad responde en las versiones antiguas.
 bool _safariStandalone() {
-final JSObject? nav = globalContext.getProperty<JSObject?>('navigator'.toJS);
-if (nav == null || !nav.has('standalone')) {
-  return false;
-}
-return nav.getProperty<JSAny?>('standalone'.toJS)?.dartify() == true;
+  final JSObject? nav = globalContext.getProperty<JSObject?>('navigator'.toJS);
+  if (nav == null || !nav.has('standalone')) {
+    return false;
+  }
+  return nav.getProperty<JSAny?>('standalone'.toJS)?.dartify() == true;
 }

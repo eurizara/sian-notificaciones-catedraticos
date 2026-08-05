@@ -8,6 +8,7 @@ library;
 
 import 'package:flutter/material.dart' show IconData, Icons;
 
+import '../../core/audio/grabacion.dart';
 import '../../domain/politica_contrasena.dart';
 
 abstract final class Textos {
@@ -384,6 +385,69 @@ abstract final class Textos {
       'Enviado a $entregados de $total. $fallidos sin entregar: '
       'revisa en la bitácora quién no tiene dispositivo registrado.';
   static const String envioFallido = 'No se pudo enviar. Nada quedó registrado.';
+
+  // --- Adjuntos: nota de voz e imagen (RF-MSG-03, 04, 07, 08) ---------------
+  static const String etiquetaAdjuntos = 'Nota de voz e imagen';
+  static const String adjuntosDetalle =
+      'Opcionales. La voz sirve cuando escribir con prisa no es realista, '
+      'y la imagen para un plano o una indicación visual.';
+  static const String vozGrabar = 'Grabar nota de voz';
+  static const String imagenElegir = 'Adjuntar imagen';
+  static const String quitarAdjunto = 'Quitar';
+
+  static const String vozSinSoporte =
+      'Este navegador no puede grabar audio. Puedes adjuntar una imagen.';
+  static const String vozSinContenido =
+      'No se grabó nada. Comprueba que el micrófono funciona.';
+  static const String vozMuyPesada =
+      'La grabación pesa más de 2 MB. Graba una nota más corta.';
+  static const String vozCortadaPorLimite =
+      'Se detuvo al llegar al máximo de 60 segundos. La grabación se conservó.';
+
+  static String vozDetener(int segundos) => 'Detener · ${segundos}s';
+  static String vozRestantes(int segundos) => segundos <= 10
+      ? 'Quedan $segundos segundos'
+      : 'Máximo 60 segundos · quedan $segundos';
+  static String vozAdjunta(int segundos) => 'Nota de voz · ${segundos}s';
+
+  static String explicarFalloVoz(FalloGrabacion f) => switch (f) {
+    FalloGrabacion.sinSoporte =>
+      'Este navegador no puede grabar audio. Prueba con Chrome o Safari.',
+    FalloGrabacion.permisoDenegado =>
+      'No diste permiso al micrófono. Búscalo en los ajustes del sitio, '
+          'permítelo y vuelve a intentarlo.',
+    FalloGrabacion.sinMicrofono =>
+      'No se encontró ningún micrófono conectado.',
+    FalloGrabacion.error =>
+      'No se pudo iniciar la grabación. Inténtalo de nuevo.',
+  };
+
+  static String explicarRechazoImagen(String motivo) => switch (motivo) {
+    'VACIA' => 'Ese archivo está vacío.',
+    'MUY_PESADA' => 'La imagen pesa más de 5 MB. Elige una más ligera.',
+    'FORMATO' => 'Solo se admiten imágenes JPEG, PNG o WebP.',
+    _ => 'No se pudo adjuntar esa imagen.',
+  };
+
+  static String pesoLegible(int bytes) {
+    if (bytes < 1024) {
+      return '$bytes B';
+    }
+    if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).round()} KB';
+    }
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
+  static const String subiendoAdjuntos = 'Subiendo adjuntos…';
+
+  // --- Detalle del mensaje (RF-ENT-07, 08, 09) ------------------------------
+  static const String detalleTitulo = 'Detalle del aviso';
+  static const String detalleNotaDeVoz = 'Nota de voz';
+  static const String detalleImagen = 'Imagen adjunta';
+  static const String detalleSinAdjuntos = 'Este aviso es solo de texto.';
+  static const String detalleErrorAdjunto =
+      'No se pudo cargar el adjunto. Revisa tu conexión.';
 
   // --- Instructivo de instalación en iOS (RES-05, R-02) ---------------------
   static const String ingresoInstalarTitulo = 'Instálala en tu iPhone';

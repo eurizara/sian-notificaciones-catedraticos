@@ -12,6 +12,7 @@ import 'package:sian/domain/repositorios.dart';
 import 'package:sian/core/navegador.dart';
 import 'package:sian/infrastructure/firebase/repositorio_administracion.dart';
 import 'package:sian/infrastructure/firebase/repositorio_dispositivos.dart';
+import 'package:sian/infrastructure/firebase/repositorio_adjuntos.dart';
 import 'package:sian/infrastructure/firebase/repositorio_envio.dart';
 import 'package:sian/domain/rol.dart';
 import 'package:sian/domain/sesion.dart';
@@ -302,6 +303,8 @@ class RepositorioEnvioFalso extends RepositorioEnvio {
   bool? ultimaUrgente;
   bool? ultimaConfirmacionUrgente;
   String? ultimoTitulo;
+  AdjuntoSubido? ultimaVoz;
+  AdjuntoSubido? ultimaImagen;
   ResultadoEnvio? resultado;
 
   @override
@@ -326,8 +329,13 @@ class RepositorioEnvioFalso extends RepositorioEnvio {
     required bool requiereConfirmacion,
     required Destinatarios destinatarios,
     bool confirmacionUrgente = false,
+    String? mensajeId,
+    AdjuntoSubido? voz,
+    AdjuntoSubido? imagen,
   }) async {
     vecesQueEnvio += 1;
+    ultimaVoz = voz;
+    ultimaImagen = imagen;
     ultimaUrgente = urgente;
     ultimaConfirmacionUrgente = confirmacionUrgente;
     ultimoTitulo = titulo;
