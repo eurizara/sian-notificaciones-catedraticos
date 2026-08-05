@@ -201,6 +201,89 @@ void main() {
     });
   });
 
+  group('RES-05 · el instructivo se alcanza SIN haber entrado', () {
+    // ──────────────────────────────────────────────────────────────────────
+    // En iPhone ningún navegador ofrece un botón de instalar.
+    // ──────────────────────────────────────────────────────────────────────
+    //
+    // Se hace desde el menú Compartir de Safari, y quien no lo sepa no lo
+    // encuentra. El instructivo estaba solo tras el ingreso: tarde para quien
+    // entra, e inalcanzable para quien todavía no tiene cuenta.
+    late RepositorioSesionFalso sesion;
+
+    setUp(() => sesion = RepositorioSesionFalso());
+    tearDown(() => sesion.cerrar());
+
+    Widget montar(EntornoNavegador e) => ProviderScope(
+      overrides: [
+        repositorioSesionProvider.overrideWithValue(sesion),
+        repositorioDispositivosProvider.overrideWithValue(
+          RepositorioDispositivosFalso(entorno: e),
+        ),
+      ],
+      child: MaterialApp(
+        theme: TemaSian.claro(),
+        home: const PantallaIngreso(),
+      ),
+    );
+
+    testWidgets('en iPhone sin instalar, el ingreso ofrece cómo hacerlo', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        montar(entorno(plataforma: PlataformaWeb.ios, navegador: 'Safari')),
+      );
+      await tester.pump();
+
+      final Finder aviso = find.text(Textos.ingresoInstalarTitulo);
+      expect(aviso, findsOneWidget);
+
+      await tester.ensureVisible(aviso);
+      await tester.pumpAndSettle();
+      await tester.tap(aviso);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(InstructivoIos), findsOneWidget);
+      // Es exactamente el paso que se pierde quien abre el menú equivocado.
+      expect(
+        find.textContaining('Compartir', findRichText: true),
+        findsWidgets,
+      );
+    });
+
+    testWidgets('en Android y escritorio no estorba', (
+      WidgetTester tester,
+    ) async {
+      for (final PlataformaWeb p in <PlataformaWeb>[
+        PlataformaWeb.android,
+        PlataformaWeb.escritorio,
+      ]) {
+        await tester.pumpWidget(montar(entorno(plataforma: p)));
+        await tester.pump();
+        expect(
+          find.text(Textos.ingresoInstalarTitulo),
+          findsNothing,
+          reason: '$p',
+        );
+      }
+    });
+
+    testWidgets('ya instalada, deja de ofrecerlo', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        montar(
+          entorno(
+            plataforma: PlataformaWeb.ios,
+            instalada: true,
+            navegador: 'Safari',
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text(Textos.ingresoInstalarTitulo), findsNothing);
+    });
+  });
+
   group('RES-07 · instrucciones para revertir un permiso denegado', () {
     test('cada navegador tiene las suyas, y no son intercambiables', () {
       // «Bloqueado» sin decir dónde se desbloquea es un callejón sin salida.

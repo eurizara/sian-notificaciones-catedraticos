@@ -13,13 +13,14 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/proveedores_dispositivos.dart';
 import '../../core/navegador.dart';
 import '../../infrastructure/firebase/repositorio_dispositivos.dart';
 import '../shared/tema.dart';
 import '../shared/textos.dart';
 
-final Provider<RepositorioDispositivos> repositorioDispositivosProvider =
-    Provider<RepositorioDispositivos>((Ref ref) => RepositorioDispositivos());
+export '../../application/proveedores_dispositivos.dart'
+    show repositorioDispositivosProvider;
 
 class TarjetaNotificaciones extends ConsumerStatefulWidget {
   const TarjetaNotificaciones({super.key});

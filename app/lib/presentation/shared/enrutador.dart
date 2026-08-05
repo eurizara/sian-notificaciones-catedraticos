@@ -83,23 +83,25 @@ class _EnrutadorState extends ConsumerState<Enrutador> {
 
     return switch (sesion) {
       SesionCargando() => const _PantallaCargando(),
-      SesionAnonima() => _mostrandoRegistro
-          ? PantallaRegistro(
-              alVolver: () => setState(() => _mostrandoRegistro = false),
-            )
-          : PantallaIngreso(
-              alRegistrarse: () => setState(() => _mostrandoRegistro = true),
-            ),
-      SesionRechazada(:final motivo, :final correo) => PantallaRechazo(
-        motivo: motivo,
-        correo: correo,
-        alReconocer: () => setState(() => _rechazoPendiente = null),
-      ),
+      SesionAnonima() => _pantallaSinSesion(),
+      // Un rechazo que ya no está pendiente es un rechazo **reconocido**: la
+      // persona leyó el motivo y pulsó volver. Repetírselo sería justo lo que
+      // parecía un botón muerto. El estado de sesión aún dice «rechazada»
+      // porque el rechazo es lo último que ocurrió, no lo que toca mostrar.
+      SesionRechazada() => _pantallaSinSesion(),
       SesionActiva(:final usuario) => usuario.rol.usaPanelAdministrativo
           ? PanelAdmin(usuario: usuario)
           : BandejaDocente(usuario: usuario),
     };
   }
+
+  Widget _pantallaSinSesion() => _mostrandoRegistro
+      ? PantallaRegistro(
+          alVolver: () => setState(() => _mostrandoRegistro = false),
+        )
+      : PantallaIngreso(
+          alRegistrarse: () => setState(() => _mostrandoRegistro = true),
+        );
 }
 
 class _PantallaCargando extends StatelessWidget {

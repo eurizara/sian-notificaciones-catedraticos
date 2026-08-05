@@ -42,16 +42,35 @@ class RepositorioSesionFalso implements RepositorioSesion {
   /// desaparece precisamente a causa del rechazo.
   SesionRechazada? _rechazoSinReconocer;
 
+  /// ¿Queda credencial viva en «Firebase»?
+  ///
+  /// ──────────────────────────────────────────────────────────────────────
+  /// Un rechazo deja al cliente SIN credencial.
+  /// ──────────────────────────────────────────────────────────────────────
+  ///
+  /// El servidor borra la credencial recién creada para no dejar cuentas
+  /// huérfanas. Importa reproducirlo porque `authStateChanges` solo avisa de
+  /// **cambios**: cerrar una sesión que ya estaba cerrada no emite nada, y
+  /// este doble tiene que callarse igual que Firebase o dejaría pasar
+  /// justamente el fallo que dejó muerto el botón «Volver al inicio de
+  /// sesión».
+  bool _hayCredencial = false;
+
   /// Empuja un estado de sesión, como si Firebase hubiera cambiado.
   void emitir(Sesion sesion) {
     Sesion efectiva = sesion;
 
     if (sesion is SesionRechazada) {
       _rechazoSinReconocer = sesion;
+      _hayCredencial = false;
     } else if (sesion is SesionActiva) {
       _rechazoSinReconocer = null;
-    } else if (sesion is SesionAnonima && _rechazoSinReconocer != null) {
-      efectiva = _rechazoSinReconocer!;
+      _hayCredencial = true;
+    } else if (sesion is SesionAnonima) {
+      _hayCredencial = false;
+      if (_rechazoSinReconocer != null) {
+        efectiva = _rechazoSinReconocer!;
+      }
     }
 
     _ultima = efectiva;
@@ -133,7 +152,13 @@ class RepositorioSesionFalso implements RepositorioSesion {
   Future<void> salir() async {
     vecesQueSalio += 1;
     _rechazoSinReconocer = null;
-    emitir(const SesionAnonima());
+
+    // Si no quedaba credencial, Firebase no emite nada: no hay cambio que
+    // anunciar. Callarse aquí es lo fiel, y es lo que obliga a que volver del
+    // rechazo funcione sin depender de un evento que nunca llega.
+    if (_hayCredencial) {
+      emitir(const SesionAnonima());
+    }
   }
 
   Future<void> cerrar() => _controlador.close();

@@ -5,6 +5,8 @@
 /// existe Firebase (RNF-19).
 library;
 
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -45,6 +47,24 @@ class RepositorioSesionFirebase implements RepositorioSesion {
   /// al inicio de sesión» — es decir, cuando ya se leyó el motivo (RF-AUT-03).
   SesionRechazada? _rechazoSinReconocer;
 
+  /// Estados de sesión que decide la aplicación, no Firebase.
+  ///
+  /// ────────────────────────────────────────────────────────────────────────
+  /// Firebase no avisa de un cierre de sesión que ya estaba cerrado.
+  /// ────────────────────────────────────────────────────────────────────────
+  ///
+  /// `authStateChanges` emite ante un **cambio**. Al llegar a la pantalla de
+  /// rechazo la credencial ya no existe —el servidor la borró, o la borró
+  /// `_resolver`—, así que el `signOut` del botón «Volver al inicio de sesión»
+  /// no cambiaba nada y no producía ningún evento: la pantalla se quedaba
+  /// donde estaba y el botón parecía muerto.
+  ///
+  /// Este canal permite **afirmar** el resultado en vez de esperar a que
+  /// Firebase lo note. Salir tiene una postcondición, y es que después la
+  /// sesión es anónima.
+  final StreamController<Sesion> _decididosAqui =
+      StreamController<Sesion>.broadcast();
+
   /// Traza del flujo de sesión, visible en la consola del navegador.
   ///
   /// No es andamio temporal. El flujo de entrada es el único del sistema que
@@ -64,7 +84,14 @@ class RepositorioSesionFirebase implements RepositorioSesion {
   Stream<Sesion> observar() async* {
     yield const SesionCargando();
 
-    await for (final User? usuario in _auth.authStateChanges()) {
+    await for (final _EventoSesion evento in _eventos()) {
+      if (evento is _SesionAfirmada) {
+        yield evento.sesion;
+        continue;
+      }
+
+      final User? usuario = (evento as _CambioDeAuth).usuario;
+
       if (usuario == null) {
         yield _rechazoSinReconocer ?? const SesionAnonima();
         continue;
@@ -82,6 +109,42 @@ class RepositorioSesionFirebase implements RepositorioSesion {
 
       yield resuelta;
     }
+  }
+
+  /// Une las dos fuentes que pueden cambiar la sesión: Firebase y la propia
+  /// aplicación.
+  ///
+  /// El canal intermedio no es adorno. `await for` pausa su suscripción
+  /// mientras resuelve un evento —y resolver uno implica una llamada a una
+  /// Function y dos lecturas—, y un `StreamController` que no es de difusión
+  /// **encola** lo que llegue durante esa pausa. Así se conserva el orden y no
+  /// se solapan dos resoluciones, que es justo lo que daba el `await for`
+  /// original sobre un único origen.
+  Stream<_EventoSesion> _eventos() {
+    late final StreamController<_EventoSesion> canal;
+    StreamSubscription<User?>? deFirebase;
+    StreamSubscription<Sesion>? deLaApp;
+
+    canal = StreamController<_EventoSesion>(
+      onListen: () {
+        deFirebase = _auth.authStateChanges().listen(
+          (User? usuario) => canal.add(_CambioDeAuth(usuario)),
+          onError: canal.addError,
+          // Firebase manda: si su flujo termina, aquí no queda nada que
+          // observar. El canal propio no puede sostener el de sesión solo.
+          onDone: canal.close,
+        );
+        deLaApp = _decididosAqui.stream.listen(
+          (Sesion sesion) => canal.add(_SesionAfirmada(sesion)),
+        );
+      },
+      onCancel: () async {
+        await deFirebase?.cancel();
+        await deLaApp?.cancel();
+      },
+    );
+
+    return canal.stream;
   }
 
   /// Convierte un usuario autenticado en una sesión del dominio.
@@ -232,5 +295,33 @@ class RepositorioSesionFirebase implements RepositorioSesion {
   Future<void> salir() async {
     _rechazoSinReconocer = null;
     await _auth.signOut();
+
+    // Se afirma el resultado en lugar de esperarlo. Si la credencial ya no
+    // existía —y viniendo de un rechazo nunca existe—, Firebase no emite
+    // nada, y sin esta línea salir no tenía ningún efecto visible.
+    _decididosAqui.add(const SesionAnonima());
   }
+
+  /// Libera el canal propio. La aplicación vive lo que vive el repositorio,
+  /// así que en la práctica solo lo usan las pruebas.
+  Future<void> cerrar() => _decididosAqui.close();
+}
+
+/// Lo que puede cambiar la sesión.
+///
+/// Sellada y con dos casos: o lo dice Firebase, o lo decide la aplicación.
+/// Tenerlos separados evita la confusión que causó el fallo original, donde
+/// «no hay usuario» y «alguien pidió salir» eran indistinguibles.
+sealed class _EventoSesion {
+  const _EventoSesion();
+}
+
+class _CambioDeAuth extends _EventoSesion {
+  const _CambioDeAuth(this.usuario);
+  final User? usuario;
+}
+
+class _SesionAfirmada extends _EventoSesion {
+  const _SesionAfirmada(this.sesion);
+  final Sesion sesion;
 }
