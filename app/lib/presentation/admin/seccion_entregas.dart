@@ -122,14 +122,57 @@ class _Reporte extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 4),
-            if (mensaje.proximaOcurrencia != null)
-              Text(
-                formato.format(mensaje.proximaOcurrencia!),
-                style: tema.textTheme.bodySmall?.copyWith(
+            const SizedBox(height: 6),
+
+            // Cuándo salió, no cuándo saldrá. Es la primera pregunta al abrir
+            // este reporte: «¿cuándo se avisó?». En un recurrente es la
+            // última salida, que es la que importa para contestarla.
+            Row(
+              children: <Widget>[
+                Icon(
+                  Icons.send_outlined,
+                  size: 16,
                   color: tema.colorScheme.onSurfaceVariant,
                 ),
+                const SizedBox(width: 6),
+                Text(
+                  mensaje.enviadoEn == null
+                      ? Textos.sinFechaDeEnvio
+                      : mensaje.esRecurrente
+                      ? Textos.ultimaSalidaEl(
+                          formato.format(mensaje.enviadoEn!),
+                        )
+                      : Textos.enviadoEl(formato.format(mensaje.enviadoEn!)),
+                  style: tema.textTheme.bodySmall?.copyWith(
+                    color: tema.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+
+            // En un recurrente, además, cuándo vuelve a salir.
+            if (mensaje.esRecurrente && mensaje.proximaOcurrencia != null) ...[
+              const SizedBox(height: 4),
+              Row(
+                children: <Widget>[
+                  Icon(
+                    Icons.event_repeat,
+                    size: 16,
+                    color: tema.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    Textos.proximaSalida(
+                      formato.format(mensaje.proximaOcurrencia!),
+                    ),
+                    style: tema.textTheme.bodySmall?.copyWith(
+                      color: tema.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
+            ],
+
             const SizedBox(height: 12),
 
             Text(

@@ -82,6 +82,7 @@ class MensajeProgramado {
     required this.creadoPor,
     required this.requiereConfirmacion,
     this.proximaOcurrencia,
+    this.enviadoEn,
     this.totalDestinatarios = 0,
     this.entregados = 0,
     this.confirmados = 0,
@@ -101,6 +102,16 @@ class MensajeProgramado {
   /// confirmar», como si algo hubiera salido mal. No había salido mal: es que
   /// nunca iba a confirmarse nadie.
   final bool requiereConfirmacion;
+
+  /// Cuándo se disparó el envío.
+  ///
+  /// Distinto de [proximaOcurrencia], que mira hacia adelante. Un envío
+  /// inmediato no tiene próxima ocurrencia y sí tiene esta, así que usar la
+  /// otra dejaba los inmediatos sin fecha ninguna en el reporte.
+  ///
+  /// En un recurrente guarda la ÚLTIMA salida, no la primera: es lo que hace
+  /// falta saber para responder «¿cuándo se avisó?».
+  final DateTime? enviadoEn;
 
   final DateTime? proximaOcurrencia;
   final int totalDestinatarios;
@@ -241,6 +252,7 @@ class RepositorioProgramacion {
               modo: (prog['modo'] as String?) ?? 'INMEDIATO',
               creadoPor: (x['creadoPor'] as String?) ?? '',
               requiereConfirmacion: x['requiereConfirmacion'] == true,
+              enviadoEn: (x['enviadoEn'] as Timestamp?)?.toDate(),
               proximaOcurrencia: (x['proximaOcurrencia'] as Timestamp?)
                   ?.toDate(),
               totalDestinatarios:
