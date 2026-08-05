@@ -1,15 +1,23 @@
 /// SIAN — Reporte de entregas y confirmación (RF-CNF-06, RF-CNF-07, RF-BIT-08).
 ///
 /// ────────────────────────────────────────────────────────────────────────────
-/// El porcentaje se calcula sobre el TOTAL, no sobre los entregados.
+/// Un aviso que no pedía confirmación no se mide en confirmaciones.
 /// ────────────────────────────────────────────────────────────────────────────
 ///
-/// Es lo único honesto: a quien no le llegó el aviso tampoco lo confirmó. Con
-/// denominador «entregados», un simulacro daría 100 % teniendo cinco personas
-/// sin enterarse — que es exactamente el dato por el que se hace un simulacro.
+/// Mezclarlos hacía que un aviso informativo apareciera para siempre «al 0 %,
+/// faltan 40 por confirmar», como si algo hubiera salido mal. No había salido
+/// mal: es que nadie tenía que confirmarlo. Para esos la medida real es cuántos
+/// lo recibieron — o llegó, o no llegó.
 ///
-/// Lo que esta pantalla contesta es «¿quién sabía?», y esa respuesta tiene que
-/// poder sostenerse delante de quien pregunte.
+/// Tampoco se les pone un 100 % de confirmación, que sería igual de falso en la
+/// otra dirección: afirmaría que cuarenta personas confirmaron algo que nunca
+/// se les pidió, en un reporte que existe precisamente para sostener esa clase
+/// de afirmación delante de quien pregunte.
+///
+/// Cuando SÍ hubo confirmación, el porcentaje se calcula sobre el TOTAL y no
+/// sobre los entregados: a quien no le llegó el aviso tampoco lo confirmó, y
+/// con el otro denominador un simulacro daría 100 % teniendo cinco personas sin
+/// enterarse — que es exactamente el dato por el que se hace un simulacro.
 library;
 
 import 'package:flutter/material.dart';
@@ -69,8 +77,13 @@ class _Reporte extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData tema = Theme.of(context);
     final DateFormat formato = DateFormat('dd/MM/yyyy · HH:mm');
-    final int porcentaje = mensaje.porcentajeConfirmado;
-    final int pendientes = mensaje.totalDestinatarios - mensaje.confirmados;
+    // Un aviso sin confirmación se mide por entrega; uno con ella, por
+    // confirmación. Son dos preguntas distintas y no admiten la misma barra.
+    final bool porConfirmacion = mensaje.requiereConfirmacion;
+    final int porcentaje = porConfirmacion
+        ? mensaje.porcentajeConfirmado
+        : mensaje.porcentajeEntregado;
+    final int pendientes = mensaje.faltanPorConfirmar;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -131,9 +144,7 @@ class _Reporte extends StatelessWidget {
             // La barra usa el mismo denominador que el número: si dijeran
             // cosas distintas, la barra ganaría, porque es lo que se mira.
             LinearProgressIndicator(
-              value: mensaje.totalDestinatarios == 0
-                  ? 0
-                  : mensaje.confirmados / mensaje.totalDestinatarios,
+              value: porcentaje / 100,
               minHeight: 8,
               borderRadius: BorderRadius.circular(4),
               color: porcentaje >= 80
@@ -143,24 +154,34 @@ class _Reporte extends StatelessWidget {
                   : ColoresSian.urgente,
             ),
             const SizedBox(height: 8),
-            Text(
-              Textos.entregasConfirmados(
-                mensaje.confirmados,
-                mensaje.totalDestinatarios,
-                porcentaje,
-              ),
-              style: tema.textTheme.bodyMedium,
-            ),
 
-            if (pendientes > 0) ...<Widget>[
-              const SizedBox(height: 4),
+            if (porConfirmacion) ...<Widget>[
               Text(
-                Textos.entregasPendientes(pendientes),
+                Textos.entregasConfirmados(
+                  mensaje.confirmados,
+                  mensaje.totalDestinatarios,
+                  porcentaje,
+                ),
+                style: tema.textTheme.bodyMedium,
+              ),
+              if (pendientes > 0) ...<Widget>[
+                const SizedBox(height: 4),
+                Text(
+                  Textos.entregasPendientes(pendientes),
+                  style: tema.textTheme.bodySmall?.copyWith(
+                    color: ColoresSian.doradoTexto,
+                  ),
+                ),
+              ],
+            ] else
+              // Ni «faltan N por confirmar» ni un 100 % inventado: se dice lo
+              // que pasó, que es que nunca se pidió.
+              Text(
+                Textos.entregasSinConfirmacion,
                 style: tema.textTheme.bodySmall?.copyWith(
-                  color: ColoresSian.doradoTexto,
+                  color: tema.colorScheme.onSurfaceVariant,
                 ),
               ),
-            ],
           ],
         ),
       ),
