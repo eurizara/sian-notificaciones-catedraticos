@@ -64,6 +64,23 @@ class RepositorioDispositivos {
 
   EntornoNavegador get entorno => _entorno;
 
+  /// ¿Ya se refrescó el identificador en esta sesión?
+  ///
+  /// ────────────────────────────────────────────────────────────────────────
+  /// Refrescar es «una vez por apertura», no «una vez por widget».
+  /// ────────────────────────────────────────────────────────────────────────
+  ///
+  /// La tarjeta que dispara el refresco vive dentro de la lista de mensajes,
+  /// así que se destruye al salir de la vista y se reconstruye al volver. Con
+  /// el refresco atado a su ciclo de vida, bastaba desplazarse abajo y volver
+  /// arriba para registrar el dispositivo otra vez.
+  ///
+  /// El estado vive aquí y no en el widget porque el repositorio dura lo que
+  /// dura la aplicación, que es exactamente el alcance que la regla necesita.
+  bool _yaRefrescado = false;
+
+  bool get yaRefrescado => _yaRefrescado;
+
   /// Estado actual del permiso, sin pedir nada.
   Future<EstadoPermiso> consultarPermiso() async {
     if (!_entorno.soportaNotificaciones) {
@@ -77,7 +94,14 @@ class RepositorioDispositivos {
   ///
   /// Devuelve siempre un resultado, nunca lanza: quedarse sin notificaciones
   /// es una situación que hay que **explicar**, no un error que abortar.
-  Future<ResultadoRegistro> pedirPermisoYRegistrar() async {
+  /// [enviarPrueba] distingue el acto explícito del refresco automático.
+  ///
+  /// La notificación de prueba tiene sentido cuando alguien acaba de pulsar
+  /// «Activar»: confirma que el canal funciona. En el refresco silencioso de
+  /// cada apertura es ruido, y llegó a dispararse al desplazar la pantalla.
+  Future<ResultadoRegistro> pedirPermisoYRegistrar({
+    bool enviarPrueba = true,
+  }) async {
     if (!_entorno.soportaNotificaciones) {
       return const ResultadoRegistro(
         permiso: EstadoPermiso.noSoportado,
@@ -96,7 +120,11 @@ class RepositorioDispositivos {
       if (permiso != EstadoPermiso.concedido) {
         // Sin permiso no hay identificador que obtener, pero el intento sí se
         // registra: al emisor le sirve saber quién no puede recibir y por qué.
-        return await _registrarEnServidor(token: null, permiso: permiso);
+        return await _registrarEnServidor(
+          token: null,
+          permiso: permiso,
+          enviarPrueba: enviarPrueba,
+        );
       }
 
       final String? token = await _mensajeria.getToken(
@@ -104,7 +132,12 @@ class RepositorioDispositivos {
       );
       consolaError('SIAN.dispositivo token | obtenido=${token != null}');
 
-      return await _registrarEnServidor(token: token, permiso: permiso);
+      _yaRefrescado = true;
+      return await _registrarEnServidor(
+        token: token,
+        permiso: permiso,
+        enviarPrueba: enviarPrueba,
+      );
     } on Object catch (e) {
       consolaError('SIAN.dispositivo error | $e');
       return ResultadoRegistro(
@@ -120,6 +153,7 @@ class RepositorioDispositivos {
   Future<ResultadoRegistro> _registrarEnServidor({
     required String? token,
     required EstadoPermiso permiso,
+    required bool enviarPrueba,
   }) async {
     if (token == null) {
       return ResultadoRegistro(
@@ -144,6 +178,7 @@ class RepositorioDispositivos {
             EstadoPermiso.denegado => 'denegado',
             _ => 'pendiente',
           },
+          'enviarPrueba': enviarPrueba,
         });
 
     final Map<Object?, Object?> datos =

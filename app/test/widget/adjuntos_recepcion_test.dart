@@ -65,7 +65,10 @@ void main() {
     });
 
     test('con ruta de voz, la lleva', () {
-      final MensajeRecibido m = mensaje(voz: 'mensajes/m1/voz.webm', duracion: 4);
+      final MensajeRecibido m = mensaje(
+        voz: 'mensajes/m1/voz.webm',
+        duracion: 4,
+      );
       expect(m.llevaVoz, isTrue);
       expect(m.llevaAdjuntos, isTrue);
     });
@@ -177,10 +180,7 @@ void main() {
 
       expect(find.text(Textos.notifActivasTitulo), findsOneWidget);
       // El detalle largo queda plegado.
-      expect(
-        find.text(Textos.notifActivasDetalle('Chrome')),
-        findsNothing,
-      );
+      expect(find.text(Textos.notifActivasDetalle('Chrome')), findsNothing);
     });
 
     testWidgets('se despliega al tocarla: comprobar sigue siendo posible', (
@@ -193,6 +193,84 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(Textos.notifActivasDetalle('Chrome')), findsOneWidget);
+    });
+
+    testWidgets('volver a construirla NO vuelve a registrar el dispositivo', (
+      WidgetTester tester,
+    ) async {
+      // ──────────────────────────────────────────────────────────────────
+      // Refrescar es «una vez por apertura», no «una vez por widget».
+      // ──────────────────────────────────────────────────────────────────
+      //
+      // La tarjeta vive dentro de la lista de mensajes, así que se destruye
+      // al salir de la vista y se reconstruye al volver. Con el refresco
+      // atado a su ciclo de vida, bastaba desplazarse abajo y volver arriba
+      // para que llegara otra notificación de «dispositivo registrado».
+      final RepositorioDispositivosFalso dispositivos =
+          RepositorioDispositivosFalso(
+            entorno: entornoConNotificaciones,
+            permiso: EstadoPermiso.concedido,
+          );
+
+      Widget conEseDoble() => ProviderScope(
+        overrides: [
+          repositorioSesionProvider.overrideWithValue(sesion),
+          repositorioBandejaProvider.overrideWithValue(
+            RepositorioBandejaFalso(const <MensajeRecibido>[]),
+          ),
+          repositorioDispositivosProvider.overrideWithValue(dispositivos),
+        ],
+        child: MaterialApp(
+          theme: TemaSian.claro(),
+          home: BandejaDocente(usuario: usuarioDePrueba(rol: Rol.catedratico)),
+        ),
+      );
+
+      await tester.pumpWidget(conEseDoble());
+      await tester.pumpAndSettle();
+      expect(dispositivos.vecesQuePidioPermiso, 1);
+
+      // Se destruye y se vuelve a construir, como al desplazar la lista.
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+      await tester.pumpWidget(conEseDoble());
+      await tester.pumpAndSettle();
+
+      expect(dispositivos.vecesQuePidioPermiso, 1);
+    });
+
+    testWidgets('el refresco automático NO pide notificación de prueba', (
+      WidgetTester tester,
+    ) async {
+      // La prueba confirma que el canal funciona cuando alguien acaba de
+      // pulsar «Activar». En el refresco silencioso es ruido.
+      final RepositorioDispositivosFalso dispositivos =
+          RepositorioDispositivosFalso(
+            entorno: entornoConNotificaciones,
+            permiso: EstadoPermiso.concedido,
+          );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            repositorioSesionProvider.overrideWithValue(sesion),
+            repositorioBandejaProvider.overrideWithValue(
+              RepositorioBandejaFalso(const <MensajeRecibido>[]),
+            ),
+            repositorioDispositivosProvider.overrideWithValue(dispositivos),
+          ],
+          child: MaterialApp(
+            theme: TemaSian.claro(),
+            home: BandejaDocente(
+              usuario: usuarioDePrueba(rol: Rol.catedratico),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(dispositivos.vecesQuePidioPermiso, 1);
+      expect(dispositivos.vecesConPrueba, 0);
     });
 
     testWidgets('si hay algo que hacer, la tarjeta sigue completa', (

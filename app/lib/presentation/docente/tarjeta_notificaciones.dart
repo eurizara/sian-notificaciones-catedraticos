@@ -52,7 +52,14 @@ class _TarjetaNotificacionesState extends ConsumerState<TarjetaNotificaciones> {
     // Si ya estaba concedido, se refresca el identificador sin preguntar
     // nada. En iOS cambia solo, y refrescarlo en cada apertura es la
     // mitigación principal del riesgo R-01.
-    if (p == EstadoPermiso.concedido) {
+    //
+    // Una vez por apertura, no por cada vez que esta tarjeta se construye:
+    // vive dentro de la lista de mensajes, así que desplazarse abajo y volver
+    // arriba la destruye y la recrea. El repositorio recuerda si ya se hizo.
+    final RepositorioDispositivos repo = ref.read(
+      repositorioDispositivosProvider,
+    );
+    if (p == EstadoPermiso.concedido && !repo.yaRefrescado) {
       await _activar(silencioso: true);
     }
   }
@@ -64,7 +71,9 @@ class _TarjetaNotificacionesState extends ConsumerState<TarjetaNotificaciones> {
 
     final ResultadoRegistro r = await ref
         .read(repositorioDispositivosProvider)
-        .pedirPermisoYRegistrar();
+        // La prueba solo se envía cuando alguien pulsa «Activar»: en el
+        // refresco automático es ruido.
+        .pedirPermisoYRegistrar(enviarPrueba: !silencioso);
 
     if (!mounted) {
       return;
