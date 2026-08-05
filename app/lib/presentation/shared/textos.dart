@@ -316,6 +316,75 @@ abstract final class Textos {
 
   static const String botonCerrarAviso = 'Cerrar';
 
+  // --- Composición y envío (ronda 4, iteración 1.3) --------------------------
+  static const int limiteTitulo = 80;
+  static const int limiteCuerpo = 500;
+
+  static const String redactarTitulo = 'Redactar aviso';
+  static const String etiquetaTituloMensaje = 'Título';
+  static const String etiquetaCuerpoMensaje = 'Mensaje';
+  static const String etiquetaTipo = 'Clasificación';
+  static const String tipoInformativo = 'Informativo';
+  static const String tipoUrgente = 'Urgente';
+  static const String tipoInformativoDetalle = 'Aviso ordinario. Llega como una notificación normal.';
+  static const String tipoUrgenteDetalle =
+      'Alerta institucional. Se muestra con «URGENTE» delante y no se descarta sola.';
+  static const String etiquetaDestinatarios = 'Destinatarios';
+  static const String destinatariosTodos = 'Todos los catedráticos';
+  static const String destinatariosGrupos = 'Grupos concretos';
+  static const String exigirConfirmacion = 'Exigir confirmación de lectura';
+  static const String exigirConfirmacionDetalle =
+      'El catedrático tendrá que confirmar que lo leyó. Deja constancia con valor probatorio.';
+  static const String botonEnviarAhora = 'Enviar ahora';
+  static const String botonRevisarDestinatarios = 'Revisar destinatarios';
+
+  static const String sinGruposTodavia =
+      'No hay grupos creados. Puedes enviar a todos los catedráticos.';
+  static const String noPuedeUrgentes =
+      'Tu cuenta no tiene autorización para emitir alertas urgentes. Pídesela a la coordinación.';
+
+  static const String validacionTituloObligatorio = 'El título es obligatorio.';
+  static const String validacionCuerpoObligatorio = 'El mensaje no puede ir vacío.';
+  static const String validacionElijeGrupo = 'Elige al menos un grupo.';
+
+  static String validacionTituloLargo(int actual) =>
+      'El título tiene $actual caracteres y el máximo son $limiteTitulo.';
+  static String validacionCuerpoLargo(int actual) =>
+      'El mensaje tiene $actual caracteres y el máximo son $limiteCuerpo.';
+  static String contador(int actual, int maximo) => '$actual / $maximo';
+
+  // Conteo previo (RF-USR-07)
+  static const String confirmarEnvioTitulo = 'Antes de enviar';
+  static const String confirmarUrgenteTitulo = '¿Enviar una ALERTA URGENTE?';
+  static const String botonConfirmarEnvio = 'Sí, enviar';
+  static const String botonConfirmarUrgente = 'Sí, enviar la alerta urgente';
+  static const String urgenteAdvertencia =
+      'Sonará en el teléfono de cada catedrático, aunque tengan la aplicación cerrada. '
+      'Un aviso enviado no se puede editar ni borrar.';
+  static const String contandoDestinatarios = 'Contando destinatarios…';
+
+  static String conteoDestinatarios(int total) => total == 1
+      ? 'Este aviso llegará a 1 persona.'
+      : 'Este aviso llegará a $total personas.';
+  static String conteoExcluidos(int cuantos) => cuantos == 1
+      ? '1 persona queda fuera:'
+      : '$cuantos personas quedan fuera:';
+  static String motivoExclusion(String motivo, int cuantos) => switch (motivo) {
+    'CUENTA_DESACTIVADA' => '$cuantos con la cuenta desactivada',
+    'SIN_PERFIL' => '$cuantos sin perfil en el sistema',
+    _ => '$cuantos por «$motivo»',
+  };
+
+  static const String envioSinDestinatarios =
+      'Nadie recibiría este mensaje. Revisa los destinatarios.';
+
+  static String envioCorrecto(int entregados, int total) =>
+      'Enviado. Llegó a $entregados de $total.';
+  static String envioConFallos(int entregados, int total, int fallidos) =>
+      'Enviado a $entregados de $total. $fallidos sin entregar: '
+      'revisa en la bitácora quién no tiene dispositivo registrado.';
+  static const String envioFallido = 'No se pudo enviar. Nada quedó registrado.';
+
   // --- Instructivo de instalación en iOS (RES-05, R-02) ---------------------
   static const String ingresoInstalarTitulo = 'Instálala en tu iPhone';
   static const String ingresoInstalarDetalle =

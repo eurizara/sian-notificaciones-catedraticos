@@ -305,31 +305,61 @@ npx firebase auth:export /tmp/usuarios.json --project sian-umg-bdm-dev --format=
 
 ## Ronda 4 — Composición y envío inmediato
 
-**Pendiente.** Es la iteración 1.3 y **el momento en que el sistema hace lo que promete**.
+**Lista.** Es la iteración 1.3 y **el momento en que el sistema hace lo que promete**.
 
-### Qué desbloqueará
+### Qué desbloquea
 
 Escribir un aviso y que llegue a un teléfono real con la aplicación cerrada.
 
-### Pasos previstos
+### Antes de empezar
+
+Necesitas **dos cuentas**: la tuya de coordinación para redactar, y una de catedrático —en el
+teléfono— para recibir. Con la del catedrático entra al menos una vez y activa las
+notificaciones: sin dispositivo registrado no hay a dónde entregar (RN-02).
+
+### Pasos
 
 | # | Acción | Resultado esperado |
 |---|---|---|
-| 4.1 | Como administradora, redacta un aviso informativo de solo texto | Validaciones de 80 y 500 caracteres al pasarse (RF-MSG-06) |
-| 4.2 | Envíalo a un grupo | Antes de confirmar, muestra el **conteo exacto** de destinatarios (RF-USR-07) |
-| 4.3 | Comprueba en el teléfono | Llega con la aplicación **cerrada**, en menos de 30 segundos (RNF-01) |
-| 4.4 | Redacta una alerta **urgente** | Al enviar, exige una **segunda confirmación** distinta del botón inicial (RF-MSG-13) |
-| 4.5 | Cancela en esa segunda confirmación | El mensaje queda en borrador, no se envía |
-| 4.6 | Envíala de verdad | Llega con sonido y vibración en Android; en iOS con prefijo «URGENTE» (DT-02) |
-| 4.7 | Graba una nota de voz y adjunta una imagen | Se reproducen desde el detalle (RF-ENT-08, RF-ENT-09) |
-| 4.8 | Intenta una nota de voz de más de 60 segundos | Rechazo con explicación (RF-MSG-07) |
-| 4.9 | Como `admin2`, intenta emitir una urgente | **No puede**: no tiene la autorización fina |
-| 4.10 | Revisa la bitácora | Cada paso anterior dejó su asiento |
+| 4.1 | En **Mensajes**, escribe un título muy largo | Se corta a los 80 caracteres y el contador lo dice. Igual el cuerpo a los 500 (RF-MSG-06) |
+| 4.2 | Pulsa **Enviar ahora** con el formulario vacío | Avisa de lo que falta y **no llega ni a contar** destinatarios |
+| 4.3 | Redacta un aviso informativo a **todos los catedráticos** y pulsa enviar | Antes de nada muestra el **conteo exacto**: «llegará a N personas» (RF-USR-07) |
+| 4.4 | Si hay cuentas desactivadas, míralo en ese mismo diálogo | Dice **cuántas quedan fuera y por qué**. «43 de 45» sin motivo no ayudaría a nadie |
+| 4.5 | Pulsa **Cancelar** | No se envía nada. El texto sigue escrito |
+| 4.6 | Vuelve a enviar y confirma | Aviso de éxito con cuántos lo recibieron, y el formulario se limpia |
+| 4.7 | Comprueba en el teléfono, **con la aplicación cerrada** | Llega en menos de 30 segundos (RNF-01) |
+| 4.8 | Redacta una **alerta urgente** y envíala | Tras el conteo pide una **segunda confirmación distinta**, en rojo (RF-MSG-13) |
+| 4.9 | Cancela en esa segunda confirmación | No se envía. El botón de enviar **no cuenta** como confirmación |
+| 4.10 | Envíala de verdad | Llega con **«URGENTE ·»** delante y no se descarta sola |
+| 4.11 | Crea un grupo, mete a un catedrático y envía **solo a ese grupo** | El conteo refleja el grupo, no a todos |
+| 4.12 | Mete al mismo catedrático en dos grupos y envía a ambos | Recibe **un solo aviso**, no dos |
+| 4.13 | Como `admin2` **sin** autorización de urgentes, mira la clasificación | La opción **Urgente** está bloqueada y explica por qué (paso 4.9 del plan original) |
+| 4.14 | Envía a alguien que nunca registró dispositivo | Consta como **no entregado**, con el motivo, y a los demás sí les llega |
+| 4.15 | Revisa la **bitácora** | Hay dos asientos por envío: creación y resultado, con cuántos y a cuántos |
 
 ### Criterio de salida
 
-El de la iteración 1.3 del documento 08: **una alerta urgente con voz e imagen llega a un
-Android real y a un iPhone real, con la aplicación cerrada, en menos de 30 segundos.**
+- [ ] Un aviso llega a un teléfono real con la aplicación **cerrada** (4.7)
+- [ ] Una urgente exige **dos** confirmaciones y cancelar en la segunda no envía (4.8, 4.9)
+- [ ] El conteo previo coincide con lo que de verdad se envía (4.3, 4.11)
+- [ ] Quien está en dos grupos recibe **una** vez (4.12)
+- [ ] Cada envío deja su rastro en bitácora (4.15)
+
+### Fuera de alcance
+
+**Nota de voz e imagen** (RF-MSG-03, 04, 07, 08), y el detalle del mensaje con reproductor.
+El dominio ya los valida —longitud, peso y formato están probados—, pero la grabación, la
+subida a Storage y el reproductor quedan para la segunda mitad de esta iteración.
+
+También fuera: programación, recurrencia y confirmación de lectura, que son la ronda 5.
+
+> **Lo que de verdad se pone a prueba aquí es 4.7.** Todo lo demás es interfaz; ese paso es el
+> criterio de la iteración 1.3 y la razón de ser del sistema. Si un aviso no llega a un
+> teléfono con la aplicación cerrada, nada del resto importa.
+
+> **Y 4.9 es el que protege de un accidente.** Una alerta urgente hace sonar el teléfono de
+> todos los catedráticos. Que el botón de enviar no baste para dispararla es lo que separa un
+> simulacro de un incidente.
 
 ---
 

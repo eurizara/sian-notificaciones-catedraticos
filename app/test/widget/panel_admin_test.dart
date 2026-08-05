@@ -13,6 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sian/application/proveedores_sesion.dart';
 import 'package:sian/domain/rol.dart';
 import 'package:sian/presentation/admin/panel_admin.dart';
+import 'package:sian/presentation/admin/seccion_mensajes.dart';
 import 'package:sian/presentation/admin/seccion_usuarios.dart';
 import 'package:sian/presentation/shared/tema.dart';
 import 'package:sian/presentation/shared/textos.dart';
@@ -66,6 +67,9 @@ void main() {
         overrides: [
           repositorioSesionProvider.overrideWithValue(RepositorioSesionFalso()),
           repositorioAdminProvider.overrideWithValue(RepositorioAdminFalso()),
+          // Mensajes ya no es un marcador: monta la pantalla real, que lee
+          // grupos. Sin doble, construirla tocaría Firestore.
+          repositorioEnvioProvider.overrideWithValue(RepositorioEnvioFalso()),
         ],
         child: MaterialApp(
           theme: TemaSian.claro(),
@@ -93,17 +97,33 @@ void main() {
       expect(find.text(Textos.seccionBitacora), findsOneWidget);
     });
 
-    testWidgets('cada sección declara qué hará y en qué iteración', (
+    testWidgets('una sección aún no construida declara qué hará y cuándo', (
+      WidgetTester tester,
+    ) async {
+      // Programación llega en la 1.4. Hasta entonces dice qué cubrirá, en vez
+      // de ser una maqueta vacía o, peor, un botón que no hace nada.
+      await tester.pumpWidget(montar(Rol.coordinador));
+      await tester.pump();
+
+      await tester.tap(find.text(Textos.seccionProgramacion));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text(Textos.seccionProgramacionTitulo), findsOneWidget);
+      expect(find.text(Textos.iteracion14), findsOneWidget);
+      expect(find.text('RF-PRG-05'), findsOneWidget);
+    });
+
+    testWidgets('arranca en Mensajes, ya construida', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(montar(Rol.coordinador));
       await tester.pump();
 
-      // Arranca en la primera sección visible.
-      expect(find.text(Textos.seccionMensajesTitulo), findsOneWidget);
-      expect(find.text(Textos.iteracion13), findsOneWidget);
-      // Y enseña los requisitos que cubrirá, no una maqueta vacía.
-      expect(find.text('RF-MSG-13'), findsOneWidget);
+      // Es la primera sección visible, y desde la ronda 4 es real: se puede
+      // redactar y enviar de verdad.
+      expect(find.text(Textos.redactarTitulo), findsOneWidget);
+      expect(find.text(Textos.iteracion13), findsNothing);
     });
 
     testWidgets('cambiar de sección cambia el contenido', (
@@ -112,16 +132,16 @@ void main() {
       await tester.pumpWidget(montar(Rol.coordinador));
       await tester.pump();
 
-      expect(find.text(Textos.seccionMensajesTitulo), findsOneWidget);
+      expect(find.text(Textos.redactarTitulo), findsOneWidget);
 
       await tester.tap(find.text(Textos.seccionUsuarios));
       await tester.pump();
       await tester.pump();
 
-      // Usuarios ya no es un marcador: muestra la sección real, con sus dos
-      // pestañas.
+      // Usuarios muestra la sección real, con sus dos pestañas, y Mensajes
+      // desaparece del contenido.
       expect(find.text(Textos.pestanaInvitaciones), findsOneWidget);
-      expect(find.text(Textos.seccionMensajesTitulo), findsNothing);
+      expect(find.text(Textos.redactarTitulo), findsNothing);
     });
 
     testWidgets('la barra muestra quién está dentro y con qué rol', (
