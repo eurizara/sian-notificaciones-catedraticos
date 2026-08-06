@@ -626,8 +626,15 @@ abstract final class Textos {
       cuantos == 1 ? 'Falta 1 por confirmar' : 'Faltan $cuantos por confirmar';
 
   // --- Búsqueda y paginación ------------------------------------------------
+  static const String verDetalle = 'Ver detalle';
+  static const String ocultarDetalle = 'Ocultar';
+  static const String plegarTodo = 'Plegar todo';
+  static const String desplegarTodo = 'Desplegar todo';
+
   static const String buscarMensajes = 'Buscar en título y mensaje';
   static const String buscarBitacora = 'Buscar en la bitácora';
+  static const String buscarProgramados = 'Buscar por título o grupo';
+  static const String buscarEntregas = 'Buscar por título o grupo';
   static const String buscarLimpiar = 'Limpiar búsqueda';
   static const String verMas = 'Ver más';
   static const String cargandoMas = 'Cargando…';

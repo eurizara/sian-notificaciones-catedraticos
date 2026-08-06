@@ -26,15 +26,40 @@ import 'package:intl/intl.dart';
 
 import '../../application/proveedores_programacion.dart';
 import '../../infrastructure/firebase/repositorio_programacion.dart';
+import '../shared/buscador.dart';
 import '../shared/tema.dart';
 import '../shared/textos.dart';
-import 'seccion_programacion.dart' show Marca;
+import 'seccion_programacion.dart' show Marca, filtrarProgramados;
 
-class SeccionEntregas extends ConsumerWidget {
+class SeccionEntregas extends ConsumerStatefulWidget {
   const SeccionEntregas({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SeccionEntregas> createState() => _SeccionEntregasState();
+}
+
+class _SeccionEntregasState extends ConsumerState<SeccionEntregas> {
+  final TextEditingController _busqueda = TextEditingController();
+
+  /// Menos por página que en la bandeja: cada reporte lleva barra, marcas y
+  /// varias cifras, así que diez ya llenan la pantalla.
+  static const int _porPagina = 10;
+  int _visibles = _porPagina;
+
+  @override
+  void initState() {
+    super.initState();
+    _busqueda.addListener(() => setState(() => _visibles = _porPagina));
+  }
+
+  @override
+  void dispose() {
+    _busqueda.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final AsyncValue<List<MensajeProgramado>> lista = ref.watch(
       programadosProvider,
     );
@@ -58,10 +83,40 @@ class SeccionEntregas extends ConsumerWidget {
           );
         }
 
+        final List<MensajeProgramado> filtrados = filtrarProgramados(
+          enviados,
+          _busqueda.text,
+        );
+        final List<MensajeProgramado> pagina = filtrados
+            .take(_visibles)
+            .toList();
+
         return ListView(
           padding: const EdgeInsets.all(16),
           children: <Widget>[
-            for (final MensajeProgramado m in enviados) _Reporte(mensaje: m),
+            if (enviados.length > 5) ...<Widget>[
+              Buscador(
+                controlador: _busqueda,
+                etiqueta: Textos.buscarEntregas,
+                resultados: filtrados.length,
+              ),
+              const SizedBox(height: 16),
+            ],
+            if (filtrados.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  Textos.sinResultados(_busqueda.text.trim()),
+                  textAlign: TextAlign.center,
+                ),
+              )
+            else
+              for (final MensajeProgramado m in pagina) _Reporte(mensaje: m),
+            VerMas(
+              mostrados: pagina.length,
+              total: filtrados.length,
+              alPulsar: () => setState(() => _visibles += _porPagina),
+            ),
           ],
         );
       },

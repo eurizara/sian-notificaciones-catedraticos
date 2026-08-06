@@ -21,14 +21,57 @@ import 'package:intl/intl.dart';
 
 import '../../application/proveedores_programacion.dart';
 import '../../infrastructure/firebase/repositorio_programacion.dart';
+import '../shared/buscador.dart';
 import '../shared/tema.dart';
 import '../shared/textos.dart';
 
-class SeccionProgramacion extends ConsumerWidget {
+/// Filtra por título y por nombre de grupo destinatario.
+///
+/// El grupo entra en la búsqueda a propósito: «¿qué le mandé a Ingeniería?» es
+/// una pregunta tan natural como buscar por el título, y sin esto habría que
+/// abrir uno por uno.
+List<MensajeProgramado> filtrarProgramados(
+  List<MensajeProgramado> lista,
+  String termino,
+) {
+  if (termino.trim().isEmpty) {
+    return lista;
+  }
+  return lista
+      .where(
+        (MensajeProgramado m) =>
+            coincide(termino, <String>[m.titulo, ...m.nombresGrupos]),
+      )
+      .toList();
+}
+
+class SeccionProgramacion extends ConsumerStatefulWidget {
   const SeccionProgramacion({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SeccionProgramacion> createState() =>
+      _SeccionProgramacionState();
+}
+
+class _SeccionProgramacionState extends ConsumerState<SeccionProgramacion> {
+  final TextEditingController _busqueda = TextEditingController();
+  static const int _porPagina = 10;
+  int _visibles = _porPagina;
+
+  @override
+  void initState() {
+    super.initState();
+    _busqueda.addListener(() => setState(() => _visibles = _porPagina));
+  }
+
+  @override
+  void dispose() {
+    _busqueda.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final AsyncValue<List<MensajeProgramado>> lista = ref.watch(
       programadosProvider,
     );
@@ -54,10 +97,40 @@ class SeccionProgramacion extends ConsumerWidget {
           );
         }
 
+        final List<MensajeProgramado> filtrados = filtrarProgramados(
+          programados,
+          _busqueda.text,
+        );
+        final List<MensajeProgramado> pagina = filtrados
+            .take(_visibles)
+            .toList();
+
         return ListView(
           padding: const EdgeInsets.all(16),
           children: <Widget>[
-            for (final MensajeProgramado m in programados) _Fila(mensaje: m),
+            if (programados.length > 5) ...<Widget>[
+              Buscador(
+                controlador: _busqueda,
+                etiqueta: Textos.buscarProgramados,
+                resultados: filtrados.length,
+              ),
+              const SizedBox(height: 16),
+            ],
+            if (filtrados.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  Textos.sinResultados(_busqueda.text.trim()),
+                  textAlign: TextAlign.center,
+                ),
+              )
+            else
+              for (final MensajeProgramado m in pagina) _Fila(mensaje: m),
+            VerMas(
+              mostrados: pagina.length,
+              total: filtrados.length,
+              alPulsar: () => setState(() => _visibles += _porPagina),
+            ),
           ],
         );
       },

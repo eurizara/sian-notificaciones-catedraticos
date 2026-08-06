@@ -59,20 +59,23 @@
     }
 
     /*
-      El arrastre horizontal no navega hacia atrás.
+      ────────────────────────────────────────────────────────────────────────
+      NO se le pone CSS a la vista de Flutter. Ya rompió el desplazamiento
+      dos veces.
+      ────────────────────────────────────────────────────────────────────────
 
-      `touch-action: pan-y` le dice al navegador que en esta página los
-      gestos horizontales no son suyos. Es lo que de verdad frena el
-      deslizamiento lateral, y deja intacto el vertical.
+      Primero fue `overflow: hidden` en el documento; después `touch-action:
+      pan-y` sobre `flt-glass-pane`. Flutter fija `touch-action: none` en su
+      lienzo A PROPÓSITO, porque quiere atender él todos los gestos.
+      Devolverle al navegador el gesto vertical hace que los dos tiren del
+      mismo dedo: el desplazamiento se traba, sobre todo al cambiar de
+      dirección.
 
-      En Safari sobre iOS el gesto desde el borde exacto de la pantalla sigue
-      siendo del sistema y no hay forma de cancelarlo desde la web. Instalada
-      en la pantalla de inicio ese gesto no existe, que es otra razón para el
-      instructivo de instalación.
+      Lo único que se toca aquí es el documento, y solo con
+      `overscroll-behavior-x`, que cancela el rebote lateral sin decir nada
+      sobre el vertical. Lo demás lo resuelve la trampa de historial de abajo,
+      que actúa cuando el gesto ya ocurrió en vez de intentar impedirlo.
     */
-    body, flutter-view, flt-glass-pane {
-      touch-action: pan-y;
-    }
   </style>
 </head>
 <body>
