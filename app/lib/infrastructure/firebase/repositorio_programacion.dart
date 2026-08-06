@@ -289,9 +289,21 @@ class RepositorioProgramacion {
   /// Se traen también los nombres de los grupos: mostrar identificadores
   /// aleatorios donde debería decir «Ingeniería» no ayuda a nadie a comprobar
   /// que el aviso iba a quien creía.
-  Stream<List<MensajeProgramado>> observarProgramados() {
-    return _db
-        .collection('mensajes')
+  ///
+  /// [soloDe] restringe la consulta a un autor. No es un filtro de comodidad:
+  /// las reglas solo dejan a un administrador académico leer los mensajes que
+  /// él creó, y **Firestore no evalúa las reglas fila por fila en una
+  /// consulta de lista**. Pedir todos y quedarse con los suyos no devuelve
+  /// «los suyos»: devuelve `permission-denied`. La consulta tiene que declarar
+  /// por sí misma que es segura.
+  Stream<List<MensajeProgramado>> observarProgramados({String? soloDe}) {
+    Query<Map<String, dynamic>> consulta = _db.collection('mensajes');
+
+    if (soloDe != null) {
+      consulta = consulta.where('creadoPor', isEqualTo: soloDe);
+    }
+
+    return consulta
         .orderBy('creadoEn', descending: true)
         .limit(100)
         .snapshots()

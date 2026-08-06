@@ -46,6 +46,7 @@ export {
   cambiarEstadoUsuario,
   cambiarRol,
   crearInvitaciones,
+  destinatariosElegibles,
   guardarGrupo,
   revocarInvitacion,
 } from './triggers/administracion';
