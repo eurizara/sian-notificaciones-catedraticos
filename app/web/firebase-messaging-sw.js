@@ -62,8 +62,25 @@ function componer(carga) {
       tag: datos.mensajeId || 'sian',
       // Una alerta urgente no se descarta sola: exige un gesto.
       requireInteraction: esUrgente,
-      // Android la usa; iOS la ignora sin quejarse (DT-02).
-      vibrate: esUrgente ? [200, 100, 200, 100, 200] : [200],
+      /*
+        Patrón de vibración: [vibra, pausa, vibra, pausa, …] en milisegundos.
+
+        La INTENSIDAD no se puede elegir desde la web en ninguna plataforma —
+        la decide el motor del teléfono—, pero el patrón sí, y es lo que de
+        verdad distingue una alerta de un aviso cualquiera: tres pulsos
+        largos no se confunden con la vibración de un mensaje de WhatsApp.
+
+        Una urgente insiste seis veces, con pulsos largos. Un informativo da
+        uno corto: gastar la insistencia en todo la vuelve ruido, y entonces
+        no queda nada con lo que gritar cuando hace falta.
+
+        Android lo respeta. iOS lo IGNORA por completo, incluso instalada:
+        Apple no expone control de vibración a la web, y esa es la deuda
+        DT-02 — la única salida sería una aplicación nativa.
+      */
+      vibrate: esUrgente
+        ? [400, 150, 400, 150, 400, 150, 400, 150, 400, 150, 400]
+        : [200],
       data: { mensajeId: datos.mensajeId || '' },
     },
   };

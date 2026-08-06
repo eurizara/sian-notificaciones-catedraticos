@@ -19,6 +19,7 @@ import '../../domain/sesion.dart';
 import '../../infrastructure/firebase/repositorio_bandeja.dart';
 import '../../core/navegador.dart';
 import '../shared/barra_sesion.dart';
+import '../shared/buscador.dart';
 import 'aviso_en_primer_plano.dart';
 import 'instructivo_ios.dart';
 import 'reproductor_adjuntos.dart';
@@ -52,6 +53,32 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
   /// ni leer sus mensajes, que es peor que dejarlo sin notificaciones (R-02).
   bool _instructivoOmitido = false;
 
+  final TextEditingController _busqueda = TextEditingController();
+
+  /// Cuántos mensajes se muestran de golpe.
+  ///
+  /// Con veinte años de avisos, pintar el historial entero al abrir es lo que
+  /// convierte una bandeja en una pantalla que tarda. Lo urgente está arriba;
+  /// el resto se pide.
+  static const int _porPagina = 15;
+  int _visibles = _porPagina;
+
+  @override
+  void initState() {
+    super.initState();
+    _busqueda.addListener(() {
+      // Al buscar se vuelve al principio: seguir en la página 4 de un
+      // resultado que tiene 2 elementos deja la pantalla vacía sin motivo.
+      setState(() => _visibles = _porPagina);
+    });
+  }
+
+  @override
+  void dispose() {
+    _busqueda.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final UsuarioSesion usuario = widget.usuario;
@@ -84,22 +111,78 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
             child: historial.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (Object e, StackTrace _) => _Error(detalle: e.toString()),
-              data: (List<MensajeRecibido> mensajes) => ListView(
-                padding: const EdgeInsets.all(16),
-                children: <Widget>[
-                  const TarjetaNotificaciones(),
-                  if (mensajes.isEmpty)
-                    const _BandejaVacia()
-                  else
-                    ...filasDeMensajes(context, mensajes),
-                ],
-              ),
+              data: (List<MensajeRecibido> todos) {
+                final List<MensajeRecibido> filtrados = filtrarMensajes(
+                  todos,
+                  _busqueda.text,
+                );
+                final List<MensajeRecibido> pagina = filtrados
+                    .take(_visibles)
+                    .toList();
+
+                return ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: <Widget>[
+                    const TarjetaNotificaciones(),
+
+                    // El buscador solo aparece cuando hay bastante que
+                    // buscar: con tres mensajes estorba más de lo que ayuda.
+                    if (todos.length > 5) ...<Widget>[
+                      Buscador(
+                        controlador: _busqueda,
+                        etiqueta: Textos.buscarMensajes,
+                        resultados: filtrados.length,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    if (todos.isEmpty)
+                      const _BandejaVacia()
+                    else if (filtrados.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text(
+                          Textos.sinResultados(_busqueda.text.trim()),
+                          textAlign: TextAlign.center,
+                        ),
+                      )
+                    else
+                      ...filasDeMensajes(context, pagina),
+
+                    VerMas(
+                      mostrados: pagina.length,
+                      total: filtrados.length,
+                      alPulsar: () => setState(() => _visibles += _porPagina),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ),
       ),
     );
   }
+}
+
+/// Filtra por texto en el título y el cuerpo.
+///
+/// Sobre lo ya cargado, no consultando al servidor: Firestore no sabe buscar
+/// dentro de un campo de texto y hacerlo exigiría un índice externo de pago
+/// (ADR-008). Expuesta aparte para poder probar la coincidencia sin montar
+/// ninguna pantalla.
+List<MensajeRecibido> filtrarMensajes(
+  List<MensajeRecibido> mensajes,
+  String termino,
+) {
+  if (termino.trim().isEmpty) {
+    return mensajes;
+  }
+  return mensajes
+      .where(
+        (MensajeRecibido m) => coincide(termino, <String>[m.titulo, m.cuerpo]),
+      )
+      .toList();
 }
 
 /// Construye las filas de la bandeja.

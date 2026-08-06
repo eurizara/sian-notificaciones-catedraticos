@@ -9,6 +9,8 @@ library;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
+import 'repositorio_adjuntos.dart';
+
 /// Unidad del intervalo de una recurrencia (RF-PRG-06).
 enum UnidadIntervalo {
   minutos('MINUTOS', 'minutos'),
@@ -81,8 +83,11 @@ class MensajeProgramado {
     required this.modo,
     required this.creadoPor,
     required this.requiereConfirmacion,
+    required this.modoDestinatarios,
+    required this.formato,
     this.proximaOcurrencia,
     this.enviadoEn,
+    this.nombresGrupos = const <String>[],
     this.totalDestinatarios = 0,
     this.entregados = 0,
     this.confirmados = 0,
@@ -102,6 +107,21 @@ class MensajeProgramado {
   /// confirmar», como si algo hubiera salido mal. No había salido mal: es que
   /// nunca iba a confirmarse nadie.
   final bool requiereConfirmacion;
+
+  /// `TODOS`, `GRUPOS` o `INDIVIDUAL`. Sin esto, la lista de programados no
+  /// decía a quién iba dirigido nada: un aviso a un grupo de tres y otro a
+  /// toda la institución se veían idénticos hasta que salían.
+  final String modoDestinatarios;
+
+  /// Nombres de los grupos destinatarios, ya resueltos.
+  final List<String> nombresGrupos;
+
+  /// `TEXTO`, `VOZ`, `IMAGEN` — lo que lleva el mensaje.
+  final List<String> formato;
+
+  bool get llevaVoz => formato.contains('VOZ');
+  bool get llevaImagen => formato.contains('IMAGEN');
+  bool get llevaAdjuntos => llevaVoz || llevaImagen;
 
   /// Cuándo se disparó el envío.
   ///
@@ -208,6 +228,9 @@ class RepositorioProgramacion {
     DateTime? ejecutarEn,
     PatronRecurrencia? recurrencia,
     bool confirmacionUrgente = false,
+    String? mensajeId,
+    AdjuntoSubido? voz,
+    AdjuntoSubido? imagen,
   }) async {
     final HttpsCallableResult<Object?> r = await _fn
         .httpsCallable('programarMensaje')
@@ -220,6 +243,15 @@ class RepositorioProgramacion {
           'confirmacionUrgente': confirmacionUrgente,
           'ejecutarEn': ?ejecutarEn?.toUtc().toIso8601String(),
           if (recurrencia != null) 'recurrencia': recurrencia.aMapa(),
+          // Sin esto, los adjuntos se subían a Storage contra un
+          // identificador reservado y el mensaje se creaba con OTRO: los
+          // archivos quedaban huérfanos y el catedrático recibía solo texto.
+          'mensajeId': ?mensajeId,
+          if (voz != null || imagen != null)
+            'adjuntos': <String, Object?>{
+              if (voz != null) 'audio': voz.aMapa(),
+              if (imagen != null) 'imagen': imagen.aMapa(),
+            },
         });
 
     final Map<Object?, Object?> d =
@@ -228,40 +260,71 @@ class RepositorioProgramacion {
   }
 
   /// Lo que está programado y todavía no ha salido, más lo ya enviado.
+  ///
+  /// Se traen también los nombres de los grupos: mostrar identificadores
+  /// aleatorios donde debería decir «Ingeniería» no ayuda a nadie a comprobar
+  /// que el aviso iba a quien creía.
   Stream<List<MensajeProgramado>> observarProgramados() {
     return _db
         .collection('mensajes')
         .orderBy('creadoEn', descending: true)
-        .limit(50)
+        .limit(100)
         .snapshots()
-        .map((QuerySnapshot<Map<String, dynamic>> s) {
-          return s.docs.map((QueryDocumentSnapshot<Map<String, dynamic>> d) {
-            final Map<String, dynamic> x = d.data();
-            final Map<Object?, Object?> resumen = (x['resumenEntrega'] is Map)
-                ? (x['resumenEntrega'] as Map).cast<Object?, Object?>()
-                : <Object?, Object?>{};
-            final Map<Object?, Object?> prog = (x['programacion'] is Map)
-                ? (x['programacion'] as Map).cast<Object?, Object?>()
-                : <Object?, Object?>{};
-
-            return MensajeProgramado(
-              id: d.id,
-              titulo: (x['titulo'] as String?) ?? '',
-              tipo: (x['tipo'] as String?) ?? 'INFORMATIVO',
-              estado: (x['estado'] as String?) ?? '',
-              modo: (prog['modo'] as String?) ?? 'INMEDIATO',
-              creadoPor: (x['creadoPor'] as String?) ?? '',
-              requiereConfirmacion: x['requiereConfirmacion'] == true,
-              enviadoEn: (x['enviadoEn'] as Timestamp?)?.toDate(),
-              proximaOcurrencia: (x['proximaOcurrencia'] as Timestamp?)
-                  ?.toDate(),
-              totalDestinatarios:
-                  (x['totalDestinatarios'] as num?)?.toInt() ?? 0,
-              entregados: (resumen['entregados'] as num?)?.toInt() ?? 0,
-              confirmados: (resumen['confirmados'] as num?)?.toInt() ?? 0,
-            );
-          }).toList();
+        .asyncMap((QuerySnapshot<Map<String, dynamic>> s) async {
+          final QuerySnapshot<Map<String, dynamic>> grupos = await _db
+              .collection('grupos')
+              .get();
+          final Map<String, String> nombresPorId = <String, String>{
+            for (final QueryDocumentSnapshot<Map<String, dynamic>> g
+                in grupos.docs)
+              g.id: (g.data()['nombre'] as String?) ?? g.id,
+          };
+          return _mapear(s, nombresPorId);
         });
+  }
+
+  /// Convierte los documentos en la vista, resolviendo nombres de grupo.
+  List<MensajeProgramado> _mapear(
+    QuerySnapshot<Map<String, dynamic>> s,
+    Map<String, String> nombresPorId,
+  ) {
+    return s.docs.map((QueryDocumentSnapshot<Map<String, dynamic>> d) {
+      final Map<String, dynamic> x = d.data();
+
+      Map<Object?, Object?> mapa(String clave) => x[clave] is Map
+          ? (x[clave] as Map).cast<Object?, Object?>()
+          : <Object?, Object?>{};
+
+      final Map<Object?, Object?> resumen = mapa('resumenEntrega');
+      final Map<Object?, Object?> prog = mapa('programacion');
+      final Map<Object?, Object?> dest = mapa('destinatarios');
+
+      List<String> lista(Object? v) =>
+          (v as List<dynamic>?)?.map((dynamic e) => '$e').toList() ??
+          <String>[];
+
+      return MensajeProgramado(
+        id: d.id,
+        titulo: (x['titulo'] as String?) ?? '',
+        tipo: (x['tipo'] as String?) ?? 'INFORMATIVO',
+        estado: (x['estado'] as String?) ?? '',
+        modo: (prog['modo'] as String?) ?? 'INMEDIATO',
+        creadoPor: (x['creadoPor'] as String?) ?? '',
+        requiereConfirmacion: x['requiereConfirmacion'] == true,
+        modoDestinatarios: (dest['modo'] as String?) ?? 'TODOS',
+        // Nombres, no identificadores: mostrar cadenas aleatorias donde
+        // debería decir «Ingeniería» no ayuda a comprobar nada.
+        nombresGrupos: lista(
+          dest['gruposIds'],
+        ).map((String g) => nombresPorId[g] ?? g).toList(),
+        formato: lista(x['formato']),
+        proximaOcurrencia: (x['proximaOcurrencia'] as Timestamp?)?.toDate(),
+        enviadoEn: (x['enviadoEn'] as Timestamp?)?.toDate(),
+        totalDestinatarios: (x['totalDestinatarios'] as num?)?.toInt() ?? 0,
+        entregados: (resumen['entregados'] as num?)?.toInt() ?? 0,
+        confirmados: (resumen['confirmados'] as num?)?.toInt() ?? 0,
+      );
+    }).toList();
   }
 
   /// Suspender, reanudar o cancelar (RF-PRG-10, RF-PRG-11).

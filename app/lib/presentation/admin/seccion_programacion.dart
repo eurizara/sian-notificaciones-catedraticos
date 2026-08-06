@@ -118,6 +118,42 @@ class _Fila extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
 
+            // A quién va, qué lleva y si pide confirmación. Sin esto, un
+            // aviso a un grupo de tres y otro a toda la institución se veían
+            // idénticos hasta que salían — y ya no hay vuelta atrás.
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: <Widget>[
+                Marca(
+                  icono: Icons.people_outline,
+                  texto: switch (mensaje.modoDestinatarios) {
+                    'GRUPOS' => Textos.destinatariosGruposCorto(
+                      mensaje.nombresGrupos,
+                    ),
+                    'INDIVIDUAL' => Textos.destinatariosIndividual,
+                    _ => Textos.destinatariosTodosCorto,
+                  },
+                ),
+                if (mensaje.llevaVoz)
+                  const Marca(
+                    icono: Icons.graphic_eq,
+                    texto: Textos.llevaNotaDeVoz,
+                  ),
+                if (mensaje.llevaImagen)
+                  const Marca(
+                    icono: Icons.image_outlined,
+                    texto: Textos.llevaImagenAdjunta,
+                  ),
+                if (mensaje.requiereConfirmacion)
+                  const Marca(
+                    icono: Icons.verified_outlined,
+                    texto: Textos.pideConfirmacion,
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+
             if (mensaje.proximaOcurrencia != null)
               Text(
                 Textos.proximaSalida(
@@ -230,5 +266,42 @@ class _Fila extends ConsumerWidget {
         );
       }
     }
+  }
+}
+
+/// Etiqueta compacta con icono. Se leen de un vistazo y no roban altura.
+/// Compartida con el reporte de entregas: las dos pantallas describen el
+/// mismo mensaje y describirlo distinto en cada una sería una invitación a
+/// dudar de cuál dice la verdad.
+class Marca extends StatelessWidget {
+  const Marca({required this.icono, required this.texto, super.key});
+
+  final IconData icono;
+  final String texto;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData tema = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: tema.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icono, size: 14, color: tema.colorScheme.onSurfaceVariant),
+          const SizedBox(width: 4),
+          Text(
+            texto,
+            style: tema.textTheme.bodySmall?.copyWith(
+              color: tema.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
