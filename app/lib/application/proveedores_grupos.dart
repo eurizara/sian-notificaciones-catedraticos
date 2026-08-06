@@ -32,3 +32,11 @@ final gruposActivosProvider = Provider<AsyncValue<List<GrupoDetalle>>>((
             todos.where((GrupoDetalle g) => g.activo).toList(),
       );
 });
+
+/// Quiénes pueden meterse en un grupo.
+///
+/// Por Function, no leyendo `usuarios`: un administrador académico no tiene
+/// permiso sobre el padrón, y administrar grupos no debería dárselo.
+final elegiblesProvider = FutureProvider<List<Elegible>>(
+  (Ref ref) => ref.watch(repositorioGruposProvider).elegibles(),
+);

@@ -382,9 +382,19 @@ class RepositorioEnvioFalso extends RepositorioEnvio {
 /// Extiende el real: solo se sustituyen la lectura y las dos escrituras, que
 /// es todo lo que una prueba de widget necesita.
 class RepositorioGruposFalso extends RepositorioGrupos {
-  RepositorioGruposFalso({this.grupos = const <GrupoDetalle>[]});
+  RepositorioGruposFalso({
+    this.grupos = const <GrupoDetalle>[],
+    this.personas = const <Elegible>[],
+  });
 
   final List<GrupoDetalle> grupos;
+
+  /// Quiénes se pueden agrupar. Los devuelve el servidor ya filtrados: un
+  /// administrador académico no puede leer el padrón.
+  final List<Elegible> personas;
+
+  @override
+  Future<List<Elegible>> elegibles() async => personas;
 
   int vecesQueGuardo = 0;
   String? ultimoNombre;
@@ -437,9 +447,17 @@ class RepositorioProgramacionFalso extends RepositorioProgramacion {
   /// Error que devolverá la próxima confirmación, si se configura.
   Exception? errorAlConfirmar;
 
+  /// Autor con el que se restringió la consulta, si se restringió.
+  ///
+  /// Sirve para comprobar que un administrador académico pide SOLO los suyos:
+  /// pedir todos no devuelve «los suyos», devuelve `permission-denied`.
+  String? filtradoPor;
+
   @override
-  Stream<List<MensajeProgramado>> observarProgramados() =>
-      Stream<List<MensajeProgramado>>.value(programados);
+  Stream<List<MensajeProgramado>> observarProgramados({String? soloDe}) {
+    filtradoPor = soloDe;
+    return Stream<List<MensajeProgramado>>.value(programados);
+  }
 
   @override
   Future<void> marcarAbierto(String mensajeId) async {

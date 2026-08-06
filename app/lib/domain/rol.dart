@@ -59,6 +59,24 @@ enum Rol {
     Rol.catedratico || Rol.auditor => false,
   };
 
+  /// ¿Ve los mensajes de TODO el mundo, o solo los suyos?
+  ///
+  /// ────────────────────────────────────────────────────────────────────────
+  /// No es una preferencia de la pantalla: es lo que las reglas permiten.
+  /// ────────────────────────────────────────────────────────────────────────
+  ///
+  /// `VER_REPORTE_ENTREGAS` tiene alcance TODO para el coordinador y el
+  /// auditor, y PROPIO para el administrador académico (documento 01, §2.2).
+  ///
+  /// Y Firestore no evalúa las reglas fila por fila en una consulta de lista:
+  /// exige que la consulta misma sea demostrablemente segura. Pedir todos los
+  /// mensajes siendo administrador no devuelve «los tuyos», devuelve
+  /// `permission-denied` — que es exactamente lo que ocurrió.
+  bool get veMensajesDeTodos => switch (this) {
+    Rol.coordinador || Rol.auditor => true,
+    Rol.administradora || Rol.catedratico => false,
+  };
+
   /// ¿Puede consultar la bitácora completa? (RF-BIT-04)
   bool get veBitacoraCompleta => switch (this) {
     Rol.coordinador || Rol.auditor => true,

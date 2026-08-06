@@ -17,7 +17,6 @@ import 'package:sian/application/proveedores_grupos.dart';
 import 'package:sian/application/proveedores_sesion.dart';
 import 'package:sian/domain/rol.dart';
 import 'package:sian/domain/sesion.dart';
-import 'package:sian/infrastructure/firebase/repositorio_administracion.dart';
 import 'package:sian/infrastructure/firebase/repositorio_grupos.dart';
 import 'package:sian/presentation/admin/seccion_grupos.dart';
 import 'package:sian/presentation/admin/seccion_mensajes.dart';
@@ -43,23 +42,12 @@ GrupoDetalle grupo({
   );
 }
 
-UsuarioVista persona(
-  String uid, {
-  bool activo = true,
-  String rol = 'CATEDRATICO',
-  bool? recibeAvisos,
-}) {
-  return UsuarioVista(
-    uid: uid,
-    correo: '$uid@umg.edu.gt',
-    nombre: 'Persona $uid',
-    rol: rol,
-    activo: activo,
-    puedeEmitirUrgentes: false,
-    puedeCrearRecurrentes: false,
-    recibeAvisos: recibeAvisos ?? rol == 'CATEDRATICO',
-  );
-}
+/// Alguien que el servidor ya declaró elegible.
+///
+/// La lista llega filtrada por Cloud Function: las cuentas desactivadas y
+/// quien no recibe avisos no salen de ahí. El cliente solo la pinta.
+Elegible persona(String uid) =>
+    Elegible(uid: uid, nombre: 'Persona $uid', correo: '$uid@umg.edu.gt');
 
 void main() {
   late RepositorioGruposFalso grupos;
@@ -69,6 +57,11 @@ void main() {
     grupos = RepositorioGruposFalso();
     admin = RepositorioAdminFalso();
   });
+
+  /// Reconstruye el doble conservando los grupos ya configurados.
+  void conPersonas(List<Elegible> personas) {
+    grupos = RepositorioGruposFalso(grupos: grupos.grupos, personas: personas);
+  }
 
   Widget montarSeccion() => ProviderScope(
     overrides: [
@@ -233,7 +226,7 @@ void main() {
     testWidgets('un grupo VACÍO tampoco', (WidgetTester tester) async {
       // No es un error de sintaxis, es una trampa: al redactar mostraría
       // «llegará a 0 personas» y el envío se rechazaría.
-      admin = RepositorioAdminFalso(usuarios: <UsuarioVista>[persona('a')]);
+      conPersonas(<Elegible>[persona('a')]);
       await tester.pumpWidget(montarEditor());
       await tester.pumpAndSettle();
 
@@ -249,9 +242,7 @@ void main() {
     });
 
     testWidgets('con nombre y gente, guarda', (WidgetTester tester) async {
-      admin = RepositorioAdminFalso(
-        usuarios: <UsuarioVista>[persona('a'), persona('b')],
-      );
+      conPersonas(<Elegible>[persona('a'), persona('b')]);
       await tester.pumpWidget(montarEditor());
       await tester.pumpAndSettle();
 
@@ -274,7 +265,7 @@ void main() {
     testWidgets('editar uno existente conserva su identificador', (
       WidgetTester tester,
     ) async {
-      admin = RepositorioAdminFalso(usuarios: <UsuarioVista>[persona('a')]);
+      conPersonas(<Elegible>[persona('a')]);
       await tester.pumpWidget(
         montarEditor(
           existente: const GrupoDetalle(
@@ -294,42 +285,34 @@ void main() {
       expect(grupos.ultimoGrupoId, 'g9');
     });
 
-    testWidgets('no se puede agrupar a una cuenta desactivada', (
-      WidgetTester tester,
-    ) async {
-      // Meterla no daría error, pero al enviar quedaría excluida y el conteo
-      // no cuadraría con lo que la lista prometía.
-      admin = RepositorioAdminFalso(
-        usuarios: <UsuarioVista>[persona('a'), persona('b', activo: false)],
-      );
-      await tester.pumpWidget(montarEditor());
-      await tester.pumpAndSettle();
+    testWidgets(
+      'el editor NO decide quién es elegible: lo decide el servidor',
+      (WidgetTester tester) async {
+        // ──────────────────────────────────────────────────────────────────
+        // Un administrador académico no puede leer el padrón.
+        // ──────────────────────────────────────────────────────────────────
+        //
+        // Las reglas solo abren `usuarios` al coordinador y al auditor.
+        // Filtrarlo aquí exigía leerlo entero primero, y eso devolvía
+        // `permission-denied`: el editor se quedaba vacío sin explicar por qué.
+        //
+        // Ahora la lista llega ya filtrada por Cloud Function, con lo mínimo
+        // —nombre y correo— y nada más: ni rol, ni banderas, ni quién está
+        // desactivado. Suficiente para elegir, insuficiente para hacerse un
+        // directorio de la institución.
+        conPersonas(<Elegible>[persona('a'), persona('b')]);
+        await tester.pumpWidget(montarEditor());
+        await tester.pumpAndSettle();
 
-      expect(find.text('Persona a'), findsOneWidget);
-      expect(find.text('Persona b'), findsNothing);
-    });
-
-    testWidgets('el auditor tampoco es agrupable: no recibe mensajes', (
-      WidgetTester tester,
-    ) async {
-      admin = RepositorioAdminFalso(
-        usuarios: <UsuarioVista>[
-          persona('a'),
-          persona('z', rol: 'AUDITOR'),
-        ],
-      );
-      await tester.pumpWidget(montarEditor());
-      await tester.pumpAndSettle();
-
-      expect(find.text('Persona z'), findsNothing);
-    });
+        expect(find.text('Persona a'), findsOneWidget);
+        expect(find.text('Persona b'), findsOneWidget);
+      },
+    );
 
     testWidgets('la búsqueda filtra por nombre y correo', (
       WidgetTester tester,
     ) async {
-      admin = RepositorioAdminFalso(
-        usuarios: <UsuarioVista>[persona('ana'), persona('beto')],
-      );
+      conPersonas(<Elegible>[persona('ana'), persona('beto')]);
       await tester.pumpWidget(montarEditor());
       await tester.pumpAndSettle();
 

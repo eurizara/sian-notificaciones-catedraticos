@@ -20,15 +20,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/proveedores_grupos.dart';
-import '../../infrastructure/firebase/repositorio_administracion.dart';
 import '../../infrastructure/firebase/repositorio_grupos.dart';
 import '../shared/tema.dart';
 import '../shared/textos.dart';
-import 'seccion_usuarios.dart' show repositorioAdminProvider;
-
-final usuariosParaGruposProvider = StreamProvider<List<UsuarioVista>>(
-  (Ref ref) => ref.watch(repositorioAdminProvider).observarUsuarios(),
-);
 
 class SeccionGrupos extends ConsumerWidget {
   const SeccionGrupos({super.key});
@@ -275,28 +269,24 @@ class _EditorGrupoState extends ConsumerState<EditorGrupo> {
   /// error: el servidor los excluye al enviar. Pero entonces el conteo no
   /// cuadraría con lo que la lista prometía, y habría que descubrirlo leyendo
   /// los motivos de exclusión. Mejor no ofrecerlos.
-  List<UsuarioVista> _elegibles(List<UsuarioVista> todos) {
+  List<Elegible> _elegibles(List<Elegible> todos) {
     final String q = _busqueda.text.trim().toLowerCase();
-    return todos.where((UsuarioVista u) {
-      // La bandera, no el rol: quien la tenga encendida es destinatario
-      // aunque su rol por omisión no lo fuera.
-      if (!u.activo || !u.recibeAvisos) {
-        return false;
-      }
-      if (q.isEmpty) {
-        return true;
-      }
-      return u.nombre.toLowerCase().contains(q) ||
-          u.correo.toLowerCase().contains(q);
-    }).toList();
+    if (q.isEmpty) {
+      return todos;
+    }
+    return todos
+        .where(
+          (Elegible u) =>
+              u.nombre.toLowerCase().contains(q) ||
+              u.correo.toLowerCase().contains(q),
+        )
+        .toList();
   }
 
   @override
   Widget build(BuildContext context) {
     final ThemeData tema = Theme.of(context);
-    final AsyncValue<List<UsuarioVista>> usuarios = ref.watch(
-      usuariosParaGruposProvider,
-    );
+    final AsyncValue<List<Elegible>> usuarios = ref.watch(elegiblesProvider);
 
     return AlertDialog(
       title: Text(
@@ -368,15 +358,15 @@ class _EditorGrupoState extends ConsumerState<EditorGrupo> {
               child: usuarios.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (Object e, StackTrace _) => Text('$e'),
-                data: (List<UsuarioVista> todos) {
-                  final List<UsuarioVista> lista = _elegibles(todos);
+                data: (List<Elegible> todos) {
+                  final List<Elegible> lista = _elegibles(todos);
                   if (lista.isEmpty) {
                     return const Center(child: Text(Textos.grupoSinElegibles));
                   }
                   return ListView.builder(
                     itemCount: lista.length,
                     itemBuilder: (BuildContext _, int i) {
-                      final UsuarioVista u = lista[i];
+                      final Elegible u = lista[i];
                       return CheckboxListTile(
                         dense: true,
                         value: _elegidos.contains(u.uid),

@@ -26,6 +26,23 @@ abstract final class LimitesGrupo {
   static const int umbralAviso = 150;
 }
 
+/// Alguien que puede meterse en un grupo.
+///
+/// Deliberadamente pobre: nombre y correo, nada más. Administrar grupos no
+/// debería dar acceso al padrón de la institución con sus roles y sus
+/// autorizaciones.
+class Elegible {
+  const Elegible({
+    required this.uid,
+    required this.nombre,
+    required this.correo,
+  });
+
+  final String uid;
+  final String nombre;
+  final String correo;
+}
+
 /// Grupo tal como se muestra y se edita.
 class GrupoDetalle {
   const GrupoDetalle({
@@ -96,6 +113,32 @@ class RepositorioGrupos {
       });
       return lista;
     });
+  }
+
+  /// Quiénes se pueden meter en un grupo.
+  ///
+  /// Pasa por Cloud Function porque un administrador académico no puede leer
+  /// `usuarios`: las reglas solo lo abren al coordinador y al auditor. Leerlo
+  /// desde aquí devolvía `permission-denied` y dejaba el editor vacío sin
+  /// explicar por qué.
+  Future<List<Elegible>> elegibles() async {
+    final HttpsCallableResult<Object?> r = await _fn
+        .httpsCallable('destinatariosElegibles')
+        .call<Object?>();
+
+    final Map<Object?, Object?> d =
+        (r.data as Map<Object?, Object?>?) ?? <Object?, Object?>{};
+    final List<Object?> lista =
+        (d['elegibles'] as List<Object?>?) ?? <Object?>[];
+
+    return lista.map((Object? o) {
+      final Map<Object?, Object?> m = (o as Map<Object?, Object?>?) ?? {};
+      return Elegible(
+        uid: (m['uid'] as String?) ?? '',
+        nombre: (m['nombre'] as String?) ?? '',
+        correo: (m['correo'] as String?) ?? '',
+      );
+    }).toList();
   }
 
   /// Crea o modifica. Sin `grupoId` crea uno nuevo (RF-USR-03).

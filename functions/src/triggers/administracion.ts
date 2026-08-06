@@ -457,3 +457,46 @@ export const cambiarEstadoGrupo = onCall(OPCIONES_FUNCION, async (peticion) => {
     throw comoHttps(e);
   }
 });
+
+/**
+ * Quiénes se pueden meter en un grupo (RF-USR-03).
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Existe porque un administrador académico NO puede leer el padrón.
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * Las reglas solo abren `usuarios` al coordinador, al auditor y al propio
+ * interesado (documento 05, sección 5), y está bien que así sea: administrar
+ * grupos no debería dar acceso a la lista completa de la institución con sus
+ * roles y sus autorizaciones.
+ *
+ * Pero para armar un grupo hacen falta nombres. Aquí se devuelve lo mínimo
+ * —quién recibe avisos, con su nombre y su correo— y nada más: ni rol, ni
+ * banderas, ni quién está desactivado. Suficiente para elegir, insuficiente
+ * para hacerse un directorio.
+ */
+export const destinatariosElegibles = onCall(OPCIONES_FUNCION, async (peticion) => {
+  await exigir(peticion, 'ADMINISTRAR_GRUPOS');
+
+  const instantanea = await db.collection(RUTAS.usuarios).get();
+
+  const elegibles = instantanea.docs
+    .filter((d) => {
+      if (d.get('activo') !== true) {
+        return false;
+      }
+      return recibeAvisos(
+        d.get('rol') as Rol,
+        d.get('recibeAvisos') as boolean | undefined,
+      );
+    })
+    .map((d) => ({
+      uid: d.id,
+      nombre: (d.get('nombre') as string | undefined) ?? d.id,
+      correo: (d.get('correo') as string | undefined) ?? '',
+    }));
+
+  elegibles.sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+  return { elegibles };
+});
