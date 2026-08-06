@@ -14,7 +14,11 @@ library;
 
 enum Rol {
   coordinador('COORDINADOR', 'Coordinador Académico'),
-  administradora('ADMINISTRADORA', 'Administradora Académica'),
+  // El identificador `ADMINISTRADORA` no cambia aunque cambie la etiqueta:
+  // está escrito en los custom claims de cada sesión viva, en los perfiles de
+  // Firestore y en la bitácora, que es inmutable. Renombrarlo obligaría a
+  // migrar todo eso para ganar coherencia cosmética.
+  administradora('ADMINISTRADORA', 'Administrador Académico'),
   catedratico('CATEDRATICO', 'Catedrático'),
   auditor('AUDITOR', 'Auditor');
 
@@ -61,9 +65,21 @@ enum Rol {
     Rol.administradora || Rol.catedratico => false,
   };
 
-  /// ¿Recibe mensajes? El auditor es de solo lectura sobre la bitácora y no
-  /// entra en el reparto (documento 01, sección 2.2).
-  bool get recibeMensajes => this != Rol.auditor;
+  /// ¿Recibe avisos?
+  ///
+  /// ────────────────────────────────────────────────────────────────────────
+  /// Recibir y emitir son dos preguntas distintas.
+  /// ────────────────────────────────────────────────────────────────────────
+  ///
+  /// Solo el catedrático. Los otros tres trabajan **sobre** el sistema de
+  /// avisos en vez de ser su destino: la coordinación los escribe, el
+  /// administrador académico los gestiona y la auditoría los revisa.
+  ///
+  /// Duplica `recibeAvisos` del dominio de TypeScript, que es la fuente de
+  /// verdad. Aquí solo sirve para no ofrecer en pantalla a quien el servidor
+  /// va a excluir igualmente — porque ofrecerlo y excluirlo después es
+  /// justamente cómo se llega a un destinatario en el limbo.
+  bool get recibeMensajes => this == Rol.catedratico;
 
   /// ¿Puede emitir alertas urgentes?
   ///

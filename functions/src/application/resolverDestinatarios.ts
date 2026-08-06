@@ -16,6 +16,7 @@
  * «Coordinadores» debe recibir un solo aviso.
  */
 
+import { recibeAvisos } from '../domain/autorizacion';
 import { ErrorValidacion } from '../domain/errores';
 import type { Destinatarios, Rol } from '../domain/tipos';
 
@@ -61,9 +62,10 @@ export function resolverDestinatarios(
 
   switch (destinatarios.modo) {
     case 'TODOS':
-      // «Todos» son los catedráticos: un aviso institucional no se le manda a
-      // la coordinación, que es quien lo escribe.
-      candidatos.push(...usuarios.filter((u) => u.rol === 'CATEDRATICO').map((u) => u.uid));
+      // «Todos» son los catedráticos. Coordinación, administración académica
+      // y auditoría trabajan SOBRE el sistema de avisos en vez de ser su
+      // destino.
+      candidatos.push(...usuarios.filter((u) => recibeAvisos(u.rol)).map((u) => u.uid));
       break;
 
     case 'GRUPOS': {
@@ -122,6 +124,20 @@ export function resolverDestinatarios(
       // RN-10: una cuenta desactivada pierde el acceso. Seguir mandándole
       // avisos sería contradecir la propia regla.
       excluidos.push({ uid, motivo: 'CUENTA_DESACTIVADA' });
+      continue;
+    }
+
+    // También en GRUPOS e INDIVIDUAL, no solo en TODOS.
+    //
+    // Y esto es lo que evita el limbo: quien no recibe queda fuera ANTES de
+    // que se cree su entrega. Si se colara, aparecería para siempre como
+    // «pendiente de confirmar» en un reporte que nadie puede cerrar, porque
+    // esa persona nunca va a recibir nada que confirmar.
+    //
+    // Aquí la exclusión CONSTA, con su motivo, y el emisor la ve en el conteo
+    // antes de enviar.
+    if (!recibeAvisos(usuario.rol)) {
+      excluidos.push({ uid, motivo: 'ROL_NO_RECIBE' });
       continue;
     }
 

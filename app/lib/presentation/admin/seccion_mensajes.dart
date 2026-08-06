@@ -642,6 +642,15 @@ class _ResumenConteo extends StatelessWidget {
                 style: tema.textTheme.bodySmall,
               ),
             ),
+          const SizedBox(height: 8),
+          // Lo importante no es solo cuántos quedan fuera, sino que quedarse
+          // fuera NO deja a nadie a medias en el reporte.
+          Text(
+            Textos.exclusionNoQuedaPendiente,
+            style: tema.textTheme.bodySmall?.copyWith(
+              color: tema.colorScheme.onSurfaceVariant,
+            ),
+          ),
         ],
       ],
     );

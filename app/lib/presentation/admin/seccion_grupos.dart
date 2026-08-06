@@ -20,6 +20,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/proveedores_grupos.dart';
+import '../../domain/rol.dart';
 import '../../infrastructure/firebase/repositorio_administracion.dart';
 import '../../infrastructure/firebase/repositorio_grupos.dart';
 import '../shared/tema.dart';
@@ -269,14 +270,17 @@ class _EditorGrupoState extends ConsumerState<EditorGrupo> {
     }
   }
 
-  /// Solo se pueden agrupar quienes reciben mensajes y están activos.
+  /// Solo se pueden agrupar quienes reciben avisos y están activos.
   ///
-  /// Meter en un grupo a una cuenta desactivada no daría error, pero al enviar
-  /// quedaría excluida y el conteo no cuadraría con lo que la lista prometía.
+  /// Meter en un grupo a una cuenta desactivada, o a la coordinación, no daría
+  /// error: el servidor los excluye al enviar. Pero entonces el conteo no
+  /// cuadraría con lo que la lista prometía, y habría que descubrirlo leyendo
+  /// los motivos de exclusión. Mejor no ofrecerlos.
   List<UsuarioVista> _elegibles(List<UsuarioVista> todos) {
     final String q = _busqueda.text.trim().toLowerCase();
     return todos.where((UsuarioVista u) {
-      if (!u.activo || u.rol == 'AUDITOR') {
+      final Rol? rol = Rol.desdeClaim(u.rol);
+      if (!u.activo || rol == null || !rol.recibeMensajes) {
         return false;
       }
       if (q.isEmpty) {
