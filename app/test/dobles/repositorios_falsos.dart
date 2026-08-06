@@ -451,4 +451,17 @@ class RepositorioProgramacionFalso extends RepositorioProgramacion {
   }) async {
     cambios.add((mensajeId: mensajeId, accion: accion));
   }
+
+  /// Detalle que devolverá `detalleEntregas`.
+  List<DestinatarioEntrega> detalle = const <DestinatarioEntrega>[];
+
+  /// Cuántas veces se pidió. Sirve para comprobar que NO se pide hasta que
+  /// alguien lo abre: son varias lecturas por mensaje.
+  int vecesQuePidioDetalle = 0;
+
+  @override
+  Future<List<DestinatarioEntrega>> detalleEntregas(String mensajeId) async {
+    vecesQuePidioDetalle += 1;
+    return detalle;
+  }
 }

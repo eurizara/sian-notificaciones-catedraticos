@@ -35,7 +35,11 @@ export {
   vistaPreviaOcurrencias,
 } from './triggers/programacion';
 export { despachador } from './triggers/despachador';
-export { confirmarLectura, marcarAbierto } from './triggers/confirmacion';
+export {
+  confirmarLectura,
+  detalleEntregas,
+  marcarAbierto,
+} from './triggers/confirmacion';
 export {
   cambiarAutorizacionesFinas,
   cambiarEstadoGrupo,

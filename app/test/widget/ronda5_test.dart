@@ -256,6 +256,112 @@ void main() {
     });
   });
 
+  group('RF-CNF-06 · quién falta por confirmar', () {
+    // ──────────────────────────────────────────────────────────────────────
+    // «Faltan 6» no dice a QUIÉN hay que buscar.
+    // ──────────────────────────────────────────────────────────────────────
+    //
+    // Y es lo único accionable del reporte: el porcentaje describe, la lista
+    // permite actuar.
+    late RepositorioProgramacionFalso repo;
+
+    Widget montarConDetalle(List<DestinatarioEntrega> detalle) {
+      repo = RepositorioProgramacionFalso(
+        programados: <MensajeProgramado>[
+          programado(total: 3, entregados: 3, confirmados: 1),
+        ],
+      )..detalle = detalle;
+
+      return ProviderScope(
+        overrides: [repositorioProgramacionProvider.overrideWithValue(repo)],
+        child: MaterialApp(
+          theme: TemaSian.claro(),
+          home: const Scaffold(body: SeccionEntregas()),
+        ),
+      );
+    }
+
+    DestinatarioEntrega quien(String nombre, String estado) =>
+        DestinatarioEntrega(
+          uid: nombre,
+          nombre: nombre,
+          correo: '\$nombre@umg.edu.gt',
+          estado: estado,
+        );
+
+    testWidgets('la lista NO se pide hasta que alguien la abre', (
+      WidgetTester tester,
+    ) async {
+      // Son varias lecturas por mensaje. Hacerlas para los diez reportes de
+      // la página sería pagar por información que casi nadie mira.
+      await tester.pumpWidget(montarConDetalle(<DestinatarioEntrega>[]));
+      await tester.pumpAndSettle();
+
+      expect(repo.vecesQuePidioDetalle, 0);
+    });
+
+    testWidgets('al abrirla se ve quién confirmó y quién no', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        montarConDetalle(<DestinatarioEntrega>[
+          quien('Ana', 'CONFIRMADO'),
+          quien('Beto', 'ENTREGADO'),
+        ]),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text(Textos.verQuienFalta));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(Textos.verQuienFalta));
+      await tester.pumpAndSettle();
+
+      expect(repo.vecesQuePidioDetalle, 1);
+      expect(find.text('Ana'), findsOneWidget);
+      expect(find.text('Beto'), findsOneWidget);
+      expect(find.text(Textos.estadoSinConfirmar), findsOneWidget);
+    });
+
+    testWidgets('un fallo de entrega se distingue de un descuido', (
+      WidgetTester tester,
+    ) async {
+      // Uno se resuelve revisando el dispositivo y el otro insistiendo a la
+      // persona. Pintarlos igual mezclaría dos problemas distintos.
+      await tester.pumpWidget(
+        montarConDetalle(<DestinatarioEntrega>[
+          quien('Carla', 'FALLIDO'),
+          quien('Dario', 'ENTREGADO'),
+        ]),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text(Textos.verQuienFalta));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(Textos.verQuienFalta));
+      await tester.pumpAndSettle();
+
+      expect(find.text(Textos.estadoNoLeLlego), findsOneWidget);
+      expect(find.text(Textos.estadoSinConfirmar), findsOneWidget);
+    });
+
+    testWidgets('si todos confirmaron, lo dice', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        montarConDetalle(<DestinatarioEntrega>[
+          quien('Ana', 'CONFIRMADO'),
+          quien('Beto', 'CONFIRMADO'),
+        ]),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text(Textos.verQuienFalta));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(Textos.verQuienFalta));
+      await tester.pumpAndSettle();
+
+      expect(find.text(Textos.nadiePendiente), findsOneWidget);
+    });
+  });
+
   group('RF-CNF-06 · reporte de entregas', () {
     Widget montar(List<MensajeProgramado> lista) => ProviderScope(
       overrides: [

@@ -21,6 +21,7 @@ import type { DocumentReference } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions/v2';
 
 import { estadoTrasAbrir, exigirConfirmable } from '../application/confirmacion';
+import { exigirPermiso } from '../domain/autorizacion';
 import { crearAsiento } from '../domain/bitacora';
 import { ErrorDominio } from '../domain/errores';
 import type { EstadoEntrega, Rol } from '../domain/tipos';
@@ -202,5 +203,131 @@ export const confirmarLectura = onCall(OPCIONES_FUNCION, async (peticion) => {
     }
     logger.error('Fallo confirmando lectura', { uid, mensajeId, error: String(e) });
     throw new HttpsError('internal', 'No se pudo confirmar la lectura.');
+  }
+});
+
+/**
+ * Quién recibió y quién confirmó (RF-CNF-06).
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Pasa por el servidor porque el emisor NO puede leer la lista de usuarios.
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * Las reglas solo dejan leer `usuarios` al coordinador, al auditor y al propio
+ * interesado (documento 05, sección 5). Una administradora puede consultar el
+ * reporte de sus envíos pero no el padrón entero, y eso está bien: no necesita
+ * la lista de la institución para saber quién no ha confirmado su aviso.
+ *
+ * Aquí se unen las dos cosas con permiso de servidor y se devuelve solo lo del
+ * mensaje pedido. La autorización se comprueba con el mismo permiso que rige
+ * el reporte, `VER_REPORTE_ENTREGAS`, que para la administradora tiene alcance
+ * PROPIO: sobre sus mensajes sí, sobre los ajenos no.
+ */
+export const detalleEntregas = onCall(OPCIONES_FUNCION, async (peticion) => {
+  const sujeto = {
+    uid: peticion.auth?.uid ?? '',
+    rol: (peticion.auth?.token.rol as Rol | undefined) ?? 'CATEDRATICO',
+    activo: peticion.auth?.token.activo === true,
+  };
+
+  if (!peticion.auth) {
+    throw new HttpsError('unauthenticated', 'Hay que iniciar sesión.');
+  }
+
+  const { mensajeId } = peticion.data as { mensajeId?: string };
+  if (!mensajeId) {
+    throw new HttpsError('invalid-argument', 'Falta el mensaje.');
+  }
+
+  try {
+    const refMensaje = db.collection(RUTAS.mensajes).doc(mensajeId);
+    const mensaje = await refMensaje.get();
+
+    if (!mensaje.exists) {
+      throw new HttpsError('not-found', 'Ese mensaje no existe.');
+    }
+
+    exigirPermiso(sujeto, 'VER_REPORTE_ENTREGAS', {
+      creadoPor: (mensaje.get('creadoPor') as string | undefined) ?? '',
+    });
+
+    const ocurrencias = await refMensaje.collection('ocurrencias').get();
+
+    // Un destinatario aparece una sola vez aunque el mensaje sea recurrente:
+    // lo que se pregunta es «¿esta persona lo confirmó?», no cuántas veces.
+    const porUid = new Map<string, { estado: string; confirmadoEn: string | null }>();
+
+    for (const oc of ocurrencias.docs) {
+      const entregas = await oc.ref.collection('entregas').get();
+      for (const e of entregas.docs) {
+        const estado = e.get('estado') as string;
+        const previo = porUid.get(e.id);
+        // Se conserva el estado más avanzado: si confirmó en la primera
+        // ocurrencia, confirmó.
+        if (previo === undefined || previo.estado !== 'CONFIRMADO') {
+          porUid.set(e.id, {
+            estado,
+            confirmadoEn:
+              (e.get('confirmadoEn') as { toDate(): Date } | undefined)
+                ?.toDate()
+                .toISOString() ?? null,
+          });
+        }
+      }
+    }
+
+    const uids = [...porUid.keys()];
+    const perfiles = await Promise.all(
+      uids.map((uid) => db.collection(RUTAS.usuarios).doc(uid).get()),
+    );
+
+    const nombres = new Map<string, { nombre: string; correo: string }>();
+    for (const p of perfiles) {
+      nombres.set(p.id, {
+        nombre: (p.get('nombre') as string | undefined) ?? p.id,
+        correo: (p.get('correo') as string | undefined) ?? '',
+      });
+    }
+
+    const destinatarios = uids.map((uid) => ({
+      uid,
+      nombre: nombres.get(uid)?.nombre ?? uid,
+      correo: nombres.get(uid)?.correo ?? '',
+      estado: porUid.get(uid)!.estado,
+      confirmadoEn: porUid.get(uid)!.confirmadoEn,
+    }));
+
+    // Los pendientes primero: es sobre quienes hay que actuar, y buscarlos
+    // entre cuarenta confirmados sería el trabajo que esta pantalla evita.
+    const orden: Record<string, number> = {
+      FALLIDO: 0,
+      DESCARTADO: 1,
+      PENDIENTE: 2,
+      ENVIADO_A_FCM: 3,
+      ENTREGADO: 4,
+      ABIERTO: 5,
+      CONFIRMADO: 6,
+    };
+    destinatarios.sort((a, b) => {
+      const d = (orden[a.estado] ?? 9) - (orden[b.estado] ?? 9);
+      return d !== 0 ? d : a.nombre.localeCompare(b.nombre);
+    });
+
+    return {
+      destinatarios,
+      requiereConfirmacion: mensaje.get('requiereConfirmacion') === true,
+    };
+  } catch (e) {
+    if (e instanceof HttpsError) {
+      throw e;
+    }
+    if (e instanceof ErrorDominio) {
+      throw new HttpsError('permission-denied', e.message, { codigo: e.codigo });
+    }
+    logger.error('Fallo leyendo el detalle de entregas', {
+      mensajeId,
+      error: String(e),
+    });
+    throw new HttpsError('internal', 'No se pudo cargar el detalle.');
   }
 });
