@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sian/application/proveedores_dispositivos.dart';
+import 'package:sian/application/proveedores_programacion.dart';
 import 'package:sian/application/proveedores_sesion.dart';
 import 'package:sian/core/navegador.dart';
 import 'package:sian/domain/repositorios.dart';
@@ -118,7 +119,12 @@ void main() {
           mensaje(voz: 'mensajes/m1/voz.webm', duracion: 7),
         ]),
       );
-      await tester.pump();
+      await tester.pumpAndSettle();
+
+      // Los mensajes nacen plegados: se hojea la lista y se abre lo que
+      // interese. Los adjuntos están dentro del detalle.
+      await tester.tap(find.text('Prueba'));
+      await tester.pumpAndSettle();
 
       expect(find.byType(NotaDeVoz), findsOneWidget);
       expect(find.text(Textos.vozAdjunta(7)), findsOneWidget);
@@ -128,19 +134,126 @@ void main() {
       await tester.pumpWidget(
         montar(<MensajeRecibido>[mensaje(imagen: 'mensajes/m1/imagen.jpg')]),
       );
-      await tester.pump();
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Prueba'));
+      await tester.pumpAndSettle();
 
       expect(find.byType(ImagenAdjunta), findsOneWidget);
+      // Y no se descarga hasta que se pide: lo que urge de un aviso es el
+      // texto, no cinco megas de imagen al abrir la pantalla.
+      expect(find.text(Textos.imagenTocarParaVer), findsOneWidget);
     });
 
     testWidgets('un mensaje solo de texto no enseña ningún hueco', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(montar(<MensajeRecibido>[mensaje()]));
-      await tester.pump();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Prueba'));
+      await tester.pumpAndSettle();
 
       expect(find.byType(NotaDeVoz), findsNothing);
       expect(find.byType(ImagenAdjunta), findsNothing);
+    });
+  });
+
+  group('los mensajes se pliegan', () {
+    // ──────────────────────────────────────────────────────────────────────
+    // Una bandeja se hojea; un mensaje se lee.
+    // ──────────────────────────────────────────────────────────────────────
+    //
+    // Con todo desplegado, tres avisos con imagen llenan la pantalla y hay
+    // que desplazarse mucho para saber si hay algo nuevo.
+    late RepositorioSesionFalso sesion;
+
+    setUp(() => sesion = RepositorioSesionFalso());
+    tearDown(() => sesion.cerrar());
+
+    Widget montar(List<MensajeRecibido> mensajes) => ProviderScope(
+      overrides: [
+        repositorioSesionProvider.overrideWithValue(sesion),
+        repositorioBandejaProvider.overrideWithValue(
+          RepositorioBandejaFalso(mensajes),
+        ),
+        repositorioDispositivosProvider.overrideWithValue(
+          RepositorioDispositivosFalso(entorno: EntornoNavegador.desconocido),
+        ),
+        repositorioProgramacionProvider.overrideWithValue(
+          RepositorioProgramacionFalso(),
+        ),
+      ],
+      child: MaterialApp(
+        theme: TemaSian.claro(),
+        home: BandejaDocente(usuario: usuarioDePrueba(rol: Rol.catedratico)),
+      ),
+    );
+
+    testWidgets('nacen plegados: solo título y una línea', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(montar(<MensajeRecibido>[mensaje()]));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.expand_more), findsOneWidget);
+      expect(find.byIcon(Icons.expand_less), findsNothing);
+    });
+
+    testWidgets('tocar el mensaje lo abre', (WidgetTester tester) async {
+      await tester.pumpWidget(montar(<MensajeRecibido>[mensaje()]));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Prueba'));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.expand_less), findsOneWidget);
+    });
+
+    testWidgets('un urgente sin confirmar nace ABIERTO', (
+      WidgetTester tester,
+    ) async {
+      // Esconder tras un toque justo lo que hay que atender sería exactamente
+      // al revés de lo que hace falta.
+      await tester.pumpWidget(
+        montar(<MensajeRecibido>[
+          const MensajeRecibido(
+            mensajeId: 'm1',
+            titulo: 'Evacuación',
+            cuerpo: 'Salgan ya',
+            tipo: 'URGENTE',
+            estado: 'ENTREGADO',
+            requiereConfirmacion: true,
+          ),
+        ]),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.expand_less), findsOneWidget);
+      expect(find.text(Textos.botonConfirmarLectura), findsOneWidget);
+    });
+
+    testWidgets('el estado y la fecha se ven aunque esté plegado', (
+      WidgetTester tester,
+    ) async {
+      // Son lo que se hojea. Esconderlos obligaría a abrir cada mensaje solo
+      // para saber cuál falta por confirmar.
+      await tester.pumpWidget(
+        montar(<MensajeRecibido>[
+          MensajeRecibido(
+            mensajeId: 'm1',
+            titulo: 'Prueba',
+            cuerpo: 'Cuerpo',
+            tipo: 'INFORMATIVO',
+            estado: 'CONFIRMADO',
+            requiereConfirmacion: false,
+            entregadoEn: DateTime(2026, 8, 5, 14, 30),
+          ),
+        ]),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(Textos.estadoConfirmado), findsOneWidget);
+      expect(find.text('05/08/2026 · 14:30'), findsOneWidget);
     });
   });
 

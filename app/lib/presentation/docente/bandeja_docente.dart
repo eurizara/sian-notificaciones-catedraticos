@@ -235,6 +235,20 @@ class _Fila extends ConsumerStatefulWidget {
 class _FilaState extends ConsumerState<_Fila> {
   bool _confirmando = false;
 
+  /// Plegado por omisión, salvo lo que exige atención.
+  ///
+  /// ──────────────────────────────────────────────────────────────────────
+  /// Una bandeja se hojea; un mensaje se lee.
+  /// ──────────────────────────────────────────────────────────────────────
+  ///
+  /// Con todo desplegado, tres avisos con imagen llenan la pantalla y hay que
+  /// desplazarse mucho para saber si hay algo nuevo. Plegado, la lista cabe
+  /// de un vistazo y se abre lo que interese.
+  ///
+  /// Lo urgente sin confirmar nace ABIERTO: esconder tras un toque justo lo
+  /// que hay que atender sería exactamente al revés de lo que hace falta.
+  late bool _desplegado = widget.mensaje.exigeAtencion;
+
   /// Marca el mensaje como abierto al pintarlo (RF-CNF-02).
   ///
   /// Abrir NO es confirmar: dice que la aplicación lo mostró, no que alguien
@@ -311,6 +325,7 @@ class _FilaState extends ConsumerState<_Fila> {
   @override
   Widget build(BuildContext context) {
     final MensajeRecibido mensaje = widget.mensaje;
+    final bool abierto = _desplegado;
     final ThemeData tema = Theme.of(context);
     // Patrón numérico a propósito: `DateFormat` con nombre de locale exige
     // inicializar los datos de `intl`, y sin eso lanza en tiempo de ejecución.
@@ -319,109 +334,138 @@ class _FilaState extends ConsumerState<_Fila> {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                if (mensaje.esUrgente)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
-                    margin: const EdgeInsets.only(right: 8),
-                    decoration: BoxDecoration(
-                      color: ColoresSian.urgente,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const Text(
-                      Textos.etiquetaUrgente,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
+      child: InkWell(
+        onTap: () => setState(() => _desplegado = !_desplegado),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  if (mensaje.esUrgente)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      margin: const EdgeInsets.only(right: 8),
+                      decoration: BoxDecoration(
+                        color: ColoresSian.urgente,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        Textos.etiquetaUrgente,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
+                  Expanded(
+                    child: Text(
+                      mensaje.titulo,
+                      style: tema.textTheme.titleMedium,
+                    ),
                   ),
-                Expanded(
-                  child: Text(
-                    mensaje.titulo,
-                    style: tema.textTheme.titleMedium,
+                  Icon(
+                    abierto ? Icons.expand_less : Icons.expand_more,
+                    color: tema.colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
+              if (!abierto) ...<Widget>[
+                const SizedBox(height: 4),
+                // Una línea del cuerpo: suficiente para reconocer el aviso sin
+                // tener que abrirlo.
+                Text(
+                  mensaje.cuerpo,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: tema.textTheme.bodySmall?.copyWith(
+                    color: tema.colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: 8),
-            Text(mensaje.cuerpo),
 
-            // RF-ENT-08 y RF-ENT-09. Van bajo el texto y no tras un botón:
-            // una nota de voz que hay que buscar es una nota de voz que no se
-            // escucha, y en un aviso urgente puede ser lo único que importa.
-            if (mensaje.llevaVoz) ...<Widget>[
-              const SizedBox(height: 12),
-              NotaDeVoz(
-                ruta: mensaje.rutaVoz!,
-                duracionSeg: mensaje.duracionVozSeg,
-              ),
-            ],
-            if (mensaje.llevaImagen) ...<Widget>[
-              const SizedBox(height: 12),
-              ImagenAdjunta(ruta: mensaje.rutaImagen!),
-            ],
-
-            const SizedBox(height: 12),
-            Row(
-              children: <Widget>[
-                Icon(
-                  _iconoDeEstado(mensaje.estado),
-                  size: 16,
-                  color: mensaje.estaConfirmado
-                      ? ColoresSian.confirmado
-                      : tema.colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  _etiquetaDeEstado(mensaje.estado),
-                  style: tema.textTheme.bodySmall?.copyWith(
+              // Estado y fecha se ven SIEMPRE, plegado o no: son lo que se
+              // hojea. Esconderlos obligaría a abrir cada mensaje solo para
+              // saber cuál falta por confirmar.
+              const SizedBox(height: 10),
+              Row(
+                children: <Widget>[
+                  Icon(
+                    _iconoDeEstado(mensaje.estado),
+                    size: 16,
                     color: mensaje.estaConfirmado
                         ? ColoresSian.confirmado
                         : tema.colorScheme.onSurfaceVariant,
                   ),
-                ),
-                const Spacer(),
-                if (mensaje.entregadoEn != null)
+                  const SizedBox(width: 6),
                   Text(
-                    formato.format(mensaje.entregadoEn!),
+                    _etiquetaDeEstado(mensaje.estado),
                     style: tema.textTheme.bodySmall?.copyWith(
-                      color: tema.colorScheme.onSurfaceVariant,
+                      color: mensaje.estaConfirmado
+                          ? ColoresSian.confirmado
+                          : tema.colorScheme.onSurfaceVariant,
                     ),
                   ),
-              ],
-            ),
-            if (mensaje.requiereConfirmacion && !mensaje.estaConfirmado) ...[
-              const SizedBox(height: 12),
-              // Confirmar es irreversible y con valor probatorio: lo escribe
-              // el servidor, nunca el cliente (RF-CNF-04). Aquí solo se pide.
-              FilledButton.icon(
-                onPressed: _confirmando ? null : _confirmar,
-                icon: _confirmando
-                    ? const SizedBox(
-                        height: 16,
-                        width: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.check),
-                label: Text(
-                  _confirmando
-                      ? Textos.confirmandoLectura
-                      : Textos.botonConfirmarLectura,
-                ),
+                  const Spacer(),
+                  if (mensaje.entregadoEn != null)
+                    Text(
+                      formato.format(mensaje.entregadoEn!),
+                      style: tema.textTheme.bodySmall?.copyWith(
+                        color: tema.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                ],
               ),
+
+              if (abierto) ...<Widget>[
+                const SizedBox(height: 8),
+                Text(mensaje.cuerpo),
+
+                // RF-ENT-08 y RF-ENT-09. Van bajo el texto y no tras un botón:
+                // una nota de voz que hay que buscar es una nota de voz que no se
+                // escucha, y en un aviso urgente puede ser lo único que importa.
+                if (mensaje.llevaVoz) ...<Widget>[
+                  const SizedBox(height: 12),
+                  NotaDeVoz(
+                    ruta: mensaje.rutaVoz!,
+                    duracionSeg: mensaje.duracionVozSeg,
+                  ),
+                ],
+                if (mensaje.llevaImagen) ...<Widget>[
+                  const SizedBox(height: 12),
+                  ImagenAdjunta(ruta: mensaje.rutaImagen!),
+                ],
+
+                if (mensaje.requiereConfirmacion &&
+                    !mensaje.estaConfirmado) ...[
+                  const SizedBox(height: 12),
+                  // Confirmar es irreversible y con valor probatorio: lo escribe
+                  // el servidor, nunca el cliente (RF-CNF-04). Aquí solo se pide.
+                  FilledButton.icon(
+                    onPressed: _confirmando ? null : _confirmar,
+                    icon: _confirmando
+                        ? const SizedBox(
+                            height: 16,
+                            width: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.check),
+                    label: Text(
+                      _confirmando
+                          ? Textos.confirmandoLectura
+                          : Textos.botonConfirmarLectura,
+                    ),
+                  ),
+                ],
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
