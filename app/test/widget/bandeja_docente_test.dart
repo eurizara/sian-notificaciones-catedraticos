@@ -193,19 +193,59 @@ void main() {
     expect(programacion.confirmados, isEmpty);
   });
 
-  testWidgets('RF-CNF-02 · mostrar el mensaje lo marca como ABIERTO', (
+  testWidgets('RF-CNF-02 · pintar la lista NO marca nada como abierto', (
     WidgetTester tester,
   ) async {
-    // Abrir no es confirmar. Se registra aparte porque la diferencia entre
-    // «lo vio pasar» y «dijo que lo leyó» es la diferencia entre un dato y
-    // una prueba.
+    // ──────────────────────────────────────────────────────────────────────
+    // «Abierto» tiene que significar que alguien lo miró.
+    // ──────────────────────────────────────────────────────────────────────
+    //
+    // Antes se marcaba al construir la fila: bastaba con que la bandeja se
+    // dibujara para que todo constara como abierto. Eso hacía imposible
+    // resaltar lo no leído —nada seguía sin leer más de un instante— y
+    // convertía un dato de seguimiento en una casilla que se marca sola.
     await tester.pumpWidget(
       montar(<MensajeRecibido>[mensaje(estado: 'ENTREGADO')]),
     );
     await tester.pumpAndSettle();
 
+    expect(programacion.abiertos, isEmpty);
+  });
+
+  testWidgets('RF-CNF-02 · desplegarlo SÍ lo marca como abierto', (
+    WidgetTester tester,
+  ) async {
+    // Es cuando el texto aparece delante de la persona. Sigue sin ser
+    // confirmar: abrir dice que lo miró; confirmar, que lo declaró leído.
+    await tester.pumpWidget(
+      montar(<MensajeRecibido>[mensaje(estado: 'ENTREGADO')]),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Reunión de claustro'));
+    await tester.pumpAndSettle();
+
     expect(programacion.abiertos, <String>['m-1']);
     expect(programacion.confirmados, isEmpty);
+  });
+
+  testWidgets('un urgente sin confirmar nace desplegado, y se abre solo', (
+    WidgetTester tester,
+  ) async {
+    // Su contenido sí está delante de la persona desde el primer momento:
+    // esconderlo tras un toque sería al revés de lo que hace falta.
+    await tester.pumpWidget(
+      montar(<MensajeRecibido>[
+        mensaje(
+          estado: 'ENTREGADO',
+          tipo: 'URGENTE',
+          requiereConfirmacion: true,
+        ),
+      ]),
+    );
+    await tester.pumpAndSettle();
+
+    expect(programacion.abiertos, <String>['m-1']);
   });
 
   testWidgets('pide el historial del usuario en sesión, no el de otro', (

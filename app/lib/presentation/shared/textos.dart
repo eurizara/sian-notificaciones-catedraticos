@@ -661,6 +661,8 @@ abstract final class Textos {
 
   // --- Búsqueda y paginación ------------------------------------------------
   static const String volverArriba = 'Volver arriba';
+  static const String etiquetaSinLeer = 'Sin leer';
+  static const String etiquetaSinConfirmar = 'Falta confirmar';
   static const String verDetalle = 'Ver detalle';
   static const String ocultarDetalle = 'Ocultar';
   static const String plegarTodo = 'Plegar todo';
