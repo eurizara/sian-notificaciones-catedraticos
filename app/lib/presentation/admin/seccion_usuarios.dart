@@ -446,6 +446,24 @@ class _FilaUsuario extends ConsumerWidget {
               ),
             ),
           ],
+
+          // Fuera del bloque de emisores: esta bandera aplica a cualquiera.
+          // Es justo lo que permite que una persona emita Y reciba sin
+          // necesitar dos cuentas — dos cuentas romperían la bitácora, que
+          // registraría dos identidades para un mismo humano, y la
+          // confirmación de lectura, que la firmaría la cuenta equivocada.
+          SwitchListTile(
+            title: const Text(Textos.etiquetaRecibeAvisos),
+            subtitle: const Text(Textos.detalleRecibeAvisos),
+            value: usuario.recibeAvisos,
+            onChanged: (bool v) => _ejecutar(
+              context,
+              () =>
+                  repo.cambiarAutorizaciones(uid: usuario.uid, recibeAvisos: v),
+              Textos.autorizacionActualizada,
+            ),
+          ),
+
           SwitchListTile(
             title: const Text(Textos.cuentaActiva),
             // RN-10: se desactiva, no se borra. El historial queda íntegro.

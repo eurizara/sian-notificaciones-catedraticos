@@ -18,7 +18,7 @@ import { crearAsiento, type Actor, type TipoEvento } from '../domain/bitacora';
 import { ErrorDominio } from '../domain/errores';
 import { crearGrupo, normalizarMiembros, rozaElLimite } from '../domain/grupo';
 import { crearInvitacion, interpretarCsv } from '../domain/invitacion';
-import { exigirPermiso, type Permiso } from '../domain/autorizacion';
+import { exigirPermiso, type Permiso , recibeAvisos } from '../domain/autorizacion';
 import { ROLES, type Rol } from '../domain/tipos';
 import { FieldValue, OPCIONES_FUNCION, RUTAS, auth, db } from '../infrastructure/firebase';
 import {
@@ -289,11 +289,13 @@ export const cambiarEstadoUsuario = onCall(OPCIONES_FUNCION, async (peticion) =>
 
 export const cambiarAutorizacionesFinas = onCall(OPCIONES_FUNCION, async (peticion) => {
   const solicitante = await exigir(peticion, 'ADMINISTRAR_USUARIOS');
-  const { uid, puedeEmitirUrgentes, puedeCrearRecurrentes } = peticion.data as {
-    uid?: string;
-    puedeEmitirUrgentes?: boolean;
-    puedeCrearRecurrentes?: boolean;
-  };
+  const { uid, puedeEmitirUrgentes, puedeCrearRecurrentes, recibeAvisos: recibe } =
+    peticion.data as {
+      uid?: string;
+      puedeEmitirUrgentes?: boolean;
+      puedeCrearRecurrentes?: boolean;
+      recibeAvisos?: boolean;
+    };
 
   if (!uid) {
     throw new HttpsError('invalid-argument', 'Falta el usuario.');
@@ -306,16 +308,21 @@ export const cambiarAutorizacionesFinas = onCall(OPCIONES_FUNCION, async (petici
 
   const urgentes = puedeEmitirUrgentes ?? perfil.puedeEmitirUrgentes;
   const recurrentes = puedeCrearRecurrentes ?? perfil.puedeCrearRecurrentes;
+  // Al tocarla se fija explícitamente: a partir de ahí manda la decisión del
+  // coordinador y ya no el valor por omisión del rol.
+  const recibeFinal = recibe ?? recibeAvisos(perfil.rol, perfil.recibeAvisos);
 
   await actualizarPerfil(uid, {
     puedeEmitirUrgentes: urgentes,
     puedeCrearRecurrentes: recurrentes,
+    recibeAvisos: recibeFinal,
   });
   await auth.setCustomUserClaims(uid, {
     rol: perfil.rol,
     activo: perfil.activo,
     puedeEmitirUrgentes: urgentes,
     puedeCrearRecurrentes: recurrentes,
+    recibeAvisos: recibeFinal,
   });
   await escribirAsiento(
     asiento(
@@ -323,12 +330,21 @@ export const cambiarAutorizacionesFinas = onCall(OPCIONES_FUNCION, async (petici
       solicitante,
       'USUARIO',
       uid,
-      `Autorizaciones finas de ${perfil.correo}: urgentes=${urgentes}, recurrentes=${recurrentes}`,
-      { puedeEmitirUrgentes: urgentes, puedeCrearRecurrentes: recurrentes },
+      `Autorizaciones finas de ${perfil.correo}: urgentes=${urgentes}, recurrentes=${recurrentes}, recibe=${recibeFinal}`,
+      {
+        puedeEmitirUrgentes: urgentes,
+        puedeCrearRecurrentes: recurrentes,
+        recibeAvisos: recibeFinal,
+      },
     ),
   );
 
-  return { uid, puedeEmitirUrgentes: urgentes, puedeCrearRecurrentes: recurrentes };
+  return {
+    uid,
+    puedeEmitirUrgentes: urgentes,
+    puedeCrearRecurrentes: recurrentes,
+    recibeAvisos: recibeFinal,
+  };
 });
 
 // ---------------------------------------------------------------------------

@@ -70,26 +70,48 @@ const AUTORIZACION_FINA: Partial<Record<Permiso, keyof Sujeto>> = {
 };
 
 /**
- * ¿Este rol RECIBE avisos?
+ * ¿Esta persona RECIBE avisos?
  *
  * ─────────────────────────────────────────────────────────────────────────────
- * Distinto de «puede emitirlos». Son dos preguntas y confundirlas se paga.
+ * Recibir y emitir son dos ejes distintos, no dos casillas del mismo rol.
  * ─────────────────────────────────────────────────────────────────────────────
  *
- * Solo el catedrático. Los otros tres trabajan **sobre** el sistema de avisos
- * en vez de ser su destino: la coordinación los escribe, el administrador
- * académico los gestiona y la auditoría los revisa. Mandárselos a ellos
- * llenaría su pantalla de sus propios simulacros y, peor, falsearía el
- * porcentaje de confirmación con gente que no es a quien había que avisar.
+ * «Qué puedes hacer en el sistema» lo dice el rol. «Si eres destinatario de
+ * los avisos» lo dice tu situación en la sede, y no siempre coinciden: un
+ * catedrático a quien se nombra administrador académico para que pueda emitir
+ * sigue dando clases, y tiene que enterarse de una evacuación como el resto.
  *
- * Lo que importa no es tanto la lista como que ESTÉ AQUÍ, con nombre y
- * probada. Antes era un `filter` suelto dentro de la resolución de
- * destinatarios: a un administrador académico no le llegaba nada, y no había
- * forma de saber por qué sin leer ese `filter`. Quien quede fuera queda fuera
- * **diciéndolo**, con su motivo, y nunca como una entrega pendiente que nadie
- * va a confirmar jamás.
+ * Atarlo al rol obligaba a esa persona a tener DOS cuentas, y eso rompe lo que
+ * sostiene todo el sistema: que una persona sea una cuenta. La bitácora
+ * registraría dos identidades para un mismo humano y la confirmación de
+ * lectura la firmaría la cuenta que recibe, no la que trabaja.
+ *
+ * Por eso hay una bandera por persona, que el coordinador enciende, con el rol
+ * como valor por omisión. Es la misma forma que `puedeEmitirUrgentes`.
  */
-export function recibeAvisos(rol: Rol): boolean {
+export function recibeAvisos(rol: Rol, banderaFina?: boolean): boolean {
+  // Si el coordinador se pronunció sobre esta persona, manda su decisión.
+  if (typeof banderaFina === 'boolean') {
+    return banderaFina;
+  }
+  return recibePorOmision(rol);
+}
+
+/**
+ * Valor por omisión de la bandera, según el rol.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Que exista un valor por omisión es lo que evita migrar datos.
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * Los perfiles ya creados no tienen el campo, y no hace falta tocarlos: la
+ * ausencia significa «lo que diga tu rol», que es exactamente cómo se comportó
+ * el sistema hasta ahora. El coordinador solo toca las excepciones.
+ *
+ * Si el valor por omisión fuese `true` para todos, el primer envío llegaría a
+ * la auditoría sin que nadie lo hubiera pedido.
+ */
+export function recibePorOmision(rol: Rol): boolean {
   return rol === 'CATEDRATICO';
 }
 

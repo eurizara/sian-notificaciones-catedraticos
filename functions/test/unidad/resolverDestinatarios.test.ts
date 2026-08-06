@@ -11,7 +11,7 @@
  * exactamente los que se descubren tarde y en el peor momento.
  */
 
-import { recibeAvisos } from '../../src/domain/autorizacion';
+import { recibeAvisos, recibePorOmision } from '../../src/domain/autorizacion';
 import {
   resolverDestinatarios,
   type CandidatoDestinatario,
@@ -38,6 +38,8 @@ const PADRON = [
   persona('elena', { rol: 'COORDINADOR' }),
   persona('fabio', { rol: 'ADMINISTRADORA' }),
   persona('gaby', { rol: 'AUDITOR' }),
+  // Da clases y además emite: el caso que motivó la bandera.
+  persona('hilda', { rol: 'ADMINISTRADORA', recibeAvisos: true }),
 ];
 
 describe('quién recibe avisos', () => {
@@ -48,21 +50,45 @@ describe('quién recibe avisos', () => {
   // El auditor observa sin formar parte del reparto. El coordinador los
   // escribe: mandárselos a sí mismo llenaría su teléfono de sus propios
   // simulacros y falsearía el porcentaje de confirmación.
-  it('solo el catedrático', () => {
+  it('por omisión, solo el catedrático', () => {
     expect(recibeAvisos('CATEDRATICO')).toBe(true);
-  });
-
-  it('los otros tres trabajan SOBRE el sistema, no son su destino', () => {
     expect(recibeAvisos('COORDINADOR')).toBe(false);
     expect(recibeAvisos('ADMINISTRADORA')).toBe(false);
     expect(recibeAvisos('AUDITOR')).toBe(false);
   });
+
+  it('la decisión del coordinador manda sobre el rol', () => {
+    // ────────────────────────────────────────────────────────────────────
+    // Es lo que evita que una persona necesite dos cuentas.
+    // ────────────────────────────────────────────────────────────────────
+    //
+    // Un catedrático nombrado administrador académico para que pueda emitir
+    // sigue dando clases. Con dos cuentas, la bitácora registraría dos
+    // identidades para un mismo humano y la confirmación de lectura la
+    // firmaría la cuenta que recibe, no la que trabaja.
+    expect(recibeAvisos('ADMINISTRADORA', true)).toBe(true);
+    expect(recibeAvisos('COORDINADOR', true)).toBe(true);
+
+    // Y en el otro sentido: un catedrático que no quiera recibir tampoco
+    // recibe.
+    expect(recibeAvisos('CATEDRATICO', false)).toBe(false);
+  });
+
+  it('sin bandera se cae al rol, y por eso no hay que migrar nada', () => {
+    // Los perfiles ya creados no tienen el campo. `undefined` significa «lo
+    // que diga tu rol», que es exactamente cómo se comportó el sistema hasta
+    // ahora.
+    expect(recibeAvisos('CATEDRATICO', undefined)).toBe(
+      recibePorOmision('CATEDRATICO'),
+    );
+    expect(recibeAvisos('AUDITOR', undefined)).toBe(recibePorOmision('AUDITOR'));
+  });
 });
 
 describe('modo TODOS', () => {
-  it('son los catedráticos', () => {
+  it('son los catedráticos, más quien el coordinador haya marcado', () => {
     const r = resolverDestinatarios({ modo: 'TODOS' }, PADRON, []);
-    expect(r.uids).toEqual(['ana', 'beto', 'carla']);
+    expect(r.uids).toEqual(['ana', 'beto', 'carla', 'hilda']);
   });
 
   it('deja fuera a los tres roles que no reciben', () => {
@@ -163,6 +189,21 @@ describe('modo GRUPOS', () => {
     for (const uid of ['elena', 'fabio', 'gaby']) {
       expect(r.excluidos).toContainEqual({ uid, motivo: 'ROL_NO_RECIBE' });
     }
+  });
+});
+
+describe('el autor no es destinatario de su propio aviso', () => {
+  it('se excluye, con su motivo', () => {
+    // Su propio aviso no es algo de lo que haya que enterarse, y contarlo
+    // falsearía el denominador de su propia confirmación.
+    const r = resolverDestinatarios({ modo: 'TODOS' }, PADRON, [], 'ana');
+    expect(r.uids).not.toContain('ana');
+    expect(r.excluidos).toContainEqual({ uid: 'ana', motivo: 'ES_EL_AUTOR' });
+  });
+
+  it('sin autor declarado, nadie se excluye por eso', () => {
+    const r = resolverDestinatarios({ modo: 'TODOS' }, PADRON, []);
+    expect(r.uids).toContain('ana');
   });
 });
 

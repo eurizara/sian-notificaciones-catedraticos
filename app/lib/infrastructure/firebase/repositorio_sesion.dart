@@ -218,6 +218,11 @@ class RepositorioSesionFirebase implements RepositorioSesion {
         activo: true,
         puedeEmitirUrgentes: datos['puedeEmitirUrgentes'] == true,
         puedeCrearRecurrentes: datos['puedeCrearRecurrentes'] == true,
+        // Ausente en un perfil antiguo: se cae al valor por omisión del rol,
+        // que es cómo se comportó el sistema antes de que existiera.
+        recibeAvisos: datos['recibeAvisos'] is bool
+            ? datos['recibeAvisos'] as bool
+            : rol.recibeMensajes,
       ),
     );
   }

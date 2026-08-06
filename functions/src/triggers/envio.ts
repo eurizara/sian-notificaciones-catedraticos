@@ -90,6 +90,7 @@ async function leerPadron(
     uid: d.id,
     activo: d.get('activo') === true,
     rol: (d.get('rol') as Rol | undefined) ?? 'CATEDRATICO',
+    recibeAvisos: d.get('recibeAvisos') as boolean | undefined,
   }));
 
   if (destinatarios.modo !== 'GRUPOS') {
@@ -131,7 +132,9 @@ export const contarDestinatarios = onCall(OPCIONES_FUNCION, async (peticion) => 
     }
 
     const { usuarios, grupos } = await leerPadron(destinatarios);
-    const resultado = resolverDestinatarios(destinatarios, usuarios, grupos);
+    // Se pasa el autor para que el conteo coincida exactamente con el envío:
+    // si aquí saliera uno más que allí, el número mentiría.
+    const resultado = resolverDestinatarios(destinatarios, usuarios, grupos, sujeto.uid);
 
     return {
       total: resultado.uids.length,
@@ -208,7 +211,12 @@ export const enviarInmediato = onCall(OPCIONES_FUNCION, async (peticion) => {
     });
 
     const { usuarios, grupos } = await leerPadron(destinatarios);
-    const resolucion = resolverDestinatarios(destinatarios, usuarios, grupos);
+    const resolucion = resolverDestinatarios(
+      destinatarios,
+      usuarios,
+      grupos,
+      sujeto.uid,
+    );
 
     if (resolucion.uids.length === 0) {
       throw new ErrorAutorizacion(
@@ -523,7 +531,12 @@ export async function despacharMensaje(
 
   const destinatarios = doc.get('destinatarios') as Destinatarios;
   const { usuarios, grupos } = await leerPadron(destinatarios);
-  const resolucion = resolverDestinatarios(destinatarios, usuarios, grupos);
+  const resolucion = resolverDestinatarios(
+    destinatarios,
+    usuarios,
+    grupos,
+    doc.get('creadoPor') as string | undefined ?? null,
+  );
 
   if (resolucion.uids.length === 0) {
     await refMensaje.update({ estado: 'FALLIDO' });

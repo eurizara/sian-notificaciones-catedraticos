@@ -38,9 +38,17 @@ final historialProvider = StreamProvider.family<List<MensajeRecibido>, String>((
 });
 
 class BandejaDocente extends ConsumerStatefulWidget {
-  const BandejaDocente({required this.usuario, super.key});
+  const BandejaDocente({
+    required this.usuario,
+    this.conBarraPropia = true,
+    super.key,
+  });
 
   final UsuarioSesion usuario;
+
+  /// Dentro del panel ya hay una barra: dos cabeceras apiladas roban media
+  /// pantalla en un teléfono.
+  final bool conBarraPropia;
 
   @override
   ConsumerState<BandejaDocente> createState() => _BandejaDocenteState();
@@ -119,7 +127,9 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
     // aplicación la que tiene que hacerse notar.
     return AvisoEnPrimerPlano(
       child: Scaffold(
-        appBar: BarraSesion(usuario: usuario, titulo: Textos.bandejaTitulo),
+        appBar: widget.conBarraPropia
+            ? BarraSesion(usuario: usuario, titulo: Textos.bandejaTitulo)
+            : null,
         // Volver arriba de un toque. En una bandeja con meses de historial,
         // subir a pulso es un gesto que se repite decenas de veces.
         floatingActionButton: _lejosDelInicio

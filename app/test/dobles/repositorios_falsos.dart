@@ -205,6 +205,20 @@ UsuarioSesion usuarioDePrueba({
   );
 }
 
+/// Copia un usuario cambiando solo si recibe avisos.
+extension ConRecepcion on UsuarioSesion {
+  UsuarioSesion conRecepcion(bool recibe) => UsuarioSesion(
+    uid: uid,
+    correo: correo,
+    nombre: nombre,
+    rol: rol,
+    activo: activo,
+    puedeEmitirUrgentes: puedeEmitirUrgentes,
+    puedeCrearRecurrentes: puedeCrearRecurrentes,
+    recibeAvisos: recibe,
+  );
+}
+
 /// Doble del repositorio de administración.
 ///
 /// Extiende el real en lugar de reimplementarlo: solo se sustituyen las

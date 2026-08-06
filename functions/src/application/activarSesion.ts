@@ -23,11 +23,14 @@ import {
   type AsientoBitacora,
 } from '../domain/bitacora';
 import { CorreoInstitucional } from '../domain/objetosDeValor';
+import { recibeAvisos } from '../domain/autorizacion';
 import type { Invitacion } from '../domain/invitacion';
 import type { Rol } from '../domain/tipos';
 
 /** Perfil tal como vive en `usuarios/{uid}` (documento 05, sección 2.1). */
 export interface PerfilUsuario {
+  /** Decisión del coordinador. Ausente = lo que diga el rol. */
+  readonly recibeAvisos?: boolean;
   readonly uid: string;
   readonly correo: string;
   readonly nombre: string;
@@ -45,6 +48,14 @@ export interface ClaimsUsuario {
   readonly activo: boolean;
   readonly puedeEmitirUrgentes: boolean;
   readonly puedeCrearRecurrentes: boolean;
+  /**
+   * Si esta persona recibe avisos, según decidió el coordinador.
+   *
+   * Viaja en el token para que la aplicación pueda enseñarle su bandeja sin
+   * preguntar a nadie. La decisión de a quién se le entrega sigue tomándose en
+   * el servidor: esto es solo para pintar la pantalla (RN-01).
+   */
+  readonly recibeAvisos: boolean;
 }
 
 export type MotivoRechazo = 'FUERA_DE_LISTA_BLANCA' | 'CUENTA_DESACTIVADA';
@@ -102,6 +113,7 @@ export function claimsDe(perfil: PerfilUsuario): ClaimsUsuario {
     activo: perfil.activo,
     puedeEmitirUrgentes: perfil.puedeEmitirUrgentes,
     puedeCrearRecurrentes: perfil.puedeCrearRecurrentes,
+    recibeAvisos: recibeAvisos(perfil.rol, perfil.recibeAvisos),
   };
 }
 

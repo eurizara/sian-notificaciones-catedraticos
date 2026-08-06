@@ -36,6 +36,7 @@ class UsuarioVista {
     required this.rol,
     required this.activo,
     required this.puedeEmitirUrgentes,
+    required this.recibeAvisos,
     required this.puedeCrearRecurrentes,
   });
 
@@ -45,6 +46,9 @@ class UsuarioVista {
   final String rol;
   final bool activo;
   final bool puedeEmitirUrgentes;
+
+  /// Si recibe avisos. Va aparte del rol: son dos ejes distintos.
+  final bool recibeAvisos;
   final bool puedeCrearRecurrentes;
 }
 
@@ -146,6 +150,11 @@ class RepositorioAdministracion {
           rol: (x['rol'] as String?) ?? '',
           activo: x['activo'] == true,
           puedeEmitirUrgentes: x['puedeEmitirUrgentes'] == true,
+          // Ausente en un perfil antiguo: se cae al valor por omisión del
+          // rol, que es cómo se comportó el sistema hasta ahora.
+          recibeAvisos: x['recibeAvisos'] is bool
+              ? x['recibeAvisos'] as bool
+              : (x['rol'] as String?) == 'CATEDRATICO',
           puedeCrearRecurrentes: x['puedeCrearRecurrentes'] == true,
         );
       }).toList();
@@ -254,6 +263,7 @@ class RepositorioAdministracion {
     required String uid,
     bool? puedeEmitirUrgentes,
     bool? puedeCrearRecurrentes,
+    bool? recibeAvisos,
   }) async {
     await _fn
         .httpsCallable('cambiarAutorizacionesFinas')
@@ -261,6 +271,7 @@ class RepositorioAdministracion {
           'uid': uid,
           'puedeEmitirUrgentes': ?puedeEmitirUrgentes,
           'puedeCrearRecurrentes': ?puedeCrearRecurrentes,
+          'recibeAvisos': ?recibeAvisos,
         });
   }
 }

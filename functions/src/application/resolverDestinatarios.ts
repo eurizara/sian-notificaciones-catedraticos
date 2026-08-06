@@ -25,6 +25,14 @@ export interface CandidatoDestinatario {
   readonly uid: string;
   readonly activo: boolean;
   readonly rol: Rol;
+  /**
+   * Decisión del coordinador sobre si esta persona recibe avisos.
+   *
+   * `undefined` significa «lo que diga su rol», que es cómo se comportó el
+   * sistema antes de que existiera la bandera. Los perfiles antiguos no la
+   * tienen y no hace falta migrarlos.
+   */
+  readonly recibeAvisos?: boolean;
 }
 
 export interface GrupoResuelto {
@@ -52,6 +60,15 @@ export function resolverDestinatarios(
   destinatarios: Destinatarios,
   usuarios: readonly CandidatoDestinatario[],
   grupos: readonly GrupoResuelto[],
+  /**
+   * Quién escribe el aviso. Se excluye de sus propios destinatarios.
+   *
+   * Antes no hacía falta porque los emisores no recibían. Con la bandera sí:
+   * un administrador académico que reciba avisos y mande uno a todos se lo
+   * mandaría a sí mismo y se contaría en el denominador de su propia
+   * confirmación. Su propio aviso no es algo de lo que haya que enterarse.
+   */
+  autor: string | null = null,
 ): ResultadoResolucion {
   const porUid = new Map<string, CandidatoDestinatario>();
   for (const u of usuarios) {
@@ -65,7 +82,9 @@ export function resolverDestinatarios(
       // «Todos» son los catedráticos. Coordinación, administración académica
       // y auditoría trabajan SOBRE el sistema de avisos en vez de ser su
       // destino.
-      candidatos.push(...usuarios.filter((u) => recibeAvisos(u.rol)).map((u) => u.uid));
+      candidatos.push(
+        ...usuarios.filter((u) => recibeAvisos(u.rol, u.recibeAvisos)).map((u) => u.uid),
+      );
       break;
 
     case 'GRUPOS': {
@@ -114,6 +133,11 @@ export function resolverDestinatarios(
     }
     yaVistos.add(uid);
 
+    if (autor !== null && uid === autor) {
+      excluidos.push({ uid, motivo: 'ES_EL_AUTOR' });
+      continue;
+    }
+
     const usuario = porUid.get(uid);
 
     if (usuario === undefined) {
@@ -136,7 +160,7 @@ export function resolverDestinatarios(
     //
     // Aquí la exclusión CONSTA, con su motivo, y el emisor la ve en el conteo
     // antes de enviar.
-    if (!recibeAvisos(usuario.rol)) {
+    if (!recibeAvisos(usuario.rol, usuario.recibeAvisos)) {
       excluidos.push({ uid, motivo: 'ROL_NO_RECIBE' });
       continue;
     }
