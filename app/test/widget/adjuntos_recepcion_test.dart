@@ -158,6 +158,76 @@ void main() {
     });
   });
 
+  group('los adjuntos NO cambian de alto al cargar', () {
+    // ──────────────────────────────────────────────────────────────────────
+    // Es lo que rompía el desplazamiento hacia arriba.
+    // ──────────────────────────────────────────────────────────────────────
+    //
+    // Una imagen sin alto declarado mide lo que mida el archivo, y eso no se
+    // sabe hasta descargarlo. Al subir por la lista, lo que quedó por encima
+    // se reconstruye: cada imagen nace midiendo cero, salta a su alto real,
+    // todo lo de abajo se corre y la vista vuelve donde estaba. El dedo sube
+    // y la pantalla no.
+    //
+    // Hacia abajo no se nota, porque lo que crece está fuera de la vista. Por
+    // eso el fallo parecía caprichoso.
+    late RepositorioSesionFalso sesion;
+
+    setUp(() => sesion = RepositorioSesionFalso());
+    tearDown(() => sesion.cerrar());
+
+    Widget montar(MensajeRecibido m) => ProviderScope(
+      overrides: [
+        repositorioSesionProvider.overrideWithValue(sesion),
+        repositorioBandejaProvider.overrideWithValue(
+          RepositorioBandejaFalso(<MensajeRecibido>[m]),
+        ),
+        repositorioDispositivosProvider.overrideWithValue(
+          RepositorioDispositivosFalso(entorno: EntornoNavegador.desconocido),
+        ),
+        repositorioProgramacionProvider.overrideWithValue(
+          RepositorioProgramacionFalso(),
+        ),
+      ],
+      child: MaterialApp(
+        theme: TemaSian.claro(),
+        home: BandejaDocente(usuario: usuarioDePrueba(rol: Rol.catedratico)),
+      ),
+    );
+
+    testWidgets('la imagen reserva su hueco desde el primer momento', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(montar(mensaje(imagen: 'mensajes/m1/i.jpg')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Prueba'));
+      await tester.pumpAndSettle();
+
+      // Antes de pedirla, el hueco ya mide lo que medirá después.
+      final double antes = tester.getSize(find.byType(ImagenAdjunta)).height;
+
+      await tester.tap(find.text(Textos.imagenTocarParaVer));
+      await tester.pumpAndSettle();
+
+      final double despues = tester.getSize(find.byType(ImagenAdjunta)).height;
+
+      expect(despues, antes, reason: 'la fila no puede cambiar de alto');
+    });
+
+    testWidgets('la nota de voz también', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        montar(mensaje(voz: 'mensajes/m1/v.webm', duracion: 5)),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Prueba'));
+      await tester.pumpAndSettle();
+
+      final double alto = tester.getSize(find.byType(NotaDeVoz)).height;
+      // Un alto plausible: si fuera cero, la tarjeta crecería al cargar.
+      expect(alto, greaterThan(56));
+    });
+  });
+
   group('los mensajes se pliegan', () {
     // ──────────────────────────────────────────────────────────────────────
     // Una bandeja se hojea; un mensaje se lee.
