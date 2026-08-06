@@ -11,6 +11,7 @@
  * exactamente los que se descubren tarde y en el peor momento.
  */
 
+import { recibeAvisos } from '../../src/domain/autorizacion';
 import {
   resolverDestinatarios,
   type CandidatoDestinatario,
@@ -35,15 +36,40 @@ const PADRON = [
   persona('carla'),
   persona('dario', { activo: false }),
   persona('elena', { rol: 'COORDINADOR' }),
+  persona('fabio', { rol: 'ADMINISTRADORA' }),
+  persona('gaby', { rol: 'AUDITOR' }),
 ];
 
+describe('quién recibe avisos', () => {
+  // ───────────────────────────────────────────────────────────────────────
+  // Recibir y emitir son dos preguntas distintas.
+  // ───────────────────────────────────────────────────────────────────────
+  //
+  // El auditor observa sin formar parte del reparto. El coordinador los
+  // escribe: mandárselos a sí mismo llenaría su teléfono de sus propios
+  // simulacros y falsearía el porcentaje de confirmación.
+  it('solo el catedrático', () => {
+    expect(recibeAvisos('CATEDRATICO')).toBe(true);
+  });
+
+  it('los otros tres trabajan SOBRE el sistema, no son su destino', () => {
+    expect(recibeAvisos('COORDINADOR')).toBe(false);
+    expect(recibeAvisos('ADMINISTRADORA')).toBe(false);
+    expect(recibeAvisos('AUDITOR')).toBe(false);
+  });
+});
+
 describe('modo TODOS', () => {
-  it('son los catedráticos, no todo el mundo', () => {
-    // Un aviso institucional no se le manda a la coordinación, que es quien
-    // lo escribe.
+  it('son los catedráticos', () => {
     const r = resolverDestinatarios({ modo: 'TODOS' }, PADRON, []);
     expect(r.uids).toEqual(['ana', 'beto', 'carla']);
-    expect(r.uids).not.toContain('elena');
+  });
+
+  it('deja fuera a los tres roles que no reciben', () => {
+    const r = resolverDestinatarios({ modo: 'TODOS' }, PADRON, []);
+    for (const uid of ['elena', 'fabio', 'gaby']) {
+      expect(r.uids).not.toContain(uid);
+    }
   });
 
   it('una cuenta desactivada no recibe, y consta por qué', () => {
@@ -121,15 +147,22 @@ describe('modo GRUPOS', () => {
     expect(r.excluidos).toContainEqual({ uid: 'fantasma', motivo: 'SIN_PERFIL' });
   });
 
-  it('un grupo puede incluir a quien no es catedrático', () => {
-    // A diferencia de TODOS: si alguien puso a la coordinadora en un grupo,
-    // fue a propósito.
+
+
+  it('NADIE que no reciba se cuela por un grupo, y consta por qué', () => {
+    // Es lo que evita el limbo: si se colara, aparecería para siempre como
+    // «pendiente de confirmar» en un reporte que nadie puede cerrar, porque
+    // esa persona nunca va a recibir nada que confirmar.
     const r = resolverDestinatarios(
       { modo: 'GRUPOS', gruposIds: ['g1'] },
       PADRON,
-      [grupo('g1', ['elena'])],
+      [grupo('g1', ['elena', 'fabio', 'gaby', 'ana'])],
     );
-    expect(r.uids).toEqual(['elena']);
+
+    expect(r.uids).toEqual(['ana']);
+    for (const uid of ['elena', 'fabio', 'gaby']) {
+      expect(r.excluidos).toContainEqual({ uid, motivo: 'ROL_NO_RECIBE' });
+    }
   });
 });
 

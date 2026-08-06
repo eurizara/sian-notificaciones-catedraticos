@@ -56,12 +56,37 @@ void main() {
       expect(Rol.catedratico.veBitacoraCompleta, isFalse);
     });
 
-    test('quién recibe mensajes', () {
+    test('solo el catedrático recibe avisos', () {
+      // Los otros tres trabajan SOBRE el sistema en vez de ser su destino.
       expect(Rol.catedratico.recibeMensajes, isTrue);
-      expect(Rol.coordinador.recibeMensajes, isTrue);
-      expect(Rol.administradora.recibeMensajes, isTrue);
-      // El auditor no entra en el reparto.
-      expect(Rol.auditor.recibeMensajes, isFalse);
+      for (final Rol r in <Rol>[
+        Rol.coordinador,
+        Rol.administradora,
+        Rol.auditor,
+      ]) {
+        expect(r.recibeMensajes, isFalse, reason: '$r');
+      }
+    });
+
+    test('emitir y recibir son tablas distintas, y no se solapan', () {
+      // El defecto que dio origen a esta prueba fue escribir el reparto como
+      // un `filter` suelto: a un administrador académico no le llegaba nada y
+      // no había forma de saber por qué sin leer ese filtro.
+      for (final Rol r in Rol.values) {
+        expect(
+          r.esEmisor && r.recibeMensajes,
+          isFalse,
+          reason: '$r no puede emitir y recibir a la vez',
+        );
+      }
+    });
+
+    test('la etiqueta del administrador académico', () {
+      // El identificador NO cambia aunque cambie la etiqueta: está en los
+      // claims de cada sesión viva, en los perfiles y en la bitácora, que es
+      // inmutable.
+      expect(Rol.administradora.etiqueta, 'Administrador Académico');
+      expect(Rol.administradora.claim, 'ADMINISTRADORA');
     });
   });
 

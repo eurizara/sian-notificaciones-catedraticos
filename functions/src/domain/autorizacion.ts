@@ -69,6 +69,30 @@ const AUTORIZACION_FINA: Partial<Record<Permiso, keyof Sujeto>> = {
   CREAR_RECURRENTE: 'puedeCrearRecurrentes',
 };
 
+/**
+ * ¿Este rol RECIBE avisos?
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Distinto de «puede emitirlos». Son dos preguntas y confundirlas se paga.
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * Solo el catedrático. Los otros tres trabajan **sobre** el sistema de avisos
+ * en vez de ser su destino: la coordinación los escribe, el administrador
+ * académico los gestiona y la auditoría los revisa. Mandárselos a ellos
+ * llenaría su pantalla de sus propios simulacros y, peor, falsearía el
+ * porcentaje de confirmación con gente que no es a quien había que avisar.
+ *
+ * Lo que importa no es tanto la lista como que ESTÉ AQUÍ, con nombre y
+ * probada. Antes era un `filter` suelto dentro de la resolución de
+ * destinatarios: a un administrador académico no le llegaba nada, y no había
+ * forma de saber por qué sin leer ese `filter`. Quien quede fuera queda fuera
+ * **diciéndolo**, con su motivo, y nunca como una entrega pendiente que nadie
+ * va a confirmar jamás.
+ */
+export function recibeAvisos(rol: Rol): boolean {
+  return rol === 'CATEDRATICO';
+}
+
 /** Lo mínimo que hay que saber de quien pide hacer algo. */
 export interface Sujeto {
   readonly uid: string;

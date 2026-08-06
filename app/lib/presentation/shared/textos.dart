@@ -378,9 +378,20 @@ abstract final class Textos {
   static String conteoExcluidos(int cuantos) => cuantos == 1
       ? '1 persona queda fuera:'
       : '$cuantos personas quedan fuera:';
+
+  /// Se dice aquí, antes de enviar, y no después en un reporte.
+  ///
+  /// Quien queda fuera NO genera entrega: no aparecerá como «pendiente de
+  /// confirmar» en un reporte que nadie podría cerrar. Pero el emisor tiene
+  /// que saberlo mientras aún puede cambiar los destinatarios.
+  static const String exclusionNoQuedaPendiente =
+      'No se les crea entrega, así que no aparecerán como pendientes en el '
+      'reporte.';
   static String motivoExclusion(String motivo, int cuantos) => switch (motivo) {
     'CUENTA_DESACTIVADA' => '$cuantos con la cuenta desactivada',
     'SIN_PERFIL' => '$cuantos sin perfil en el sistema',
+    'ROL_NO_RECIBE' =>
+      '$cuantos por su rol: solo los catedráticos reciben avisos',
     _ => '$cuantos por «$motivo»',
   };
 
