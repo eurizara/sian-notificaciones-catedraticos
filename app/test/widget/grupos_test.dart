@@ -47,6 +47,7 @@ UsuarioVista persona(
   String uid, {
   bool activo = true,
   String rol = 'CATEDRATICO',
+  bool? recibeAvisos,
 }) {
   return UsuarioVista(
     uid: uid,
@@ -56,6 +57,7 @@ UsuarioVista persona(
     activo: activo,
     puedeEmitirUrgentes: false,
     puedeCrearRecurrentes: false,
+    recibeAvisos: recibeAvisos ?? rol == 'CATEDRATICO',
   );
 }
 

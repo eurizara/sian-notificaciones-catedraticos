@@ -110,6 +110,10 @@ export async function buscarPerfil(uid: string): Promise<PerfilUsuario | null> {
     activo: d.activo === true,
     proveedorAuth: (d.proveedorAuth as string) ?? '',
     puedeEmitirUrgentes: d.puedeEmitirUrgentes === true,
+    // `undefined` a propósito cuando el campo no existe: significa «lo que
+    // diga el rol», y es lo que evita migrar los perfiles ya creados.
+    recibeAvisos:
+      typeof d.recibeAvisos === 'boolean' ? d.recibeAvisos : undefined,
     puedeCrearRecurrentes: d.puedeCrearRecurrentes === true,
     zonaHoraria: (d.zonaHoraria as string) ?? '',
   };
@@ -124,6 +128,9 @@ export async function guardarPerfil(perfil: PerfilUsuario): Promise<void> {
       activo: perfil.activo,
       proveedorAuth: perfil.proveedorAuth,
       puedeEmitirUrgentes: perfil.puedeEmitirUrgentes,
+      ...(perfil.recibeAvisos === undefined
+        ? {}
+        : { recibeAvisos: perfil.recibeAvisos }),
       puedeCrearRecurrentes: perfil.puedeCrearRecurrentes,
       zonaHoraria: perfil.zonaHoraria,
       creadoEn: FieldValue.serverTimestamp(),

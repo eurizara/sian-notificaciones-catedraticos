@@ -20,7 +20,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/proveedores_grupos.dart';
-import '../../domain/rol.dart';
 import '../../infrastructure/firebase/repositorio_administracion.dart';
 import '../../infrastructure/firebase/repositorio_grupos.dart';
 import '../shared/tema.dart';
@@ -279,8 +278,9 @@ class _EditorGrupoState extends ConsumerState<EditorGrupo> {
   List<UsuarioVista> _elegibles(List<UsuarioVista> todos) {
     final String q = _busqueda.text.trim().toLowerCase();
     return todos.where((UsuarioVista u) {
-      final Rol? rol = Rol.desdeClaim(u.rol);
-      if (!u.activo || rol == null || !rol.recibeMensajes) {
+      // La bandera, no el rol: quien la tenga encendida es destinatario
+      // aunque su rol por omisión no lo fuera.
+      if (!u.activo || !u.recibeAvisos) {
         return false;
       }
       if (q.isEmpty) {

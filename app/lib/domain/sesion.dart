@@ -18,6 +18,7 @@ class UsuarioSesion {
     required this.activo,
     this.puedeEmitirUrgentes = false,
     this.puedeCrearRecurrentes = false,
+    this.recibeAvisos = false,
   });
 
   final String uid;
@@ -30,6 +31,13 @@ class UsuarioSesion {
   /// (documento 05, sección 2.1). El servidor la vuelve a comprobar.
   final bool puedeEmitirUrgentes;
   final bool puedeCrearRecurrentes;
+
+  /// Si esta persona recibe avisos, según decidió el coordinador.
+  ///
+  /// Va aparte del rol porque son dos ejes distintos: qué puedes hacer en el
+  /// sistema, y si eres destinatario. Un catedrático nombrado administrador
+  /// académico sigue dando clases y tiene que enterarse de una evacuación.
+  final bool recibeAvisos;
 }
 
 /// Por qué se rechazó un intento de entrada.

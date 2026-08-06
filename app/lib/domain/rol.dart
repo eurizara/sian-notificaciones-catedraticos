@@ -75,10 +75,15 @@ enum Rol {
   /// avisos en vez de ser su destino: la coordinación los escribe, el
   /// administrador académico los gestiona y la auditoría los revisa.
   ///
-  /// Duplica `recibeAvisos` del dominio de TypeScript, que es la fuente de
-  /// verdad. Aquí solo sirve para no ofrecer en pantalla a quien el servidor
-  /// va a excluir igualmente — porque ofrecerlo y excluirlo después es
-  /// justamente cómo se llega a un destinatario en el limbo.
+  /// Es solo el **valor por omisión**: el coordinador puede encenderlo por
+  /// persona, y entonces manda su decisión. Un catedrático nombrado
+  /// administrador académico para que pueda emitir sigue dando clases, y
+  /// atarlo al rol lo obligaría a tener dos cuentas — lo que rompería que una
+  /// persona sea una cuenta, que es lo que sostiene la bitácora y la
+  /// confirmación de lectura.
+  ///
+  /// Duplica `recibePorOmision` del dominio de TypeScript, que es la fuente de
+  /// verdad.
   bool get recibeMensajes => this == Rol.catedratico;
 
   /// ¿Puede emitir alertas urgentes?

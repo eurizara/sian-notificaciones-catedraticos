@@ -147,6 +147,17 @@ abstract final class Textos {
   static const String sinSeccionesDisponibles =
       'Tu rol no tiene secciones asignadas en el panel.';
 
+  static const String seccionMisMensajes = 'Mis mensajes';
+  static const String seccionMisMensajesTitulo = 'Mis mensajes';
+  static const String seccionMisMensajesDescripcion =
+      'Los avisos que recibes tú. Aparece porque la coordinación te tiene '
+      'marcado como destinatario, además de emisor.';
+
+  static const String etiquetaRecibeAvisos = 'Recibe avisos';
+  static const String detalleRecibeAvisos =
+      'Además de gestionar el sistema, le llegan los avisos como a un '
+      'catedrático. Útil para quien da clases y también emite.';
+
   static const String seccionMensajes = 'Mensajes';
   static const String seccionMensajesTitulo = 'Composición y envío';
   static const String seccionMensajesDescripcion =

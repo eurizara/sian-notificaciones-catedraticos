@@ -16,6 +16,7 @@ import '../../domain/sesion.dart';
 import '../shared/barra_sesion.dart';
 import 'seccion_bitacora.dart';
 import 'seccion_entregas.dart';
+import 'seccion_mis_mensajes.dart';
 import 'seccion_grupos.dart';
 import 'seccion_programacion.dart';
 import 'seccion_mensajes.dart';
@@ -34,6 +35,7 @@ class SeccionAdmin {
     required this.iteracion,
     required this.visiblePara,
     this.construir,
+    this.visibleSegunPersona,
   });
 
   final IconData icono;
@@ -46,12 +48,34 @@ class SeccionAdmin {
   /// Predicado sobre el rol. Refleja la matriz del documento 01, sección 2.2.
   final bool Function(Rol rol) visiblePara;
 
+  /// Condición extra sobre la persona concreta, no solo sobre su rol.
+  ///
+  /// Existe por «Mis mensajes»: quién la ve no depende del rol sino de una
+  /// decisión del coordinador sobre esa persona. Sin esto habría que inventar
+  /// un rol nuevo para algo que es una bandera.
+  final bool Function(UsuarioSesion usuario)? visibleSegunPersona;
+
   /// Contenido real de la sección. Si es `null`, se muestra el marcador que
   /// declara qué hará y en qué iteración llega.
   final Widget Function()? construir;
 }
 
 final List<SeccionAdmin> _secciones = <SeccionAdmin>[
+  // Va primero: quien la tiene es porque también es destinatario, y lo que le
+  // llega a uno mismo pesa más que lo que uno manda.
+  SeccionAdmin(
+    icono: Icons.inbox_outlined,
+    etiqueta: Textos.seccionMisMensajes,
+    titulo: Textos.seccionMisMensajesTitulo,
+    descripcion: Textos.seccionMisMensajesDescripcion,
+    requisitos: const <String>['RF-ENT-12', 'RF-CNF-01'],
+    iteracion: Textos.iteracion13,
+    construir: SeccionMisMensajes.new,
+    // Solo dentro del panel: un catedrático ya tiene la bandeja como pantalla
+    // principal y no necesita una sección para lo mismo.
+    visiblePara: (Rol rol) => rol.usaPanelAdministrativo,
+    visibleSegunPersona: (UsuarioSesion u) => u.recibeAvisos,
+  ),
   SeccionAdmin(
     icono: Icons.campaign_outlined,
     etiqueta: Textos.seccionMensajes,
@@ -119,6 +143,18 @@ final List<SeccionAdmin> _secciones = <SeccionAdmin>[
 List<SeccionAdmin> seccionesPara(Rol rol) =>
     _secciones.where((SeccionAdmin s) => s.visiblePara(rol)).toList();
 
+/// Secciones visibles para una persona concreta.
+///
+/// El rol decide casi todo, pero no todo: «Mis mensajes» depende de si el
+/// coordinador la marcó como destinataria.
+List<SeccionAdmin> seccionesParaUsuario(UsuarioSesion usuario) => _secciones
+    .where(
+      (SeccionAdmin s) =>
+          s.visiblePara(usuario.rol) &&
+          (s.visibleSegunPersona?.call(usuario) ?? true),
+    )
+    .toList();
+
 class PanelAdmin extends StatefulWidget {
   const PanelAdmin({required this.usuario, super.key});
 
@@ -141,7 +177,7 @@ class _PanelAdminState extends State<PanelAdmin> {
 
   @override
   Widget build(BuildContext context) {
-    final List<SeccionAdmin> visibles = seccionesPara(widget.usuario.rol);
+    final List<SeccionAdmin> visibles = seccionesParaUsuario(widget.usuario);
 
     // Un rol sin ninguna sección no debería llegar aquí, pero si llega, lo
     // dice en lugar de reventar con un índice fuera de rango.

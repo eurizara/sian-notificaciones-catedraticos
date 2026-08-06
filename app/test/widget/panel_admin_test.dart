@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sian/application/proveedores_sesion.dart';
 import 'package:sian/domain/rol.dart';
+import 'package:sian/domain/sesion.dart';
 import 'package:sian/presentation/admin/panel_admin.dart';
 import 'package:sian/application/proveedores_grupos.dart';
 import 'package:sian/presentation/admin/seccion_mensajes.dart';
@@ -28,6 +29,7 @@ void main() {
   group('secciones visibles por rol', () {
     test('el coordinador lo ve todo', () {
       expect(etiquetasPara(Rol.coordinador), <String>[
+        Textos.seccionMisMensajes,
         Textos.seccionMensajes,
         Textos.seccionProgramacion,
         Textos.seccionGrupos,
@@ -54,9 +56,51 @@ void main() {
 
     test('el auditor solo observa: bitácora y entregas', () {
       expect(etiquetasPara(Rol.auditor), <String>[
+        Textos.seccionMisMensajes,
         Textos.seccionEntregas,
         Textos.seccionBitacora,
       ]);
+    });
+
+    test('«Mis mensajes» depende de la PERSONA, no del rol', () {
+      // ────────────────────────────────────────────────────────────────────
+      // Es la sección que evita que alguien necesite dos cuentas.
+      // ────────────────────────────────────────────────────────────────────
+      //
+      // Un catedrático nombrado administrador académico para que pueda emitir
+      // sigue dando clases. Sin esta sección tendría que salir del panel y
+      // entrar con otra cuenta para leer sus avisos — y dos cuentas rompen la
+      // bitácora, que registraría dos identidades para un mismo humano.
+      final UsuarioSesion recibe = usuarioDePrueba(
+        rol: Rol.administradora,
+      ).conRecepcion(true);
+      final UsuarioSesion noRecibe = usuarioDePrueba(
+        rol: Rol.administradora,
+      ).conRecepcion(false);
+
+      expect(
+        seccionesParaUsuario(recibe).map((SeccionAdmin s) => s.etiqueta),
+        contains(Textos.seccionMisMensajes),
+      );
+      expect(
+        seccionesParaUsuario(noRecibe).map((SeccionAdmin s) => s.etiqueta),
+        isNot(contains(Textos.seccionMisMensajes)),
+      );
+    });
+
+    test('lo demás sigue dependiendo solo del rol', () {
+      final UsuarioSesion admin = usuarioDePrueba(
+        rol: Rol.administradora,
+      ).conRecepcion(true);
+
+      final List<String> suyas = seccionesParaUsuario(
+        admin,
+      ).map((SeccionAdmin s) => s.etiqueta).toList();
+
+      // Recibir avisos no le da acceso a administrar usuarios ni a la
+      // bitácora completa: son dos ejes distintos y siguen separados.
+      expect(suyas, isNot(contains(Textos.seccionUsuarios)));
+      expect(suyas, isNot(contains(Textos.seccionBitacora)));
     });
 
     test('el catedrático no tiene ninguna sección del panel', () {
