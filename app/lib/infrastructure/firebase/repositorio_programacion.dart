@@ -179,6 +179,31 @@ class MensajeProgramado {
       requiereConfirmacion ? totalDestinatarios - confirmados : 0;
 }
 
+/// Un destinatario y su estado, para el detalle del reporte (RF-CNF-06).
+class DestinatarioEntrega {
+  const DestinatarioEntrega({
+    required this.uid,
+    required this.nombre,
+    required this.correo,
+    required this.estado,
+    this.confirmadoEn,
+  });
+
+  final String uid;
+  final String nombre;
+  final String correo;
+  final String estado;
+  final DateTime? confirmadoEn;
+
+  bool get confirmo => estado == 'CONFIRMADO';
+  bool get leLlego =>
+      estado == 'ENTREGADO' || estado == 'ABIERTO' || estado == 'CONFIRMADO';
+
+  /// No le llegó. Es distinto de «no confirmó»: aquí no hubo descuido, hubo
+  /// un problema técnico, y se resuelve de otra manera.
+  bool get fallo => estado == 'FALLIDO' || estado == 'DESCARTADO';
+}
+
 class RepositorioProgramacion {
   RepositorioProgramacion({
     FirebaseFirestore? firestore,
@@ -346,6 +371,35 @@ class RepositorioProgramacion {
       'mensajeId': mensajeId,
       'dispositivo': dispositivo,
     });
+  }
+
+  /// Quién recibió y quién confirmó (RF-CNF-06).
+  ///
+  /// Pasa por el servidor porque una administradora no puede leer la lista de
+  /// usuarios —las reglas solo se la abren al coordinador y al auditor—, y
+  /// tampoco la necesita: para saber quién no confirmó su aviso basta con los
+  /// destinatarios de ese aviso.
+  Future<List<DestinatarioEntrega>> detalleEntregas(String mensajeId) async {
+    final HttpsCallableResult<Object?> r = await _fn
+        .httpsCallable('detalleEntregas')
+        .call<Object?>(<String, Object?>{'mensajeId': mensajeId});
+
+    final Map<Object?, Object?> d =
+        (r.data as Map<Object?, Object?>?) ?? <Object?, Object?>{};
+    final List<Object?> lista =
+        (d['destinatarios'] as List<Object?>?) ?? <Object?>[];
+
+    return lista.map((Object? o) {
+      final Map<Object?, Object?> m = (o as Map<Object?, Object?>?) ?? {};
+      final String? confirmado = m['confirmadoEn'] as String?;
+      return DestinatarioEntrega(
+        uid: (m['uid'] as String?) ?? '',
+        nombre: (m['nombre'] as String?) ?? '',
+        correo: (m['correo'] as String?) ?? '',
+        estado: (m['estado'] as String?) ?? '',
+        confirmadoEn: confirmado == null ? null : DateTime.tryParse(confirmado),
+      );
+    }).toList();
   }
 
   /// Marca como abierto (RF-CNF-02). No sustituye a confirmar.

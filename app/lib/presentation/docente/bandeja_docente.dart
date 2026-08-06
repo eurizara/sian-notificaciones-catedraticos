@@ -63,6 +63,10 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
   static const int _porPagina = 15;
   int _visibles = _porPagina;
 
+  /// Controla el desplazamiento para poder volver arriba de un toque.
+  final ScrollController _scroll = ScrollController();
+  bool _lejosDelInicio = false;
+
   @override
   void initState() {
     super.initState();
@@ -71,11 +75,22 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
       // resultado que tiene 2 elementos deja la pantalla vacía sin motivo.
       setState(() => _visibles = _porPagina);
     });
+
+    _scroll.addListener(() {
+      // El botón de volver arriba aparece cuando ya hay camino que desandar.
+      // Mostrarlo desde el primer píxel sería taparle sitio a la lista para
+      // ofrecer algo que no hace falta.
+      final bool lejos = _scroll.hasClients && _scroll.offset > 600;
+      if (lejos != _lejosDelInicio) {
+        setState(() => _lejosDelInicio = lejos);
+      }
+    });
   }
 
   @override
   void dispose() {
     _busqueda.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 
@@ -105,6 +120,19 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
     return AvisoEnPrimerPlano(
       child: Scaffold(
         appBar: BarraSesion(usuario: usuario, titulo: Textos.bandejaTitulo),
+        // Volver arriba de un toque. En una bandeja con meses de historial,
+        // subir a pulso es un gesto que se repite decenas de veces.
+        floatingActionButton: _lejosDelInicio
+            ? FloatingActionButton.small(
+                onPressed: () => _scroll.animateTo(
+                  0,
+                  duration: const Duration(milliseconds: 350),
+                  curve: Curves.easeOut,
+                ),
+                tooltip: Textos.volverArriba,
+                child: const Icon(Icons.arrow_upward),
+              )
+            : null,
         body: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 720),
@@ -120,39 +148,62 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
                     .take(_visibles)
                     .toList();
 
-                return ListView(
-                  padding: const EdgeInsets.all(16),
+                return Column(
                   children: <Widget>[
-                    const TarjetaNotificaciones(),
-
-                    // El buscador solo aparece cuando hay bastante que
-                    // buscar: con tres mensajes estorba más de lo que ayuda.
-                    if (todos.length > 5) ...<Widget>[
-                      Buscador(
-                        controlador: _busqueda,
-                        etiqueta: Textos.buscarMensajes,
-                        resultados: filtrados.length,
+                    // ────────────────────────────────────────────────────
+                    // FUERA de la lista, y no por gusto.
+                    // ────────────────────────────────────────────────────
+                    //
+                    // Dentro, al volver a la cima la lista la destruía y la
+                    // recreaba; su `initState` vuelve a consultar el permiso
+                    // y al responder cambia de alto. Ese salto justo arriba
+                    // empujaba la vista hacia abajo, y el desplazamiento se
+                    // quedaba atrapado a un dedo del principio.
+                    //
+                    // Como cabecera fija se monta una vez y no vuelve a
+                    // moverse. Ocupa una línea cuando todo va bien.
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      child: Column(
+                        children: <Widget>[
+                          const TarjetaNotificaciones(),
+                          // El buscador solo aparece cuando hay bastante que
+                          // buscar: con tres mensajes estorba.
+                          if (todos.length > 5)
+                            Buscador(
+                              controlador: _busqueda,
+                              etiqueta: Textos.buscarMensajes,
+                              resultados: filtrados.length,
+                            ),
+                        ],
                       ),
-                      const SizedBox(height: 16),
-                    ],
+                    ),
+                    Expanded(
+                      child: ListView(
+                        controller: _scroll,
+                        padding: const EdgeInsets.all(16),
+                        children: <Widget>[
+                          if (todos.isEmpty)
+                            const _BandejaVacia()
+                          else if (filtrados.isEmpty)
+                            Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Text(
+                                Textos.sinResultados(_busqueda.text.trim()),
+                                textAlign: TextAlign.center,
+                              ),
+                            )
+                          else
+                            ...filasDeMensajes(context, pagina),
 
-                    if (todos.isEmpty)
-                      const _BandejaVacia()
-                    else if (filtrados.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Text(
-                          Textos.sinResultados(_busqueda.text.trim()),
-                          textAlign: TextAlign.center,
-                        ),
-                      )
-                    else
-                      ...filasDeMensajes(context, pagina),
-
-                    VerMas(
-                      mostrados: pagina.length,
-                      total: filtrados.length,
-                      alPulsar: () => setState(() => _visibles += _porPagina),
+                          VerMas(
+                            mostrados: pagina.length,
+                            total: filtrados.length,
+                            alPulsar: () =>
+                                setState(() => _visibles += _porPagina),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 );

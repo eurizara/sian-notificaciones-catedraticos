@@ -124,13 +124,63 @@ class _SeccionEntregasState extends ConsumerState<SeccionEntregas> {
   }
 }
 
-class _Reporte extends StatelessWidget {
+class _Reporte extends ConsumerStatefulWidget {
   const _Reporte({required this.mensaje});
 
   final MensajeProgramado mensaje;
 
   @override
+  ConsumerState<_Reporte> createState() => _ReporteState();
+}
+
+class _ReporteState extends ConsumerState<_Reporte> {
+  bool _mostrandoLista = false;
+  bool _cargando = false;
+  List<DestinatarioEntrega>? _destinatarios;
+  String? _error;
+
+  /// Carga la lista solo cuando se pide.
+  ///
+  /// Son varias lecturas por mensaje. Hacerlas para los diez reportes de la
+  /// página al abrirla sería pagar por información que casi nadie mira, y
+  /// justo cuando lo urgente es ver los porcentajes.
+  Future<void> _alternar() async {
+    if (_mostrandoLista) {
+      setState(() => _mostrandoLista = false);
+      return;
+    }
+
+    setState(() {
+      _mostrandoLista = true;
+      _error = null;
+    });
+
+    if (_destinatarios != null) {
+      return;
+    }
+
+    setState(() => _cargando = true);
+    try {
+      final List<DestinatarioEntrega> l = await ref
+          .read(repositorioProgramacionProvider)
+          .detalleEntregas(widget.mensaje.id);
+      if (mounted) {
+        setState(() => _destinatarios = l);
+      }
+    } on Object catch (_) {
+      if (mounted) {
+        setState(() => _error = Textos.errorDetalleEntregas);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _cargando = false);
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final MensajeProgramado mensaje = widget.mensaje;
     final ThemeData tema = Theme.of(context);
     final DateFormat formato = DateFormat('dd/MM/yyyy · HH:mm');
     // Un aviso sin confirmación se mide por entrega; uno con ella, por
@@ -309,9 +359,161 @@ class _Reporte extends StatelessWidget {
                   color: tema.colorScheme.onSurfaceVariant,
                 ),
               ),
+
+            // «Faltan 6» no dice a QUIÉN hay que buscar, que es lo único
+            // accionable de este reporte.
+            const SizedBox(height: 4),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: _alternar,
+                icon: Icon(
+                  _mostrandoLista ? Icons.expand_less : Icons.expand_more,
+                ),
+                label: Text(
+                  _mostrandoLista
+                      ? Textos.ocultarQuienFalta
+                      : Textos.verQuienFalta,
+                ),
+              ),
+            ),
+
+            if (_mostrandoLista)
+              if (_cargando)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Row(
+                    children: <Widget>[
+                      SizedBox(
+                        height: 16,
+                        width: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      SizedBox(width: 12),
+                      Text(Textos.cargandoDestinatarios),
+                    ],
+                  ),
+                )
+              else if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Text(
+                    _error!,
+                    style: tema.textTheme.bodySmall?.copyWith(
+                      color: ColoresSian.urgente,
+                    ),
+                  ),
+                )
+              else
+                _ListaDestinatarios(
+                  destinatarios:
+                      _destinatarios ?? const <DestinatarioEntrega>[],
+                  porConfirmacion: porConfirmacion,
+                ),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Quién recibió, quién no y quién confirmó.
+class _ListaDestinatarios extends StatelessWidget {
+  const _ListaDestinatarios({
+    required this.destinatarios,
+    required this.porConfirmacion,
+  });
+
+  final List<DestinatarioEntrega> destinatarios;
+  final bool porConfirmacion;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData tema = Theme.of(context);
+
+    if (destinatarios.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final bool todoConfirmado =
+        porConfirmacion &&
+        destinatarios.every((DestinatarioEntrega d) => d.confirmo);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        const SizedBox(height: 4),
+        Text(
+          Textos.detalleFallidosPrimero,
+          style: tema.textTheme.bodySmall?.copyWith(
+            color: tema.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        if (todoConfirmado)
+          Row(
+            children: <Widget>[
+              const Icon(
+                Icons.verified_outlined,
+                size: 16,
+                color: ColoresSian.confirmado,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                Textos.nadiePendiente,
+                style: tema.textTheme.bodySmall?.copyWith(
+                  color: ColoresSian.confirmado,
+                ),
+              ),
+            ],
+          ),
+
+        for (final DestinatarioEntrega d in destinatarios)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(
+              children: <Widget>[
+                Icon(
+                  d.fallo
+                      ? Icons.error_outline
+                      : d.confirmo
+                      ? Icons.check_circle_outline
+                      : Icons.schedule,
+                  size: 16,
+                  // Un fallo de entrega NO es lo mismo que un descuido: uno se
+                  // resuelve revisando el dispositivo y el otro insistiendo a
+                  // la persona. Pintarlos igual mezclaría dos problemas.
+                  color: d.fallo
+                      ? ColoresSian.urgente
+                      : d.confirmo
+                      ? ColoresSian.confirmado
+                      : ColoresSian.doradoTexto,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    d.nombre,
+                    style: tema.textTheme.bodySmall,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Text(
+                  d.fallo
+                      ? Textos.estadoNoLeLlego
+                      : d.confirmo
+                      ? Textos.estadoConfirmado
+                      : porConfirmacion
+                      ? Textos.estadoSinConfirmar
+                      : Textos.estadoEntregado,
+                  style: tema.textTheme.bodySmall?.copyWith(
+                    color: tema.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }

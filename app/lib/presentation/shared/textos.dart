@@ -612,6 +612,18 @@ abstract final class Textos {
   static String ultimaSalidaEl(String cuando) => 'Última salida el $cuando';
   static const String sinFechaDeEnvio = 'Todavía sin enviar';
 
+  static const String verQuienFalta = 'Ver quién falta';
+  static const String ocultarQuienFalta = 'Ocultar la lista';
+  static const String cargandoDestinatarios = 'Cargando destinatarios…';
+  static const String nadiePendiente = 'Todos confirmaron.';
+  static const String estadoNoLeLlego = 'No le llegó';
+  static const String estadoSinConfirmar = 'Sin confirmar';
+  static const String errorDetalleEntregas =
+      'No se pudo cargar la lista de destinatarios.';
+  static const String detalleFallidosPrimero =
+      'Primero quienes no lo recibieron, después quienes no lo han '
+      'confirmado. Los dos casos se resuelven distinto.';
+
   static const String entregasSinConfirmacion =
       'Este aviso no exigía confirmación.';
 
@@ -626,6 +638,7 @@ abstract final class Textos {
       cuantos == 1 ? 'Falta 1 por confirmar' : 'Faltan $cuantos por confirmar';
 
   // --- Búsqueda y paginación ------------------------------------------------
+  static const String volverArriba = 'Volver arriba';
   static const String verDetalle = 'Ver detalle';
   static const String ocultarDetalle = 'Ocultar';
   static const String plegarTodo = 'Plegar todo';
