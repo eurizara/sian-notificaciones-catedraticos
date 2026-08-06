@@ -181,6 +181,9 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
               ejecutarEn: _cuando.fecha,
               recurrencia: _cuando.patron,
               confirmacionUrgente: _urgente,
+              mensajeId: mensajeId,
+              voz: voz,
+              imagen: imagen,
             );
 
         if (!mounted) {

@@ -15,6 +15,7 @@ import 'package:intl/intl.dart';
 
 import '../../infrastructure/firebase/repositorio_administracion.dart';
 import '../shared/tema.dart';
+import '../shared/buscador.dart';
 import '../shared/textos.dart';
 import 'seccion_usuarios.dart' show repositorioAdminProvider;
 
@@ -50,18 +51,42 @@ const List<({String valor, String etiqueta})> _tiposFiltrables =
       (valor: 'GRUPO_MODIFICADO', etiqueta: 'Grupos modificados'),
     ];
 
-class SeccionBitacora extends ConsumerWidget {
+class SeccionBitacora extends ConsumerStatefulWidget {
   const SeccionBitacora({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SeccionBitacora> createState() => _SeccionBitacoraState();
+}
+
+class _SeccionBitacoraState extends ConsumerState<SeccionBitacora> {
+  final TextEditingController _busqueda = TextEditingController();
+
+  /// La bitácora crece sin parar y no se borra nunca (RF-BIT-03). Pintarla
+  /// entera es lo que la vuelve inservible justo cuando hace falta consultarla.
+  static const int _porPagina = 25;
+  int _visibles = _porPagina;
+
+  @override
+  void initState() {
+    super.initState();
+    _busqueda.addListener(() => setState(() => _visibles = _porPagina));
+  }
+
+  @override
+  void dispose() {
+    _busqueda.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final AsyncValue<List<AsientoVista>> asientos = ref.watch(bitacoraProvider);
     final String filtro = ref.watch(filtroBitacoraProvider);
 
     return Column(
       children: <Widget>[
         Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Row(
             children: <Widget>[
               const Icon(Icons.filter_list),
@@ -82,12 +107,25 @@ class SeccionBitacora extends ConsumerWidget {
                         child: Text(t.etiqueta),
                       ),
                   ],
-                  onChanged: (String? v) => ref
-                      .read(filtroBitacoraProvider.notifier)
-                      .cambiar(v ?? ''),
+                  onChanged: (String? v) {
+                    setState(() => _visibles = _porPagina);
+                    ref.read(filtroBitacoraProvider.notifier).cambiar(v ?? '');
+                  },
                 ),
               ),
             ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: Buscador(
+            controlador: _busqueda,
+            etiqueta: Textos.buscarBitacora,
+            resultados: asientos.maybeWhen(
+              data: (List<AsientoVista> l) =>
+                  filtrarAsientos(l, _busqueda.text).length,
+              orElse: () => null,
+            ),
           ),
         ),
         Expanded(
@@ -102,19 +140,74 @@ class SeccionBitacora extends ConsumerWidget {
                 ),
               ),
             ),
-            data: (List<AsientoVista> lista) => lista.isEmpty
-                ? const Center(child: Text(Textos.bitacoraVacia))
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: lista.length,
-                    itemBuilder: (BuildContext c, int i) =>
-                        _Asiento(asiento: lista[i]),
+            data: (List<AsientoVista> todos) {
+              if (todos.isEmpty) {
+                return const Center(child: Text(Textos.bitacoraVacia));
+              }
+
+              final List<AsientoVista> filtrados = filtrarAsientos(
+                todos,
+                _busqueda.text,
+              );
+
+              if (filtrados.isEmpty) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      Textos.sinResultados(_busqueda.text.trim()),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
+                );
+              }
+
+              final int hasta = _visibles.clamp(0, filtrados.length);
+
+              return ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                // Una fila de más al final para el botón de «ver más».
+                itemCount: hasta + 1,
+                itemBuilder: (BuildContext c, int i) {
+                  if (i == hasta) {
+                    return VerMas(
+                      mostrados: hasta,
+                      total: filtrados.length,
+                      alPulsar: () => setState(() => _visibles += _porPagina),
+                    );
+                  }
+                  return _Asiento(asiento: filtrados[i]);
+                },
+              );
+            },
           ),
         ),
       ],
     );
   }
+}
+
+/// Filtra por texto en el resumen, el actor y la entidad.
+///
+/// Sobre lo ya cargado. Buscar «quién desactivó a fulano» suele ser buscar un
+/// correo o un nombre, y eso está en el resumen y en el actor.
+List<AsientoVista> filtrarAsientos(
+  List<AsientoVista> asientos,
+  String termino,
+) {
+  if (termino.trim().isEmpty) {
+    return asientos;
+  }
+  return asientos
+      .where(
+        (AsientoVista a) => coincide(termino, <String>[
+          a.resumen,
+          a.actorCorreo,
+          a.entidadId,
+          a.tipo,
+        ]),
+      )
+      .toList();
 }
 
 class _Asiento extends StatelessWidget {

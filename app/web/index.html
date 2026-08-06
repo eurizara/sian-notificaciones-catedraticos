@@ -40,24 +40,38 @@
 
   <style>
     /*
-      Deslizar de lado no puede sacarte de la aplicación.
+      NADA de `overflow: hidden` ni de `height: 100%` aquí.
 
-      En móvil, un arrastre horizontal sobre la página activa la navegación
-      atrás/adelante del navegador. SIAN es una sola página: al «avanzar» no
-      hay ninguna entrada de historial a la que ir, y la pantalla se queda en
-      blanco. Desde dentro parece que la aplicación se rompió.
+      Se probaron, y rompieron el desplazamiento vertical dentro de la
+      aplicación en iOS: Flutter monta su propia vista y gestiona el
+      desplazamiento por su cuenta, así que fijar el alto del documento le
+      quita el sitio por el que se mueve. La cura salió peor que la
+      enfermedad.
 
-      `overscroll-behavior-x: none` cancela ese gesto sin tocar el
-      desplazamiento vertical ni el menú lateral, que se abre con su propio
-      arrastre desde el borde izquierdo.
+      `overscroll-behavior-x` sí es seguro: solo cancela el rebote lateral y
+      la navegación por arrastre en los navegadores que la implementan, sin
+      tocar el desplazamiento vertical.
     */
     html, body {
       margin: 0;
       padding: 0;
-      height: 100%;
-      overflow: hidden;
       overscroll-behavior-x: none;
-      overscroll-behavior-y: contain;
+    }
+
+    /*
+      El arrastre horizontal no navega hacia atrás.
+
+      `touch-action: pan-y` le dice al navegador que en esta página los
+      gestos horizontales no son suyos. Es lo que de verdad frena el
+      deslizamiento lateral, y deja intacto el vertical.
+
+      En Safari sobre iOS el gesto desde el borde exacto de la pantalla sigue
+      siendo del sistema y no hay forma de cancelarlo desde la web. Instalada
+      en la pantalla de inicio ese gesto no existe, que es otra razón para el
+      instructivo de instalación.
+    */
+    body, flutter-view, flt-glass-pane {
+      touch-action: pan-y;
     }
   </style>
 </head>
@@ -70,6 +84,33 @@
     For more details:
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
+  <script>
+    /*
+      Atrapa la navegación hacia atrás para que no saque de la aplicación.
+
+      El CSS de arriba frena el arrastre lateral en casi todo, pero en Safari
+      sobre iOS el gesto que nace en el borde exacto de la pantalla pertenece
+      al sistema y ninguna página web puede cancelarlo. Lo que sí se puede es
+      que no lleve a ninguna parte.
+
+      Se deja una entrada de historial propia al arrancar. Cuando el gesto la
+      consume, se vuelve a poner: el navegador cree que retrocedió y la
+      persona se queda donde estaba, en vez de mirar una pantalla en blanco.
+
+      Es seguro aquí porque SIAN no usa la barra de direcciones para navegar:
+      es una sola página cuyo contenido depende de la sesión. En una
+      aplicación con rutas reales esto rompería el botón de atrás.
+    */
+    (function () {
+      var marca = { sian: true };
+      history.pushState(marca, '');
+
+      window.addEventListener('popstate', function () {
+        history.pushState(marca, '');
+      });
+    })();
+  </script>
+
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

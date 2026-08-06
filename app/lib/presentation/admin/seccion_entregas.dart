@@ -28,6 +28,7 @@ import '../../application/proveedores_programacion.dart';
 import '../../infrastructure/firebase/repositorio_programacion.dart';
 import '../shared/tema.dart';
 import '../shared/textos.dart';
+import 'seccion_programacion.dart' show Marca;
 
 class SeccionEntregas extends ConsumerWidget {
   const SeccionEntregas({super.key});
@@ -123,6 +124,34 @@ class _Reporte extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 6),
+
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: <Widget>[
+                Marca(
+                  icono: Icons.people_outline,
+                  texto: switch (mensaje.modoDestinatarios) {
+                    'GRUPOS' => Textos.destinatariosGruposCorto(
+                      mensaje.nombresGrupos,
+                    ),
+                    'INDIVIDUAL' => Textos.destinatariosIndividual,
+                    _ => Textos.destinatariosTodosCorto,
+                  },
+                ),
+                if (mensaje.llevaVoz)
+                  const Marca(
+                    icono: Icons.graphic_eq,
+                    texto: Textos.llevaNotaDeVoz,
+                  ),
+                if (mensaje.llevaImagen)
+                  const Marca(
+                    icono: Icons.image_outlined,
+                    texto: Textos.llevaImagenAdjunta,
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
 
             // Cuándo salió, no cuándo saldrá. Es la primera pregunta al abrir
             // este reporte: «¿cuándo se avisó?». En un recurrente es la

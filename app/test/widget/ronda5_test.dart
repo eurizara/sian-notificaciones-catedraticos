@@ -36,6 +36,9 @@ MensajeProgramado programado({
   int entregados = 0,
   int confirmados = 0,
   bool requiereConfirmacion = true,
+  String modoDestinatarios = 'TODOS',
+  List<String> nombresGrupos = const <String>[],
+  List<String> formato = const <String>['TEXTO'],
 }) {
   return MensajeProgramado(
     id: id,
@@ -45,6 +48,9 @@ MensajeProgramado programado({
     modo: modo,
     creadoPor: 'uid-1',
     requiereConfirmacion: requiereConfirmacion,
+    modoDestinatarios: modoDestinatarios,
+    nombresGrupos: nombresGrupos,
+    formato: formato,
     proximaOcurrencia: proxima ?? DateTime.utc(2026, 9, 1, 13),
     enviadoEn: enviado,
     totalDestinatarios: total,

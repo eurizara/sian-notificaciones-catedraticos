@@ -566,6 +566,19 @@ abstract final class Textos {
       'Ya se envió. Lo enviado no se cancela ni se edita.';
 
   static String proximaSalida(String cuando) => 'Próxima salida: $cuando';
+
+  static const String destinatariosTodosCorto = 'A todos los catedráticos';
+  static const String destinatariosIndividual = 'A personas concretas';
+  static const String llevaNotaDeVoz = 'Nota de voz';
+  static const String llevaImagenAdjunta = 'Imagen';
+  static const String pideConfirmacion = 'Pide confirmación';
+
+  static String destinatariosGruposCorto(List<String> nombres) =>
+      nombres.isEmpty
+      ? 'A grupos'
+      : nombres.length == 1
+      ? 'Al grupo ${nombres.first}'
+      : 'A ${nombres.length} grupos: ${nombres.join(', ')}';
   static String estadoProgramacion(String estado) => switch (estado) {
     'PROGRAMADO' => 'Programado',
     'RECURRENTE_PENDIENTE' => 'Repitiéndose',
@@ -611,6 +624,24 @@ abstract final class Textos {
   ) => 'Confirmado por $confirmados de $total · $porcentaje %';
   static String entregasPendientes(int cuantos) =>
       cuantos == 1 ? 'Falta 1 por confirmar' : 'Faltan $cuantos por confirmar';
+
+  // --- Búsqueda y paginación ------------------------------------------------
+  static const String buscarMensajes = 'Buscar en título y mensaje';
+  static const String buscarBitacora = 'Buscar en la bitácora';
+  static const String buscarLimpiar = 'Limpiar búsqueda';
+  static const String verMas = 'Ver más';
+  static const String cargandoMas = 'Cargando…';
+
+  static String sinResultados(String termino) =>
+      'Nada coincide con «$termino».';
+  static String mostrandoDe(int mostrados, int total) =>
+      'Mostrando $mostrados de $total';
+  static String coincidencias(int cuantas) =>
+      cuantas == 1 ? '1 coincidencia' : '$cuantas coincidencias';
+
+  static const String imagenTocarParaVer = 'Ver imagen adjunta';
+  static const String imagenCargando = 'Cargando imagen…';
+  static const String imagenTocarParaAmpliar = 'Toca para ampliar';
 
   static const String detalleErrorAdjunto =
       'No se pudo cargar el adjunto. Revisa tu conexión.';
