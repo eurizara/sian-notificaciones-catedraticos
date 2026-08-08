@@ -6,6 +6,7 @@
 library;
 
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:sian/domain/repositorios.dart';
@@ -320,6 +321,65 @@ class RepositorioDispositivosFalso extends RepositorioDispositivos {
 }
 
 /// Doble del repositorio de envío: registra lo que se le pidió.
+/// Doble de la subida a Cloud Storage.
+///
+/// Anota contra qué identificador subió cada cosa: los dos adjuntos de un
+/// mismo mensaje tienen que compartirlo, porque las reglas de Storage cuelgan
+/// de la ruta `mensajes/{id}/…` y el mensaje se crea después.
+class RepositorioAdjuntosFalso extends RepositorioAdjuntos {
+  int vecesQueSubioVoz = 0;
+  int vecesQueSubioImagen = 0;
+  String? idDeLaVoz;
+  String? idDeLaImagen;
+  int _siguiente = 0;
+
+  /// Para comprobar que un adjunto que no sube no deja pasar el envío.
+  bool fallaLaVoz = false;
+  bool fallaLaImagen = false;
+
+  @override
+  String reservarIdMensaje() => 'reservado-${_siguiente++}';
+
+  @override
+  Future<AdjuntoSubido> subirVoz({
+    required String mensajeId,
+    required Uint8List bytes,
+    required String tipoMime,
+    required int duracionSeg,
+  }) async {
+    vecesQueSubioVoz += 1;
+    idDeLaVoz = mensajeId;
+    if (fallaLaVoz) {
+      throw StateError('la subida de la voz falló');
+    }
+    return AdjuntoSubido(
+      ruta: 'mensajes/$mensajeId/voz.webm',
+      bytes: bytes.length,
+      tipoMime: tipoMime,
+      duracionSeg: duracionSeg,
+    );
+  }
+
+  @override
+  Future<AdjuntoSubido> subirImagen({
+    required String mensajeId,
+    required Uint8List bytes,
+    required String tipoMime,
+    required String nombreOriginal,
+  }) async {
+    vecesQueSubioImagen += 1;
+    idDeLaImagen = mensajeId;
+    if (fallaLaImagen) {
+      throw StateError('la subida de la imagen falló');
+    }
+    return AdjuntoSubido(
+      ruta: 'mensajes/$mensajeId/imagen.png',
+      bytes: bytes.length,
+      tipoMime: tipoMime,
+    );
+  }
+}
+
 class RepositorioEnvioFalso extends RepositorioEnvio {
   RepositorioEnvioFalso({this.conteo = 3});
 
