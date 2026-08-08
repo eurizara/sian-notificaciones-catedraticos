@@ -471,6 +471,37 @@ abstract final class Textos {
 
   static const String subiendoAdjuntos = 'Subiendo adjuntos…';
 
+  /// Qué va adjunto, dicho en la confirmación previa al envío.
+  ///
+  /// Enviar es irreversible, así que lo que se lleva el mensaje tiene que
+  /// verse ANTES, junto al número de destinatarios y por la misma razón: es la
+  /// última ocasión de notar que falta algo que se creía puesto.
+  static const String resumenSinAdjuntos = 'Va solo con texto.';
+  static String resumenAdjuntos({
+    required bool voz,
+    required bool imagen,
+    required int segundos,
+  }) {
+    if (voz && imagen) {
+      return 'Va con nota de voz (${segundos}s) e imagen.';
+    }
+    if (voz) {
+      return 'Va con nota de voz (${segundos}s).';
+    }
+    return 'Va con imagen.';
+  }
+
+  /// Una subida que falla dice CUÁL falló.
+  ///
+  /// «No se pudo enviar» deja a la persona sin saber si repetir el mensaje
+  /// entero o solo volver a adjuntar.
+  static const String falloSubidaVoz =
+      'No se pudo subir la nota de voz, así que no se envió nada. '
+      'Vuelve a intentarlo.';
+  static const String falloSubidaImagen =
+      'No se pudo subir la imagen, así que no se envió nada. '
+      'Vuelve a intentarlo o quita la imagen para enviar el resto.';
+
   // --- Grupos de destinatarios (RF-USR-03, RF-USR-04, DT-08) ----------------
   static const String grupoNuevo = 'Nuevo grupo';
   static const String grupoEditar = 'Editar grupo';

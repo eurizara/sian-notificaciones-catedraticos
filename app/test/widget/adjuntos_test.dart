@@ -410,6 +410,79 @@ void main() {
       expect(find.text(Textos.vozAdjunta(3)), findsOneWidget);
       expect(find.text('ruta.png'), findsOneWidget);
     });
+
+    // ────────────────────────────────────────────────────────────────────────
+    // LOS DOS, PERO PUESTOS DE UNO EN UNO.
+    // ────────────────────────────────────────────────────────────────────────
+    //
+    // La prueba de arriba entrega el panel con las dos cosas ya dentro, y así
+    // nunca ejecuta el momento en que se añade la segunda. Es justo ahí donde
+    // se puede perder la primera, porque cada camino tiene que acordarse de
+    // conservar lo que ya había.
+    //
+    // Además el panel se monta aquí bajo un padre que le devuelve el valor
+    // nuevo, como en la aplicación real. Con `alCambiar` guardando en una
+    // variable y nada más, `widget.adjuntos` se queda en el valor inicial y la
+    // prueba deja de mirar lo que mira la pantalla.
+    group('añadidos de uno en uno', () {
+      final ArchivoElegido png = ArchivoElegido(
+        bytes: pngMinimo,
+        tipoMime: 'image/png',
+        nombre: 'plano.png',
+      );
+
+      Widget montarConEstado() => MaterialApp(
+        theme: TemaSian.claro(),
+        home: Scaffold(
+          body: StatefulBuilder(
+            builder: (BuildContext _, StateSetter poner) => PanelAdjuntos(
+              adjuntos: ultimo,
+              alCambiar: (AdjuntosEnCurso a) => poner(() => ultimo = a),
+              crear: () => grabadora,
+              elegir: () async => png,
+            ),
+          ),
+        ),
+      );
+
+      testWidgets('imagen primero y voz después: quedan las dos', (
+        WidgetTester tester,
+      ) async {
+        grabadora.resultado = grabacion(segundos: 7);
+        await tester.pumpWidget(montarConEstado());
+        await tester.pump();
+
+        await tester.tap(find.text(Textos.imagenElegir));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text(Textos.vozGrabar));
+        await tester.pump();
+        await tester.tap(find.textContaining(Textos.vozDetener(0).split(' ')[0]));
+        await tester.pumpAndSettle();
+
+        expect(ultimo.voz, isNotNull, reason: 'la voz recién grabada');
+        expect(ultimo.imagen, isNotNull, reason: 'la imagen NO se pierde');
+      });
+
+      testWidgets('voz primero e imagen después: quedan las dos', (
+        WidgetTester tester,
+      ) async {
+        grabadora.resultado = grabacion(segundos: 7);
+        await tester.pumpWidget(montarConEstado());
+        await tester.pump();
+
+        await tester.tap(find.text(Textos.vozGrabar));
+        await tester.pump();
+        await tester.tap(find.textContaining(Textos.vozDetener(0).split(' ')[0]));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text(Textos.imagenElegir));
+        await tester.pumpAndSettle();
+
+        expect(ultimo.imagen, isNotNull, reason: 'la imagen recién elegida');
+        expect(ultimo.voz, isNotNull, reason: 'la voz NO se pierde');
+      });
+    });
   });
 
   group('peso legible', () {

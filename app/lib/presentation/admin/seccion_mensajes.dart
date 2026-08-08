@@ -23,6 +23,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/proveedores_grupos.dart';
 import '../../application/proveedores_programacion.dart';
 import '../../application/proveedores_sesion.dart';
+import '../../core/audio/grabacion.dart';
+import '../../core/audio/grabadora.dart';
+import '../../core/plataforma/selector_archivo.dart';
 import '../../domain/sesion.dart';
 import '../../infrastructure/firebase/repositorio_adjuntos.dart';
 import '../../infrastructure/firebase/repositorio_grupos.dart';
@@ -38,8 +41,32 @@ final Provider<RepositorioEnvio> repositorioEnvioProvider =
 final Provider<RepositorioAdjuntos> repositorioAdjuntosProvider =
     Provider<RepositorioAdjuntos>((Ref ref) => RepositorioAdjuntos());
 
+/// Las de verdad, con otro nombre porque los campos que las reciben ya ocupan
+/// el suyo.
+const Grabadora Function() crearGrabadoraReal = crearGrabadora;
+const Future<ArchivoElegido?> Function() elegirImagenReal = elegirImagen;
+
 class SeccionMensajes extends ConsumerStatefulWidget {
-  const SeccionMensajes({super.key});
+  const SeccionMensajes({
+    this.crearGrabadora = crearGrabadoraReal,
+    this.elegirImagen = elegirImagenReal,
+    super.key,
+  });
+
+  /// Cómo se graba y cómo se elige la imagen.
+  ///
+  /// ──────────────────────────────────────────────────────────────────────────
+  /// Se inyectan aquí, y no solo en el panel, para poder probar el envío
+  /// CON adjuntos de punta a punta.
+  /// ──────────────────────────────────────────────────────────────────────────
+  ///
+  /// Antes el panel recibía las suyas por omisión y no había forma de llegar a
+  /// ellas desde fuera: una prueba podía adjuntar cosas al panel aislado, o
+  /// pulsar enviar sin adjuntos, pero nunca las dos a la vez. Justo en ese
+  /// hueco vivía el defecto de que una imagen adjuntada junto a una nota de
+  /// voz no llegaba a subirse.
+  final Grabadora Function() crearGrabadora;
+  final Future<ArchivoElegido?> Function() elegirImagen;
 
   @override
   ConsumerState<SeccionMensajes> createState() => _SeccionMensajesState();
@@ -147,21 +174,42 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
         final RepositorioAdjuntos adj = ref.read(repositorioAdjuntosProvider);
         mensajeId = adj.reservarIdMensaje();
 
+        // Cada subida dice CUÁL falló. Con un «no se pudo enviar» a secas,
+        // quien lo recibe no sabe si repetir el mensaje entero o solo volver a
+        // adjuntar, y sobre todo no sabe que el fallo fue del adjunto.
+        //
+        // Y falla el envío completo a propósito: mandar el aviso sin la imagen
+        // que lo explica es peor que no mandarlo, porque nadie se entera de
+        // que falta.
         if (_adjuntos.voz != null) {
-          voz = await adj.subirVoz(
-            mensajeId: mensajeId,
-            bytes: _adjuntos.voz!.bytes,
-            tipoMime: _adjuntos.voz!.tipoMime,
-            duracionSeg: _adjuntos.voz!.duracionSeg,
-          );
+          try {
+            voz = await adj.subirVoz(
+              mensajeId: mensajeId,
+              bytes: _adjuntos.voz!.bytes,
+              tipoMime: _adjuntos.voz!.tipoMime,
+              duracionSeg: _adjuntos.voz!.duracionSeg,
+            );
+          } on Object catch (_) {
+            if (mounted) {
+              _avisar(Textos.falloSubidaVoz, error: true);
+            }
+            return;
+          }
         }
         if (_adjuntos.imagen != null) {
-          imagen = await adj.subirImagen(
-            mensajeId: mensajeId,
-            bytes: _adjuntos.imagen!.bytes,
-            tipoMime: _adjuntos.imagen!.tipoMime,
-            nombreOriginal: _adjuntos.imagen!.nombre,
-          );
+          try {
+            imagen = await adj.subirImagen(
+              mensajeId: mensajeId,
+              bytes: _adjuntos.imagen!.bytes,
+              tipoMime: _adjuntos.imagen!.tipoMime,
+              nombreOriginal: _adjuntos.imagen!.nombre,
+            );
+          } on Object catch (_) {
+            if (mounted) {
+              _avisar(Textos.falloSubidaImagen, error: true);
+            }
+            return;
+          }
         }
         if (mounted) {
           setState(() => _subiendo = false);
@@ -276,7 +324,11 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
   Future<bool> _confirmar(ConteoDestinatarios conteo) async {
     final bool primera = await _dialogo(
       titulo: Textos.confirmarEnvioTitulo,
-      contenido: _ResumenConteo(conteo: conteo, urgente: _urgente),
+      contenido: _ResumenConteo(
+        conteo: conteo,
+        urgente: _urgente,
+        adjuntos: _adjuntos,
+      ),
       botonConfirmar: Textos.botonConfirmarEnvio,
       peligroso: false,
     );
@@ -410,6 +462,8 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
                   adjuntos: _adjuntos,
                   alCambiar: (AdjuntosEnCurso a) =>
                       setState(() => _adjuntos = a),
+                  crear: widget.crearGrabadora,
+                  elegir: widget.elegirImagen,
                 ),
                 const SizedBox(height: 24),
 
@@ -607,10 +661,15 @@ class _Destinatarios extends ConsumerWidget {
 
 /// Lo que se ve antes de confirmar: el número real y quién queda fuera.
 class _ResumenConteo extends StatelessWidget {
-  const _ResumenConteo({required this.conteo, required this.urgente});
+  const _ResumenConteo({
+    required this.conteo,
+    required this.urgente,
+    required this.adjuntos,
+  });
 
   final ConteoDestinatarios conteo;
   final bool urgente;
+  final AdjuntosEnCurso adjuntos;
 
   @override
   Widget build(BuildContext context) {
@@ -626,6 +685,29 @@ class _ResumenConteo extends StatelessWidget {
             color: urgente ? ColoresSian.urgente : ColoresSian.primarioOscuro,
           ),
         ),
+        // ──────────────────────────────────────────────────────────────────
+        // QUÉ SE LLEVA EL MENSAJE, DICHO ANTES DE QUE SEA IRREVERSIBLE.
+        // ──────────────────────────────────────────────────────────────────
+        //
+        // Una imagen que se creía adjunta y no lo estaba no se descubre hasta
+        // que alguien la echa de menos en la bandeja, y para entonces ya no
+        // hay arreglo: RN-03 dice que un mensaje enviado no se edita. Aquí sí
+        // hay arreglo, porque todavía se puede cancelar.
+        //
+        // Va junto al número de destinatarios porque es la misma idea: lo que
+        // no se puede deshacer se enseña antes.
+        const SizedBox(height: 12),
+        Text(
+          adjuntos.hayAlgo
+              ? Textos.resumenAdjuntos(
+                  voz: adjuntos.voz != null,
+                  imagen: adjuntos.imagen != null,
+                  segundos: adjuntos.voz?.duracionSeg ?? 0,
+                )
+              : Textos.resumenSinAdjuntos,
+          style: tema.textTheme.bodyMedium,
+        ),
+
         // Quién queda fuera y por qué. «43 de 45» sin decir el motivo deja al
         // emisor sin saber si eso está bien o es un problema.
         if (conteo.excluidos > 0) ...<Widget>[

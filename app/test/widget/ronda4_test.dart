@@ -12,10 +12,13 @@
 /// confirmación de una urgente, y que cancelar no envíe nada.
 library;
 
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sian/application/proveedores_sesion.dart';
+import 'package:sian/core/audio/grabacion.dart';
+import 'package:sian/core/plataforma/archivo_elegido.dart';
 import 'package:sian/domain/rol.dart';
 import 'package:sian/domain/sesion.dart';
 import 'package:sian/infrastructure/firebase/repositorio_envio.dart';
@@ -24,6 +27,7 @@ import 'package:sian/presentation/shared/tema.dart';
 import 'package:sian/presentation/shared/textos.dart';
 
 import '../dobles/repositorios_falsos.dart';
+import 'adjuntos_test.dart' show GrabadoraFalsa, grabacion, pngMinimo;
 
 void main() {
   group('matriz de autorización · RF-MSG-02, documento 01 §2.2', () {
@@ -83,7 +87,13 @@ void main() {
   });
   tearDown(() => sesion.cerrar());
 
-  Widget montar({bool puedeUrgentes = true, Rol rol = Rol.administradora}) {
+  Widget montar({
+    bool puedeUrgentes = true,
+    Rol rol = Rol.administradora,
+    RepositorioAdjuntosFalso? adjuntos,
+    Grabadora Function()? grabadora,
+    Future<ArchivoElegido?> Function()? elegir,
+  }) {
     sesion.emitir(
       SesionActiva(
         usuarioDePrueba(rol: rol, puedeEmitirUrgentes: puedeUrgentes),
@@ -93,10 +103,17 @@ void main() {
       overrides: [
         repositorioSesionProvider.overrideWithValue(sesion),
         repositorioEnvioProvider.overrideWithValue(envio),
+        if (adjuntos != null)
+          repositorioAdjuntosProvider.overrideWithValue(adjuntos),
       ],
       child: MaterialApp(
         theme: TemaSian.claro(),
-        home: const Scaffold(body: SeccionMensajes()),
+        home: Scaffold(
+          body: SeccionMensajes(
+            crearGrabadora: grabadora ?? crearGrabadoraReal,
+            elegirImagen: elegir ?? elegirImagenReal,
+          ),
+        ),
       ),
     );
   }
@@ -427,6 +444,165 @@ void main() {
 
       expect(find.text(Textos.envioSinDestinatarios), findsOneWidget);
       expect(envio.vecesQueEnvio, 0);
+    });
+  });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // RF-MSG-05 · ADJUNTAR Y ENVIAR, EN LA MISMA PRUEBA.
+  // ──────────────────────────────────────────────────────────────────────────
+  //
+  // Que el panel conserve las dos cosas y que el envío sepa mandarlas son
+  // afirmaciones distintas, y por separado las dos eran ciertas mientras en la
+  // aplicación real solo salía el audio. Lo que faltaba era exactamente esto:
+  // adjuntar desde la pantalla de verdad y después pulsar enviar.
+  group('RF-MSG-05 · voz e imagen en el mismo envío', () {
+    late RepositorioAdjuntosFalso adjuntos;
+    late GrabadoraFalsa grabadora;
+
+    final ArchivoElegido png = ArchivoElegido(
+      bytes: pngMinimo,
+      tipoMime: 'image/png',
+      nombre: 'plano.png',
+    );
+
+    setUp(() {
+      adjuntos = RepositorioAdjuntosFalso();
+      grabadora = GrabadoraFalsa()..resultado = grabacion(segundos: 9);
+    });
+
+    Future<void> ponerImagen(WidgetTester tester) async {
+      await tester.ensureVisible(find.text(Textos.imagenElegir));
+      await tester.tap(find.text(Textos.imagenElegir));
+      await asentar(tester);
+    }
+
+    Future<void> ponerVoz(WidgetTester tester) async {
+      await tester.ensureVisible(find.text(Textos.vozGrabar));
+      await tester.tap(find.text(Textos.vozGrabar));
+      await asentar(tester);
+      await tester.tap(find.textContaining(RegExp('^Detener')));
+      await asentar(tester);
+    }
+
+    // Las cuatro combinaciones que se dan en la práctica. El orden importa
+    // porque cada camino tiene que conservar lo que ya estaba puesto, y lo
+    // urgente importa porque mete un segundo diálogo entre adjuntar y subir.
+    for (final bool urgente in <bool>[false, true]) {
+      for (final bool imagenPrimero in <bool>[true, false]) {
+        final String caso =
+            '${urgente ? 'urgente' : 'informativo'}, '
+            '${imagenPrimero ? 'imagen y luego voz' : 'voz y luego imagen'}';
+
+        testWidgets('$caso: se suben las dos y las dos llegan', (
+          WidgetTester tester,
+        ) async {
+          await tester.pumpWidget(
+            montar(
+              adjuntos: adjuntos,
+              grabadora: () => grabadora,
+              elegir: () async => png,
+            ),
+          );
+          await asentar(tester);
+          await escribir(tester, 'Con adjuntos', 'Cuerpo');
+
+          if (imagenPrimero) {
+            await ponerImagen(tester);
+            await ponerVoz(tester);
+          } else {
+            await ponerVoz(tester);
+            await ponerImagen(tester);
+          }
+
+          if (urgente) {
+            final Finder marca = find.text(Textos.tipoUrgente);
+            await tester.ensureVisible(marca);
+            await asentar(tester);
+            await tester.tap(marca);
+            await asentar(tester);
+          }
+
+          await pulsarEnviar(tester);
+          await tester.tap(find.text(Textos.botonConfirmarEnvio));
+          await asentar(tester);
+          if (urgente) {
+            await tester.tap(find.text(Textos.botonConfirmarUrgente));
+            await asentar(tester);
+          }
+
+          expect(adjuntos.vecesQueSubioVoz, 1, reason: 'la voz se sube');
+          expect(adjuntos.vecesQueSubioImagen, 1, reason: 'la imagen TAMBIÉN');
+          expect(envio.ultimaVoz, isNotNull);
+          expect(envio.ultimaImagen, isNotNull);
+
+          // Las dos contra el mismo identificador reservado: si cada una fuera
+          // por su lado, una quedaría en una carpeta sin mensaje.
+          expect(adjuntos.idDeLaVoz, adjuntos.idDeLaImagen);
+        });
+      }
+    }
+
+    testWidgets('la confirmación dice qué se lleva el mensaje', (
+      WidgetTester tester,
+    ) async {
+      // Es la última ocasión de ver que falta algo que se creía puesto: una
+      // vez enviado, RN-03 dice que no se edita.
+      await tester.pumpWidget(
+        montar(
+          adjuntos: adjuntos,
+          grabadora: () => grabadora,
+          elegir: () async => png,
+        ),
+      );
+      await asentar(tester);
+      await escribir(tester, 'Con adjuntos', 'Cuerpo');
+      await ponerImagen(tester);
+      await ponerVoz(tester);
+      await pulsarEnviar(tester);
+
+      expect(
+        find.text(
+          Textos.resumenAdjuntos(voz: true, imagen: true, segundos: 9),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('sin adjuntos también lo dice, para no dar por hecho', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(montar());
+      await asentar(tester);
+      await escribir(tester, 'Solo texto', 'Cuerpo');
+      await pulsarEnviar(tester);
+
+      expect(find.text(Textos.resumenSinAdjuntos), findsOneWidget);
+    });
+
+    testWidgets('si la imagen no sube, NO se envía a medias y se explica', (
+      WidgetTester tester,
+    ) async {
+      // Mandar el aviso sin la imagen que lo explica es peor que no mandarlo:
+      // nadie se entera de que falta.
+      adjuntos.fallaLaImagen = true;
+
+      await tester.pumpWidget(
+        montar(
+          adjuntos: adjuntos,
+          grabadora: () => grabadora,
+          elegir: () async => png,
+        ),
+      );
+      await asentar(tester);
+      await escribir(tester, 'Con adjuntos', 'Cuerpo');
+      await ponerImagen(tester);
+      await ponerVoz(tester);
+      await pulsarEnviar(tester);
+      await tester.tap(find.text(Textos.botonConfirmarEnvio));
+      await asentar(tester);
+
+      expect(envio.vecesQueEnvio, 0, reason: 'no se envía nada');
+      expect(find.text(Textos.falloSubidaImagen), findsOneWidget);
     });
   });
 }
