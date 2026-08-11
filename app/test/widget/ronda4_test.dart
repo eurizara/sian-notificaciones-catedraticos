@@ -12,6 +12,7 @@
 /// confirmación de una urgente, y que cancelar no envíe nada.
 library;
 
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -541,6 +542,90 @@ void main() {
         });
       }
     }
+
+    // ────────────────────────────────────────────────────────────────────────
+    // NADA SALE MIENTRAS HAY UN ADJUNTO A MEDIAS.
+    // ────────────────────────────────────────────────────────────────────────
+    //
+    // Una grabación no forma parte del mensaje hasta que se detiene. Enviar
+    // antes produce lo peor: el aviso sale SIN la nota de voz, sin error y sin
+    // aviso. Quien lo mandó cree que mandó audio; quien lo recibe ve texto
+    // suelto. Y RN-03 dice que un mensaje enviado no se edita.
+    testWidgets('grabando, el envío está bloqueado y el botón dice por qué', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        montar(
+          adjuntos: adjuntos,
+          grabadora: () => grabadora,
+          elegir: () async => png,
+        ),
+      );
+      await asentar(tester);
+      await escribir(tester, 'A medio grabar', 'Cuerpo');
+
+      await tester.ensureVisible(find.text(Textos.vozGrabar));
+      await tester.tap(find.text(Textos.vozGrabar));
+      await asentar(tester);
+
+      final Finder boton = find.widgetWithText(
+        FilledButton,
+        Textos.adjuntoAMedias,
+      );
+      expect(boton, findsOneWidget, reason: 'el botón explica el bloqueo');
+      expect(
+        tester.widget<FilledButton>(boton).onPressed,
+        isNull,
+        reason: 'y no se puede pulsar',
+      );
+      expect(envio.vecesQueConto, 0, reason: 'ni siquiera cuenta');
+    });
+
+    testWidgets('al detener la grabación, el envío se desbloquea', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        montar(
+          adjuntos: adjuntos,
+          grabadora: () => grabadora,
+          elegir: () async => png,
+        ),
+      );
+      await asentar(tester);
+      await escribir(tester, 'Ya grabado', 'Cuerpo');
+      await ponerVoz(tester);
+
+      expect(find.text(Textos.adjuntoAMedias), findsNothing);
+      await pulsarEnviar(tester);
+      expect(envio.vecesQueConto, 1);
+    });
+
+    testWidgets('mientras se lee la imagen elegida, tampoco se puede enviar', (
+      WidgetTester tester,
+    ) async {
+      // El selector del navegador tarda en entregar el archivo. En ese hueco
+      // la imagen todavía no es parte del mensaje.
+      final Completer<ArchivoElegido?> lectura = Completer<ArchivoElegido?>();
+
+      await tester.pumpWidget(
+        montar(
+          adjuntos: adjuntos,
+          grabadora: () => grabadora,
+          elegir: () => lectura.future,
+        ),
+      );
+      await asentar(tester);
+      await escribir(tester, 'Con imagen', 'Cuerpo');
+      await ponerImagen(tester);
+
+      expect(find.text(Textos.adjuntoAMedias), findsOneWidget);
+
+      lectura.complete(png);
+      await asentar(tester);
+
+      expect(find.text(Textos.adjuntoAMedias), findsNothing);
+      expect(find.text('plano.png'), findsOneWidget);
+    });
 
     testWidgets('la confirmación dice qué se lleva el mensaje', (
       WidgetTester tester,

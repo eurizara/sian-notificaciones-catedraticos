@@ -471,6 +471,12 @@ abstract final class Textos {
 
   static const String subiendoAdjuntos = 'Subiendo adjuntos…';
 
+  /// Por qué el botón de enviar no se puede pulsar ahora mismo.
+  ///
+  /// Lo dice el propio botón. Uno gris y mudo deja a la persona intentándolo
+  /// sin saber qué le falta.
+  static const String adjuntoAMedias = 'Termina el adjunto antes de enviar';
+
   /// Qué va adjunto, dicho en la confirmación previa al envío.
   ///
   /// Enviar es irreversible, así que lo que se lleva el mensaje tiene que

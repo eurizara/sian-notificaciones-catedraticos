@@ -37,6 +37,7 @@ class PanelAdjuntos extends StatefulWidget {
   const PanelAdjuntos({
     required this.adjuntos,
     required this.alCambiar,
+    this.alOcuparse,
     this.crear = crearGrabadora,
     this.elegir = elegirImagen,
     super.key,
@@ -44,6 +45,19 @@ class PanelAdjuntos extends StatefulWidget {
 
   final AdjuntosEnCurso adjuntos;
   final ValueChanged<AdjuntosEnCurso> alCambiar;
+
+  /// Avisa de que hay algo a medias: grabando, o leyendo la imagen elegida.
+  ///
+  /// ──────────────────────────────────────────────────────────────────────────
+  /// Lo que está a medias todavía NO está en `adjuntos`.
+  /// ──────────────────────────────────────────────────────────────────────────
+  ///
+  /// Una grabación solo pasa a formar parte del mensaje cuando se detiene, y
+  /// una imagen cuando termina de leerse. Si en ese hueco alguien pulsa
+  /// enviar, el aviso sale sin ella y nada lo advierte: la persona cree que
+  /// mandó una nota de voz y mandó texto suelto. Por eso el panel tiene que
+  /// decirlo hacia fuera, no basta con saberlo por dentro.
+  final ValueChanged<bool>? alOcuparse;
 
   /// Inyectables para poder probar sin navegador.
   final Grabadora Function() crear;
@@ -57,6 +71,21 @@ class _PanelAdjuntosState extends State<PanelAdjuntos> {
   late final Grabadora _grabadora = widget.crear();
   Timer? _cronometro;
   String? _error;
+
+  /// Hay una imagen elegida que todavía se está leyendo.
+  bool _leyendoImagen = false;
+
+  bool get _ocupado => _grabadora.grabando || _leyendoImagen;
+
+  /// Último valor anunciado, para no repetir el aviso en cada repintado.
+  bool _ultimoOcupado = false;
+
+  void _anunciarOcupacion() {
+    if (_ocupado != _ultimoOcupado) {
+      _ultimoOcupado = _ocupado;
+      widget.alOcuparse?.call(_ocupado);
+    }
+  }
 
   @override
   void dispose() {
@@ -95,7 +124,7 @@ class _PanelAdjuntosState extends State<PanelAdjuntos> {
         unawaited(_detener(porLimite: true));
       }
     });
-    setState(() {});
+    setState(_anunciarOcupacion);
   }
 
   Future<void> _detener({bool porLimite = false}) async {
@@ -108,6 +137,7 @@ class _PanelAdjuntosState extends State<PanelAdjuntos> {
     }
 
     setState(() {
+      _anunciarOcupacion();
       if (g == null) {
         _error = Textos.vozSinContenido;
         return;
@@ -125,8 +155,23 @@ class _PanelAdjuntosState extends State<PanelAdjuntos> {
   }
 
   Future<void> _elegirImagen() async {
-    setState(() => _error = null);
-    final ArchivoElegido? a = await widget.elegir();
+    setState(() {
+      _error = null;
+      _leyendoImagen = true;
+      _anunciarOcupacion();
+    });
+
+    final ArchivoElegido? a;
+    try {
+      a = await widget.elegir();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _leyendoImagen = false;
+          _anunciarOcupacion();
+        });
+      }
+    }
 
     if (a == null || !mounted) {
       return;
