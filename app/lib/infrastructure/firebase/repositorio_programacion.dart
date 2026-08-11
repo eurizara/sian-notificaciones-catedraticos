@@ -85,6 +85,7 @@ class MensajeProgramado {
     required this.requiereConfirmacion,
     required this.modoDestinatarios,
     required this.formato,
+    this.emisor = '',
     this.proximaOcurrencia,
     this.enviadoEn,
     this.nombresGrupos = const <String>[],
@@ -99,6 +100,16 @@ class MensajeProgramado {
   final String estado;
   final String modo;
   final String creadoPor;
+
+  /// Nombre de quien lo creó, desnormalizado en el propio mensaje.
+  ///
+  /// Una administradora no puede leer `usuarios` (documento 05, sección 5), así
+  /// que resolver el `creadoPor` desde la pantalla no es posible para todos los
+  /// roles. Guardarlo con el mensaje hace que la lista se lea igual sea quien
+  /// sea el que la mire.
+  ///
+  /// Vacío en los mensajes anteriores a que esto se guardara.
+  final String emisor;
 
   /// Si el aviso pedía confirmación de lectura (RF-MSG-12).
   ///
@@ -254,8 +265,7 @@ class RepositorioProgramacion {
     PatronRecurrencia? recurrencia,
     bool confirmacionUrgente = false,
     String? mensajeId,
-    AdjuntoSubido? voz,
-    AdjuntoSubido? imagen,
+    List<AdjuntoSubido> adjuntos = const <AdjuntoSubido>[],
   }) async {
     final HttpsCallableResult<Object?> r = await _fn
         .httpsCallable('programarMensaje')
@@ -272,10 +282,13 @@ class RepositorioProgramacion {
           // identificador reservado y el mensaje se creaba con OTRO: los
           // archivos quedaban huérfanos y el catedrático recibía solo texto.
           'mensajeId': ?mensajeId,
-          if (voz != null || imagen != null)
+          // Una lista, y en su orden: es el que eligió quien redactó y el que
+          // verá quien reciba.
+          if (adjuntos.isNotEmpty)
             'adjuntos': <String, Object?>{
-              if (voz != null) 'audio': voz.aMapa(),
-              if (imagen != null) 'imagen': imagen.aMapa(),
+              'lista': <Map<String, Object?>>[
+                for (final AdjuntoSubido a in adjuntos) a.aMapa(),
+              ],
             },
         });
 
@@ -347,6 +360,7 @@ class RepositorioProgramacion {
         estado: (x['estado'] as String?) ?? '',
         modo: (prog['modo'] as String?) ?? 'INMEDIATO',
         creadoPor: (x['creadoPor'] as String?) ?? '',
+        emisor: (x['creadoPorNombre'] as String?) ?? '',
         requiereConfirmacion: x['requiereConfirmacion'] == true,
         modoDestinatarios: (dest['modo'] as String?) ?? 'TODOS',
         // Nombres, no identificadores: mostrar cadenas aleatorias donde

@@ -120,8 +120,7 @@ class RepositorioEnvio {
     required Destinatarios destinatarios,
     bool confirmacionUrgente = false,
     String? mensajeId,
-    AdjuntoSubido? voz,
-    AdjuntoSubido? imagen,
+    List<AdjuntoSubido> adjuntos = const <AdjuntoSubido>[],
   }) async {
     final HttpsCallableResult<Object?> r = await _fn
         .httpsCallable('enviarInmediato')
@@ -133,10 +132,13 @@ class RepositorioEnvio {
           'destinatarios': destinatarios.aMapa(),
           'confirmacionUrgente': confirmacionUrgente,
           'mensajeId': ?mensajeId,
-          if (voz != null || imagen != null)
+          // Una lista, y en su orden: es el que eligió quien redactó y el que
+          // verá quien reciba.
+          if (adjuntos.isNotEmpty)
             'adjuntos': <String, Object?>{
-              if (voz != null) 'audio': voz.aMapa(),
-              if (imagen != null) 'imagen': imagen.aMapa(),
+              'lista': <Map<String, Object?>>[
+                for (final AdjuntoSubido a in adjuntos) a.aMapa(),
+              ],
             },
         });
 

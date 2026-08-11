@@ -50,9 +50,11 @@ MensajeRecibido mensaje({String? voz, String? imagen, int? duracion}) {
     tipo: 'INFORMATIVO',
     estado: 'ENTREGADO',
     requiereConfirmacion: false,
-    rutaVoz: voz,
-    duracionVozSeg: duracion,
-    rutaImagen: imagen,
+    adjuntos: <AdjuntoRecibido>[
+      if (voz != null)
+        AdjuntoRecibido(tipo: 'AUDIO', ruta: voz, duracionSeg: duracion),
+      if (imagen != null) AdjuntoRecibido(tipo: 'IMAGEN', ruta: imagen),
+    ],
   );
 }
 
@@ -108,6 +110,96 @@ void main() {
         home: BandejaDocente(usuario: usuarioDePrueba(rol: Rol.catedratico)),
       ),
     );
+
+    // ────────────────────────────────────────────────────────────────────────
+    // QUIÉN LO MANDA, SIN TENER QUE ABRIRLO.
+    // ────────────────────────────────────────────────────────────────────────
+    //
+    // Ante un aviso que pide salir del edificio, saber quién lo firma es parte
+    // de decidir si obedecerlo. El nombre viaja con el mensaje porque el
+    // receptor no puede leer `usuarios`.
+    testWidgets('el nombre de quien envía se ve sin desplegar', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        montar(<MensajeRecibido>[
+          const MensajeRecibido(
+            mensajeId: 'm1',
+            titulo: 'Simulacro',
+            cuerpo: 'Cuerpo',
+            tipo: 'INFORMATIVO',
+            estado: 'ENTREGADO',
+            requiereConfirmacion: false,
+            emisor: 'Lucía Araujo',
+          ),
+        ]),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(Textos.enviadoPor('Lucía Araujo')), findsOneWidget);
+    });
+
+    testWidgets('un mensaje antiguo, sin ese dato, no inventa un emisor', (
+      WidgetTester tester,
+    ) async {
+      // Los mensajes anteriores a que esto se guardara no tienen el nombre.
+      // Poner «Sistema» donde no consta quién firmó sería peor que callar.
+      await tester.pumpWidget(
+        montar(<MensajeRecibido>[mensaje()]),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('De '), findsNothing);
+      expect(find.text('Prueba'), findsOneWidget);
+    });
+
+    // ────────────────────────────────────────────────────────────────────────
+    // EL ORDEN DEL EMISOR SOBREVIVE HASTA AQUÍ.
+    // ────────────────────────────────────────────────────────────────────────
+    //
+    // Un plano, después la nota de voz que lo explica, después la foto del
+    // punto de reunión. Agruparlos por tipo al mostrarlos destruiría ese orden
+    // sin que nadie se diera cuenta: los adjuntos seguirían todos ahí.
+    testWidgets('se muestran en el orden en que se adjuntaron', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        montar(<MensajeRecibido>[
+          const MensajeRecibido(
+            mensajeId: 'm1',
+            titulo: 'Prueba',
+            cuerpo: 'Cuerpo',
+            tipo: 'INFORMATIVO',
+            estado: 'ENTREGADO',
+            requiereConfirmacion: false,
+            adjuntos: <AdjuntoRecibido>[
+              AdjuntoRecibido(tipo: 'IMAGEN', ruta: 'mensajes/m1/1-plano.png'),
+              AdjuntoRecibido(
+                tipo: 'AUDIO',
+                ruta: 'mensajes/m1/2-voz.webm',
+                duracionSeg: 8,
+              ),
+              AdjuntoRecibido(tipo: 'IMAGEN', ruta: 'mensajes/m1/3-punto.png'),
+            ],
+          ),
+        ]),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Prueba'));
+      await tester.pumpAndSettle();
+
+      final double yPrimera = tester
+          .getTopLeft(find.byType(ImagenAdjunta).first)
+          .dy;
+      final double yVoz = tester.getTopLeft(find.byType(NotaDeVoz)).dy;
+      final double ySegunda = tester
+          .getTopLeft(find.byType(ImagenAdjunta).last)
+          .dy;
+
+      expect(yPrimera, lessThan(yVoz), reason: 'la imagen iba primero');
+      expect(yVoz, lessThan(ySegunda), reason: 'la voz iba antes de la 2.ª');
+      expect(find.byType(ImagenAdjunta), findsNWidgets(2));
+    });
 
     testWidgets('una nota de voz aparece bajo el texto', (
       WidgetTester tester,

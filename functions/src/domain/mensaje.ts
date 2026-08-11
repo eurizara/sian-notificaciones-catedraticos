@@ -11,6 +11,8 @@ import { ErrorValidacion } from './errores';
 import { Cuerpo, Titulo } from './objetosDeValor';
 import {
   LIMITES,
+  normalizarAdjuntos,
+  type Adjunto,
   type Adjuntos,
   type Destinatarios,
   type EstadoMensaje,
@@ -67,49 +69,100 @@ export function prioridadDeDespacho(tipo: TipoMensaje): number {
   return tipo === 'URGENTE' ? 100 : 0;
 }
 
-function validarAdjuntos(adjuntos: Adjuntos): FormatoMensaje[] {
+/**
+ * Valida los adjuntos y deduce el formato del mensaje.
+ *
+ * ---------------------------------------------------------------------------
+ * Se valida la LISTA, en su orden, y las cuentas del conjunto.
+ * ---------------------------------------------------------------------------
+ *
+ * Cada pieza tiene su límite (RF-MSG-07, RF-MSG-08), pero además hay límites
+ * que solo existen mirando el conjunto: cuántas caben y cuánto pesan sumadas.
+ * Un aviso de 19 MB en una conexión mala no es un aviso.
+ */
+function validarAdjuntos(lista: readonly Adjunto[]): FormatoMensaje[] {
   const formato: FormatoMensaje[] = ['TEXTO'];
 
-  if (adjuntos.audio) {
-    const { bytes, duracionSeg, ruta } = adjuntos.audio;
-    exigir(typeof ruta === 'string' && ruta.length > 0, 'AUDIO_SIN_RUTA', 'La nota de voz no tiene ruta de almacenamiento.');
-    // RF-MSG-07
-    exigir(bytes > 0, 'AUDIO_VACIO', 'La nota de voz está vacía.');
-    exigir(
-      bytes <= LIMITES.AUDIO_MAX_BYTES,
-      'AUDIO_MUY_PESADO',
-      `La nota de voz no puede exceder ${LIMITES.AUDIO_MAX_BYTES / (1024 * 1024)} MB.`,
-      { bytes, maximo: LIMITES.AUDIO_MAX_BYTES },
-    );
-    exigir(
-      duracionSeg > 0 && duracionSeg <= LIMITES.AUDIO_MAX_SEGUNDOS,
-      'AUDIO_MUY_LARGO',
-      `La nota de voz no puede exceder ${LIMITES.AUDIO_MAX_SEGUNDOS} segundos.`,
-      { duracionSeg, maximo: LIMITES.AUDIO_MAX_SEGUNDOS },
-    );
-    formato.push('VOZ');
-  }
+  let audios = 0;
+  let imagenes = 0;
+  let total = 0;
 
-  if (adjuntos.imagen) {
-    const { bytes, tipoMime, ruta } = adjuntos.imagen;
-    exigir(typeof ruta === 'string' && ruta.length > 0, 'IMAGEN_SIN_RUTA', 'La imagen no tiene ruta de almacenamiento.');
-    // RF-MSG-08
-    exigir(bytes > 0, 'IMAGEN_VACIA', 'La imagen está vacía.');
+  for (const [i, a] of lista.entries()) {
+    // El índice viaja en el detalle: con cinco adjuntos, «la imagen está
+    // vacía» no dice cuál, y el emisor tiene que adivinar cuál quitar.
+    const donde = { posicion: i + 1 };
+
     exigir(
-      bytes <= LIMITES.IMAGEN_MAX_BYTES,
+      typeof a.ruta === 'string' && a.ruta.length > 0,
+      'ADJUNTO_SIN_RUTA',
+      `El adjunto ${i + 1} no tiene ruta de almacenamiento.`,
+      donde,
+    );
+    exigir(a.bytes > 0, 'ADJUNTO_VACIO', `El adjunto ${i + 1} está vacío.`, donde);
+
+    total += a.bytes;
+
+    if (a.tipo === 'AUDIO') {
+      audios += 1;
+      // RF-MSG-07
+      exigir(
+        a.bytes <= LIMITES.AUDIO_MAX_BYTES,
+        'AUDIO_MUY_PESADO',
+        `La nota de voz no puede exceder ${LIMITES.AUDIO_MAX_BYTES / (1024 * 1024)} MB.`,
+        { ...donde, bytes: a.bytes, maximo: LIMITES.AUDIO_MAX_BYTES },
+      );
+      const duracionSeg = a.duracionSeg ?? 0;
+      exigir(
+        duracionSeg > 0 && duracionSeg <= LIMITES.AUDIO_MAX_SEGUNDOS,
+        'AUDIO_MUY_LARGO',
+        `La nota de voz no puede exceder ${LIMITES.AUDIO_MAX_SEGUNDOS} segundos.`,
+        { ...donde, duracionSeg, maximo: LIMITES.AUDIO_MAX_SEGUNDOS },
+      );
+      continue;
+    }
+
+    imagenes += 1;
+    // RF-MSG-08
+    exigir(
+      a.bytes <= LIMITES.IMAGEN_MAX_BYTES,
       'IMAGEN_MUY_PESADA',
       `La imagen no puede exceder ${LIMITES.IMAGEN_MAX_BYTES / (1024 * 1024)} MB.`,
-      { bytes, maximo: LIMITES.IMAGEN_MAX_BYTES },
+      { ...donde, bytes: a.bytes, maximo: LIMITES.IMAGEN_MAX_BYTES },
     );
     exigir(
-      LIMITES.IMAGEN_MIMES.includes(tipoMime),
+      LIMITES.IMAGEN_MIMES.includes(a.tipoMime),
       'IMAGEN_FORMATO_NO_ADMITIDO',
-      `Formato de imagen no admitido: «${tipoMime}». Se admiten JPEG, PNG y WebP.`,
-      { tipoMime },
+      `Formato de imagen no admitido: «${a.tipoMime}». Se admiten JPEG, PNG y WebP.`,
+      { ...donde, tipoMime: a.tipoMime },
     );
-    formato.push('IMAGEN');
   }
 
+  exigir(
+    audios <= LIMITES.MAX_AUDIOS,
+    'DEMASIADAS_NOTAS_DE_VOZ',
+    `Un mensaje admite hasta ${LIMITES.MAX_AUDIOS} notas de voz.`,
+    { audios, maximo: LIMITES.MAX_AUDIOS },
+  );
+  exigir(
+    imagenes <= LIMITES.MAX_IMAGENES,
+    'DEMASIADAS_IMAGENES',
+    `Un mensaje admite hasta ${LIMITES.MAX_IMAGENES} imágenes.`,
+    { imagenes, maximo: LIMITES.MAX_IMAGENES },
+  );
+  exigir(
+    total <= LIMITES.ADJUNTOS_MAX_BYTES_TOTAL,
+    'ADJUNTOS_MUY_PESADOS',
+    `Los adjuntos suman más de ${LIMITES.ADJUNTOS_MAX_BYTES_TOTAL / (1024 * 1024)} MB. ` +
+      'Quita alguno: con una conexión mala, un mensaje así no llega.',
+    { total, maximo: LIMITES.ADJUNTOS_MAX_BYTES_TOTAL },
+  );
+
+  if (audios > 0) {
+    formato.push('VOZ');
+  }
+  if (imagenes > 0) {
+    formato.push('IMAGEN');
+  }
   return formato;
 }
 
@@ -207,8 +260,11 @@ export const MensajeFactory = {
       'Todo mensaje debe registrar quién lo creó (RF-BIT-02).',
     );
 
-    const adjuntos = entrada.adjuntos ?? {};
-    const formato = validarAdjuntos(adjuntos);
+    // Se guarda SIEMPRE en la forma nueva, venga como venga. Que convivan dos
+    // maneras de escribir lo mismo garantiza que tarde o temprano una de las
+    // dos deje de leerse en algún sitio.
+    const lista = normalizarAdjuntos(entrada.adjuntos);
+    const formato = validarAdjuntos(lista);
     validarDestinatarios(entrada.destinatarios);
     validarProgramacion(entrada.programacion);
 
@@ -217,7 +273,7 @@ export const MensajeFactory = {
       cuerpo: cuerpo.valor,
       tipo: entrada.tipo,
       formato: Object.freeze(formato),
-      adjuntos,
+      adjuntos: Object.freeze({ lista: Object.freeze(lista) }),
       requiereConfirmacion: entrada.requiereConfirmacion ?? false,
       estado: 'BORRADOR' as const,
       destinatarios: entrada.destinatarios,

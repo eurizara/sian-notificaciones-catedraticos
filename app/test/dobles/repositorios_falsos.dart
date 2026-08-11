@@ -346,6 +346,7 @@ class RepositorioAdjuntosFalso extends RepositorioAdjuntos {
     required Uint8List bytes,
     required String tipoMime,
     required int duracionSeg,
+    int orden = 1,
   }) async {
     vecesQueSubioVoz += 1;
     idDeLaVoz = mensajeId;
@@ -353,7 +354,8 @@ class RepositorioAdjuntosFalso extends RepositorioAdjuntos {
       throw StateError('la subida de la voz falló');
     }
     return AdjuntoSubido(
-      ruta: 'mensajes/$mensajeId/voz.webm',
+      tipo: 'AUDIO',
+      ruta: 'mensajes/$mensajeId/$orden-voz.webm',
       bytes: bytes.length,
       tipoMime: tipoMime,
       duracionSeg: duracionSeg,
@@ -366,6 +368,7 @@ class RepositorioAdjuntosFalso extends RepositorioAdjuntos {
     required Uint8List bytes,
     required String tipoMime,
     required String nombreOriginal,
+    int orden = 1,
   }) async {
     vecesQueSubioImagen += 1;
     idDeLaImagen = mensajeId;
@@ -373,7 +376,8 @@ class RepositorioAdjuntosFalso extends RepositorioAdjuntos {
       throw StateError('la subida de la imagen falló');
     }
     return AdjuntoSubido(
-      ruta: 'mensajes/$mensajeId/imagen.png',
+      tipo: 'IMAGEN',
+      ruta: 'mensajes/$mensajeId/$orden-imagen.png',
       bytes: bytes.length,
       tipoMime: tipoMime,
     );
@@ -393,8 +397,15 @@ class RepositorioEnvioFalso extends RepositorioEnvio {
   bool? ultimaUrgente;
   bool? ultimaConfirmacionUrgente;
   String? ultimoTitulo;
-  AdjuntoSubido? ultimaVoz;
-  AdjuntoSubido? ultimaImagen;
+  /// Lo que se mandó, en el orden en que se mandó.
+  List<AdjuntoSubido> ultimosAdjuntos = const <AdjuntoSubido>[];
+
+  AdjuntoSubido? get ultimaVoz => ultimosAdjuntos
+      .where((AdjuntoSubido a) => a.tipo == 'AUDIO')
+      .firstOrNull;
+  AdjuntoSubido? get ultimaImagen => ultimosAdjuntos
+      .where((AdjuntoSubido a) => a.tipo == 'IMAGEN')
+      .firstOrNull;
   ResultadoEnvio? resultado;
 
   @override
@@ -416,12 +427,10 @@ class RepositorioEnvioFalso extends RepositorioEnvio {
     required Destinatarios destinatarios,
     bool confirmacionUrgente = false,
     String? mensajeId,
-    AdjuntoSubido? voz,
-    AdjuntoSubido? imagen,
+    List<AdjuntoSubido> adjuntos = const <AdjuntoSubido>[],
   }) async {
     vecesQueEnvio += 1;
-    ultimaVoz = voz;
-    ultimaImagen = imagen;
+    ultimosAdjuntos = adjuntos;
     ultimaUrgente = urgente;
     ultimaConfirmacionUrgente = confirmacionUrgente;
     ultimoTitulo = titulo;

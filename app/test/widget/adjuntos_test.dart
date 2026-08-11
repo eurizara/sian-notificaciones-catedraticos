@@ -296,8 +296,8 @@ void main() {
       await tester.tap(find.text(Textos.vozDetener(0)));
       await tester.pump();
 
-      expect(ultimo.voz, isNotNull);
-      expect(ultimo.voz!.duracionSeg, 8);
+      expect(ultimo.voces, 1);
+      expect(ultimo.piezas.whereType<VozEnCurso>().first.grabacion.duracionSeg, 8);
     });
 
     testWidgets('una grabación vacía se explica y no se adjunta', (
@@ -313,7 +313,7 @@ void main() {
       await tester.pump();
 
       expect(find.text(Textos.vozSinContenido), findsOneWidget);
-      expect(ultimo.voz, isNull);
+      expect(ultimo.voces, 0);
     });
 
     testWidgets('cerrar la pantalla SUELTA el micrófono', (
@@ -348,8 +348,8 @@ void main() {
       await tester.tap(find.text(Textos.imagenElegir));
       await tester.pump();
 
-      expect(ultimo.imagen, isNotNull);
-      expect(ultimo.imagen!.nombre, 'plano.png');
+      expect(ultimo.imagenes, 1);
+      expect(ultimo.piezas.whereType<ImagenEnCurso>().first.archivo.nombre, 'plano.png');
     });
 
     testWidgets('una imagen inadmisible se rechaza con su motivo', (
@@ -371,14 +371,14 @@ void main() {
         find.text(Textos.explicarRechazoImagen('FORMATO')),
         findsOneWidget,
       );
-      expect(ultimo.imagen, isNull);
+      expect(ultimo.imagenes, 0);
     });
 
     testWidgets('se puede quitar un adjunto ya puesto', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        montar(adjuntos: AdjuntosEnCurso(voz: grabacion(segundos: 12))),
+        montar(adjuntos: AdjuntosEnCurso(<AdjuntoEnCurso>[VozEnCurso(grabacion(segundos: 12))])),
       );
       await tester.pump();
 
@@ -387,7 +387,7 @@ void main() {
       await tester.tap(find.byIcon(Icons.close));
       await tester.pump();
 
-      expect(ultimo.voz, isNull);
+      expect(ultimo.voces, 0);
     });
 
     testWidgets('voz e imagen pueden ir juntas (RF-MSG-05)', (
@@ -395,14 +395,16 @@ void main() {
     ) async {
       await tester.pumpWidget(
         montar(
-          adjuntos: AdjuntosEnCurso(
-            voz: grabacion(segundos: 3),
-            imagen: ArchivoElegido(
-              bytes: pngMinimo,
-              tipoMime: 'image/png',
-              nombre: 'ruta.png',
+          adjuntos: AdjuntosEnCurso(<AdjuntoEnCurso>[
+            VozEnCurso(grabacion(segundos: 3)),
+            ImagenEnCurso(
+              ArchivoElegido(
+                bytes: pngMinimo,
+                tipoMime: 'image/png',
+                nombre: 'ruta.png',
+              ),
             ),
-          ),
+          ]),
         ),
       );
       await tester.pump();
@@ -460,8 +462,8 @@ void main() {
         await tester.tap(find.textContaining(Textos.vozDetener(0).split(' ')[0]));
         await tester.pumpAndSettle();
 
-        expect(ultimo.voz, isNotNull, reason: 'la voz recién grabada');
-        expect(ultimo.imagen, isNotNull, reason: 'la imagen NO se pierde');
+        expect(ultimo.voces, 1, reason: 'la voz recién grabada');
+        expect(ultimo.imagenes, 1, reason: 'la imagen NO se pierde');
       });
 
       testWidgets('voz primero e imagen después: quedan las dos', (
@@ -479,8 +481,8 @@ void main() {
         await tester.tap(find.text(Textos.imagenElegir));
         await tester.pumpAndSettle();
 
-        expect(ultimo.imagen, isNotNull, reason: 'la imagen recién elegida');
-        expect(ultimo.voz, isNotNull, reason: 'la voz NO se pierde');
+        expect(ultimo.imagenes, 1, reason: 'la imagen recién elegida');
+        expect(ultimo.voces, 1, reason: 'la voz NO se pierde');
       });
     });
   });

@@ -185,14 +185,22 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
       // identificador reservado: las reglas de Storage dependen de la ruta
       // `mensajes/{id}/…`, y el mensaje todavía no existe.
       String? mensajeId;
-      AdjuntoSubido? voz;
-      AdjuntoSubido? imagen;
+      final List<AdjuntoSubido> subidos = <AdjuntoSubido>[];
 
       if (_adjuntos.hayAlgo) {
         setState(() => _subiendo = true);
         final RepositorioAdjuntos adj = ref.read(repositorioAdjuntosProvider);
         mensajeId = adj.reservarIdMensaje();
 
+        // ────────────────────────────────────────────────────────────────────
+        // SE SUBEN EN EL ORDEN EN QUE SE ADJUNTARON, Y SE MANDAN EN ESE ORDEN.
+        // ────────────────────────────────────────────────────────────────────
+        //
+        // Es un `for` secuencial y no subidas en paralelo. Ir en paralelo sería
+        // más rápido, pero el orden de llegada lo decidiría la red: la imagen
+        // pequeña terminaría antes que la nota de voz que iba delante, y el
+        // receptor las vería al revés de como se pusieron.
+        //
         // Cada subida dice CUÁL falló. Con un «no se pudo enviar» a secas,
         // quien lo recibe no sabe si repetir el mensaje entero o solo volver a
         // adjuntar, y sobre todo no sabe que el fallo fue del adjunto.
@@ -200,32 +208,35 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
         // Y falla el envío completo a propósito: mandar el aviso sin la imagen
         // que lo explica es peor que no mandarlo, porque nadie se entera de
         // que falta.
-        if (_adjuntos.voz != null) {
+        for (int i = 0; i < _adjuntos.piezas.length; i++) {
+          final AdjuntoEnCurso pieza = _adjuntos.piezas[i];
           try {
-            voz = await adj.subirVoz(
-              mensajeId: mensajeId,
-              bytes: _adjuntos.voz!.bytes,
-              tipoMime: _adjuntos.voz!.tipoMime,
-              duracionSeg: _adjuntos.voz!.duracionSeg,
+            subidos.add(
+              switch (pieza) {
+                final VozEnCurso v => await adj.subirVoz(
+                  mensajeId: mensajeId,
+                  bytes: v.grabacion.bytes,
+                  tipoMime: v.grabacion.tipoMime,
+                  duracionSeg: v.grabacion.duracionSeg,
+                  orden: i + 1,
+                ),
+                final ImagenEnCurso im => await adj.subirImagen(
+                  mensajeId: mensajeId,
+                  bytes: im.archivo.bytes,
+                  tipoMime: im.archivo.tipoMime,
+                  nombreOriginal: im.archivo.nombre,
+                  orden: i + 1,
+                ),
+              },
             );
           } on Object catch (_) {
             if (mounted) {
-              _avisar(Textos.falloSubidaVoz, error: true);
-            }
-            return;
-          }
-        }
-        if (_adjuntos.imagen != null) {
-          try {
-            imagen = await adj.subirImagen(
-              mensajeId: mensajeId,
-              bytes: _adjuntos.imagen!.bytes,
-              tipoMime: _adjuntos.imagen!.tipoMime,
-              nombreOriginal: _adjuntos.imagen!.nombre,
-            );
-          } on Object catch (_) {
-            if (mounted) {
-              _avisar(Textos.falloSubidaImagen, error: true);
+              _avisar(
+                pieza is VozEnCurso
+                    ? Textos.falloSubidaVoz
+                    : Textos.falloSubidaImagen,
+                error: true,
+              );
             }
             return;
           }
@@ -249,8 +260,7 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
               recurrencia: _cuando.patron,
               confirmacionUrgente: _urgente,
               mensajeId: mensajeId,
-              voz: voz,
-              imagen: imagen,
+              adjuntos: subidos,
             );
 
         if (!mounted) {
@@ -276,8 +286,7 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
             // Solo llega en true si la persona pasó por el segundo diálogo.
             confirmacionUrgente: _urgente,
             mensajeId: mensajeId,
-            voz: voz,
-            imagen: imagen,
+            adjuntos: subidos,
           );
 
       if (!mounted) {
@@ -726,9 +735,8 @@ class _ResumenConteo extends StatelessWidget {
         Text(
           adjuntos.hayAlgo
               ? Textos.resumenAdjuntos(
-                  voz: adjuntos.voz != null,
-                  imagen: adjuntos.imagen != null,
-                  segundos: adjuntos.voz?.duracionSeg ?? 0,
+                  voces: adjuntos.voces,
+                  imagenes: adjuntos.imagenes,
                 )
               : Textos.resumenSinAdjuntos,
           style: tema.textTheme.bodyMedium,
