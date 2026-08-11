@@ -26,10 +26,17 @@
         ]
       },
       {
-        "//": "Estas sí llevan versión en la ruta y pueden cachearse a gusto.",
-        "source": "**/@(canvaskit|assets)/**",
+        "//": "assets/ NO lleva huella de contenido, y su contenido SÍ cambia. El caso que lo demostró: la fuente de iconos se recorta en cada compilación para dejar solo los iconos que la aplicación usa, y se sirve siempre como assets/fonts/MaterialIcons-Regular.otf. Al añadir el botón de recargar, quien ya tenía la fuente anterior guardada seguía usándola durante una semana: el botón existía, respondía y mostraba su ayuda emergente, pero su icono NO SE DIBUJABA. Un fallo así no da ningún error y parece que la función no se desplegó. Se revalida siempre: son 1,5 MB de archivos pequeños y una revalidación sin cambios responde 304 sin cuerpo.",
+        "source": "**/assets/**",
         "headers": [
-          { "key": "Cache-Control", "value": "public, max-age=604800" }
+          { "key": "Cache-Control", "value": "no-cache" }
+        ]
+      },
+      {
+        "//": "CanvasKit son 37 MB y solo cambia al actualizar el SDK de Flutter, así que aquí sí compensa guardarlo. Un día, y no una semana, para que una actualización del motor no conviva una semana entera con un paquete compilado contra otra versión.",
+        "source": "**/canvaskit/**",
+        "headers": [
+          { "key": "Cache-Control", "value": "public, max-age=86400" }
         ]
       }
     ]
