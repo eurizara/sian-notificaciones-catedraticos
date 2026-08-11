@@ -112,6 +112,18 @@
   th,td{border:1px solid var(--borde); padding:9px 12px; text-align:left; vertical-align:top}
   th{background:#F2F5F9; font-weight:600}
 
+  figure{margin:22px 0}
+  figure img{
+    display:block; max-width:100%; height:auto;
+    border:1px solid var(--borde); border-radius:10px;
+    box-shadow:0 2px 10px rgba(20,40,70,.07);
+  }
+  figure.movil img{max-width:330px; margin:0 auto}
+  figcaption{
+    color:var(--suave); font-size:14.5px; margin-top:8px; text-align:center;
+    max-width:640px; margin-left:auto; margin-right:auto;
+  }
+
   .pendiente{
     border:2px dashed var(--borde); border-radius:10px; padding:16px 18px;
     color:var(--suave); font-size:15px; background:#FBFCFE; margin:16px 0;
@@ -222,6 +234,16 @@
 
   <p>Abre <a href="https://sian-umg-bdm-dev.web.app"><code>sian-umg-bdm-dev.web.app</code></a>
   y verás la pantalla de inicio de sesión. Hay dos formas de entrar.</p>
+  <figure>
+    <img src="img/ingreso-escritorio.png" alt="La pantalla de inicio de sesión en una computadora." loading="lazy">
+    <figcaption>La pantalla de inicio de sesión en una computadora.</figcaption>
+  </figure>
+
+  <figure class="movil">
+    <img src="img/ingreso-movil.png" alt="La misma pantalla en un teléfono." loading="lazy">
+    <figcaption>La misma pantalla en un teléfono.</figcaption>
+  </figure>
+
 
   <h3>Opción 1 · Entrar con Google (recomendada)</h3>
   <ol class="pasos">
@@ -322,8 +344,17 @@
   software</em>. Con una versión anterior podrás leer los mensajes dentro de la
   aplicación, pero el teléfono no te avisará.</p>
 
+  <h3>La aplicación te guía sola</h3>
+  <p>Si entras desde un iPhone sin haberla instalado, SIAN muestra estos mismos
+  pasos antes que nada:</p>
+  <figure class="movil">
+    <img src="img/instructivo-ios.png" alt="Las instrucciones que aparecen solas en iPhone." loading="lazy">
+    <figcaption>Las instrucciones que aparecen solas en iPhone.</figcaption>
+  </figure>
+
   <div class="pendiente">Pendiente: captura del menú Compartir de Safari con la
-  opción «Añadir a pantalla de inicio» resaltada.</div>
+  opción «Añadir a pantalla de inicio» resaltada. Es un menú del sistema
+  operativo y no de la aplicación.</div>
 </section>
 
 <!-- ================= INSTALAR ANDROID ================= -->
@@ -351,7 +382,7 @@
   notificaciones se comportan igual que las de cualquier otra aplicación.</p>
 
   <div class="pendiente">Pendiente: captura del aviso «Instalar aplicación» de
-  Chrome en Android.</div>
+  Chrome en Android. Lo dibuja el navegador, no la aplicación.</div>
 </section>
 
 <!-- ================= INSTALAR ESCRITORIO ================= -->
@@ -437,6 +468,11 @@
   <p>Al entrar ves tus mensajes, del más reciente al más antiguo. Cada uno se
   muestra plegado: título, un resumen, el estado, la fecha y quién lo envió.
   Toca cualquiera para desplegarlo.</p>
+  <figure class="movil">
+    <img src="img/bandeja-movil.png" alt="La bandeja en un teléfono. Fíjate en las franjas de color de la izquierda." loading="lazy">
+    <figcaption>La bandeja en un teléfono. Fíjate en las franjas de color de la izquierda.</figcaption>
+  </figure>
+
 
   <h3>Los colores no son decoración</h3>
   <p>Una franja de color a la izquierda te dice qué te falta por atender, sin
@@ -455,6 +491,12 @@
         <td>Ya leído o ya confirmado. Nada pendiente.</td></tr>
   </table>
 
+
+  <figure>
+    <img src="img/bandeja-escritorio.png" alt="La misma bandeja en una computadora." loading="lazy">
+    <figcaption>La misma bandeja en una computadora.</figcaption>
+  </figure>
+
   <h3>Abrir no es lo mismo que confirmar</h3>
   <div class="aviso">
     <strong>La diferencia importa</strong>
@@ -466,6 +508,11 @@
 
   <p>Cuando un aviso lo exige, al desplegarlo aparece el botón
   <strong>Confirmar lectura</strong>. Púlsalo cuando lo hayas leído de verdad.</p>
+  <figure class="movil">
+    <img src="img/mensaje-desplegado.png" alt="Un mensaje desplegado, con su botón de confirmar." loading="lazy">
+    <figcaption>Un mensaje desplegado, con su botón de confirmar.</figcaption>
+  </figure>
+
 
   <div class="aviso ojo">
     <strong>Confirmar no se deshace</strong>
@@ -488,8 +535,7 @@
   <p>El buscador de arriba filtra por palabras del título y del mensaje. Puedes
   escribir varias en cualquier orden, y no hace falta poner tildes.</p>
 
-  <div class="pendiente">Pendiente: capturas de la bandeja con los tres
-  colores, y del detalle de un mensaje con el botón de confirmar.</div>
+
 </section>
 
 <!-- ================= ADMINISTRADOR ================= -->
@@ -514,6 +560,12 @@
     <li>Elige los <strong>destinatarios</strong>: todos, o grupos concretos.</li>
     <li>Pulsa <strong>Enviar ahora</strong>.</li>
   </ol>
+
+
+  <figure>
+    <img src="img/redactar.png" alt="La pantalla de redacción, con el contador de caracteres y la elección de cuándo enviar." loading="lazy">
+    <figcaption>La pantalla de redacción, con el contador de caracteres y la elección de cuándo enviar.</figcaption>
+  </figure>
 
   <div class="aviso critico">
     <strong>Enviar no se puede deshacer</strong>
@@ -540,6 +592,12 @@
         admiten JPEG, PNG y WebP, hasta 5 MB cada una.</li>
   </ul>
 
+
+  <figure>
+    <img src="img/adjuntos.png" alt="Dos adjuntos ya puestos. El número indica en qué orden los verá quien reciba." loading="lazy">
+    <figcaption>Dos adjuntos ya puestos. El número indica en qué orden los verá quien reciba.</figcaption>
+  </figure>
+
   <div class="aviso">
     <strong>El orden en que los adjuntas es el orden en que se ven</strong>
     Si adjuntas un plano, luego la nota de voz que lo explica y luego la foto
@@ -561,6 +619,11 @@
   <p>En <strong>Programación</strong> ves lo que está pendiente de salir y
   puedes <strong>suspender</strong> (se deshace), <strong>reanudar</strong> o
   <strong>cancelar</strong> (no se deshace).</p>
+  <figure>
+    <img src="img/programados.png" alt="Mensajes programados y ya enviados, con su próxima salida." loading="lazy">
+    <figcaption>Mensajes programados y ya enviados, con su próxima salida.</figcaption>
+  </figure>
+
 
   <h3>Grupos</h3>
   <p>En <strong>Grupos</strong> creas conjuntos de destinatarios —por carrera,
@@ -572,14 +635,19 @@
   recibieron, cuántos lo abrieron, cuántos confirmaron y —cuando el aviso pedía
   confirmación— <strong>quiénes faltan por confirmar, con nombre</strong>.</p>
 
+
+  <figure>
+    <img src="img/entregas.png" alt="Entregas: cuántos recibieron, abrieron y confirmaron cada aviso." loading="lazy">
+    <figcaption>Entregas: cuántos recibieron, abrieron y confirmaron cada aviso.</figcaption>
+  </figure>
+
   <div class="aviso">
     <strong>Los avisos sin confirmación se miden por entrega</strong>
     Si un mensaje nunca pidió confirmación, no aparece «faltan N por
     confirmar»: se mide si llegó, que es lo único que tenía que pasar.
   </div>
 
-  <div class="pendiente">Pendiente: capturas de la pantalla de redacción, del
-  panel de adjuntos, del diálogo de confirmación y de Entregas.</div>
+
 </section>
 
 <!-- ================= COORDINADOR ================= -->
