@@ -18,8 +18,12 @@
   html{scroll-behavior:smooth}
   body{
     margin:0; background:var(--fondo); color:var(--texto);
+    /* Nada empuja la página de lado. En un celular, un documento que se
+       desplaza en horizontal se vuelve muy difícil de leer: se pierde el
+       margen izquierdo y hay que ir y venir con cada línea. */
+    overflow-x:hidden;
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-    line-height:1.65; font-size:17px;
+    line-height:1.75; font-size:18px;
   }
 
   /* ---- Barra superior ---- */
@@ -96,7 +100,7 @@
   .aviso.critico{border-color:var(--urgente); background:#FCEEED}
   .aviso.ojo{border-color:var(--dorado); background:#FBF5E6}
   .aviso.bien{border-color:var(--confirmado); background:#EDF6EE}
-  .aviso strong{display:block; margin-bottom:4px}
+  .aviso>strong:first-child{display:block; margin-bottom:4px}
 
   /* Etiquetas de plataforma */
   .plataformas{display:flex; flex-wrap:wrap; gap:8px; margin:18px 0 4px}
@@ -108,7 +112,12 @@
   .etiqueta.android{background:#E6F4EA;color:#1E6B33}
   .etiqueta.escritorio{background:#EAF0FB;color:#274B8A}
 
-  table{border-collapse:collapse; width:100%; margin:18px 0; font-size:16px}
+  /* Las tablas van dentro de su propio marco desplazable: son lo único que no
+     se puede encoger sin volverse ilegible, y si empujaran la página se
+     llevarían por delante todo lo demás. */
+  .tabla{overflow-x:auto; margin:18px 0; -webkit-overflow-scrolling:touch}
+  table{border-collapse:collapse; width:100%; margin:0; font-size:16px;
+    min-width:420px}
   th,td{border:1px solid var(--borde); padding:9px 12px; text-align:left; vertical-align:top}
   th{background:#F2F5F9; font-weight:600}
 
@@ -119,6 +128,7 @@
     box-shadow:0 2px 10px rgba(20,40,70,.07);
   }
   figure.movil img{max-width:330px; margin:0 auto}
+  figure.recorte img{max-width:560px; margin:0 auto}
   figcaption{
     color:var(--suave); font-size:14.5px; margin-top:8px; text-align:center;
     max-width:640px; margin-left:auto; margin-right:auto;
@@ -131,19 +141,31 @@
 
   footer{max-width:1240px;margin:0 auto;padding:0 28px 60px;color:var(--suave);font-size:14px}
 
+  @media print{
+    header,nav,#velo{display:none}
+    .envoltorio{display:block}
+    main{padding:0}
+    section{border:0; box-shadow:none; padding:0 0 18px; page-break-inside:avoid}
+    figure img{max-width:420px}
+    a{color:#000; text-decoration:none}
+    body{font-size:12pt}
+  }
+
   @media (max-width:900px){
-    body{font-size:16px}
+    body{font-size:17px}
     #abrirMenu{display:block}
     header .sede{display:none}
-    .envoltorio{display:block}
+    .envoltorio{display:block; max-width:100%}
     nav{
       position:fixed; top:62px; left:0; bottom:0; width:min(86vw,320px);
       background:var(--superficie); border-right:1px solid var(--borde);
-      transform:translateX(-102%); transition:transform .22s ease; z-index:25;
-      max-height:none;
+      transform:translateX(-101%); transition:transform .22s ease; z-index:25;
+      max-height:none; overflow-y:auto; visibility:hidden;
     }
+    nav.abierto{visibility:visible}
     nav.abierto{transform:none}
-    main{padding:20px 16px 70px}
+    main{padding:20px 14px 70px; max-width:100%; overflow-x:hidden}
+    table{min-width:340px; font-size:15px}
     section{padding:20px 18px; border-radius:12px}
     h2{font-size:22px}
     #velo{position:fixed;inset:62px 0 0;background:rgba(0,0,0,.35);z-index:20;display:none}
@@ -165,25 +187,64 @@
 <div class="envoltorio">
 <nav id="menu">
   <h2>Empezar</h2>
+  <a href="#rapido">Empiece aquí</a>
   <a href="#inicio">Qué es SIAN</a>
   <a href="#entrar">Cómo entrar</a>
 
-  <h2>Instalar en tu dispositivo</h2>
+  <h2>Instalar en su dispositivo</h2>
   <a href="#instalar-iphone">iPhone y iPad</a>
   <a href="#instalar-android">Android</a>
   <a href="#instalar-escritorio">Computadora</a>
   <a href="#notificaciones">Activar notificaciones</a>
 
-  <h2>Según tu rol</h2>
+  <h2>Crear avisos</h2>
+  <a href="#crear">Todas las opciones</a>
+
+  <h2>Según su rol</h2>
   <a href="#catedratico">Catedrático</a>
   <a href="#administrador">Administrador Académico</a>
   <a href="#coordinador">Coordinador</a>
 
   <h2>Ayuda</h2>
+  <a href="#glosario">Palabras del manual</a>
   <a href="#problemas">Si algo no funciona</a>
 </nav>
 
 <main>
+
+
+<!-- ================= PRIMEROS PASOS ================= -->
+<section id="rapido">
+  <h2>Empiece aquí</h2>
+  <p class="entradilla">Tres pasos. Diez minutos la primera vez, y ya no se vuelve a hacer.</p>
+
+  <ol class="pasos">
+    <li><strong>Entre a SIAN.</strong> Abra
+        <a href="https://sian-umg-bdm-dev.web.app"><code>sian-umg-bdm-dev.web.app</code></a>
+        y use <strong>Entrar con Google</strong> con su correo de la
+        universidad. <a href="#entrar">Ver cómo entrar</a></li>
+    <li><strong>Instale la aplicación en su celular.</strong> En iPhone es
+        obligatorio: sin ese paso no le llega ninguna alerta.
+        <a href="#instalar-iphone">iPhone</a> · <a href="#instalar-android">Android</a></li>
+    <li><strong>Active las notificaciones.</strong> Acepte el permiso que le
+        pide el celular. Le llegará un aviso de prueba.
+        <a href="#notificaciones">Ver cómo</a></li>
+  </ol>
+
+  <div class="aviso bien">
+    <strong>Cómo saber que quedó listo</strong>
+    Arriba de sus mensajes debe aparecer una línea que dice
+    <strong>Notificaciones activas</strong>. Si dice otra cosa,
+    <a href="#notificaciones">búsquela en esta tabla</a> y siga lo que indique.
+  </div>
+
+  <div class="aviso ojo">
+    <strong>¿Se le complicó algún paso?</strong>
+    No se quede a medias: escríbale a la coordinación académica. Un catedrático
+    que no completó la instalación no recibe las alertas, y no se entera de que
+    no las está recibiendo.
+  </div>
+</section>
 
 <!-- ================= INICIO ================= -->
 <section id="inicio">
@@ -207,6 +268,7 @@
   </div>
 
   <h3>Los dos tipos de aviso</h3>
+  <div class="tabla">
   <table>
     <tr><th>Tipo</th><th>Cómo se ve</th><th>Qué significa</th></tr>
     <tr>
@@ -221,6 +283,7 @@
       se abre solo en la bandeja.</td>
     </tr>
   </table>
+  </div>
 
   <p>Algunos avisos, además, <strong>piden que confirmes que los leíste</strong>.
   Eso deja constancia de quién estaba enterado, que es lo que después permite
@@ -232,8 +295,8 @@
   <h2>Cómo entrar</h2>
   <p class="entradilla">Igual en todos los dispositivos.</p>
 
-  <p>Abre <a href="https://sian-umg-bdm-dev.web.app"><code>sian-umg-bdm-dev.web.app</code></a>
-  y verás la pantalla de inicio de sesión. Hay dos formas de entrar.</p>
+  <p>Abra <a href="https://sian-umg-bdm-dev.web.app"><code>sian-umg-bdm-dev.web.app</code></a>
+  y verá la pantalla de inicio de sesión. Hay dos formas de entrar.</p>
   <figure>
     <img src="img/ingreso-escritorio.png" alt="La pantalla de inicio de sesión en una computadora." loading="lazy">
     <figcaption>La pantalla de inicio de sesión en una computadora.</figcaption>
@@ -247,57 +310,59 @@
 
   <h3>Opción 1 · Entrar con Google (recomendada)</h3>
   <ol class="pasos">
-    <li>Pulsa <strong>Entrar con Google</strong>.</li>
-    <li>Elige tu cuenta institucional en la lista que aparece.</li>
-    <li>Listo. No tienes que inventar ni recordar otra contraseña.</li>
+    <li>Presione <strong>Entrar con Google</strong>.</li>
+    <li>Elija su cuenta institucional en la lista que aparece.</li>
+    <li>Listo. No tiene que inventar ni recordar otra contraseña.</li>
   </ol>
 
   <h3>Opción 2 · Correo y contraseña</h3>
   <ol class="pasos">
-    <li>Escribe tu <strong>correo institucional</strong> y tu contraseña.</li>
-    <li>Pulsa <strong>Entrar</strong>.</li>
+    <li>Escriba su <strong>correo institucional</strong> y su contraseña.</li>
+    <li>Presione <strong>Entrar</strong>.</li>
   </ol>
 
-  <p>Si aún no tienes contraseña, usa <strong>¿No tienes cuenta? Regístrate</strong>
-  y créala. La contraseña necesita al menos 10 caracteres, con mayúscula,
+  <p>Si todavía no tiene contraseña, use <strong>¿No tienes cuenta? Regístrate</strong>
+  y créela. La contraseña necesita al menos 10 caracteres, con mayúscula,
   minúscula y un número.</p>
 
   <div class="aviso ojo">
-    <strong>Tu correo tiene que estar autorizado antes</strong>
-    Autenticarte con Google no basta: la coordinación académica debe haber
-    registrado tu correo previamente. Si no lo está, el sistema te lo dirá con
+    <strong>Su correo debe estar autorizado antes</strong>
+    Entrar con Google no basta: la coordinación académica debe haber
+    registrado tu correo previamente. Si no lo está, el sistema se lo dirá con
     claridad y no creará la cuenta.
   </div>
 
-  <h3>Si olvidaste la contraseña</h3>
-  <p>Pulsa <strong>¿Olvidaste tu contraseña?</strong> y escribe tu correo.
-  Recibirás un enlace para restablecerla.</p>
+  <h3>Si olvidó su contraseña</h3>
+  <p>Presione <strong>¿Olvidaste tu contraseña?</strong> y escriba su correo.
+  Recibirá un enlace para restablecerla.</p>
 
   <div class="aviso ojo">
-    <strong>Revisa la carpeta de no deseado</strong>
+    <strong>Revise la carpeta de correo no deseado</strong>
     Hoy ese correo se envía desde un dominio de Google y algunos servidores lo
-    clasifican como spam. Si no aparece en unos minutos, búscalo ahí.
+    clasifican como spam. Si no aparece en unos minutos, búsquelo ahí.
   </div>
 
-  <h3>Si el sistema te rechaza</h3>
+  <h3>Si el sistema no lo deja entrar</h3>
+  <div class="tabla">
   <table>
     <tr><th>Lo que dice</th><th>Qué hacer</th></tr>
     <tr>
       <td><strong>Acceso no autorizado</strong></td>
-      <td>Tu correo no está en la lista. Pide a la coordinación académica que
-      te registre.</td>
+      <td>Su correo no está en la lista. Pida a la coordinación académica que lo
+      registre.</td>
     </tr>
     <tr>
       <td><strong>Cuenta desactivada</strong></td>
-      <td>Tu cuenta existe pero fue desactivada. Tu historial se conserva
-      íntegro; contacta a la coordinación para reactivarla.</td>
+      <td>Su cuenta existe pero fue desactivada. Su historial se conserva
+      completo; contacte a la coordinación para reactivarla.</td>
     </tr>
     <tr>
       <td><strong>Sesión sin rol asignado</strong></td>
-      <td>Cierra sesión y vuelve a entrar. El rol se asigna en el servidor y tu
-      sesión pudo emitirse antes.</td>
+      <td>Cierre sesión y vuelva a entrar. El rol se asigna aparte, y su sesión pudo
+      haberse creado antes de que se lo asignaran.</td>
     </tr>
   </table>
+  </div>
 </section>
 
 <!-- ================= INSTALAR IPHONE ================= -->
@@ -308,41 +373,41 @@
   <div class="aviso critico">
     <strong>En iPhone este paso NO es opcional</strong>
     Apple solo permite notificaciones a las aplicaciones añadidas a la pantalla
-    de inicio. Si usas SIAN desde una pestaña de Safari, podrás leer tus
-    mensajes al abrirla, pero <strong>no te llegará ninguna alerta</strong>, ni
+    de inicio. Si usa SIAN desde una pestaña de Safari, podrá leer sus
+    mensajes al abrirla, pero <strong>no le llegará ninguna alerta</strong>, ni
     siquiera las urgentes.
   </div>
 
   <ol class="pasos">
-    <li>Abre <code>sian-umg-bdm-dev.web.app</code> <strong>en Safari</strong>.
+    <li>Abra <code>sian-umg-bdm-dev.web.app</code> <strong>en Safari</strong>.
         Chrome y Firefox en iPhone no pueden hacer esto.</li>
-    <li>Pulsa el botón <strong>Compartir</strong>: el cuadrado con una flecha
+    <li>Presione el botón <strong>Compartir</strong>: el cuadrado con una flecha
         hacia arriba, abajo en el centro de la pantalla.</li>
     <li>Desliza hacia abajo en el menú y elige
         <strong>Añadir a pantalla de inicio</strong>.</li>
-    <li>Pulsa <strong>Añadir</strong>, arriba a la derecha.</li>
-    <li>Cierra Safari y <strong>abre SIAN desde el icono nuevo</strong> de tu
-        pantalla de inicio. A partir de ahí, entra siempre por ese icono.</li>
+    <li>Presione <strong>Añadir</strong>, arriba a la derecha.</li>
+    <li>Cierre Safari y <strong>abra SIAN desde el ícono nuevo</strong> de su
+        pantalla de inicio. De ahí en adelante, entre siempre por ese ícono.</li>
   </ol>
 
   <div class="aviso">
     <strong>Cómo saber que quedó bien</strong>
-    Al abrir desde el icono, la aplicación ocupa toda la pantalla: no se ve la
-    barra de direcciones de Safari. Si la ves, estás en una pestaña y las
+    Al abrir desde el ícono, la aplicación ocupa toda la pantalla: no se ve la
+    barra de direcciones de Safari. Si la ve, estás en una pestaña y las
     notificaciones no llegarán.
   </div>
 
   <div class="aviso ojo">
-    <strong>Si aparece «Ábrela desde la pantalla de inicio»</strong>
-    Es que estás en una pestaña de Safari. Si ya la instalaste, cierra esta
-    pestaña y entra por el icono; si no, sigue los pasos de arriba.
+    <strong>Si le aparece «Ábrela desde la pantalla de inicio»</strong>
+    Es que está en una pestaña de Safari. Si ya la instaló, cierre esa
+    pestaña y entre por el ícono; si no, siga los pasos de arriba.
   </div>
 
   <h3>Versión de iOS</h3>
   <p>Las notificaciones web necesitan <strong>iOS 16.4 o superior</strong>.
-  Puedes comprobarlo en <em>Ajustes → General → Información → Versión del
-  software</em>. Con una versión anterior podrás leer los mensajes dentro de la
-  aplicación, pero el teléfono no te avisará.</p>
+  Puede revisarla en <em>Ajustes → General → Información → Versión del
+  software</em>. Con una versión anterior podrá leer los mensajes dentro de la
+  aplicación, pero el celular no le avisará.</p>
 
   <h3>La aplicación te guía sola</h3>
   <p>Si entras desde un iPhone sin haberla instalado, SIAN muestra estos mismos
@@ -369,13 +434,13 @@
   </div>
 
   <ol class="pasos">
-    <li>Abre <code>sian-umg-bdm-dev.web.app</code> en <strong>Chrome</strong>.</li>
+    <li>Abra <code>sian-umg-bdm-dev.web.app</code> en <strong>Chrome</strong>.</li>
     <li>Chrome mostrará abajo un aviso de <strong>Instalar aplicación</strong>.
-        Púlsalo.<br>
+        Presiónelo.<br>
         Si no aparece: menú <strong>⋮</strong> (arriba a la derecha) →
         <strong>Añadir a pantalla principal</strong> o <strong>Instalar aplicación</strong>.</li>
     <li>Confirma con <strong>Instalar</strong>.</li>
-    <li>El icono queda en tu pantalla de inicio, junto a las demás aplicaciones.</li>
+    <li>El ícono queda en su pantalla de inicio, junto a las demás aplicaciones.</li>
   </ol>
 
   <p>Instalada, SIAN abre a pantalla completa y sin barra de direcciones, y las
@@ -395,11 +460,11 @@
   pestaña entre otras veinte.</p>
 
   <ol class="pasos">
-    <li>Abre <code>sian-umg-bdm-dev.web.app</code> en <strong>Chrome</strong> o
+    <li>Abra <code>sian-umg-bdm-dev.web.app</code> en <strong>Chrome</strong> o
         <strong>Edge</strong>.</li>
     <li>En la barra de direcciones, a la derecha, aparece un icono de
         <strong>instalar</strong> (una pantalla con una flecha hacia abajo).
-        Púlsalo.<br>
+        Presiónelo.<br>
         También desde el menú <strong>⋮</strong> →
         <strong>Enviar, guardar y compartir</strong> → <strong>Instalar página como aplicación</strong>.</li>
     <li>Confirma con <strong>Instalar</strong>. Se abre en su propia ventana.</li>
@@ -408,8 +473,8 @@
   <div class="aviso">
     <strong>Mantén la ventana abierta</strong>
     Las notificaciones de escritorio llegan mientras el navegador está
-    ejecutándose. Si cierras todo, el aviso te esperará dentro de la aplicación
-    la próxima vez que entres.
+    ejecutándose. Si cierra todo, el aviso lo estará esperando dentro de la aplicación
+    la próxima vez que entre.
   </div>
 </section>
 
@@ -418,18 +483,18 @@
   <h2>Activar las notificaciones</h2>
   <p class="entradilla">El paso que decide si el sistema sirve de algo.</p>
 
-  <p>La primera vez que entras, arriba de tus mensajes aparece una tarjeta
-  <strong>Activa las notificaciones</strong>. Púlsala y acepta el permiso que
-  pide el navegador. Recibirás una notificación de prueba: si llega, el canal
-  funciona.</p>
+  <p>La primera vez que entra, arriba de sus mensajes aparece una tarjeta
+  <strong>Activa las notificaciones</strong>. Presiónela y acepte el permiso que
+  pide el navegador. Le llegará una notificación de prueba: si llega, todo está bien.</p>
 
   <div class="aviso bien">
     <strong>Cuando todo está bien, la tarjeta se hace pequeña</strong>
-    Se pliega a una línea que dice <em>Notificaciones activas</em>. Puedes
-    tocarla para comprobar el estado cuando quieras.
+    Se pliega a una línea que dice <em>Notificaciones activas</em>. Puede
+    tocarla para revisar el estado cuando quiera.
   </div>
 
   <h3>Qué hacer según lo que diga</h3>
+  <div class="tabla">
   <table>
     <tr><th>Mensaje</th><th>Significado y solución</th></tr>
     <tr>
@@ -438,24 +503,242 @@
     </tr>
     <tr>
       <td><strong>Activa las notificaciones</strong></td>
-      <td>Todavía no diste el permiso. Pulsa el botón y acéptalo.</td>
+      <td>Todavía no ha dado el permiso. Presione el botón y acéptelo.</td>
     </tr>
     <tr>
       <td><strong>Notificaciones bloqueadas</strong></td>
-      <td>El permiso fue denegado. La propia tarjeta indica dónde revertirlo en
-      tu navegador; después recarga la página.</td>
+      <td>El permiso fue denegado. La misma tarjeta le indica dónde cambiarlo en
+      su navegador; después recargue la página.</td>
     </tr>
     <tr>
       <td><strong>Ábrela desde la pantalla de inicio</strong></td>
-      <td>Estás en una pestaña de Safari en iPhone. Ve a
+      <td>Está en una pestaña de Safari en iPhone. Vaya a
       <a href="#instalar-iphone">Instalar en iPhone</a>.</td>
     </tr>
   </table>
+  </div>
 
   <div class="aviso ojo">
-    <strong>Revisa que el teléfono no esté en silencio</strong>
+    <strong>Revise que el celular no esté en silencio</strong>
     El permiso puede estar concedido y aun así no oírse nada si el dispositivo
     tiene activado el modo silencio o No molestar.
+  </div>
+</section>
+
+
+<!-- ================= CREAR MENSAJES, A FONDO ================= -->
+<section id="crear">
+  <h2>Todas las formas de crear un aviso</h2>
+  <p class="entradilla">Las mismas cinco decisiones, siempre en el mismo orden.</p>
+
+  <p>Un aviso en SIAN se arma respondiendo cinco preguntas. Ninguna es
+  obligatoria salvo la primera, y todas se pueden combinar entre sí.</p>
+
+  <div class="tabla">
+
+  <table>
+    <tr><th>Decisión</th><th>Opciones</th></tr>
+    <tr><td><strong>Qué dice</strong></td><td>Título y mensaje</td></tr>
+    <tr><td><strong>Cuándo sale</strong></td><td>Ahora · En una fecha · Repetido</td></tr>
+    <tr><td><strong>Qué lleva</strong></td><td>Solo texto · Notas de voz · Imágenes</td></tr>
+    <tr><td><strong>Cuánto pesa</strong></td><td>Informativo · Urgente</td></tr>
+    <tr><td><strong>A quién</strong></td><td>Todos · Grupos concretos</td></tr>
+  </table>
+  </div>
+
+  <p>Y una casilla aparte: si <strong>exige confirmación de lectura</strong>.</p>
+
+  <h3>1 · Qué dice</h3>
+  <p>El <strong>título</strong> admite hasta 80 caracteres y el
+  <strong>mensaje</strong> hasta 500. El contador se mueve mientras usted
+  escribe y no lo deja pasarse: es mejor enterarse ahí que perder el texto al
+  intentar enviarlo.</p>
+
+  <div class="aviso">
+    <strong>El título es lo único que se lee de corrido</strong>
+    En la notificación del celular, muchas veces el título es todo lo que
+    alcanza a verse. «Simulacro mañana 10:00» sirve; «Aviso importante» no
+    dice nada.
+  </div>
+
+  <h3>2 · Cuándo sale</h3>
+
+  <h4>Ahora mismo</h4>
+  <p>Sale apenas usted confirma. Es lo que se usa para una emergencia.</p>
+
+  <h4>En una fecha y hora</h4>
+  <p>Elija el día y la hora, y el sistema lo manda solo. Sirve para el
+  recordatorio de entrega de actas que usted prepara hoy pero debe salir el
+  viernes a las 7:00.</p>
+  <figure class="recorte">
+    <img src="img/programar-fecha.png" alt="Elegir la fecha y la hora de salida" loading="lazy">
+    <figcaption>Al elegir «En una fecha y hora» aparecen el calendario y el reloj.</figcaption>
+  </figure>
+  <div class="aviso">
+    <strong>No se puede programar para el pasado</strong>
+    Ni para dentro de menos de un minuto: el planificador revisa cada minuto y
+    un aviso puesto para «ya mismo» se perdería.
+  </div>
+
+  <h4>Repetido cada cierto tiempo</h4>
+  <p>Para lo que se repite: el aviso semanal de coordinación, el recordatorio
+  de cada quincena. Se define cada cuánto se repite, a qué hora y hasta
+  cuándo.</p>
+  <figure class="recorte">
+    <img src="img/programar-repetido.png" alt="Configurar una repetición" loading="lazy">
+    <figcaption>La repetición pide cada cuánto, a qué hora y hasta cuándo.</figcaption>
+  </figure>
+  <div class="aviso ojo">
+    <strong>Hay que ver las próximas fechas antes de guardar</strong>
+    El sistema no lo deja guardar una repetición sin haber presionado
+    <strong>Ver las próximas fechas</strong>. No es un trámite: es la única
+    forma de darse cuenta de que el patrón que configuró no era el que tenía
+    en la cabeza, antes de que salgan diez avisos equivocados.
+  </div>
+
+  <h3>3 · Qué lleva</h3>
+  <p>Un aviso puede ir solo con texto, o con hasta <strong>2 notas de voz</strong>
+  y <strong>3 imágenes</strong>, en cualquier combinación, sin pasar de 10 MB
+  entre todo.</p>
+  <figure>
+    <img src="img/adjuntos.png" alt="Dos adjuntos ya puestos, numerados" loading="lazy">
+    <figcaption>Los adjuntos van numerados: ese es el orden en que los verá quien reciba.</figcaption>
+  </figure>
+
+  <div class="tabla">
+
+  <table>
+    <tr><th>Adjunto</th><th>Límite</th><th>Cuándo conviene</th></tr>
+    <tr>
+      <td><strong>Nota de voz</strong></td>
+      <td>60 segundos · 2 MB · hasta 2</td>
+      <td>Cuando escribir con prisa no es realista, o cuando el tono importa
+      tanto como el contenido.</td>
+    </tr>
+    <tr>
+      <td><strong>Imagen</strong></td>
+      <td>5 MB · JPEG, PNG o WebP · hasta 3</td>
+      <td>Un plano de evacuación, una circular escaneada, la foto del punto de
+      reunión.</td>
+    </tr>
+  </table>
+  </div>
+
+  <h3>4 · Cuánto pesa</h3>
+  <figure class="recorte">
+    <img src="img/urgente-y-destinatarios.png" alt="Clasificación y destinatarios" loading="lazy">
+    <figcaption>La clasificación y los destinatarios, uno debajo del otro.</figcaption>
+  </figure>
+
+  <div class="tabla">
+
+  <table>
+    <tr><th></th><th>Informativo</th><th>Urgente</th></tr>
+    <tr><td><strong>Cómo llega</strong></td>
+        <td>Notificación normal</td>
+        <td>Suena distinto y vibra más</td></tr>
+    <tr><td><strong>En la bandeja</strong></td>
+        <td>Como los demás</td>
+        <td>Etiqueta roja <strong>URGENTE</strong> y se abre solo</td></tr>
+    <tr><td><strong>Al enviarlo</strong></td>
+        <td>Una confirmación</td>
+        <td><strong>Dos</strong> confirmaciones</td></tr>
+    <tr><td><strong>Quién puede</strong></td>
+        <td>Cualquier emisor</td>
+        <td>Coordinador, y quien él autorice</td></tr>
+  </table>
+  </div>
+
+  <div class="aviso ojo">
+    <strong>Lo urgente se gasta</strong>
+    Si todo se manda como urgente, en un mes nadie distingue lo que de verdad
+    lo es. Guárdelo para lo que tiene consecuencias si alguien no se entera en
+    los próximos minutos.
+  </div>
+
+  <h3>5 · A quién</h3>
+  <ul>
+    <li><strong>Todos los catedráticos:</strong> la lista completa de catedráticos, tal como esté el día que
+    salga el aviso.</li>
+    <li><strong>Grupos concretos:</strong> uno o varios de los grupos que haya
+    armado. Quien esté en dos grupos recibe el aviso <strong>una sola
+    vez</strong>.</li>
+  </ul>
+
+  <h3>La casilla de confirmación</h3>
+  <p><strong>Exigir confirmación de lectura</strong> hace que el catedrático
+  tenga que presionar un botón declarando que lo leyó. Queda registrado con su
+  nombre, la fecha, la hora y el dispositivo.</p>
+  <div class="aviso">
+    <strong>Actívela solo cuando vaya a servirle de algo</strong>
+    Un aviso con confirmación le permite después saber quién faltó. Uno sin
+    ella se mide por entrega, y en Entregas aparece así. Poner confirmación a
+    todo hace que el catedrático la presione sin leer, y entonces la evidencia
+    deja de valer.
+  </div>
+
+  <h3>Antes de salir: el resumen</h3>
+  <p>Al presionar <strong>Enviar ahora</strong> no sale nada todavía. Primero
+  aparece esto:</p>
+  <figure>
+    <img src="img/resumen-antes-de-enviar.png" alt="El resumen previo al envío" loading="lazy">
+    <figcaption>A cuántas personas llega, quién queda fuera y qué adjuntos lleva.</figcaption>
+  </figure>
+  <p>Léalo. Es la última oportunidad de notar que el grupo elegido no era el
+  que usted creía, o que la imagen no quedó adjunta.</p>
+
+  <p>Si el aviso es <strong>urgente</strong>, hay un segundo paso:</p>
+  <figure>
+    <img src="img/segunda-confirmacion.png" alt="La segunda confirmación de una alerta urgente" loading="lazy">
+    <figcaption>El botón de enviar no cuenta como confirmación de una urgente.</figcaption>
+  </figure>
+
+  <h3>Qué quiero lograr → cómo lo configuro</h3>
+  <div class="tabla">
+  <table>
+    <tr><th>Si necesita…</th><th>Configure así</th></tr>
+    <tr>
+      <td>Avisar de una emergencia ahora</td>
+      <td>Ahora mismo · Urgente · Todos · Con confirmación</td>
+    </tr>
+    <tr>
+      <td>Recordar la entrega de actas el viernes</td>
+      <td>En una fecha · Informativo · Todos · Con confirmación</td>
+    </tr>
+    <tr>
+      <td>El aviso semanal de coordinación</td>
+      <td>Repetido · Informativo · Grupos · Sin confirmación</td>
+    </tr>
+    <tr>
+      <td>Explicar una ruta de evacuación</td>
+      <td>Ahora · Urgente · Imagen del plano + nota de voz · Con confirmación</td>
+    </tr>
+    <tr>
+      <td>Informar de un cambio de aula</td>
+      <td>Ahora · Informativo · Grupos · Sin confirmación</td>
+    </tr>
+  </table>
+  </div>
+
+  <h3>Después de enviarlo</h3>
+  <p>En <strong>Programación</strong> ve lo que todavía no ha salido y lo que
+  ya salió:</p>
+  <figure>
+    <img src="img/programados.png" alt="Mensajes programados y enviados" loading="lazy">
+    <figcaption>Puede suspender, reanudar o cancelar lo que aún no ha salido.</figcaption>
+  </figure>
+
+  <p>Y en <strong>Entregas</strong>, quién lo recibió y quién lo confirmó:</p>
+  <figure>
+    <img src="img/entregas.png" alt="Reporte de entregas" loading="lazy">
+    <figcaption>Cuántos recibieron, abrieron y confirmaron cada aviso.</figcaption>
+  </figure>
+
+  <div class="aviso critico">
+    <strong>Un aviso enviado no se edita ni se borra</strong>
+    Se puede cancelar mientras esté programado. Una vez que salió, ya salió: si
+    se equivocó, lo que corresponde es mandar otro aviso corrigiendo, no
+    intentar borrar el anterior.
   </div>
 </section>
 
@@ -465,9 +748,9 @@
   <p class="entradilla">Recibir avisos, leerlos y confirmarlos.</p>
 
   <h3>Tu bandeja</h3>
-  <p>Al entrar ves tus mensajes, del más reciente al más antiguo. Cada uno se
+  <p>Al entrar verá sus mensajes, del más reciente al más antiguo. Cada uno se
   muestra plegado: título, un resumen, el estado, la fecha y quién lo envió.
-  Toca cualquiera para desplegarlo.</p>
+  Toque cualquiera para desplegarlo.</p>
   <figure class="movil">
     <img src="img/bandeja-movil.png" alt="La bandeja en un teléfono. Fíjate en las franjas de color de la izquierda." loading="lazy">
     <figcaption>La bandeja en un teléfono. Fíjate en las franjas de color de la izquierda.</figcaption>
@@ -475,21 +758,24 @@
 
 
   <h3>Los colores no son decoración</h3>
-  <p>Una franja de color a la izquierda te dice qué te falta por atender, sin
+  <p>Una franja de color a la izquierda le dice qué le falta por atender, sin
   tener que abrir nada. Cada mensaje lleva <strong>un solo</strong> color, el
   más importante que le corresponda:</p>
+
+  <div class="tabla">
 
   <table>
     <tr><th>Color</th><th>Qué significa</th></tr>
     <tr><td><strong style="color:#B3261E">Rojo</strong></td>
-        <td>Urgente y todavía sin confirmar. Es lo primero que debes atender.</td></tr>
+        <td>Urgente y todavía sin confirmar. Es lo primero que debe atender.</td></tr>
     <tr><td><strong style="color:#B8860B">Dorado</strong></td>
-        <td>Espera tu confirmación. Hay algo que hacer.</td></tr>
+        <td>Espera su confirmación. Hay algo que hacer.</td></tr>
     <tr><td><strong style="color:#2E6DA4">Azul</strong></td>
         <td>Sin leer. Solo informa, no reclama nada.</td></tr>
     <tr><td>Sin color</td>
         <td>Ya leído o ya confirmado. Nada pendiente.</td></tr>
   </table>
+  </div>
 
 
   <figure>
@@ -501,13 +787,13 @@
   <div class="aviso">
     <strong>La diferencia importa</strong>
     <strong>Abrir</strong> deja constancia de que miraste el mensaje.
-    <strong>Confirmar</strong> es tu declaración de que lo leíste, y tiene valor
-    probatorio: queda registrado con tu nombre, la fecha, la hora y el
-    dispositivo. Por eso no ocurre sola: tienes que pulsar el botón.
+    <strong>Confirmar</strong> es su declaración de que ya lo leyó, y tiene valor
+    probatorio: queda registrado con su nombre, la fecha, la hora y el
+    dispositivo. Por eso no pasa sola: usted tiene que presionar el botón.
   </div>
 
   <p>Cuando un aviso lo exige, al desplegarlo aparece el botón
-  <strong>Confirmar lectura</strong>. Púlsalo cuando lo hayas leído de verdad.</p>
+  <strong>Confirmar lectura</strong>. Presiónelo cuando de verdad ya lo haya leído.</p>
   <figure class="movil">
     <img src="img/mensaje-desplegado.png" alt="Un mensaje desplegado, con su botón de confirmar." loading="lazy">
     <figcaption>Un mensaje desplegado, con su botón de confirmar.</figcaption>
@@ -521,19 +807,18 @@
 
   <h3>Notas de voz e imágenes</h3>
   <p>Un aviso puede traer hasta <strong>dos notas de voz y tres imágenes</strong>,
-  en el orden en que quien lo envió las adjuntó.</p>
+  en el orden en que las adjuntó quien lo envió.</p>
   <ul>
     <li><strong>Notas de voz:</strong> aparecen bajo el texto con su reproductor.
-        Pulsa reproducir.</li>
-    <li><strong>Imágenes:</strong> se muestran como un botón <em>Toca para ver
-        la imagen</em>. Se descargan solo cuando las pides, para que la bandeja
-        abra rápido con conexión mala. Una vez cargada, tócala para verla a
-        pantalla completa y ampliarla.</li>
+        Presione reproducir.</li>
+    <li><strong>Imágenes:</strong> se muestran como un botón <em>Toque para ver la imagen</em>. Se descargan solo cuando usted las pide, para que la bandeja
+        abra rápido cuando la conexión está mala. Ya cargada, tóquela para verla a
+        pantalla completa y agrandarla.</li>
   </ul>
 
   <h3>Buscar</h3>
-  <p>El buscador de arriba filtra por palabras del título y del mensaje. Puedes
-  escribir varias en cualquier orden, y no hace falta poner tildes.</p>
+  <p>El buscador de arriba filtra por palabras del título y del mensaje. Puede
+  escribir varias en cualquier orden, y no necesita poner tildes.</p>
 
 
 </section>
@@ -543,22 +828,22 @@
   <h2>Manual del Administrador Académico</h2>
   <p class="entradilla">Redactar, enviar, programar y comprobar entregas.</p>
 
-  <p>Tu panel tiene estas secciones en la barra lateral (en el teléfono, en el
-  menú inferior): <strong>Mis mensajes</strong>, <strong>Mensajes</strong>,
+  <p>Su panel tiene estas secciones en la barra lateral (en el celular, en el
+  menú de abajo): <strong>Mis mensajes</strong>, <strong>Mensajes</strong>,
   <strong>Programación</strong>, <strong>Grupos</strong> y
   <strong>Entregas</strong>.</p>
 
   <h3>Enviar un aviso</h3>
   <ol class="pasos">
-    <li>Entra en <strong>Mensajes</strong>.</li>
-    <li>Escribe el <strong>título</strong> (hasta 80 caracteres) y el
-        <strong>mensaje</strong> (hasta 500). El contador avisa mientras
-        escribes; no te dejará pasarte.</li>
-    <li>Elige <strong>cuándo</strong>: ahora, en una fecha concreta, o repetido.</li>
-    <li>Adjunta lo que necesites (ver abajo).</li>
-    <li>Marca si es <strong>urgente</strong> y si <strong>exige confirmación</strong>.</li>
-    <li>Elige los <strong>destinatarios</strong>: todos, o grupos concretos.</li>
-    <li>Pulsa <strong>Enviar ahora</strong>.</li>
+    <li>Entre a <strong>Mensajes</strong>.</li>
+    <li>Escriba el <strong>título</strong> (hasta 80 caracteres) y el
+        <strong>mensaje</strong> (hasta 500). El contador le avisa mientras
+        escribe; no lo dejará pasarse.</li>
+    <li>Elija <strong>cuándo</strong>: ahora, en una fecha concreta, o repetido.</li>
+    <li>Adjunte lo que necesite (ver abajo).</li>
+    <li>Marque si es <strong>urgente</strong> y si <strong>exige confirmación</strong>.</li>
+    <li>Elija los <strong>destinatarios</strong>: todos, o grupos concretos.</li>
+    <li>Presione <strong>Enviar ahora</strong>.</li>
   </ol>
 
 
@@ -571,24 +856,24 @@
     <strong>Enviar no se puede deshacer</strong>
     Un mensaje enviado no se edita ni se borra. Por eso antes de salir aparece
     un resumen con <strong>a cuántas personas va</strong>, <strong>quién queda
-    fuera y por qué</strong>, y <strong>qué adjuntos lleva</strong>. Léelo: es
-    la última ocasión de detectar que el grupo elegido no era el que creías.
+    fuera y por qué</strong>, y <strong>qué adjuntos lleva</strong>. Léalo: es
+    la última oportunidad de darse cuenta de que el grupo elegido no era el que
+    usted creía.
   </div>
 
   <div class="aviso ojo">
     <strong>Una alerta urgente pide DOS confirmaciones</strong>
-    El botón de enviar no cuenta como confirmación. Hace sonar el teléfono de
-    todos los catedráticos, así que hay un segundo paso deliberado.
+    El botón de enviar no cuenta como confirmación. Le suena el celular a todos los catedráticos, así que hay un segundo paso deliberado.
   </div>
 
   <h3>Adjuntar nota de voz e imágenes</h3>
   <p>Hasta <strong>2 notas de voz</strong> y <strong>3 imágenes</strong> por
   mensaje, con un límite total de 10 MB.</p>
   <ul>
-    <li><strong>Grabar voz:</strong> pulsa <strong>Grabar</strong>, habla, y
-        pulsa <strong>Detener</strong>. Máximo 60 segundos; el contador avisa
-        mientras grabas y corta solo al llegar al límite.</li>
-    <li><strong>Imagen:</strong> pulsa <strong>Elegir imagen</strong>. Se
+    <li><strong>Grabar voz:</strong> presione <strong>Grabar nota de voz</strong>,
+        hable, y presione <strong>Detener</strong>. Máximo 60 segundos; el
+        contador le avisa mientras graba y corta solo al llegar al límite.</li>
+    <li><strong>Imagen:</strong> presione <strong>Adjuntar imagen</strong>. Se
         admiten JPEG, PNG y WebP, hasta 5 MB cada una.</li>
   </ul>
 
@@ -600,24 +885,24 @@
 
   <div class="aviso">
     <strong>El orden en que los adjuntas es el orden en que se ven</strong>
-    Si adjuntas un plano, luego la nota de voz que lo explica y luego la foto
-    del punto de reunión, el catedrático los verá exactamente en esa secuencia.
-    La lista los numera para que puedas comprobarlo.
+    Si adjunta un plano, después la nota de voz que lo explica y después la
+    foto del punto de reunión, el catedrático los verá exactamente en ese
+    orden. La lista los numera para que usted pueda comprobarlo.
   </div>
 
   <div class="aviso ojo">
     <strong>Termina el adjunto antes de enviar</strong>
-    Mientras grabas, el botón de enviar se bloquea y lo explica. Una grabación
-    no forma parte del mensaje hasta que la detienes.
+    Mientras graba, el botón de enviar se bloquea y le explica por qué. Una
+    grabación no forma parte del mensaje hasta que usted la detiene.
   </div>
 
   <h3>Programar y repetir</h3>
-  <p>En <strong>cuándo</strong> puedes elegir una fecha futura, o un patrón de
-  repetición. Antes de guardar un recurrente el sistema te obliga a ver la
+  <p>En <strong>cuándo</strong> puede elegir una fecha futura, o un patrón de
+  repetición. Antes de guardar un recurrente el sistema le exige ver la
   <strong>vista previa de las próximas fechas</strong>: es la única forma de
-  detectar que el patrón no era el que pensabas.</p>
-  <p>En <strong>Programación</strong> ves lo que está pendiente de salir y
-  puedes <strong>suspender</strong> (se deshace), <strong>reanudar</strong> o
+  darse cuenta de que el patrón no era el que usted pensaba.</p>
+  <p>En <strong>Programación</strong> ve lo que está pendiente de salir y
+  puede <strong>suspender</strong> (se deshace), <strong>reanudar</strong> o
   <strong>cancelar</strong> (no se deshace).</p>
   <figure>
     <img src="img/programados.png" alt="Mensajes programados y ya enviados, con su próxima salida." loading="lazy">
@@ -626,12 +911,13 @@
 
 
   <h3>Grupos</h3>
-  <p>En <strong>Grupos</strong> creas conjuntos de destinatarios —por carrera,
-  jornada o lo que necesites— para no elegir personas una por una cada vez.
+  <p>En <strong>Grupos</strong> arma conjuntos de destinatarios —por carrera,
+  jornada o lo que necesite— para no andar eligiendo persona por persona cada
+  vez.
   Un grupo desactivado desaparece de los destinatarios elegibles.</p>
 
   <h3>Comprobar que llegó</h3>
-  <p>En <strong>Entregas</strong> ves, mensaje por mensaje: cuántos lo
+  <p>En <strong>Entregas</strong> ve, mensaje por mensaje: cuántos lo
   recibieron, cuántos lo abrieron, cuántos confirmaron y —cuando el aviso pedía
   confirmación— <strong>quiénes faltan por confirmar, con nombre</strong>.</p>
 
@@ -656,38 +942,40 @@
   <p class="entradilla">Todo lo del administrador, más usuarios y bitácora.</p>
 
   <p>El coordinador puede hacer <strong>todo lo que hace el Administrador
-  Académico</strong> —consulta esa sección para redactar, adjuntar, programar y
+  Académico</strong> —vea esa sección para redactar, adjuntar, programar y
   revisar entregas— y además administra quién usa el sistema.</p>
 
   <h3>Dar de alta a alguien</h3>
   <p>Nadie puede entrar si su correo no está autorizado antes. En
   <strong>Usuarios</strong>:</p>
   <ol class="pasos">
-    <li>Añade correos <strong>uno a uno</strong>, o carga un
+    <li>Agregue correos <strong>uno por uno</strong>, o cargue un
         <strong>archivo CSV</strong> para varios de golpe.</li>
-    <li>Asigna el <strong>rol</strong> que tendrá cada persona.</li>
-    <li>Avísale de que ya puede entrar y de que debe instalar la aplicación si
-        usa iPhone.</li>
+    <li>Asigne el <strong>rol</strong> que tendrá cada persona.</li>
+    <li>Avísele que ya puede entrar, y que debe instalar la aplicación si usa
+        iPhone.</li>
   </ol>
 
   <h3>Los roles</h3>
+  <div class="tabla">
   <table>
     <tr><th>Rol</th><th>Qué puede hacer</th><th>¿Recibe avisos?</th></tr>
     <tr><td><strong>Catedrático</strong></td><td>Recibir, leer y confirmar.</td><td>Sí</td></tr>
-    <tr><td><strong>Administrador Académico</strong></td><td>Crear y enviar avisos, programar, ver entregas.</td><td>Solo si se lo activas</td></tr>
-    <tr><td><strong>Coordinador</strong></td><td>Todo, más usuarios, roles y bitácora.</td><td>Solo si se lo activas</td></tr>
+    <tr><td><strong>Administrador Académico</strong></td><td>Crear y enviar avisos, programar, ver entregas.</td><td>Solo si usted se lo activa</td></tr>
+    <tr><td><strong>Coordinador</strong></td><td>Todo, más usuarios, roles y bitácora.</td><td>Solo si usted se lo activa</td></tr>
     <tr><td><strong>Auditor</strong></td><td>Consultar la bitácora, sin modificar nada.</td><td>No</td></tr>
   </table>
+  </div>
 
   <div class="aviso">
     <strong>Una misma persona puede enviar y recibir</strong>
     Si un catedrático pasa a ser Administrador Académico, no necesita dos
-    cuentas: actívale <strong>recibe avisos</strong> y tendrá su bandeja
+    cuentas: actívele <strong>recibe avisos</strong> y tendrá su bandeja
     <em>Mis mensajes</em> dentro del mismo panel.
   </div>
 
   <h3>Autorizaciones finas</h3>
-  <p>Puedes decidir, persona por persona, quién puede
+  <p>Puede decidir, persona por persona, quién puede
   <strong>emitir alertas urgentes</strong> y quién puede
   <strong>crear mensajes recurrentes</strong>. El coordinador siempre puede,
   con o sin esas banderas.</p>
@@ -706,40 +994,79 @@
   bitácora.</div>
 </section>
 
+
+<!-- ================= GLOSARIO ================= -->
+<section id="glosario">
+  <h2>Palabras que aparecen en este manual</h2>
+  <p class="entradilla">Por si alguna no le resulta familiar.</p>
+
+  <div class="tabla">
+
+  <table>
+    <tr><th>Palabra</th><th>Qué quiere decir</th></tr>
+    <tr><td><strong>Navegador</strong></td>
+        <td>El programa con el que se entra a internet: Chrome, Safari, Edge,
+        Firefox.</td></tr>
+    <tr><td><strong>Pestaña</strong></td>
+        <td>Cada página abierta dentro del navegador. Cuando SIAN está
+        <em>instalada</em>, ya no vive en una pestaña sino en su propio ícono.</td></tr>
+    <tr><td><strong>Instalar la aplicación</strong></td>
+        <td>Agregar SIAN a la pantalla de inicio del celular, para abrirla con
+        un ícono como cualquier otra aplicación. No pasa por App Store ni por
+        Play Store, y no ocupa casi espacio.</td></tr>
+    <tr><td><strong>Notificación</strong></td>
+        <td>El aviso que aparece en la pantalla del celular aunque SIAN esté
+        cerrada.</td></tr>
+    <tr><td><strong>Permiso de notificaciones</strong></td>
+        <td>La autorización que el celular le pide una sola vez para poder
+        mostrarle esos avisos. Sin ella, SIAN no puede avisarle de nada.</td></tr>
+    <tr><td><strong>Bandeja</strong></td>
+        <td>La lista de los mensajes que usted ha recibido.</td></tr>
+    <tr><td><strong>Confirmar lectura</strong></td>
+        <td>Presionar el botón con el que usted declara que ya leyó un aviso.
+        Queda registrado con su nombre y la hora.</td></tr>
+    <tr><td><strong>Recargar</strong></td>
+        <td>Volver a cargar la aplicación desde cero, como cuando uno actualiza
+        una página. Es el botón del círculo con la flecha, arriba a la
+        derecha.</td></tr>
+  </table>
+  </div>
+</section>
+
 <!-- ================= PROBLEMAS ================= -->
 <section id="problemas">
   <h2>Si algo no funciona</h2>
 
   <h3>No me llegan las notificaciones</h3>
   <ol>
-    <li><strong>¿Tienes iPhone?</strong> Comprueba que abriste SIAN desde el
-        icono de la pantalla de inicio y no desde una pestaña de Safari. Es la
+    <li><strong>¿Usa iPhone?</strong> Revise que haya abierto SIAN desde el
+        ícono de la pantalla de inicio y no desde una pestaña de Safari. Es la
         causa más frecuente con diferencia.</li>
-    <li>Mira la tarjeta de arriba de tus mensajes y sigue lo que diga
+    <li>Vea la tarjeta de arriba de sus mensajes y haga lo que diga
         (<a href="#notificaciones">tabla de mensajes</a>).</li>
-    <li>Comprueba que el teléfono no esté en silencio o en No molestar.</li>
-    <li>Pulsa el botón <strong>recargar</strong> de la barra superior.</li>
+    <li>Revise que el celular no esté en silencio o en No molestar.</li>
+    <li>Presione el botón <strong>recargar</strong> de la barra de arriba.</li>
   </ol>
 
   <h3>La pantalla se quedó pegada o veo algo raro</h3>
-  <p>Usa el botón <strong>recargar</strong> (el círculo con la flecha), a la
+  <p>Use el botón <strong>recargar</strong> (el círculo con la flecha), a la
   izquierda del de cerrar sesión. Recarga la aplicación por completo y de paso
   trae la versión más reciente, que en una aplicación instalada puede llevar
   días sin renovarse.</p>
 
   <h3>No veo una sección que otra persona sí ve</h3>
-  <p>Las secciones dependen de tu rol. Míralo arriba a la derecha, junto a tu
-  nombre. Si no es el que debería, pide a la coordinación que lo revise, cierra
-  sesión y vuelve a entrar.</p>
+  <p>Las secciones dependen de tu rol. Véalo arriba a la derecha, junto a su
+  nombre. Si no es el que debería ser, pida a la coordinación que lo revise,
+  cierre sesión y vuelva a entrar.</p>
 
   <h3>El correo de recuperación no llega</h3>
-  <p>Revisa la carpeta de correo no deseado. Hoy se envía desde un dominio de
+  <p>Revise la carpeta de correo no deseado. Hoy se envía desde un dominio de
   Google y algunos servidores lo clasifican ahí.</p>
 
   <h3>Adjunté una imagen y no aparece</h3>
-  <p>Mira el resumen del diálogo de confirmación antes de enviar: dice
+  <p>Vea el resumen que aparece antes de enviar: dice
   exactamente qué se lleva el mensaje. Si la imagen no está en esa lista, no se
-  adjuntó — cancela y vuelve a elegirla.</p>
+  adjuntó — cancele y vuelva a elegirla.</p>
 </section>
 
 </main>

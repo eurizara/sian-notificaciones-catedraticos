@@ -45,11 +45,18 @@ import 'package:sian/infrastructure/firebase/repositorio_programacion.dart';
 import 'package:sian/presentation/admin/adjuntos_mensaje.dart';
 import 'package:sian/presentation/admin/seccion_entregas.dart';
 import 'package:sian/presentation/admin/seccion_mensajes.dart';
+import 'package:sian/presentation/admin/seccion_bitacora.dart';
+import 'package:sian/presentation/admin/seccion_grupos.dart';
 import 'package:sian/presentation/admin/seccion_programacion.dart';
+import 'package:sian/presentation/admin/seccion_usuarios.dart';
+import 'package:sian/presentation/admin/panel_admin.dart';
+import 'package:sian/infrastructure/firebase/repositorio_administracion.dart';
+import 'package:sian/infrastructure/firebase/repositorio_grupos.dart';
 import 'package:sian/presentation/docente/bandeja_docente.dart';
 import 'package:sian/presentation/docente/instructivo_ios.dart';
 import 'package:sian/presentation/shared/pantalla_ingreso.dart';
 import 'package:sian/presentation/shared/tema.dart';
+import 'package:sian/presentation/shared/textos.dart';
 
 import '../test/dobles/repositorios_falsos.dart';
 
@@ -260,6 +267,111 @@ final List<MensajeProgramado> _programados = <MensajeProgramado>[
     totalDestinatarios: 48,
     entregados: 48,
     confirmados: 41,
+  ),
+];
+
+UsuarioSesion _coordinador() => usuarioDePrueba(
+  rol: Rol.coordinador,
+  nombre: 'Lucía Marroquín',
+  correo: 'lmarroquin@umg.edu.gt',
+  puedeEmitirUrgentes: true,
+  puedeCrearRecurrentes: true,
+);
+
+final List<GrupoDetalle> _grupos = <GrupoDetalle>[
+  const GrupoDetalle(
+    id: 'g1',
+    nombre: 'Ingeniería en Sistemas',
+    descripcion: 'Catedráticos de la carrera, jornada matutina y nocturna',
+    miembros: <String>['u1', 'u2', 'u3', 'u4'],
+    activo: true,
+  ),
+  const GrupoDetalle(
+    id: 'g2',
+    nombre: 'Jornada nocturna',
+    descripcion: 'Quienes imparten de 18:00 en adelante',
+    miembros: <String>['u2', 'u5'],
+    activo: true,
+  ),
+  const GrupoDetalle(
+    id: 'g3',
+    nombre: 'Coordinadores de carrera',
+    descripcion: 'Un representante por carrera',
+    miembros: <String>['u6'],
+    activo: false,
+  ),
+];
+
+final List<UsuarioVista> _usuarios = <UsuarioVista>[
+  const UsuarioVista(
+    uid: 'u1',
+    correo: 'aramirez@umg.edu.gt',
+    nombre: 'Ana Sofía Ramírez',
+    rol: 'CATEDRATICO',
+    activo: true,
+    puedeEmitirUrgentes: false,
+    recibeAvisos: true,
+    puedeCrearRecurrentes: false,
+  ),
+  const UsuarioVista(
+    uid: 'u2',
+    correo: 'jmorales@umg.edu.gt',
+    nombre: 'Julio Morales',
+    rol: 'CATEDRATICO',
+    activo: true,
+    puedeEmitirUrgentes: false,
+    recibeAvisos: true,
+    puedeCrearRecurrentes: false,
+  ),
+  const UsuarioVista(
+    uid: 'u3',
+    correo: 'lmarroquin@umg.edu.gt',
+    nombre: 'Lucía Marroquín',
+    rol: 'ADMINISTRADORA',
+    activo: true,
+    puedeEmitirUrgentes: true,
+    recibeAvisos: true,
+    puedeCrearRecurrentes: false,
+  ),
+  const UsuarioVista(
+    uid: 'u4',
+    correo: 'rcastillo@umg.edu.gt',
+    nombre: 'Roberto Castillo',
+    rol: 'CATEDRATICO',
+    activo: false,
+    puedeEmitirUrgentes: false,
+    recibeAvisos: true,
+    puedeCrearRecurrentes: false,
+  ),
+];
+
+final List<AsientoVista> _asientos = <AsientoVista>[
+  AsientoVista(
+    tipo: 'MENSAJE_CREADO',
+    actorCorreo: 'lmarroquin@umg.edu.gt',
+    actorRol: 'ADMINISTRADORA',
+    entidad: 'MENSAJE',
+    entidadId: 'm1',
+    resumen: 'Creó una alerta URGENTE para 48 destinatarios',
+    ocurridoEn: _cuando(17, 8, 5),
+  ),
+  AsientoVista(
+    tipo: 'LECTURA_CONFIRMADA',
+    actorCorreo: 'aramirez@umg.edu.gt',
+    actorRol: 'CATEDRATICO',
+    entidad: 'ENTREGA',
+    entidadId: 'm1/u1',
+    resumen: 'Confirmó la lectura del mensaje m1',
+    ocurridoEn: _cuando(17, 8, 12),
+  ),
+  AsientoVista(
+    tipo: 'ROL_CAMBIADO',
+    actorCorreo: 'lmarroquin@umg.edu.gt',
+    actorRol: 'COORDINADOR',
+    entidad: 'USUARIO',
+    entidadId: 'u3',
+    resumen: 'Cambió el rol de Julio Morales a Administrador Académico',
+    ocurridoEn: _cuando(16, 10, 40),
   ),
 ];
 
@@ -514,6 +626,193 @@ void main() {
       ),
     );
     await _guardar(tester, 'entregas');
+  });
+
+  // ─────────────────────── El panel entero ───────────────────────
+
+  testWidgets('el panel de administración', (WidgetTester tester) async {
+    await _encuadrar(tester, _escritorio);
+    await tester.pumpWidget(
+      envolver(
+        PanelAdmin(usuario: _coordinador()),
+        extras: <dynamic>[
+          repositorioBandejaProvider.overrideWithValue(
+            RepositorioBandejaFalso(_bandeja),
+          ),
+        ],
+      ),
+    );
+    await _guardar(tester, 'panel');
+  });
+
+  // ─────────── Cada forma de decidir CUÁNDO sale un aviso ───────────
+
+  Widget redactar() => Scaffold(
+    body: SeccionMensajes(
+      crearGrabadora: _GrabadoraQuieta.new,
+      elegirImagen: () async => null,
+    ),
+  );
+
+  List<dynamic> paraRedactar() => <dynamic>[
+    repositorioEnvioProvider.overrideWithValue(RepositorioEnvioFalso()),
+    repositorioGruposProvider.overrideWithValue(
+      RepositorioGruposFalso(grupos: _grupos),
+    ),
+    repositorioProgramacionProvider.overrideWithValue(
+      RepositorioProgramacionFalso(),
+    ),
+  ];
+
+  testWidgets('elegir una fecha y una hora', (WidgetTester tester) async {
+    await _encuadrar(tester, const Size(900, 620));
+    sesion.emitir(SesionActiva(_coordinador()));
+    await tester.pumpWidget(envolver(redactar(), extras: paraRedactar()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('En una fecha y hora'));
+    await tester.pumpAndSettle();
+    await _guardar(tester, 'programar-fecha');
+  });
+
+  testWidgets('repetir, con la vista previa de las próximas fechas', (
+    WidgetTester tester,
+  ) async {
+    await _encuadrar(tester, const Size(900, 760));
+    sesion.emitir(SesionActiva(_coordinador()));
+    await tester.pumpWidget(envolver(redactar(), extras: paraRedactar()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Repetido cada cierto tiempo'));
+    await tester.pumpAndSettle();
+    await _guardar(tester, 'programar-repetido');
+  });
+
+  testWidgets('urgente, y a quién va', (WidgetTester tester) async {
+    await _encuadrar(tester, const Size(900, 800));
+    sesion.emitir(SesionActiva(_coordinador()));
+    await tester.pumpWidget(envolver(redactar(), extras: paraRedactar()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(Textos.tipoUrgente));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(Textos.destinatariosGrupos));
+    await tester.pumpAndSettle();
+    await _guardar(tester, 'urgente-y-destinatarios');
+  });
+
+  // ───────────── Los dos avisos previos al envío ─────────────
+
+  testWidgets('el resumen previo, con lo que se lleva el mensaje', (
+    WidgetTester tester,
+  ) async {
+    await _encuadrar(tester, _escritorio);
+    sesion.emitir(SesionActiva(_coordinador()));
+    await tester.pumpWidget(envolver(redactar(), extras: paraRedactar()));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byType(TextFormField).first,
+      'Simulacro de evacuación mañana a las 10:00',
+    );
+    await tester.enterText(
+      find.byType(TextFormField).at(1),
+      'Al sonar la alarma, diríjase con sus estudiantes a la salida norte.',
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text(Textos.botonEnviarAhora));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(Textos.botonEnviarAhora));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('$_carpeta/resumen-antes-de-enviar.png'),
+    );
+  });
+
+  testWidgets('la segunda confirmación de una alerta urgente', (
+    WidgetTester tester,
+  ) async {
+    await _encuadrar(tester, _escritorio);
+    sesion.emitir(SesionActiva(_coordinador()));
+    await tester.pumpWidget(envolver(redactar(), extras: paraRedactar()));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).first, 'Fuga de gas');
+    await tester.enterText(
+      find.byType(TextFormField).at(1),
+      'Evacúe el edificio B de inmediato.',
+    );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text(Textos.tipoUrgente));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(Textos.tipoUrgente));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text(Textos.botonEnviarAhora));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(Textos.botonEnviarAhora));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.text(Textos.botonConfirmarEnvio));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('$_carpeta/segunda-confirmacion.png'),
+    );
+  });
+
+  // ─────────────────────── Coordinador ───────────────────────
+
+  testWidgets('grupos', (WidgetTester tester) async {
+    await _encuadrar(tester, _escritorio);
+    sesion.emitir(SesionActiva(_coordinador()));
+    await tester.pumpWidget(
+      envolver(
+        const Scaffold(body: SeccionGrupos()),
+        extras: <dynamic>[
+          repositorioGruposProvider.overrideWithValue(
+            RepositorioGruposFalso(grupos: _grupos),
+          ),
+        ],
+      ),
+    );
+    await _guardar(tester, 'grupos');
+  });
+
+  testWidgets('usuarios', (WidgetTester tester) async {
+    await _encuadrar(tester, _escritorio);
+    sesion.emitir(SesionActiva(_coordinador()));
+    await tester.pumpWidget(
+      envolver(
+        const Scaffold(body: SeccionUsuarios()),
+        extras: <dynamic>[
+          repositorioAdminProvider.overrideWithValue(
+            RepositorioAdminFalso(usuarios: _usuarios),
+          ),
+        ],
+      ),
+    );
+    await _guardar(tester, 'usuarios');
+  });
+
+  testWidgets('bitácora', (WidgetTester tester) async {
+    await _encuadrar(tester, _escritorio);
+    sesion.emitir(SesionActiva(_coordinador()));
+    await tester.pumpWidget(
+      envolver(
+        const Scaffold(body: SeccionBitacora()),
+        extras: <dynamic>[
+          repositorioAdminProvider.overrideWithValue(
+            RepositorioAdminFalso(asientos: _asientos),
+          ),
+        ],
+      ),
+    );
+    await _guardar(tester, 'bitacora');
   });
 }
 
