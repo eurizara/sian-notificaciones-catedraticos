@@ -24,6 +24,7 @@ EntornoNavegador entorno({
   String navegador = 'Chrome',
   bool soporta = true,
   int? versionIos,
+  int? versionIosMenor,
 }) {
   return EntornoNavegador(
     plataforma: plataforma,
@@ -31,6 +32,7 @@ EntornoNavegador entorno({
     navegador: navegador,
     soportaNotificaciones: soporta,
     versionIos: versionIos,
+    versionIosMenor: versionIosMenor,
   );
 }
 
@@ -296,6 +298,120 @@ void main() {
 
     test('un navegador desconocido recibe una indicación genérica', () {
       expect(Textos.comoRevertirPermiso('Netscape'), isNotEmpty);
+    });
+  });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // RES-05 · QUÉ DICE LA TARJETA CUANDO NO PUEDE NOTIFICAR, Y POR QUÉ ESE.
+  // ──────────────────────────────────────────────────────────────────────────
+  //
+  // En una pestaña de Safari en iOS, Apple no expone la API de notificaciones:
+  // solo existe dentro de la aplicación instalada. Si esa ausencia se lee como
+  // «navegador sin soporte», un iPhone moderno acaba leyendo que su iOS es
+  // anterior a la 16.4 —falso— y quien ya la tenía instalada ve que el sistema
+  // no funciona mientras los avisos le llegan.
+  group('RES-05 · el motivo correcto para cada iPhone mudo', () {
+    late RepositorioSesionFalso sesion;
+    late RepositorioBandejaFalso bandeja;
+
+    setUp(() {
+      sesion = RepositorioSesionFalso();
+      bandeja = RepositorioBandejaFalso(const <MensajeRecibido>[]);
+    });
+    tearDown(() => sesion.cerrar());
+
+    // La tarjeta se monta sola, no a través de la bandeja: en iOS sin
+    // instalar la bandeja muestra primero el instructivo, y quien llega a ver
+    // esta tarjeta es quien eligió continuar sin instalar. Ese es justo el
+    // caso que se está comprobando.
+    Widget montar(EntornoNavegador e) => ProviderScope(
+      overrides: [
+        repositorioSesionProvider.overrideWithValue(sesion),
+        repositorioBandejaProvider.overrideWithValue(bandeja),
+        repositorioDispositivosProvider.overrideWithValue(
+          RepositorioDispositivosFalso(entorno: e),
+        ),
+      ],
+      child: MaterialApp(
+        theme: TemaSian.claro(),
+        home: const Scaffold(body: TarjetaNotificaciones()),
+      ),
+    );
+
+    testWidgets('iPhone moderno en pestaña: falta instalar, NO «iOS antiguo»', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        montar(
+          entorno(
+            plataforma: PlataformaWeb.ios,
+            navegador: 'Safari',
+            // Sin instalar, Safari no expone la API. Eso NO es un iOS viejo.
+            soporta: false,
+            versionIos: 18,
+            versionIosMenor: 2,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(Textos.notifInstalarTitulo), findsOneWidget);
+      expect(find.text(Textos.notifSinSoporteIos), findsNothing);
+    });
+
+    testWidgets('iOS 15: sí es antiguo, y eso no lo arregla instalar', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        montar(
+          entorno(
+            plataforma: PlataformaWeb.ios,
+            navegador: 'Safari',
+            soporta: false,
+            versionIos: 15,
+            versionIosMenor: 6,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(Textos.notifSinSoporteIos), findsOneWidget);
+    });
+
+    testWidgets('el instructivo habla de esta pestaña, no del teléfono', (
+      WidgetTester tester,
+    ) async {
+      // Decir «no llegará ninguna» a quien ya la instaló y sí recibe avisos
+      // gasta la confianza que hará falta el día que de verdad falle.
+      expect(Textos.notifInstalarDetalle, isNot(contains('no llegará ninguna')));
+      expect(Textos.notifInstalarDetalle, contains('pantalla de inicio'));
+    });
+  });
+
+  group('RES-05 · el 4 de «16.4»', () {
+    // iOS 16.0 a 16.3 no tienen notificaciones web; la 16.4 sí. Leyendo solo
+    // el 16 las dos parecerían iguales, y un iPhone con 16.1 pasaría por bueno
+    // para quedarse mudo después sin que nada lo explicara.
+    test('16.3 es demasiado antiguo y 16.4 no', () {
+      bool viejo(int mayor, int menor) => entorno(
+        plataforma: PlataformaWeb.ios,
+        versionIos: mayor,
+        versionIosMenor: menor,
+      ).iosDemasiadoAntiguo;
+
+      expect(viejo(16, 3), isTrue);
+      expect(viejo(16, 4), isFalse);
+      expect(viejo(15, 9), isTrue);
+      expect(viejo(17, 0), isFalse);
+    });
+
+    test('sin poder leer la versión NO se acusa al teléfono de viejo', () {
+      // Decirle a alguien con un iPhone nuevo que su iOS es antiguo lo manda a
+      // buscar una actualización que no existe.
+      expect(
+        entorno(plataforma: PlataformaWeb.ios).iosDemasiadoAntiguo,
+        isFalse,
+      );
     });
   });
 
