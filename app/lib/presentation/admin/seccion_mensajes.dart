@@ -86,6 +86,19 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
   bool _enviando = false;
   bool _subiendo = false;
 
+  /// Hay un adjunto a medias: grabando, o leyendo la imagen recién elegida.
+  ///
+  /// ──────────────────────────────────────────────────────────────────────────
+  /// Con esto en marcha, enviar está prohibido.
+  /// ──────────────────────────────────────────────────────────────────────────
+  ///
+  /// Lo que está a medias todavía no forma parte del mensaje. Enviar en ese
+  /// momento produce lo peor que puede pasar aquí: un aviso que sale **sin la
+  /// nota de voz que se estaba grabando**, sin error y sin aviso. Quien lo
+  /// mandó cree que mandó audio; quien lo recibe ve texto suelto. Y RN-03 dice
+  /// que un mensaje enviado no se edita.
+  bool _adjuntoAMedias = false;
+
   @override
   void initState() {
     super.initState();
@@ -113,6 +126,12 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
 
   /// Flujo completo de envío: validar, contar, confirmar y despachar.
   Future<void> _intentarEnviar() async {
+    // Antes que nada, y aunque el botón ya esté deshabilitado: un envío que
+    // sale mientras se graba pierde la nota de voz para siempre.
+    if (_adjuntoAMedias) {
+      _avisar(Textos.adjuntoAMedias, error: true);
+      return;
+    }
     if (!(_formulario.currentState?.validate() ?? false)) {
       return;
     }
@@ -462,6 +481,8 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
                   adjuntos: _adjuntos,
                   alCambiar: (AdjuntosEnCurso a) =>
                       setState(() => _adjuntos = a),
+                  alOcuparse: (bool ocupado) =>
+                      setState(() => _adjuntoAMedias = ocupado),
                   crear: widget.crearGrabadora,
                   elegir: widget.elegirImagen,
                 ),
@@ -497,8 +518,12 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
                 ),
                 const SizedBox(height: 24),
 
+                // El botón dice POR QUÉ no se puede pulsar. Uno gris y mudo
+                // deja a la persona intentándolo sin saber qué le falta.
                 FilledButton.icon(
-                  onPressed: _enviando ? null : _intentarEnviar,
+                  onPressed: _enviando || _adjuntoAMedias
+                      ? null
+                      : _intentarEnviar,
                   style: FilledButton.styleFrom(
                     minimumSize: const Size(88, 52),
                     backgroundColor: _urgente ? ColoresSian.urgente : null,
@@ -510,9 +535,10 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.send),
-                  label: Text(switch ((_enviando, _subiendo)) {
-                    (_, true) => Textos.subiendoAdjuntos,
-                    (true, _) => Textos.contandoDestinatarios,
+                  label: Text(switch ((_enviando, _subiendo, _adjuntoAMedias)) {
+                    (_, _, true) => Textos.adjuntoAMedias,
+                    (_, true, _) => Textos.subiendoAdjuntos,
+                    (true, _, _) => Textos.contandoDestinatarios,
                     _ => Textos.botonEnviarAhora,
                   }),
                 ),
