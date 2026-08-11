@@ -9,15 +9,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/proveedores_sesion.dart';
+import '../../core/plataforma/recarga.dart';
 import '../../domain/sesion.dart';
 import 'tema.dart';
 import 'textos.dart';
 
 class BarraSesion extends ConsumerWidget implements PreferredSizeWidget {
-  const BarraSesion({required this.usuario, required this.titulo, super.key});
+  const BarraSesion({
+    required this.usuario,
+    required this.titulo,
+    this.recargar = recargarAplicacion,
+    super.key,
+  });
 
   final UsuarioSesion usuario;
   final String titulo;
+
+  /// Inyectable: en las pruebas no hay navegador que recargar.
+  final void Function() recargar;
 
   /// Por debajo de este ancho se oculta el bloque de identidad y queda solo el
   /// menú de la cuenta: en un teléfono, el nombre completo no cabe sin empujar
@@ -79,6 +88,20 @@ class BarraSesion extends ConsumerWidget implements PreferredSizeWidget {
               ),
             ),
           ),
+        // ────────────────────────────────────────────────────────────────────
+        // RECARGAR, A LA IZQUIERDA DE SALIR.
+        // ────────────────────────────────────────────────────────────────────
+        //
+        // Cerrar sesión se queda en el borde, donde ya estaba: cambiarlo de
+        // sitio haría que quien lo busca sin mirar pulse lo que no quería. Y
+        // entre los dos hay una separación, porque uno se deshace pulsándolo
+        // otra vez y el otro obliga a volver a entrar.
+        IconButton(
+          icon: const Icon(Icons.refresh),
+          tooltip: Textos.botonRecargar,
+          onPressed: recargar,
+        ),
+        const SizedBox(width: 4),
         IconButton(
           icon: const Icon(Icons.logout),
           // En pantalla estrecha el nombre no se ve, así que quién está dentro

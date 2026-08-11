@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sian/application/proveedores_sesion.dart';
 import 'package:sian/core/navegador.dart';
 import 'package:sian/domain/repositorios.dart';
+import 'package:sian/infrastructure/firebase/repositorio_dispositivos.dart';
 import 'package:sian/domain/rol.dart';
 import 'package:sian/presentation/docente/bandeja_docente.dart';
 import 'package:sian/presentation/docente/instructivo_ios.dart';
@@ -385,6 +386,31 @@ void main() {
       // gasta la confianza que hará falta el día que de verdad falle.
       expect(Textos.notifInstalarDetalle, isNot(contains('no llegará ninguna')));
       expect(Textos.notifInstalarDetalle, contains('pantalla de inicio'));
+    });
+  });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // NUNCA SE PIDE UN PERMISO QUE YA SE TIENE.
+  // ──────────────────────────────────────────────────────────────────────────
+  //
+  // Safari exige que `requestPermission()` nazca de un gesto de la persona.
+  // El refresco de identificador de cada apertura es automático, así que
+  // pedirlo ahí lo deniega en el acto — y esa denegación se confundía con la
+  // decisión real del usuario: un iPhone con las notificaciones concedidas, y
+  // recibiéndolas, leía «Notificaciones bloqueadas» al abrir la aplicación.
+  group('RF-USR-09 · el permiso concedido no se vuelve a pedir', () {
+    test('concedido: no se pide', () {
+      expect(hayQuePedirPermiso(EstadoPermiso.concedido), isFalse);
+    });
+
+    test('cualquier otro estado sí se pide', () {
+      for (final EstadoPermiso e in <EstadoPermiso>[
+        EstadoPermiso.pendiente,
+        EstadoPermiso.denegado,
+        EstadoPermiso.noSoportado,
+      ]) {
+        expect(hayQuePedirPermiso(e), isTrue, reason: '$e');
+      }
     });
   });
 
