@@ -26,6 +26,13 @@
         ]
       },
       {
+        "//": "El sitio de manuales. La reescritura general sirve index.html para CUALQUIER ruta que no exista, con código 200: mientras faltaba una imagen, el navegador guardaba ese HTML como si fuera el PNG y la imagen aparecía rota durante la hora siguiente aunque ya se hubiera publicado. Con revalidación no se hereda un error pasajero.",
+        "source": "/manuales/**",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache" }
+        ]
+      },
+      {
         "//": "assets/ NO lleva huella de contenido, y su contenido SÍ cambia. El caso que lo demostró: la fuente de iconos se recorta en cada compilación para dejar solo los iconos que la aplicación usa, y se sirve siempre como assets/fonts/MaterialIcons-Regular.otf. Al añadir el botón de recargar, quien ya tenía la fuente anterior guardada seguía usándola durante una semana: el botón existía, respondía y mostraba su ayuda emergente, pero su icono NO SE DIBUJABA. Un fallo así no da ningún error y parece que la función no se desplegó. Se revalida siempre: son 1,5 MB de archivos pequeños y una revalidación sin cambios responde 304 sin cuerpo.",
         "source": "**/assets/**",
         "headers": [
