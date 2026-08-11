@@ -537,6 +537,23 @@ class _FilaState extends ConsumerState<_Fila> {
                         ],
                       ),
 
+                      // ──────────────────────────────────────────────────────
+                      // QUIÉN LO ENVÍA, VISIBLE SIN ABRIR.
+                      // ──────────────────────────────────────────────────────
+                      //
+                      // Ante un aviso que pide salir del edificio, saber quién
+                      // lo firma es parte de decidir si obedecerlo. Va en la
+                      // fila plegada porque ahí es donde se decide qué abrir.
+                      if (mensaje.emisor.isNotEmpty) ...<Widget>[
+                        const SizedBox(height: 4),
+                        Text(
+                          Textos.enviadoPor(mensaje.emisor),
+                          style: tema.textTheme.bodySmall?.copyWith(
+                            color: tema.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+
                       if (abierto) ...<Widget>[
                         const SizedBox(height: 8),
                         Text(mensaje.cuerpo),
@@ -544,16 +561,21 @@ class _FilaState extends ConsumerState<_Fila> {
                         // RF-ENT-08 y RF-ENT-09. Van bajo el texto y no tras un botón:
                         // una nota de voz que hay que buscar es una nota de voz que no se
                         // escucha, y en un aviso urgente puede ser lo único que importa.
-                        if (mensaje.llevaVoz) ...<Widget>[
+                        //
+                        // En el ORDEN en que los adjuntó quien envió. Ese orden
+                        // dice algo —el plano, la voz que lo explica, la foto
+                        // del punto de reunión— y agruparlos por tipo aquí lo
+                        // destruiría sin que nadie se diera cuenta.
+                        for (final AdjuntoRecibido adjunto
+                            in mensaje.adjuntos) ...<Widget>[
                           const SizedBox(height: 12),
-                          NotaDeVoz(
-                            ruta: mensaje.rutaVoz!,
-                            duracionSeg: mensaje.duracionVozSeg,
-                          ),
-                        ],
-                        if (mensaje.llevaImagen) ...<Widget>[
-                          const SizedBox(height: 12),
-                          ImagenAdjunta(ruta: mensaje.rutaImagen!),
+                          if (adjunto.esVoz)
+                            NotaDeVoz(
+                              ruta: adjunto.ruta,
+                              duracionSeg: adjunto.duracionSeg,
+                            )
+                          else
+                            ImagenAdjunta(ruta: adjunto.ruta),
                         ],
 
                         if (mensaje.requiereConfirmacion &&

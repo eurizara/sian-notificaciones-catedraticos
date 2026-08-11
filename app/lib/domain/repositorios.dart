@@ -58,12 +58,11 @@ class MensajeRecibido {
     required this.tipo,
     required this.estado,
     required this.requiereConfirmacion,
+    this.emisor = '',
     this.entregadoEn,
     this.abiertoEn,
     this.confirmadoEn,
-    this.rutaVoz,
-    this.duracionVozSeg,
-    this.rutaImagen,
+    this.adjuntos = const <AdjuntoRecibido>[],
   });
 
   final String mensajeId;
@@ -77,19 +76,35 @@ class MensajeRecibido {
   final String estado;
 
   final bool requiereConfirmacion;
+
+  /// Quién lo envió, por su nombre.
+  ///
+  /// Viene desnormalizado en el mensaje porque el receptor no puede leer
+  /// `usuarios`: sin esto habría que enseñar un identificador aleatorio, que
+  /// es peor que no enseñar nada porque parece un dato.
+  ///
+  /// Vacío en los mensajes anteriores a que esto se guardara. Se muestra lo
+  /// que hay: inventar un «Sistema» donde no consta quién firmó sería peor.
+  final String emisor;
+
   final DateTime? entregadoEn;
   final DateTime? abiertoEn;
   final DateTime? confirmadoEn;
 
-  /// Rutas en Cloud Storage de los adjuntos (RF-ENT-08, RF-ENT-09). Nulas si
-  /// el aviso es solo de texto.
-  final String? rutaVoz;
-  final int? duracionVozSeg;
-  final String? rutaImagen;
+  /// Los adjuntos (RF-ENT-08, RF-ENT-09), **en el orden en que se adjuntaron**.
+  ///
+  /// ──────────────────────────────────────────────────────────────────────────
+  /// Una lista, no un hueco para la voz y otro para la imagen.
+  /// ──────────────────────────────────────────────────────────────────────────
+  ///
+  /// El orden lo eligió quien redactó y significa algo: un plano, después la
+  /// nota de voz que lo explica, después la foto del punto de reunión.
+  /// Separarlos por tipo obligaría a inventar un orden al mostrarlos.
+  final List<AdjuntoRecibido> adjuntos;
 
-  bool get llevaVoz => rutaVoz != null;
-  bool get llevaImagen => rutaImagen != null;
-  bool get llevaAdjuntos => llevaVoz || llevaImagen;
+  bool get llevaVoz => adjuntos.any((AdjuntoRecibido a) => a.esVoz);
+  bool get llevaImagen => adjuntos.any((AdjuntoRecibido a) => !a.esVoz);
+  bool get llevaAdjuntos => adjuntos.isNotEmpty;
 
   bool get esUrgente => tipo == 'URGENTE';
   bool get estaConfirmado => estado == 'CONFIRMADO';
@@ -98,4 +113,25 @@ class MensajeRecibido {
   /// que la aplicación tiene que insistir (RF-CNF-10).
   bool get exigeAtencion =>
       esUrgente && requiereConfirmacion && !estaConfirmado;
+}
+
+/// Un adjunto tal como llega al receptor.
+class AdjuntoRecibido {
+  const AdjuntoRecibido({
+    required this.tipo,
+    required this.ruta,
+    this.duracionSeg,
+  });
+
+  /// `AUDIO` o `IMAGEN`.
+  final String tipo;
+
+  /// Ruta en Cloud Storage. La URL se pide al mostrar, no se guarda: las de
+  /// Storage caducan, y una guardada dejaría de funcionar sin decir por qué.
+  final String ruta;
+
+  /// Solo para audio.
+  final int? duracionSeg;
+
+  bool get esVoz => tipo == 'AUDIO';
 }

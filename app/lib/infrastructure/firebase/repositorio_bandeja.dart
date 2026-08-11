@@ -9,7 +9,6 @@ library;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../../core/plataforma/consola.dart';
 import '../../domain/repositorios.dart';
 
 class RepositorioBandejaFirebase implements RepositorioBandeja {
@@ -91,16 +90,7 @@ class RepositorioBandejaFirebase implements RepositorioBandeja {
         continue;
       }
 
-      final String? rutaVoz = _rutaDe(mensaje, 'audio');
-      final String? rutaImagen = _rutaDe(mensaje, 'imagen');
-
-      if (mensaje['adjuntos'] != null) {
-        consolaError(
-          'SIAN.bandeja adjuntos | mensaje=$mensajeId '
-          'crudo=${mensaje['adjuntos'].runtimeType} '
-          'voz=${rutaVoz != null} imagen=${rutaImagen != null}',
-        );
-      }
+      final List<AdjuntoRecibido> adjuntos = _adjuntosDe(mensaje);
 
       recibidos.add(
         MensajeRecibido(
@@ -110,12 +100,11 @@ class RepositorioBandejaFirebase implements RepositorioBandeja {
           tipo: (mensaje['tipo'] as String?) ?? 'INFORMATIVO',
           estado: (datos['estado'] as String?) ?? 'PENDIENTE',
           requiereConfirmacion: mensaje['requiereConfirmacion'] == true,
+          emisor: (mensaje['creadoPorNombre'] as String?) ?? '',
           entregadoEn: (datos['entregadoEn'] as Timestamp?)?.toDate(),
           abiertoEn: (datos['abiertoEn'] as Timestamp?)?.toDate(),
           confirmadoEn: (datos['confirmadoEn'] as Timestamp?)?.toDate(),
-          rutaVoz: rutaVoz,
-          duracionVozSeg: _duracionDe(mensaje),
-          rutaImagen: rutaImagen,
+          adjuntos: adjuntos,
         ),
       );
     }
@@ -141,19 +130,60 @@ class RepositorioBandejaFirebase implements RepositorioBandeja {
 Map<Object?, Object?>? _comoMapa(Object? valor) =>
     valor is Map ? valor.cast<Object?, Object?>() : null;
 
-/// Ruta de un adjunto dentro del mapa `adjuntos` del mensaje.
-String? _rutaDe(Map<String, dynamic> mensaje, String clave) {
-  final Map<Object?, Object?>? uno = _comoMapa(
-    _comoMapa(mensaje['adjuntos'])?[clave],
-  );
-  final Object? ruta = uno?['ruta'];
-  return (ruta is String && ruta.isNotEmpty) ? ruta : null;
+/// Los adjuntos del mensaje, en orden.
+///
+/// ────────────────────────────────────────────────────────────────────────────
+/// Entiende la forma nueva y la antigua. Las dos, a propósito.
+/// ────────────────────────────────────────────────────────────────────────────
+///
+/// Hasta ahora un mensaje llevaba como mucho `{audio, imagen}`. Los mensajes ya
+/// enviados no se reescriben (RN-03), así que dejar de entender esa forma
+/// borraría los adjuntos de todo lo entregado hasta hoy: seguirían en Storage,
+/// pero nadie sabría que existen.
+///
+/// En la forma antigua la voz se mostraba primero, y se conserva ese orden: es
+/// el único que esos mensajes llegaron a tener.
+List<AdjuntoRecibido> _adjuntosDe(Map<String, dynamic> mensaje) {
+  final Map<Object?, Object?>? adjuntos = _comoMapa(mensaje['adjuntos']);
+  if (adjuntos == null) {
+    return const <AdjuntoRecibido>[];
+  }
+
+  final Object? lista = adjuntos['lista'];
+  if (lista is List && lista.isNotEmpty) {
+    final List<AdjuntoRecibido> salida = <AdjuntoRecibido>[];
+    for (final Object? bruto in lista) {
+      final AdjuntoRecibido? uno = _adjuntoDe(_comoMapa(bruto), null);
+      if (uno != null) {
+        salida.add(uno);
+      }
+    }
+    return salida;
+  }
+
+  return <AdjuntoRecibido>[
+    ?_adjuntoDe(_comoMapa(adjuntos['audio']), 'AUDIO'),
+    ?_adjuntoDe(_comoMapa(adjuntos['imagen']), 'IMAGEN'),
+  ];
 }
 
-int? _duracionDe(Map<String, dynamic> mensaje) {
-  final Map<Object?, Object?>? audio = _comoMapa(
-    _comoMapa(mensaje['adjuntos'])?['audio'],
+/// Un adjunto suelto. [tipoFijo] es para la forma antigua, donde el tipo lo
+/// decía la clave del mapa y no venía dentro.
+AdjuntoRecibido? _adjuntoDe(Map<Object?, Object?>? uno, String? tipoFijo) {
+  if (uno == null) {
+    return null;
+  }
+  final Object? ruta = uno['ruta'];
+  if (ruta is! String || ruta.isEmpty) {
+    return null;
+  }
+
+  final Object? tipo = tipoFijo ?? uno['tipo'];
+  final Object? duracion = uno['duracionSeg'];
+
+  return AdjuntoRecibido(
+    tipo: tipo is String && tipo.isNotEmpty ? tipo : 'IMAGEN',
+    ruta: ruta,
+    duracionSeg: duracion is num ? duracion.toInt() : null,
   );
-  final Object? d = audio?['duracionSeg'];
-  return d is num ? d.toInt() : null;
 }

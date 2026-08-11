@@ -37,9 +37,10 @@ import { crearAsiento } from '../domain/bitacora';
 import { exigirPermiso, type Sujeto } from '../domain/autorizacion';
 import { ErrorAutorizacion, ErrorDominio } from '../domain/errores';
 import { MensajeFactory, type Mensaje } from '../domain/mensaje';
+import { normalizarAdjuntos } from '../domain/tipos';
 import type { Adjuntos, Destinatarios, Rol, TipoMensaje } from '../domain/tipos';
 import { FieldValue, OPCIONES_FUNCION, RUTAS, aTimestamp, db } from '../infrastructure/firebase';
-import { escribirAsiento } from '../infrastructure/repositorios';
+import { escribirAsiento, nombreDe } from '../infrastructure/repositorios';
 
 /** FCM admite 500 mensajes por lote. Se deja margen. */
 const TAMANO_LOTE = 400;
@@ -176,7 +177,7 @@ export const enviarInmediato = onCall(OPCIONES_FUNCION, async (peticion) => {
       exigirPermiso(sujeto, 'EXIGIR_CONFIRMACION');
     }
 
-    if (datos.adjuntos?.audio || datos.adjuntos?.imagen) {
+    if (normalizarAdjuntos(datos.adjuntos).length > 0) {
       exigirPermiso(sujeto, 'ADJUNTAR_MULTIMEDIA');
     }
 
@@ -239,6 +240,10 @@ export const enviarInmediato = onCall(OPCIONES_FUNCION, async (peticion) => {
       ...mensaje,
       creadoEn: aTimestamp(mensaje.creadoEn),
       estado: 'EN_ENVIO',
+      // El nombre viaja CON el mensaje: el receptor no puede leer `usuarios`,
+      // así que sin esto vería un identificador aleatorio donde debería decir
+      // quién le está avisando.
+      creadoPorNombre: await nombreDe(sujeto.uid),
       // Lista plana para que las reglas puedan decidir si quien lee es
       // destinatario, cosa que no pueden hacer consultando otra colección
       // (documento 05, sección 2.4).

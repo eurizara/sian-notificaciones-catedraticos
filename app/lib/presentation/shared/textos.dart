@@ -480,6 +480,26 @@ abstract final class Textos {
 
   static const String subiendoAdjuntos = 'Subiendo adjuntos…';
 
+  /// Quién firma el aviso.
+  ///
+  /// Ante un mensaje que pide salir del edificio, saber quién lo manda es
+  /// parte de decidir si obedecerlo. Y en las listas del emisor —entregas,
+  /// programados— es lo primero que se pregunta cuando varias personas
+  /// comparten el panel.
+  static String enviadoPor(String nombre) => 'De $nombre';
+
+  /// Un botón que ya no puede añadir nada lo dice en su etiqueta. Pulsarlo y
+  /// que no pase nada es peor que no ofrecerlo.
+  static const String vozAlMaximo = 'Ya van 2 notas de voz';
+  static const String imagenAlMaximo = 'Ya van 3 imágenes';
+  static const String adjuntosMuyPesados =
+      'Los adjuntos sumarían más de 10 MB. Quita alguno: con una conexión '
+      'mala, un mensaje así no llega.';
+
+  /// El orden importa, y quien redacta tiene que saber que importa.
+  static String adjuntosOrden(String peso) =>
+      'Se verán en este orden. En total, $peso.';
+
   /// Por qué el botón de enviar no se puede pulsar ahora mismo.
   ///
   /// Lo dice el propio botón. Uno gris y mudo deja a la persona intentándolo
@@ -492,18 +512,20 @@ abstract final class Textos {
   /// verse ANTES, junto al número de destinatarios y por la misma razón: es la
   /// última ocasión de notar que falta algo que se creía puesto.
   static const String resumenSinAdjuntos = 'Va solo con texto.';
-  static String resumenAdjuntos({
-    required bool voz,
-    required bool imagen,
-    required int segundos,
-  }) {
-    if (voz && imagen) {
-      return 'Va con nota de voz (${segundos}s) e imagen.';
-    }
-    if (voz) {
-      return 'Va con nota de voz (${segundos}s).';
-    }
-    return 'Va con imagen.';
+
+  /// Dice **cuántos** de cada cosa, no solo que los hay.
+  ///
+  /// Con varios adjuntos, «va con imagen» no permite notar que falta la
+  /// segunda, que es justo lo que este resumen existe para evitar.
+  static String resumenAdjuntos({required int voces, required int imagenes}) {
+    String plural(int n, String uno, String varios) =>
+        n == 1 ? '1 $uno' : '$n $varios';
+
+    final List<String> partes = <String>[
+      if (voces > 0) plural(voces, 'nota de voz', 'notas de voz'),
+      if (imagenes > 0) plural(imagenes, 'imagen', 'imágenes'),
+    ];
+    return 'Va con ${partes.join(' y ')}.';
   }
 
   /// Una subida que falla dice CUÁL falló.

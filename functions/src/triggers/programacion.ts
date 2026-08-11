@@ -23,6 +23,7 @@ import { exigirPermiso, type Sujeto } from '../domain/autorizacion';
 import { ErrorAutorizacion, ErrorDominio } from '../domain/errores';
 import { MensajeFactory, prioridadDeDespacho } from '../domain/mensaje';
 import { calcularProximasOcurrencias } from '../domain/recurrencia/planificacion';
+import { normalizarAdjuntos } from '../domain/tipos';
 import type {
   Adjuntos,
   Destinatarios,
@@ -32,7 +33,7 @@ import type {
   TipoMensaje,
 } from '../domain/tipos';
 import { FieldValue, OPCIONES_FUNCION, RUTAS, aTimestamp, db } from '../infrastructure/firebase';
-import { escribirAsiento } from '../infrastructure/repositorios';
+import { escribirAsiento, nombreDe } from '../infrastructure/repositorios';
 
 const ZONA_INSTITUCIONAL = 'America/Guatemala';
 
@@ -133,7 +134,7 @@ export const programarMensaje = onCall(OPCIONES_FUNCION, async (peticion) => {
     if (datos.requiereConfirmacion === true) {
       exigirPermiso(sujeto, 'EXIGIR_CONFIRMACION');
     }
-    if (datos.adjuntos?.audio || datos.adjuntos?.imagen) {
+    if (normalizarAdjuntos(datos.adjuntos).length > 0) {
       exigirPermiso(sujeto, 'ADJUNTAR_MULTIMEDIA');
     }
 
@@ -204,6 +205,8 @@ export const programarMensaje = onCall(OPCIONES_FUNCION, async (peticion) => {
       ...mensaje,
       creadoEn: aTimestamp(mensaje.creadoEn),
       estado: 'PROGRAMADO',
+      // El nombre viaja CON el mensaje: el receptor no puede leer `usuarios`.
+      creadoPorNombre: await nombreDe(sujeto.uid),
       // Los destinatarios se resuelven al despachar, no ahora: entre hoy y el
       // día del envío puede entrar o salir gente, y lo que importa es quién
       // está cuando el aviso sale.

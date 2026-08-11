@@ -9,7 +9,8 @@ import {
   prioridadDeDespacho,
   type EntradaMensaje,
 } from '../../src/domain/mensaje';
-import { LIMITES } from '../../src/domain/tipos';
+import { LIMITES, type Adjunto } from '../../src/domain/tipos';
+import { ErrorDominio } from '../../src/domain/errores';
 import { esperarCodigo } from './ayudas';
 
 const ZONA = 'America/Guatemala';
@@ -106,15 +107,133 @@ describe('RF-MSG-07 · límites de la nota de voz', () => {
   it('rechaza un audio vacío', () => {
     esperarCodigo(
       () => crear({ adjuntos: { audio: { ruta: 'a', bytes: 0, duracionSeg: 5 } } }),
-      'AUDIO_VACIO',
+      'ADJUNTO_VACIO',
     );
   });
 
   it('rechaza un audio sin ruta de almacenamiento', () => {
     esperarCodigo(
       () => crear({ adjuntos: { audio: { ruta: '', bytes: 10, duracionSeg: 5 } } }),
-      'AUDIO_SIN_RUTA',
+      'ADJUNTO_SIN_RUTA',
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// RF-MSG-05 · VARIOS ADJUNTOS, Y EN EL ORDEN DEL EMISOR.
+// ---------------------------------------------------------------------------
+//
+// El orden lo elige quien redacta y significa algo: un plano, después la nota
+// de voz que lo explica, después la foto del punto de reunión. Guardarlo como
+// «los audios» y «las imágenes» por separado obligaría a reconstruir ese orden
+// al mostrarlo, y no hay forma de reconstruir lo que no se guardó.
+describe('RF-MSG-05 · varios adjuntos', () => {
+  const voz = (n: number): Adjunto => ({
+    tipo: 'AUDIO',
+    ruta: `mensajes/x/${n}-voz.webm`,
+    bytes: 300_000,
+    tipoMime: 'audio/webm',
+    duracionSeg: 20,
+  });
+  const img = (n: number): Adjunto => ({
+    tipo: 'IMAGEN',
+    ruta: `mensajes/x/${n}-imagen.png`,
+    bytes: 900_000,
+    tipoMime: 'image/png',
+  });
+
+  it('conserva el orden en que se adjuntaron, mezclando tipos', () => {
+    const lista = [img(1), voz(2), img(3)];
+    const m = crear({ adjuntos: { lista } });
+
+    expect(m.adjuntos.lista?.map((a) => a.ruta)).toEqual([
+      'mensajes/x/1-imagen.png',
+      'mensajes/x/2-voz.webm',
+      'mensajes/x/3-imagen.png',
+    ]);
+  });
+
+  it('el formato dice QUÉ hay, no cuántos', () => {
+    expect(crear({ adjuntos: { lista: [img(1), img(2)] } }).formato).toEqual(['TEXTO', 'IMAGEN']);
+    expect(crear({ adjuntos: { lista: [voz(1), img(2)] } }).formato).toEqual([
+      'TEXTO',
+      'VOZ',
+      'IMAGEN',
+    ]);
+  });
+
+  it('admite el máximo de cada tipo y rechaza uno más', () => {
+    expect(() => crear({ adjuntos: { lista: [img(1), img(2), img(3)] } })).not.toThrow();
+    esperarCodigo(
+      () => crear({ adjuntos: { lista: [img(1), img(2), img(3), img(4)] } }),
+      'DEMASIADAS_IMAGENES',
+    );
+
+    expect(() => crear({ adjuntos: { lista: [voz(1), voz(2)] } })).not.toThrow();
+    esperarCodigo(
+      () => crear({ adjuntos: { lista: [voz(1), voz(2), voz(3)] } }),
+      'DEMASIADAS_NOTAS_DE_VOZ',
+    );
+  });
+
+  it('rechaza el conjunto demasiado pesado aunque cada pieza quepa', () => {
+    // Tres imágenes de 4 MB pasan una a una y suman 12: en una conexión mala
+    // eso no es un aviso, es contenido que no llega.
+    const pesada = (n: number): Adjunto => ({ ...img(n), bytes: 4 * 1024 * 1024 });
+    esperarCodigo(
+      () => crear({ adjuntos: { lista: [pesada(1), pesada(2), pesada(3)] } }),
+      'ADJUNTOS_MUY_PESADOS',
+    );
+  });
+
+  it('dice en qué posición está el adjunto que falla', () => {
+    // Con cinco adjuntos, «la imagen está vacía» no dice cuál, y el emisor
+    // tiene que adivinar cuál quitar.
+    let lanzado: unknown;
+    try {
+      crear({ adjuntos: { lista: [img(1), { ...img(2), bytes: 0 }] } });
+    } catch (e) {
+      lanzado = e;
+    }
+    expect((lanzado as ErrorDominio).detalle).toMatchObject({ posicion: 2 });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// LOS MENSAJES YA ENVIADOS NO SE REESCRIBEN (RN-03).
+// ---------------------------------------------------------------------------
+//
+// Dejar de entender la forma antigua borraría los adjuntos de todo lo
+// entregado hasta hoy: seguirían en Storage, pero nadie sabría que existen.
+describe('RF-MSG-05 · la forma antigua se sigue leyendo', () => {
+  it('un {audio, imagen} de antes se traduce a la lista, con la voz primero', () => {
+    const m = crear({
+      adjuntos: {
+        audio: { ruta: 'mensajes/y/voz.webm', bytes: 1000, duracionSeg: 9 },
+        imagen: { ruta: 'mensajes/y/imagen.png', bytes: 2000, tipoMime: 'image/png' },
+      },
+    });
+
+    expect(m.formato).toEqual(['TEXTO', 'VOZ', 'IMAGEN']);
+    expect(m.adjuntos.lista).toEqual([
+      {
+        tipo: 'AUDIO',
+        ruta: 'mensajes/y/voz.webm',
+        bytes: 1000,
+        tipoMime: 'audio/webm',
+        duracionSeg: 9,
+      },
+      { tipo: 'IMAGEN', ruta: 'mensajes/y/imagen.png', bytes: 2000, tipoMime: 'image/png' },
+    ]);
+  });
+
+  it('lo que se GUARDA es siempre la forma nueva', () => {
+    // Que convivan dos maneras de escribir lo mismo garantiza que tarde o
+    // temprano una de las dos deje de leerse en algún sitio.
+    const m = crear({ adjuntos: { imagen: { ruta: 'i', bytes: 10, tipoMime: 'image/png' } } });
+    expect(m.adjuntos.audio).toBeUndefined();
+    expect(m.adjuntos.imagen).toBeUndefined();
+    expect(m.adjuntos.lista).toHaveLength(1);
   });
 });
 

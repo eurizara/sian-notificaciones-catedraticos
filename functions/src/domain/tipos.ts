@@ -120,9 +120,22 @@ export interface Programacion {
 // Adjuntos (documento 05, sección 2.4)
 // ---------------------------------------------------------------------------
 
+export const TIPOS_ADJUNTO = ['AUDIO', 'IMAGEN'] as const;
+export type TipoAdjunto = (typeof TIPOS_ADJUNTO)[number];
+
+export interface Adjunto {
+  readonly tipo: TipoAdjunto;
+  readonly ruta: string;
+  readonly bytes: number;
+  readonly tipoMime: string;
+  /** Solo audio. */
+  readonly duracionSeg?: number;
+}
+
 export interface AdjuntoAudio {
   readonly ruta: string;
   readonly bytes: number;
+  readonly tipoMime?: string;
   readonly duracionSeg: number;
 }
 
@@ -134,9 +147,60 @@ export interface AdjuntoImagen {
   readonly alto?: number;
 }
 
+/**
+ * Lo que un mensaje lleva adjunto.
+ *
+ * ---------------------------------------------------------------------------
+ * UNA LISTA ORDENADA, NO UNA LISTA POR TIPO.
+ * ---------------------------------------------------------------------------
+ *
+ * El orden es del emisor y tiene sentido: un plano, después la nota de voz que
+ * lo explica, después la foto del punto de reunión. Guardarlo como
+ * `{audios: [], imagenes: []}` obligaría a reconstruir ese orden al mostrarlo,
+ * y no hay forma de reconstruir lo que no se guardó.
+ *
+ * `audio` e `imagen` son la forma ANTIGUA, de cuando solo cabía uno de cada.
+ * Se siguen leyendo porque los mensajes ya enviados no se reescriben (RN-03):
+ * dejar de entenderlos borraría los adjuntos de todo lo entregado hasta hoy.
+ * Nada nuevo se escribe así — `normalizarAdjuntos` traduce y el resto del
+ * sistema solo conoce `lista`.
+ */
 export interface Adjuntos {
+  readonly lista?: readonly Adjunto[];
   readonly audio?: AdjuntoAudio;
   readonly imagen?: AdjuntoImagen;
+}
+
+/** Los adjuntos en orden, vengan en la forma nueva o en la antigua. */
+export function normalizarAdjuntos(adjuntos?: Adjuntos): readonly Adjunto[] {
+  if (!adjuntos) {
+    return [];
+  }
+  if (adjuntos.lista && adjuntos.lista.length > 0) {
+    return adjuntos.lista;
+  }
+
+  // Forma antigua. La voz iba primero al mostrarse, así que se conserva ese
+  // orden: es el único que esos mensajes llegaron a tener.
+  const traducidos: Adjunto[] = [];
+  if (adjuntos.audio) {
+    traducidos.push({
+      tipo: 'AUDIO',
+      ruta: adjuntos.audio.ruta,
+      bytes: adjuntos.audio.bytes,
+      tipoMime: adjuntos.audio.tipoMime ?? 'audio/webm',
+      duracionSeg: adjuntos.audio.duracionSeg,
+    });
+  }
+  if (adjuntos.imagen) {
+    traducidos.push({
+      tipo: 'IMAGEN',
+      ruta: adjuntos.imagen.ruta,
+      bytes: adjuntos.imagen.bytes,
+      tipoMime: adjuntos.imagen.tipoMime,
+    });
+  }
+  return traducidos;
 }
 
 // ---------------------------------------------------------------------------
@@ -169,6 +233,17 @@ export const LIMITES = {
   IMAGEN_MAX_BYTES: 5 * 1024 * 1024,
   /** RF-MSG-08 */
   IMAGEN_MIMES: ['image/jpeg', 'image/png', 'image/webp'] as readonly string[],
+  /** RF-MSG-05 — cuántos adjuntos caben en un mensaje. */
+  MAX_IMAGENES: 3,
+  MAX_AUDIOS: 2,
+  /**
+   * Peso total de los adjuntos de un mensaje.
+   *
+   * Los máximos por pieza sumarían 19 MB, y un aviso de 19 MB en una conexión
+   * mala no es un aviso: es contenido que no llega. El tope existe para que el
+   * emisor se entere ANTES de enviar, cuando todavía puede quitar algo.
+   */
+  ADJUNTOS_MAX_BYTES_TOTAL: 10 * 1024 * 1024,
   /** RF-PRG-14 · documento 05, sección 2.11 */
   MAX_OCURRENCIAS_POR_MENSAJE: 500,
   /** RF-PRG-09 */

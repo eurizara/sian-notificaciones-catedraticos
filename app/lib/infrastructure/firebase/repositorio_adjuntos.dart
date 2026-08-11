@@ -34,12 +34,15 @@ abstract final class LimitesImagen {
 /// Adjunto ya subido, tal como viaja a la Function.
 class AdjuntoSubido {
   const AdjuntoSubido({
+    required this.tipo,
     required this.ruta,
     required this.bytes,
     required this.tipoMime,
     this.duracionSeg,
   });
 
+  /// `AUDIO` o `IMAGEN`.
+  final String tipo;
   final String ruta;
   final int bytes;
   final String tipoMime;
@@ -48,6 +51,7 @@ class AdjuntoSubido {
   final int? duracionSeg;
 
   Map<String, Object?> aMapa() => <String, Object?>{
+    'tipo': tipo,
     'ruta': ruta,
     'bytes': bytes,
     'tipoMime': tipoMime,
@@ -76,18 +80,26 @@ class RepositorioAdjuntos {
   String reservarIdMensaje() => _db.collection('mensajes').doc().id;
 
   /// Sube la nota de voz.
+  ///
+  /// [orden] va en el nombre del archivo porque un mensaje puede llevar varios:
+  /// con un nombre fijo, el segundo pisaría al primero — y las reglas prohíben
+  /// sobrescribir (RN-09), así que la subida fallaría sin más explicación.
   Future<AdjuntoSubido> subirVoz({
     required String mensajeId,
     required Uint8List bytes,
     required String tipoMime,
     required int duracionSeg,
+    int orden = 1,
   }) async {
     final String extension = tipoMime.contains('mp4') ? 'm4a' : 'webm';
-    final Reference ref = _storage.ref('mensajes/$mensajeId/voz.$extension');
+    final Reference ref = _storage.ref(
+      'mensajes/$mensajeId/$orden-voz.$extension',
+    );
 
     await ref.putData(bytes, SettableMetadata(contentType: tipoMime));
 
     return AdjuntoSubido(
+      tipo: 'AUDIO',
       ruta: ref.fullPath,
       bytes: bytes.length,
       tipoMime: tipoMime,
@@ -101,17 +113,21 @@ class RepositorioAdjuntos {
     required Uint8List bytes,
     required String tipoMime,
     required String nombreOriginal,
+    int orden = 1,
   }) async {
     final String extension = switch (tipoMime) {
       'image/png' => 'png',
       'image/webp' => 'webp',
       _ => 'jpg',
     };
-    final Reference ref = _storage.ref('mensajes/$mensajeId/imagen.$extension');
+    final Reference ref = _storage.ref(
+      'mensajes/$mensajeId/$orden-imagen.$extension',
+    );
 
     await ref.putData(bytes, SettableMetadata(contentType: tipoMime));
 
     return AdjuntoSubido(
+      tipo: 'IMAGEN',
       ruta: ref.fullPath,
       bytes: bytes.length,
       tipoMime: tipoMime,

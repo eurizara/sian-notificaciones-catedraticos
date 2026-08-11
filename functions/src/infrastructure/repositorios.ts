@@ -119,6 +119,30 @@ export async function buscarPerfil(uid: string): Promise<PerfilUsuario | null> {
   };
 }
 
+/**
+ * Nombre de quien emite, para guardarlo JUNTO al mensaje.
+ *
+ * ---------------------------------------------------------------------------
+ * El receptor no puede leer `usuarios`, así que el nombre viaja con el mensaje.
+ * ---------------------------------------------------------------------------
+ *
+ * Las reglas solo dejan leer esa colección al coordinador, al auditor y al
+ * propio interesado (documento 05, sección 5). Un catedrático que recibe un
+ * aviso no puede resolver el `creadoPor` por su cuenta: vería un identificador
+ * aleatorio donde debería decir quién le está avisando.
+ *
+ * Se desnormaliza a propósito, y se congela con el mensaje: si esa persona
+ * cambia de nombre después, el aviso sigue diciendo quién lo firmó cuando lo
+ * firmó, que es lo que una bitácora tiene que sostener (RF-BIT-02).
+ *
+ * Si no se encuentra el perfil se devuelve cadena vacía y no el uid: enseñar
+ * un identificador es peor que no enseñar nada, porque parece un dato.
+ */
+export async function nombreDe(uid: string): Promise<string> {
+  const doc = await db.collection(RUTAS.usuarios).doc(uid).get();
+  return doc.exists ? ((doc.get('nombre') as string | undefined) ?? '') : '';
+}
+
 export async function guardarPerfil(perfil: PerfilUsuario): Promise<void> {
   await db.collection(RUTAS.usuarios).doc(perfil.uid).set(
     {

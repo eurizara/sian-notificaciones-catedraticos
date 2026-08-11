@@ -198,6 +198,14 @@ class _Fila extends ConsumerWidget {
               spacing: 6,
               runSpacing: 4,
               children: <Widget>[
+                // Quién lo mandó, primero de todo. En una lista compartida por
+                // el coordinador y varias administradoras, «de quién es esto»
+                // es lo primero que se pregunta al mirarla.
+                if (mensaje.emisor.isNotEmpty)
+                  Marca(
+                    icono: Icons.person_outline,
+                    texto: Textos.enviadoPor(mensaje.emisor),
+                  ),
                 Marca(
                   icono: Icons.people_outline,
                   texto: switch (mensaje.modoDestinatarios) {

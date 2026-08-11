@@ -22,6 +22,7 @@ import 'package:sian/core/audio/grabacion.dart';
 import 'package:sian/core/plataforma/archivo_elegido.dart';
 import 'package:sian/domain/rol.dart';
 import 'package:sian/domain/sesion.dart';
+import 'package:sian/infrastructure/firebase/repositorio_adjuntos.dart';
 import 'package:sian/infrastructure/firebase/repositorio_envio.dart';
 import 'package:sian/presentation/admin/seccion_mensajes.dart';
 import 'package:sian/presentation/shared/tema.dart';
@@ -627,6 +628,115 @@ void main() {
       expect(find.text('plano.png'), findsOneWidget);
     });
 
+    // ────────────────────────────────────────────────────────────────────────
+    // EL ORDEN ES DEL EMISOR Y LLEGA INTACTO AL RECEPTOR.
+    // ────────────────────────────────────────────────────────────────────────
+    //
+    // Un plano, después la nota de voz que lo explica, después la foto del
+    // punto de reunión. Ese orden dice algo, y si el sistema lo reordena por
+    // tipo —o lo deja al azar de la red subiendo en paralelo— lo destruye sin
+    // que nadie se dé cuenta.
+    testWidgets('varios adjuntos llegan en el orden en que se pusieron', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        montar(
+          adjuntos: adjuntos,
+          grabadora: () => grabadora,
+          elegir: () async => png,
+        ),
+      );
+      await asentar(tester);
+      await escribir(tester, 'Evacuación', 'Cuerpo');
+
+      await ponerImagen(tester);
+      await ponerVoz(tester);
+      await ponerImagen(tester);
+
+      await pulsarEnviar(tester);
+      await tester.tap(find.text(Textos.botonConfirmarEnvio));
+      await asentar(tester);
+
+      expect(
+        envio.ultimosAdjuntos.map((AdjuntoSubido a) => a.tipo).toList(),
+        <String>['IMAGEN', 'AUDIO', 'IMAGEN'],
+      );
+    });
+
+    testWidgets('cada adjunto va a su propia ruta, sin pisarse', (
+      WidgetTester tester,
+    ) async {
+      // Con un nombre fijo el segundo pisaría al primero, y las reglas
+      // prohíben sobrescribir (RN-09): la subida fallaría sin explicar nada.
+      await tester.pumpWidget(
+        montar(
+          adjuntos: adjuntos,
+          grabadora: () => grabadora,
+          elegir: () async => png,
+        ),
+      );
+      await asentar(tester);
+      await escribir(tester, 'Dos imágenes', 'Cuerpo');
+      await ponerImagen(tester);
+      await ponerImagen(tester);
+
+      await pulsarEnviar(tester);
+      await tester.tap(find.text(Textos.botonConfirmarEnvio));
+      await asentar(tester);
+
+      final List<String> rutas = envio.ultimosAdjuntos
+          .map((AdjuntoSubido a) => a.ruta)
+          .toList();
+      expect(rutas.toSet().length, 2, reason: 'dos rutas distintas');
+    });
+
+    testWidgets('al llegar al máximo, el botón se apaga y lo dice', (
+      WidgetTester tester,
+    ) async {
+      // Pulsar y que no pase nada es peor que no ofrecerlo.
+      await tester.pumpWidget(
+        montar(
+          adjuntos: adjuntos,
+          grabadora: () => grabadora,
+          elegir: () async => png,
+        ),
+      );
+      await asentar(tester);
+      await escribir(tester, 'Tres imágenes', 'Cuerpo');
+
+      await ponerImagen(tester);
+      await ponerImagen(tester);
+      expect(find.text(Textos.imagenAlMaximo), findsNothing);
+
+      await ponerImagen(tester);
+      expect(find.text(Textos.imagenAlMaximo), findsOneWidget);
+    });
+
+    testWidgets('la confirmación cuenta CUÁNTOS lleva, no solo que lleva', (
+      WidgetTester tester,
+    ) async {
+      // Con varios adjuntos, «va con imagen» no permite notar que falta la
+      // segunda, que es justo lo que este resumen existe para evitar.
+      await tester.pumpWidget(
+        montar(
+          adjuntos: adjuntos,
+          grabadora: () => grabadora,
+          elegir: () async => png,
+        ),
+      );
+      await asentar(tester);
+      await escribir(tester, 'Varios', 'Cuerpo');
+      await ponerImagen(tester);
+      await ponerImagen(tester);
+      await ponerVoz(tester);
+      await pulsarEnviar(tester);
+
+      expect(
+        find.text(Textos.resumenAdjuntos(voces: 1, imagenes: 2)),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('la confirmación dice qué se lleva el mensaje', (
       WidgetTester tester,
     ) async {
@@ -647,7 +757,7 @@ void main() {
 
       expect(
         find.text(
-          Textos.resumenAdjuntos(voz: true, imagen: true, segundos: 9),
+          Textos.resumenAdjuntos(voces: 1, imagenes: 1),
         ),
         findsOneWidget,
       );

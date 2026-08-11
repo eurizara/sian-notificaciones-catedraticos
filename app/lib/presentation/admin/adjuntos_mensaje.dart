@@ -23,14 +23,74 @@ import '../../infrastructure/firebase/repositorio_adjuntos.dart';
 import '../shared/tema.dart';
 import '../shared/textos.dart';
 
+/// Un adjunto puesto por el emisor, todavía sin subir.
+sealed class AdjuntoEnCurso {
+  const AdjuntoEnCurso();
+
+  int get bytes;
+}
+
+class VozEnCurso extends AdjuntoEnCurso {
+  const VozEnCurso(this.grabacion);
+
+  final Grabacion grabacion;
+
+  @override
+  int get bytes => grabacion.bytes.length;
+}
+
+class ImagenEnCurso extends AdjuntoEnCurso {
+  const ImagenEnCurso(this.archivo);
+
+  final ArchivoElegido archivo;
+
+  @override
+  int get bytes => archivo.bytes.length;
+}
+
 /// Lo que el emisor lleva adjunto, todavía sin subir.
+///
+/// ────────────────────────────────────────────────────────────────────────────
+/// UNA LISTA ORDENADA, NO UN HUECO POR TIPO.
+/// ────────────────────────────────────────────────────────────────────────────
+///
+/// El orden lo elige quien redacta y significa algo: un plano, después la nota
+/// de voz que lo explica, después la foto del punto de reunión. El receptor los
+/// ve en ese mismo orden, y eso solo es posible si se guarda —no hay forma de
+/// reconstruir después lo que nunca se anotó.
 class AdjuntosEnCurso {
-  const AdjuntosEnCurso({this.voz, this.imagen});
+  const AdjuntosEnCurso([this.piezas = const <AdjuntoEnCurso>[]]);
 
-  final Grabacion? voz;
-  final ArchivoElegido? imagen;
+  final List<AdjuntoEnCurso> piezas;
 
-  bool get hayAlgo => voz != null || imagen != null;
+  bool get hayAlgo => piezas.isNotEmpty;
+
+  int get voces => piezas.whereType<VozEnCurso>().length;
+  int get imagenes => piezas.whereType<ImagenEnCurso>().length;
+  int get bytesTotales =>
+      piezas.fold(0, (int suma, AdjuntoEnCurso a) => suma + a.bytes);
+
+  bool get cabeOtraVoz => voces < LimitesAdjuntos.maxVoces;
+  bool get cabeOtraImagen => imagenes < LimitesAdjuntos.maxImagenes;
+
+  AdjuntosEnCurso mas(AdjuntoEnCurso pieza) =>
+      AdjuntosEnCurso(<AdjuntoEnCurso>[...piezas, pieza]);
+
+  AdjuntosEnCurso sin(int indice) => AdjuntosEnCurso(
+    <AdjuntoEnCurso>[
+      for (int i = 0; i < piezas.length; i++)
+        if (i != indice) piezas[i],
+    ],
+  );
+}
+
+/// Cuántos adjuntos caben. Duplicados del dominio del servidor, que es la
+/// fuente de verdad: aquí solo sirven para no dejar adjuntar de más y
+/// descubrirlo al enviar.
+abstract final class LimitesAdjuntos {
+  static const int maxImagenes = 3;
+  static const int maxVoces = 2;
+  static const int maxBytesTotal = 10 * 1024 * 1024;
 }
 
 class PanelAdjuntos extends StatefulWidget {
@@ -150,8 +210,21 @@ class _PanelAdjuntosState extends State<PanelAdjuntos> {
     });
 
     if (g != null && g.esValida) {
-      widget.alCambiar(AdjuntosEnCurso(voz: g, imagen: widget.adjuntos.imagen));
+      _anadir(VozEnCurso(g));
     }
+  }
+
+  /// Añade al final: el orden es el de quien redacta, y así se conserva.
+  void _anadir(AdjuntoEnCurso pieza) {
+    final AdjuntosEnCurso nuevos = widget.adjuntos.mas(pieza);
+
+    // El peso del conjunto se comprueba aquí y no al enviar: descubrir que
+    // sobra un adjunto cuando ya se pulsó enviar es descubrirlo tarde.
+    if (nuevos.bytesTotales > LimitesAdjuntos.maxBytesTotal) {
+      setState(() => _error = Textos.adjuntosMuyPesados);
+      return;
+    }
+    widget.alCambiar(nuevos);
   }
 
   Future<void> _elegirImagen() async {
@@ -188,15 +261,14 @@ class _PanelAdjuntosState extends State<PanelAdjuntos> {
       return;
     }
 
-    widget.alCambiar(AdjuntosEnCurso(voz: widget.adjuntos.voz, imagen: a));
+    _anadir(ImagenEnCurso(a));
   }
 
   @override
   Widget build(BuildContext context) {
     final ThemeData tema = Theme.of(context);
     final bool grabando = _grabadora.grabando;
-    final Grabacion? voz = widget.adjuntos.voz;
-    final ArchivoElegido? imagen = widget.adjuntos.imagen;
+    final AdjuntosEnCurso puestos = widget.adjuntos;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -215,9 +287,13 @@ class _PanelAdjuntosState extends State<PanelAdjuntos> {
           spacing: 12,
           runSpacing: 12,
           children: <Widget>[
+            // Un botón que ya no puede añadir nada se apaga y lo dice en su
+            // etiqueta: pulsarlo y que no pase nada es peor que no ofrecerlo.
             if (_grabadora.soportada)
               FilledButton.tonalIcon(
-                onPressed: _alternarGrabacion,
+                onPressed: grabando || puestos.cabeOtraVoz
+                    ? _alternarGrabacion
+                    : null,
                 style: grabando
                     ? FilledButton.styleFrom(
                         backgroundColor: ColoresSian.urgente,
@@ -228,7 +304,9 @@ class _PanelAdjuntosState extends State<PanelAdjuntos> {
                 label: Text(
                   grabando
                       ? Textos.vozDetener(_grabadora.segundos)
-                      : Textos.vozGrabar,
+                      : puestos.cabeOtraVoz
+                      ? Textos.vozGrabar
+                      : Textos.vozAlMaximo,
                 ),
               )
             else
@@ -240,9 +318,15 @@ class _PanelAdjuntosState extends State<PanelAdjuntos> {
               ),
 
             OutlinedButton.icon(
-              onPressed: grabando ? null : _elegirImagen,
+              onPressed: grabando || !puestos.cabeOtraImagen
+                  ? null
+                  : _elegirImagen,
               icon: const Icon(Icons.image_outlined),
-              label: const Text(Textos.imagenElegir),
+              label: Text(
+                puestos.cabeOtraImagen
+                    ? Textos.imagenElegir
+                    : Textos.imagenAlMaximo,
+              ),
             ),
           ],
         ),
@@ -264,27 +348,42 @@ class _PanelAdjuntosState extends State<PanelAdjuntos> {
           ),
         ],
 
-        if (voz != null && !grabando) ...<Widget>[
-          const SizedBox(height: 12),
-          _Adjunto(
-            icono: Icons.graphic_eq,
-            titulo: Textos.vozAdjunta(voz.duracionSeg),
-            detalle: Textos.pesoLegible(voz.bytes.length),
-            alQuitar: () => widget.alCambiar(
-              AdjuntosEnCurso(imagen: widget.adjuntos.imagen),
-            ),
-          ),
-        ],
+        // ────────────────────────────────────────────────────────────────────
+        // EN EL ORDEN EN QUE SE PUSIERON, Y NUMERADOS.
+        // ────────────────────────────────────────────────────────────────────
+        //
+        // El receptor los verá exactamente así. Enseñar aquí el mismo orden, y
+        // con su número delante, es lo que permite comprobarlo antes de enviar
+        // en vez de descubrirlo después en el teléfono de otro.
+        for (int i = 0; i < puestos.piezas.length; i++)
+          if (!(grabando && puestos.piezas[i] is VozEnCurso)) ...<Widget>[
+            const SizedBox(height: 12),
+            switch (puestos.piezas[i]) {
+              final VozEnCurso v => _Adjunto(
+                orden: i + 1,
+                icono: Icons.graphic_eq,
+                titulo: Textos.vozAdjunta(v.grabacion.duracionSeg),
+                detalle: Textos.pesoLegible(v.bytes),
+                alQuitar: () => widget.alCambiar(puestos.sin(i)),
+              ),
+              final ImagenEnCurso im => _Adjunto(
+                orden: i + 1,
+                icono: Icons.image,
+                titulo: im.archivo.nombre,
+                detalle: Textos.pesoLegible(im.bytes),
+                vistaPrevia: im.archivo.bytes,
+                alQuitar: () => widget.alCambiar(puestos.sin(i)),
+              ),
+            },
+          ],
 
-        if (imagen != null) ...<Widget>[
-          const SizedBox(height: 12),
-          _Adjunto(
-            icono: Icons.image,
-            titulo: imagen.nombre,
-            detalle: Textos.pesoLegible(imagen.bytes.length),
-            vistaPrevia: imagen.bytes,
-            alQuitar: () =>
-                widget.alCambiar(AdjuntosEnCurso(voz: widget.adjuntos.voz)),
+        if (puestos.piezas.length > 1) ...<Widget>[
+          const SizedBox(height: 8),
+          Text(
+            Textos.adjuntosOrden(Textos.pesoLegible(puestos.bytesTotales)),
+            style: tema.textTheme.bodySmall?.copyWith(
+              color: tema.colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
 
@@ -318,6 +417,7 @@ class _PanelAdjuntosState extends State<PanelAdjuntos> {
 /// Un adjunto ya listo, con su tamaño y la forma de quitarlo.
 class _Adjunto extends StatelessWidget {
   const _Adjunto({
+    required this.orden,
     required this.icono,
     required this.titulo,
     required this.detalle,
@@ -325,6 +425,8 @@ class _Adjunto extends StatelessWidget {
     this.vistaPrevia,
   });
 
+  /// Posición en la que lo verá el receptor, empezando en 1.
+  final int orden;
   final IconData icono;
   final String titulo;
   final String detalle;
@@ -334,12 +436,25 @@ class _Adjunto extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Uint8List? previa = vistaPrevia;
+    final ThemeData tema = Theme.of(context);
 
     return Card(
       margin: EdgeInsets.zero,
       child: ListTile(
-        leading: previa != null
-            ? ClipRRect(
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            SizedBox(
+              width: 20,
+              child: Text(
+                '$orden.',
+                style: tema.textTheme.bodySmall?.copyWith(
+                  color: tema.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            if (previa != null)
+              ClipRRect(
                 borderRadius: BorderRadius.circular(4),
                 child: Image.memory(
                   previa,
@@ -348,7 +463,10 @@ class _Adjunto extends StatelessWidget {
                   fit: BoxFit.cover,
                 ),
               )
-            : Icon(icono, color: ColoresSian.primario),
+            else
+              Icon(icono, color: ColoresSian.primario),
+          ],
+        ),
         title: Text(titulo, maxLines: 1, overflow: TextOverflow.ellipsis),
         subtitle: Text(detalle),
         trailing: IconButton(
