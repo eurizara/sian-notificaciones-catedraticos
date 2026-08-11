@@ -34,6 +34,11 @@ abstract final class Textos {
   static const String botonEntrar = 'Entrar';
   static const String botonOlvideContrasena = '¿Olvidaste tu contraseña?';
   static const String botonSalir = 'Cerrar sesión';
+
+  /// Recarga de verdad, la del navegador: descarta lo acumulado y trae la
+  /// versión desplegada más reciente, que en una aplicación instalada puede
+  /// llevar días sin renovarse.
+  static const String botonRecargar = 'Recargar la aplicación';
   static const String verificandoSesion = 'Verificando sesión…';
   static const String recuperacionEnviada =
       'Si ese correo tiene cuenta, recibirás un enlace para restablecerla.';

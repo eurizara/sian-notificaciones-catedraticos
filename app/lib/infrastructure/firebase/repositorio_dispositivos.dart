@@ -19,6 +19,22 @@ import '../../core/plataforma/consola.dart';
 /// Estado del permiso, tal como lo entiende el sistema.
 enum EstadoPermiso { concedido, denegado, pendiente, noSoportado }
 
+/// ¿Hace falta pedir el permiso, estando ya en [actual]?
+///
+/// ────────────────────────────────────────────────────────────────────────────
+/// Con el permiso concedido, la respuesta es NO. Y no por ahorrar una llamada.
+/// ────────────────────────────────────────────────────────────────────────────
+///
+/// Safari exige que `requestPermission()` nazca de un gesto de la persona.
+/// Llamarlo por iniciativa propia —como hace el refresco de identificador de
+/// cada apertura— lo deniega en el acto, y esa denegación se confunde con la
+/// decisión real del usuario.
+///
+/// Vive fuera de la clase para poder fijarlo como regla: es el tipo de
+/// «pequeña mejora» que alguien deshace en una línea sin saber lo que rompe.
+bool hayQuePedirPermiso(EstadoPermiso actual) =>
+    actual != EstadoPermiso.concedido;
+
 /// Resultado de intentar dejar el dispositivo listo para recibir.
 class ResultadoRegistro {
   const ResultadoRegistro({
@@ -112,9 +128,29 @@ class RepositorioDispositivos {
     }
 
     try {
-      final NotificationSettings ajustes = await _mensajeria
-          .requestPermission();
-      final EstadoPermiso permiso = _traducir(ajustes.authorizationStatus);
+      // ──────────────────────────────────────────────────────────────────────
+      // NUNCA SE PIDE UN PERMISO QUE YA SE TIENE.
+      // ──────────────────────────────────────────────────────────────────────
+      //
+      // No es una optimización. Safari exige que `requestPermission()` salga de
+      // un gesto de la persona; llamarlo por iniciativa propia lo **deniega en
+      // el acto**. Y el refresco de identificador de cada apertura es
+      // exactamente eso: automático, sin nadie tocando nada.
+      //
+      // El resultado era el peor posible: un iPhone con las notificaciones
+      // concedidas —recibiéndolas sin problema— leía «Notificaciones
+      // bloqueadas» cada vez que abría la aplicación. El permiso real nunca
+      // cambió; lo que cambiaba era lo que el sistema creía.
+      //
+      // Consultar primero cuesta una lectura de `Notification.permission` y
+      // deja el `requestPermission()` para cuando de verdad hace falta: la
+      // primera vez, que siempre nace de pulsar «Activar».
+      EstadoPermiso permiso = await consultarPermiso();
+      if (hayQuePedirPermiso(permiso)) {
+        final NotificationSettings ajustes = await _mensajeria
+            .requestPermission();
+        permiso = _traducir(ajustes.authorizationStatus);
+      }
       consolaError('SIAN.dispositivo permiso | estado=$permiso');
 
       if (permiso != EstadoPermiso.concedido) {
