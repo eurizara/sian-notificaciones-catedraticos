@@ -295,10 +295,19 @@ abstract final class Textos {
   static const String notifPendientesDetalle =
       'Sin ellas no recibirás avisos ni alertas urgentes. Es un solo toque.';
   static const String notifDenegadasTitulo = 'Notificaciones bloqueadas';
-  static const String notifInstalarTitulo = 'Falta instalar la aplicación';
+  static const String notifInstalarTitulo = 'Ábrela desde la pantalla de inicio';
+
+  /// Habla de ESTA pestaña, no del teléfono.
+  ///
+  /// Decía «sin ese paso no llegará ninguna», que es una afirmación sobre el
+  /// dispositivo — y era falsa para quien ya la tenía instalada y sí recibía
+  /// avisos. Un mensaje que asegura que el sistema no funciona, cuando
+  /// funciona, gasta la confianza que hará falta el día que de verdad falle.
   static const String notifInstalarDetalle =
-      'En iPhone las notificaciones solo funcionan con la aplicación añadida '
-      'a la pantalla de inicio. Sin ese paso no llegará ninguna.';
+      'Estás viendo SIAN en una pestaña de Safari, y ahí iPhone no permite '
+      'notificaciones. Si ya añadiste SIAN a la pantalla de inicio, ábrela '
+      'desde ese icono y recibirás los avisos con normalidad. Si aún no lo '
+      'hiciste, es el único paso que falta.';
   static const String notifSinSoporteTitulo =
       'Este navegador no puede notificarte';
   static const String notifSinSoporteIos =

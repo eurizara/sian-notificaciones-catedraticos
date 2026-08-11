@@ -21,6 +21,7 @@ class EntornoNavegador {
     required this.navegador,
     required this.soportaNotificaciones,
     required this.versionIos,
+    this.versionIosMenor,
   });
 
   final PlataformaWeb plataforma;
@@ -37,6 +38,9 @@ class EntornoNavegador {
   /// Versión mayor de iOS, o `null` si no es iOS o no se pudo determinar.
   final int? versionIos;
 
+  /// Versión menor de iOS. Hace falta para distinguir 16.3 de 16.4.
+  final int? versionIosMenor;
+
   /// Valor que se guarda en `dispositivos.plataforma` (documento 05, 2.2).
   String get plataformaPersistida => switch (plataforma) {
     PlataformaWeb.android => 'WEB_ANDROID',
@@ -45,8 +49,26 @@ class EntornoNavegador {
   };
 
   /// RES-05: en iOS las notificaciones web exigen 16.4 o superior.
-  bool get iosDemasiadoAntiguo =>
-      plataforma == PlataformaWeb.ios && versionIos != null && versionIos! < 16;
+  ///
+  /// ──────────────────────────────────────────────────────────────────────────
+  /// El 4 de «16.4» importa: iOS 16.0 a 16.3 no las tienen.
+  /// ──────────────────────────────────────────────────────────────────────────
+  ///
+  /// Antes se comparaba solo la versión mayor, así que un iPhone con 16.1
+  /// pasaba por bueno y luego se quedaba mudo sin que nada lo explicara.
+  ///
+  /// Si no se pudo leer la versión NO se acusa al teléfono de viejo: decirle a
+  /// alguien con un iPhone recién comprado que su iOS es antiguo lo manda a
+  /// buscar una actualización que no existe. Sin dato, no hay afirmación.
+  bool get iosDemasiadoAntiguo {
+    if (plataforma != PlataformaWeb.ios || versionIos == null) {
+      return false;
+    }
+    if (versionIos! < 16) {
+      return true;
+    }
+    return versionIos == 16 && (versionIosMenor ?? 4) < 4;
+  }
 
   /// ¿Hay que mostrar el instructivo de instalación?
   ///

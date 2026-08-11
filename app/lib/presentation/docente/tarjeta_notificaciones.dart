@@ -15,6 +15,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/proveedores_dispositivos.dart';
 import '../../core/navegador.dart';
+import '../../core/plataforma/consola.dart';
 import '../../infrastructure/firebase/repositorio_dispositivos.dart';
 import '../shared/tema.dart';
 import '../shared/textos.dart';
@@ -42,9 +43,18 @@ class _TarjetaNotificacionesState extends ConsumerState<TarjetaNotificaciones> {
   }
 
   Future<void> _consultar() async {
-    final EstadoPermiso p = await ref
-        .read(repositorioDispositivosProvider)
-        .consultarPermiso();
+    // Si consultar falla, `_permisoActual` se queda en nulo y la tarjeta
+    // muestra «Activa las notificaciones» a alguien que ya las tiene activas.
+    // De todos los estados posibles, ese es el que peor informa: acusa de un
+    // problema inexistente y esconde el que hubiera.
+    final EstadoPermiso p;
+    try {
+      p = await ref.read(repositorioDispositivosProvider).consultarPermiso();
+    } on Object catch (e) {
+      consolaError('SIAN.dispositivo consulta | $e');
+      return;
+    }
+
     if (mounted) {
       setState(() => _permisoActual = p);
     }
@@ -175,26 +185,60 @@ class _TarjetaNotificacionesState extends ConsumerState<TarjetaNotificaciones> {
   /// Los tres «no» no son equivalentes y no se pueden mezclar: uno se arregla
   /// con un botón, otro exige ir a los ajustes del navegador (RES-07), y el
   /// tercero exige instalar la aplicación (RES-05).
+  ///
+  /// ──────────────────────────────────────────────────────────────────────────
+  /// EL ORDEN DE ESTAS COMPROBACIONES ES LA REGLA, NO UN DETALLE.
+  /// ──────────────────────────────────────────────────────────────────────────
+  ///
+  /// En una **pestaña** de Safari en iOS, Apple no expone la API de
+  /// notificaciones en absoluto: solo existe dentro de la aplicación instalada
+  /// en la pantalla de inicio. Con «no hay API» comprobado primero, un iPhone
+  /// moderno abierto en una pestaña acababa leyendo «tu versión de iOS es
+  /// anterior a la 16.4» —falso— en lugar de «falta instalar la aplicación»,
+  /// que es lo único que hay que hacer.
+  ///
+  /// Y quien ya la tenía instalada veía ese mismo mensaje mientras los avisos
+  /// le llegaban perfectamente al icono de su pantalla de inicio. Un aviso que
+  /// dice que el sistema no funciona, cuando funciona, gasta la confianza que
+  /// hace falta el día que de verdad falle.
+  ///
+  /// Por eso la versión de iOS se comprueba con el dato de la versión, que es
+  /// lo que de verdad lo determina, y la ausencia de API en iOS se lee como lo
+  /// que casi siempre significa: que no está instalada.
   ({IconData icono, Color color, String titulo, String detalle, bool accion})
   _estado(EntornoNavegador entorno, ResultadoRegistro? r) {
-    if (!entorno.soportaNotificaciones) {
+    final bool esIos = entorno.plataforma == PlataformaWeb.ios;
+
+    // Un iOS de verdad anterior a la 16.4. Esto no lo arregla instalar nada.
+    if (entorno.iosDemasiadoAntiguo) {
       return (
         icono: Icons.notifications_off_outlined,
         color: ColoresSian.urgente,
         titulo: Textos.notifSinSoporteTitulo,
-        detalle: entorno.plataforma == PlataformaWeb.ios
-            ? Textos.notifSinSoporteIos
-            : Textos.notifSinSoporteNavegador,
+        detalle: Textos.notifSinSoporteIos,
         accion: false,
       );
     }
 
-    if (entorno.necesitaInstructivoInstalacion) {
+    // En iOS, sin instalar no hay API que valga: el instructivo va primero.
+    if (esIos && entorno.necesitaInstructivoInstalacion) {
       return (
         icono: Icons.install_mobile_outlined,
         color: ColoresSian.dorado,
         titulo: Textos.notifInstalarTitulo,
         detalle: Textos.notifInstalarDetalle,
+        accion: false,
+      );
+    }
+
+    if (!entorno.soportaNotificaciones) {
+      return (
+        icono: Icons.notifications_off_outlined,
+        color: ColoresSian.urgente,
+        titulo: Textos.notifSinSoporteTitulo,
+        detalle: esIos
+            ? Textos.notifSinSoporteIos
+            : Textos.notifSinSoporteNavegador,
         accion: false,
       );
     }

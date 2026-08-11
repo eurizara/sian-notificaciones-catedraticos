@@ -29,12 +29,17 @@ EntornoNavegador detectarEntorno() {
       ? PlataformaWeb.android
       : PlataformaWeb.escritorio;
 
+  final ({int? mayor, int? menor}) version = esIos
+      ? _versionIos(ua)
+      : (mayor: null, menor: null);
+
   return EntornoNavegador(
     plataforma: plataforma,
     instalada: _estaInstalada(),
     navegador: _nombreDeNavegador(uaMin),
     soportaNotificaciones: _tieneNotificaciones(),
-    versionIos: esIos ? _versionIos(ua) : null,
+    versionIos: version.mayor,
+    versionIosMenor: version.menor,
   );
 }
 
@@ -63,12 +68,20 @@ String _nombreDeNavegador(String uaMin) {
   return 'Navegador desconocido';
 }
 
-int? _versionIos(String ua) {
-  final RegExpMatch? m = RegExp(r'OS (\d+)[_\.]').firstMatch(ua);
+/// Versión de iOS, mayor y menor.
+///
+/// La menor no es un detalle: Apple habilitó las notificaciones web en la
+/// **16.4**, así que 16.3 y 16.4 caen a lados distintos de la línea y leyendo
+/// solo el 16 las dos parecerían iguales.
+({int? mayor, int? menor}) _versionIos(String ua) {
+  final RegExpMatch? m = RegExp(r'OS (\d+)[_.](\d+)').firstMatch(ua);
   if (m == null) {
-    return null;
+    return (mayor: null, menor: null);
   }
-  return int.tryParse(m.group(1) ?? '');
+  return (
+    mayor: int.tryParse(m.group(1) ?? ''),
+    menor: int.tryParse(m.group(2) ?? ''),
+  );
 }
 
 /// `window.Notification` existe.
