@@ -114,6 +114,70 @@
     })();
   </script>
 
-  <script src="flutter_bootstrap.js" async></script>
+  <!--
+    ══════════════════════════════════════════════════════════════════════════
+    REPARA UNA COPIA CADUCADA DE LA FUENTE DE ICONOS.
+    ══════════════════════════════════════════════════════════════════════════
+
+    Flutter recorta la fuente de iconos en cada compilación y la publica
+    siempre con el mismo nombre. Durante un tiempo esa ruta se sirvió con una
+    semana de caché, así que quien ya tuviera guardada una copia anterior
+    seguía usándola: los iconos añadidos después NO SE DIBUJABAN, mientras el
+    botón existía y respondía. Sin error, sin hueco, sin nada roto.
+
+    Cambiar la cabecera en el servidor no rescata esas copias: mientras no
+    caduquen, el navegador ni siquiera pregunta. La única forma de repararlas
+    desde aquí es pedir el archivo saltándose la caché, que además ACTUALIZA
+    la entrada guardada.
+
+    Se espera a que termine antes de arrancar Flutter —son 17 KB— para que
+    quien abra la aplicación la vea bien ya en este mismo arranque y no en el
+    siguiente. Y se hace una sola vez por dispositivo.
+
+    Esto se puede borrar cuando haya pasado una semana desde el despliegue del
+    11 de agosto de 2026: para entonces no queda ninguna copia con la caché
+    antigua.
+  -->
+  <script>
+    (function () {
+      var CLAVE = 'sian.fuente-iconos-reparada';
+      var FUENTE = 'assets/fonts/MaterialIcons-Regular.otf';
+
+      function arrancar() {
+        var s = document.createElement('script');
+        s.src = 'flutter_bootstrap.js';
+        s.async = true;
+        document.body.appendChild(s);
+      }
+
+      var hecho = false;
+      try {
+        hecho = window.localStorage.getItem(CLAVE) === '1';
+      } catch (e) {
+        // Sin almacenamiento local se revalida siempre: son 17 KB y, ya
+        // reparada, la respuesta es un 304 sin cuerpo.
+      }
+
+      if (hecho) {
+        arrancar();
+        return;
+      }
+
+      // Pase lo que pase se arranca. Un fallo aquí no puede dejar la
+      // aplicación sin abrir: es una reparación cosmética, no un requisito.
+      var seguir = function () {
+        try {
+          window.localStorage.setItem(CLAVE, '1');
+        } catch (e) {}
+        arrancar();
+      };
+
+      try {
+        fetch(FUENTE, { cache: 'reload' }).then(seguir, seguir);
+      } catch (e) {
+        arrancar();
+      }
+    })();
+  </script>
 </body>
 </html>
