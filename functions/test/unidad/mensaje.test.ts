@@ -10,7 +10,7 @@ import {
   type EntradaMensaje,
 } from '../../src/domain/mensaje';
 import { LIMITES, type Adjunto } from '../../src/domain/tipos';
-import { ErrorDominio } from '../../src/domain/errores';
+import type { ErrorDominio } from '../../src/domain/errores';
 import { esperarCodigo } from './ayudas';
 
 const ZONA = 'America/Guatemala';
