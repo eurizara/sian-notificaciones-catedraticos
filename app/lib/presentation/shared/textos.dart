@@ -485,6 +485,22 @@ abstract final class Textos {
 
   static const String subiendoAdjuntos = 'Subiendo adjuntos…';
 
+  /// Lo que un aviso trae, dicho en la fila plegada.
+  ///
+  /// Sustituye a la vista previa del cuerpo: una línea cortada a media frase
+  /// casi nunca resume el aviso, y saber que hay una nota de voz sí ayuda a
+  /// decidir cuál abrir primero.
+  /// Filtro de la pantalla de entregas. El número va en la propia pestaña:
+  /// «Pendientes (3)» dice de un vistazo si hay algo que perseguir.
+  static String filtroTodos(int n) => 'Todos ($n)';
+  static String filtroPendientes(int n) => 'Pendientes ($n)';
+  static String filtroCompletos(int n) => 'Completos ($n)';
+  static const String entregasSinEsteEstado =
+      'No hay avisos en este estado.';
+
+  static const String traeVoz = 'Nota de voz';
+  static const String traeImagen = 'Imagen';
+
   /// Quién firma el aviso.
   ///
   /// Ante un mensaje que pide salir del edificio, saber quién lo manda es

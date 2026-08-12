@@ -73,20 +73,53 @@ class Buscador extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        TextField(
-          controller: controlador,
-          decoration: InputDecoration(
-            labelText: etiqueta,
-            prefixIcon: const Icon(Icons.search),
-            border: const OutlineInputBorder(),
-            isDense: true,
-            suffixIcon: buscando
-                ? IconButton(
-                    onPressed: controlador.clear,
-                    icon: const Icon(Icons.close),
-                    tooltip: Textos.buscarLimpiar,
-                  )
-                : null,
+        // ────────────────────────────────────────────────────────────────────
+        // Estrecho a propósito: es una herramienta, no el contenido.
+        // ────────────────────────────────────────────────────────────────────
+        //
+        // Con la etiqueta flotante y el relleno de serie ocupaba casi el alto
+        // de un mensaje entero, y en un teléfono eso es un aviso menos a la
+        // vista. El texto guía desaparece al escribir —cuando ya no hace
+        // falta— y así no gasta una línea permanente.
+        SizedBox(
+          height: 42,
+          child: TextField(
+            controller: controlador,
+            textAlignVertical: TextAlignVertical.center,
+            style: tema.textTheme.bodyMedium,
+            decoration: InputDecoration(
+              hintText: etiqueta,
+              hintStyle: tema.textTheme.bodyMedium?.copyWith(
+                color: tema.colorScheme.onSurfaceVariant,
+              ),
+              prefixIcon: const Icon(Icons.search, size: 20),
+              prefixIconConstraints: const BoxConstraints(
+                minWidth: 38,
+                minHeight: 38,
+              ),
+              filled: true,
+              fillColor: tema.colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.4,
+              ),
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(vertical: 10),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide.none,
+              ),
+              suffixIcon: buscando
+                  ? IconButton(
+                      onPressed: controlador.clear,
+                      icon: const Icon(Icons.close, size: 18),
+                      tooltip: Textos.buscarLimpiar,
+                      visualDensity: VisualDensity.compact,
+                    )
+                  : null,
+              suffixIconConstraints: const BoxConstraints(
+                minWidth: 38,
+                minHeight: 38,
+              ),
+            ),
           ),
         ),
         if (buscando && resultados != null) ...<Widget>[
