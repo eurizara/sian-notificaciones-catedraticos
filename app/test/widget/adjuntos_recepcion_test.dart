@@ -414,6 +414,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      // La bandeja arranca en «Sin leer»: una confirmada se ve en «Todos».
+      await tester.tap(find.text(Textos.filtroBandeja('todos', 1)));
+      await tester.pumpAndSettle();
+
       expect(find.text(Textos.estadoConfirmado), findsOneWidget);
       expect(find.text('05/08/2026 · 14:30'), findsOneWidget);
     });

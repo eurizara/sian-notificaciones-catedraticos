@@ -21,6 +21,7 @@ import '../../core/navegador.dart';
 import '../shared/barra_sesion.dart';
 import '../shared/buscador.dart';
 import 'aviso_en_primer_plano.dart';
+import 'filtro_bandeja.dart';
 import 'instructivo_ios.dart';
 import 'realce_mensaje.dart';
 import 'reproductor_adjuntos.dart';
@@ -72,6 +73,17 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
   static const int _porPagina = 15;
   int _visibles = _porPagina;
 
+  /// Qué se muestra al abrir.
+  ///
+  /// ──────────────────────────────────────────────────────────────────────────
+  /// Arranca en «Sin leer», que es la pregunta con la que uno abre.
+  /// ──────────────────────────────────────────────────────────────────────────
+  ///
+  /// Nadie entra a la bandeja a repasar lo del mes pasado: entra a ver qué hay
+  /// de nuevo. Lo ya leído sigue a un toque, y el contador de cada pestaña
+  /// dice cuánto hay antes de tocarla.
+  FiltroBandeja _filtro = FiltroBandeja.sinLeer;
+
   /// Controla el desplazamiento para poder volver arriba de un toque.
   final ScrollController _scroll = ScrollController();
   bool _lejosDelInicio = false;
@@ -101,6 +113,21 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
     _busqueda.dispose();
     _scroll.dispose();
     super.dispose();
+  }
+
+  /// Cambiar de pestaña vuelve al principio de la lista y de la paginación.
+  ///
+  /// Quedarse en la página cuatro de un filtro que tiene dos mensajes deja la
+  /// pantalla vacía sin motivo, y a media altura de una lista que ya no es la
+  /// que se estaba mirando.
+  void _cambiarFiltro(FiltroBandeja nuevo) {
+    setState(() {
+      _filtro = nuevo;
+      _visibles = _porPagina;
+    });
+    if (_scroll.hasClients) {
+      _scroll.jumpTo(0);
+    }
   }
 
   @override
@@ -152,9 +179,17 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
               error: (Object e, StackTrace _) => _Error(detalle: e.toString()),
               data: (List<MensajeRecibido> todos) {
                 final List<MensajeRecibido> filtrados = filtrarMensajes(
-                  todos,
+                  aplicarFiltro(_filtro, todos),
                   _busqueda.text,
                 );
+
+                // Sobre TODOS, nunca sobre lo filtrado: una urgente sin
+                // confirmar no puede desaparecer porque se esté mirando otra
+                // pestaña. Es lo único de esta pantalla que no admite
+                // esconderse.
+                final int urgentesPendientes = todos
+                    .where((MensajeRecibido m) => m.exigeAtencion)
+                    .length;
                 final List<MensajeRecibido> pagina = filtrados
                     .take(_visibles)
                     .toList();
@@ -178,6 +213,17 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
                       child: Column(
                         children: <Widget>[
                           const TarjetaNotificaciones(),
+
+                          // Va aquí arriba y fuera del filtro. Tocarlo lleva a
+                          // los que faltan, para no tener que buscarlos.
+                          if (urgentesPendientes > 0)
+                            _AvisoUrgentes(
+                              cuantos: urgentesPendientes,
+                              alTocar: () => _cambiarFiltro(
+                                FiltroBandeja.sinConfirmar,
+                              ),
+                            ),
+
                           // El buscador solo aparece cuando hay bastante que
                           // buscar: con tres mensajes estorba.
                           if (todos.length > 5)
@@ -185,6 +231,13 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
                               controlador: _busqueda,
                               etiqueta: Textos.buscarMensajes,
                               resultados: filtrados.length,
+                            ),
+
+                          if (todos.isNotEmpty)
+                            _Filtros(
+                              seleccionado: _filtro,
+                              mensajes: todos,
+                              alCambiar: _cambiarFiltro,
                             ),
                         ],
                       ),
@@ -197,12 +250,11 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
                           if (todos.isEmpty)
                             const _BandejaVacia()
                           else if (filtrados.isEmpty)
-                            Padding(
-                              padding: const EdgeInsets.all(24),
-                              child: Text(
-                                Textos.sinResultados(_busqueda.text.trim()),
-                                textAlign: TextAlign.center,
-                              ),
+                            _NadaEnEsteFiltro(
+                              filtro: _filtro,
+                              termino: _busqueda.text.trim(),
+                              alVerTodos: () =>
+                                  _cambiarFiltro(FiltroBandeja.todos),
                             )
                           else
                             ...filasDeMensajes(context, pagina),
@@ -257,24 +309,7 @@ List<Widget> filasDeMensajes(
   BuildContext context,
   List<MensajeRecibido> mensajes,
 ) {
-  final int sinConfirmar = mensajes
-      .where((MensajeRecibido m) => m.exigeAtencion)
-      .length;
-
   return <Widget>[
-    if (sinConfirmar > 0)
-      Card(
-        color: Theme.of(context).colorScheme.errorContainer,
-        child: ListTile(
-          leading: const Icon(Icons.priority_high),
-          title: Text(
-            sinConfirmar == 1
-                ? Textos.bandejaPendienteUno
-                : Textos.bandejaPendienteVarios(sinConfirmar),
-          ),
-          subtitle: const Text(Textos.bandejaPendienteDetalle),
-        ),
-      ),
     for (final MensajeRecibido mensaje in mensajes)
       _Fila(key: ValueKey<String>(mensaje.mensajeId), mensaje: mensaje),
     if (Entorno.usaEmulador)
@@ -725,6 +760,149 @@ class _Trae extends StatelessWidget {
         const SizedBox(width: 4),
         Text(texto, style: tema.textTheme.bodySmall?.copyWith(color: color)),
       ],
+    );
+  }
+}
+
+/// Las pestañas de la bandeja.
+///
+/// ────────────────────────────────────────────────────────────────────────────
+/// Fichas desplazables, no un grupo de botones fijo.
+/// ────────────────────────────────────────────────────────────────────────────
+///
+/// Son cuatro y llevan número: en un teléfono no caben repartiéndose el ancho
+/// sin partir las palabras o recortar los contadores, que es justo la parte
+/// útil. Desplazándose se leen enteras, y la seleccionada arranca a la vista.
+class _Filtros extends StatelessWidget {
+  const _Filtros({
+    required this.seleccionado,
+    required this.mensajes,
+    required this.alCambiar,
+  });
+
+  final FiltroBandeja seleccionado;
+  final List<MensajeRecibido> mensajes;
+  final ValueChanged<FiltroBandeja> alCambiar;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: SizedBox(
+        height: 38,
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          children: <Widget>[
+            for (final FiltroBandeja f in FiltroBandeja.values)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: FilterChip(
+                  label: Text(
+                    Textos.filtroBandeja(f.name, contarEn(f, mensajes)),
+                  ),
+                  selected: f == seleccionado,
+                  showCheckmark: false,
+                  visualDensity: VisualDensity.compact,
+                  labelStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontWeight: f == seleccionado ? FontWeight.w600 : null,
+                  ),
+                  onSelected: (bool _) => alCambiar(f),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Aviso de alertas urgentes sin confirmar.
+///
+/// Vive por encima del filtro y se calcula sobre TODOS los mensajes: es lo
+/// único de esta pantalla que no puede quedar escondido detrás de una pestaña.
+/// Tocarlo lleva directamente a las que faltan.
+class _AvisoUrgentes extends StatelessWidget {
+  const _AvisoUrgentes({required this.cuantos, required this.alTocar});
+
+  final int cuantos;
+  final VoidCallback alTocar;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      color: Theme.of(context).colorScheme.errorContainer,
+      child: ListTile(
+        dense: true,
+        leading: const Icon(Icons.priority_high),
+        title: Text(
+          cuantos == 1
+              ? Textos.bandejaPendienteUno
+              : Textos.bandejaPendienteVarios(cuantos),
+        ),
+        subtitle: const Text(Textos.bandejaPendienteDetalle),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: alTocar,
+      ),
+    );
+  }
+}
+
+/// Qué se dice cuando la pestaña elegida no tiene nada.
+///
+/// ────────────────────────────────────────────────────────────────────────────
+/// Una bandeja vacía tiene que decir POR QUÉ está vacía.
+/// ────────────────────────────────────────────────────────────────────────────
+///
+/// Al arrancar en «Sin leer», quien está al día se encuentra la pantalla sin
+/// mensajes. Sin explicación, eso se lee como que algo se perdió. Con ella es
+/// justo lo contrario: la confirmación de que no debe nada. Y el camino de
+/// vuelta al historial queda a un toque, sin tener que deducirlo.
+class _NadaEnEsteFiltro extends StatelessWidget {
+  const _NadaEnEsteFiltro({
+    required this.filtro,
+    required this.termino,
+    required this.alVerTodos,
+  });
+
+  final FiltroBandeja filtro;
+  final String termino;
+  final VoidCallback alVerTodos;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData tema = Theme.of(context);
+    final bool buscando = termino.isNotEmpty;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+      child: Column(
+        children: <Widget>[
+          Icon(
+            buscando ? Icons.search_off : Icons.check_circle_outline,
+            size: 40,
+            color: buscando
+                ? tema.colorScheme.onSurfaceVariant
+                : ColoresSian.confirmado,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            buscando
+                ? Textos.sinResultados(termino)
+                : Textos.filtroVacio(filtro.name),
+            textAlign: TextAlign.center,
+            style: tema.textTheme.bodyLarge,
+          ),
+          if (!buscando && filtro != FiltroBandeja.todos) ...<Widget>[
+            const SizedBox(height: 12),
+            TextButton.icon(
+              onPressed: alVerTodos,
+              icon: const Icon(Icons.inbox_outlined),
+              label: const Text(Textos.filtroVerTodos),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

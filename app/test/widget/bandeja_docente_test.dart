@@ -126,6 +126,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    // La bandeja arranca en «Sin leer» y una confirmada no está ahí. Se pasa a
+    // «Todos», que es lo que haría cualquiera para repasar el historial.
+    await tester.tap(find.text(Textos.filtroBandeja('todos', 1)));
+    await tester.pumpAndSettle();
+
     expect(find.text(Textos.bandejaPendienteUno), findsNothing);
     expect(find.text(Textos.estadoConfirmado), findsOneWidget);
   });
