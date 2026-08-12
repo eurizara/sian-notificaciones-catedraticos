@@ -418,7 +418,7 @@ class _FilaState extends ConsumerState<_Fila> {
     final Realce realce = realceDe(mensaje);
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 8),
       color: realce.fondo,
       child: InkWell(
         onTap: () {
@@ -438,7 +438,10 @@ class _FilaState extends ConsumerState<_Fila> {
                 Container(width: 5, color: realce.franja),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  // Plegado se aprieta; desplegado respira, porque ahí hay
+                  // texto que leer y no una lista que hojear.
+                  padding: EdgeInsets.fromLTRB(14, abierto ? 14 : 11, 14,
+                      abierto ? 14 : 11),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
@@ -490,24 +493,39 @@ class _FilaState extends ConsumerState<_Fila> {
                           ),
                         ],
                       ),
-                      if (!abierto) ...<Widget>[
-                        const SizedBox(height: 4),
-                        // Una línea del cuerpo: suficiente para reconocer el aviso sin
-                        // tener que abrirlo.
-                        Text(
-                          mensaje.cuerpo,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: tema.textTheme.bodySmall?.copyWith(
-                            color: tema.colorScheme.onSurfaceVariant,
-                          ),
+                      // ────────────────────────────────────────────────────
+                      // PLEGADO SE VE EL TÍTULO, NO UN TROZO DEL TEXTO.
+                      // ────────────────────────────────────────────────────
+                      //
+                      // Una línea suelta del cuerpo casi nunca es la que
+                      // resume el aviso: se corta a media frase y ocupa el
+                      // sitio de otro mensaje. Lo que sí ayuda a decidir cuál
+                      // abrir es SI TRAE ALGO — una nota de voz puede ser lo
+                      // único que importe de una alerta.
+                      if (!abierto && mensaje.llevaAdjuntos) ...<Widget>[
+                        const SizedBox(height: 5),
+                        Row(
+                          children: <Widget>[
+                            if (mensaje.llevaVoz)
+                              const _Trae(
+                                icono: Icons.graphic_eq,
+                                texto: Textos.traeVoz,
+                              ),
+                            if (mensaje.llevaVoz && mensaje.llevaImagen)
+                              const SizedBox(width: 10),
+                            if (mensaje.llevaImagen)
+                              const _Trae(
+                                icono: Icons.image_outlined,
+                                texto: Textos.traeImagen,
+                              ),
+                          ],
                         ),
                       ],
 
                       // Estado y fecha se ven SIEMPRE, plegado o no: son lo que se
                       // hojea. Esconderlos obligaría a abrir cada mensaje solo para
                       // saber cuál falta por confirmar.
-                      const SizedBox(height: 10),
+                      SizedBox(height: abierto ? 10 : 6),
                       Row(
                         children: <Widget>[
                           Icon(
@@ -684,6 +702,29 @@ class _Error extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Señal de que el aviso trae algo, para verla sin desplegarlo.
+class _Trae extends StatelessWidget {
+  const _Trae({required this.icono, required this.texto});
+
+  final IconData icono;
+  final String texto;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData tema = Theme.of(context);
+    final Color color = tema.colorScheme.onSurfaceVariant;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Icon(icono, size: 14, color: color),
+        const SizedBox(width: 4),
+        Text(texto, style: tema.textTheme.bodySmall?.copyWith(color: color)),
+      ],
     );
   }
 }

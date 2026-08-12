@@ -167,6 +167,31 @@ class PanelAdmin extends StatefulWidget {
 class _PanelAdminState extends State<PanelAdmin> {
   int _indice = 0;
 
+  /// Una llave global por sección, viva mientras viva el panel.
+  ///
+  /// ──────────────────────────────────────────────────────────────────────────
+  /// GIRAR EL TELÉFONO NO PUEDE BORRAR UN MENSAJE A MEDIO ESCRIBIR.
+  /// ──────────────────────────────────────────────────────────────────────────
+  ///
+  /// El panel se dibuja de dos formas distintas según el ancho: con menú
+  /// lateral, el contenido cuelga de una fila; sin él, cuelga directamente del
+  /// cuerpo. Girar el aparato cruza ese umbral y **cambia el sitio** que ocupa
+  /// el contenido en el árbol.
+  ///
+  /// Flutter conserva el estado de un widget por su posición, así que ese
+  /// cambio de sitio lo daba por muerto y lo reconstruía desde cero: el título,
+  /// el mensaje, los adjuntos y los destinatarios elegidos desaparecían de
+  /// golpe. Con una alerta urgente a medio redactar, eso es perder el trabajo
+  /// justo cuando corre prisa.
+  ///
+  /// Una llave global es lo único que hace que el estado **viaje** con el
+  /// widget al moverse de sitio. Tiene que ser siempre la misma instancia, por
+  /// eso vive aquí y no se crea en cada `build`.
+  final Map<String, GlobalKey> _llaves = <String, GlobalKey>{};
+
+  GlobalKey _llaveDe(String etiqueta) =>
+      _llaves.putIfAbsent(etiqueta, GlobalKey.new);
+
   /// Por debajo de este ancho el menú lateral no cabe junto al contenido y se
   /// convierte en cajón desplegable.
   ///
@@ -195,12 +220,12 @@ class _PanelAdminState extends State<PanelAdmin> {
 
     final Widget contenido = actual.construir != null
         ? KeyedSubtree(
-            key: ValueKey<String>(actual.etiqueta),
+            key: _llaveDe(actual.etiqueta),
             child: actual.construir!(),
           )
         : SingleChildScrollView(
             child: SeccionPendiente(
-              key: ValueKey<String>(actual.etiqueta),
+              key: _llaveDe(actual.etiqueta),
               titulo: actual.titulo,
               descripcion: actual.descripcion,
               requisitos: actual.requisitos,
@@ -233,17 +258,38 @@ class _PanelAdminState extends State<PanelAdmin> {
       body: cabeElMenuLateral
           ? Row(
               children: <Widget>[
-                NavigationRail(
-                  selectedIndex: indice,
-                  onDestinationSelected: (int i) => setState(() => _indice = i),
-                  labelType: NavigationRailLabelType.all,
-                  destinations: <NavigationRailDestination>[
-                    for (final SeccionAdmin s in visibles)
-                      NavigationRailDestination(
-                        icon: Icon(s.icono),
-                        label: Text(s.etiqueta),
+                // ────────────────────────────────────────────────────────────
+                // El menú se desplaza si no cabe.
+                // ────────────────────────────────────────────────────────────
+                //
+                // Con siete secciones y el teléfono en horizontal no caben en
+                // 390 píxeles de alto, y sin esto el menú se desbordaba por
+                // abajo: las últimas entradas quedaban fuera de la pantalla y
+                // no había forma de llegar a ellas.
+                LayoutBuilder(
+                  builder: (BuildContext _, BoxConstraints limites) =>
+                      SingleChildScrollView(
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: limites.maxHeight,
+                          ),
+                          child: IntrinsicHeight(
+                            child: NavigationRail(
+                              selectedIndex: indice,
+                              onDestinationSelected: (int i) =>
+                                  setState(() => _indice = i),
+                              labelType: NavigationRailLabelType.all,
+                              destinations: <NavigationRailDestination>[
+                                for (final SeccionAdmin s in visibles)
+                                  NavigationRailDestination(
+                                    icon: Icon(s.icono),
+                                    label: Text(s.etiqueta),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
-                  ],
                 ),
                 const VerticalDivider(width: 1),
                 Expanded(child: contenido),

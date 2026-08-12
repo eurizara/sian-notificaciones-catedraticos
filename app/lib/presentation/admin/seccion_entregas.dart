@@ -46,6 +46,12 @@ class _SeccionEntregasState extends ConsumerState<SeccionEntregas> {
   static const int _porPagina = 10;
   int _visibles = _porPagina;
 
+  /// Qué reportes se muestran.
+  ///
+  /// Con veinte avisos enviados, lo que se busca casi siempre es el mismo:
+  /// cuáles siguen esperando algo. Ese es el que hay que perseguir.
+  _Filtro _filtro = _Filtro.todos;
+
   @override
   void initState() {
     super.initState();
@@ -83,8 +89,18 @@ class _SeccionEntregasState extends ConsumerState<SeccionEntregas> {
           );
         }
 
+        final List<MensajeProgramado> porEstado = switch (_filtro) {
+          _Filtro.todos => enviados,
+          _Filtro.pendientes => enviados
+              .where((MensajeProgramado m) => !m.estaCompleto)
+              .toList(),
+          _Filtro.completos => enviados
+              .where((MensajeProgramado m) => m.estaCompleto)
+              .toList(),
+        };
+
         final List<MensajeProgramado> filtrados = filtrarProgramados(
-          enviados,
+          porEstado,
           _busqueda.text,
         );
         final List<MensajeProgramado> pagina = filtrados
@@ -100,13 +116,57 @@ class _SeccionEntregasState extends ConsumerState<SeccionEntregas> {
                 etiqueta: Textos.buscarEntregas,
                 resultados: filtrados.length,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
             ],
+
+            // El contador va en la propia pestaña: «Pendientes (3)» dice de un
+            // vistazo si hay algo que perseguir, sin tener que entrar a mirar.
+            SegmentedButton<_Filtro>(
+              segments: <ButtonSegment<_Filtro>>[
+                ButtonSegment<_Filtro>(
+                  value: _Filtro.todos,
+                  label: Text(Textos.filtroTodos(enviados.length)),
+                ),
+                ButtonSegment<_Filtro>(
+                  value: _Filtro.pendientes,
+                  label: Text(
+                    Textos.filtroPendientes(
+                      enviados
+                          .where((MensajeProgramado m) => !m.estaCompleto)
+                          .length,
+                    ),
+                  ),
+                ),
+                ButtonSegment<_Filtro>(
+                  value: _Filtro.completos,
+                  label: Text(
+                    Textos.filtroCompletos(
+                      enviados
+                          .where((MensajeProgramado m) => m.estaCompleto)
+                          .length,
+                    ),
+                  ),
+                ),
+              ],
+              selected: <_Filtro>{_filtro},
+              showSelectedIcon: false,
+              style: const ButtonStyle(
+                visualDensity: VisualDensity.compact,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              onSelectionChanged: (Set<_Filtro> s) => setState(() {
+                _filtro = s.first;
+                _visibles = _porPagina;
+              }),
+            ),
+            const SizedBox(height: 12),
             if (filtrados.isEmpty)
               Padding(
                 padding: const EdgeInsets.all(24),
                 child: Text(
-                  Textos.sinResultados(_busqueda.text.trim()),
+                  _busqueda.text.trim().isEmpty
+                      ? Textos.entregasSinEsteEstado
+                      : Textos.sinResultados(_busqueda.text.trim()),
                   textAlign: TextAlign.center,
                 ),
               )
@@ -525,3 +585,6 @@ class _ListaDestinatarios extends StatelessWidget {
     );
   }
 }
+
+/// Qué reportes se muestran en la lista.
+enum _Filtro { todos, pendientes, completos }

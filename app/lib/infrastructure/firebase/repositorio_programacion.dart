@@ -188,6 +188,23 @@ class MensajeProgramado {
   /// un dato correcto en una alarma falsa.
   int get faltanPorConfirmar =>
       requiereConfirmacion ? totalDestinatarios - confirmados : 0;
+
+  /// ¿Ya no queda nada pendiente de este aviso?
+  ///
+  /// ──────────────────────────────────────────────────────────────────────────
+  /// «Completo» significa cosas distintas según lo que el aviso pedía.
+  /// ──────────────────────────────────────────────────────────────────────────
+  ///
+  /// Si pedía confirmación, está completo cuando la dieron todos. Si no la
+  /// pedía, nadie iba a confirmar nunca: lo único que se podía esperar es que
+  /// llegara, y con eso ya está cerrado.
+  ///
+  /// Medirlos con la misma vara dejaría a la mitad de los avisos eternamente
+  /// «incompletos» por no haber hecho algo que jamás se les pidió.
+  bool get estaCompleto => totalDestinatarios > 0 &&
+      (requiereConfirmacion
+          ? confirmados >= totalDestinatarios
+          : entregados >= totalDestinatarios);
 }
 
 /// Un destinatario y su estado, para el detalle del reporte (RF-CNF-06).

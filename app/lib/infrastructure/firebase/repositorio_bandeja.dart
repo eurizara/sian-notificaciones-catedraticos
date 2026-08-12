@@ -21,9 +21,6 @@ class RepositorioBandejaFirebase implements RepositorioBandeja {
   /// mensajes que esto sin paginar.
   static const int _limite = 50;
 
-  /// Tope de Firestore para el operador `whereIn`.
-  static const int _tamanoLote = 30;
-
   @override
   Stream<List<MensajeRecibido>> observarHistorial(String uid) {
     return _firestore
@@ -38,9 +35,32 @@ class RepositorioBandejaFirebase implements RepositorioBandeja {
   /// Combina las entregas con el contenido de sus mensajes.
   ///
   /// La entrega guarda `mensajeId` desnormalizado, pero no el título ni el
-  /// cuerpo, así que hace falta una segunda lectura. Se hace **por lotes** con
-  /// `whereIn` en lugar de una lectura por fila: con 50 mensajes, son 2
-  /// consultas en vez de 51.
+  /// cuerpo, así que hace falta una segunda lectura.
+  ///
+  /// ──────────────────────────────────────────────────────────────────────────
+  /// UNA LECTURA POR MENSAJE, Y NO UNA CONSULTA POR LOTES.
+  /// ──────────────────────────────────────────────────────────────────────────
+  ///
+  /// Antes se pedían de treinta en treinta con `whereIn` sobre el
+  /// identificador: dos consultas en vez de cincuenta y una. Más barato, y
+  /// **prohibido para un catedrático**.
+  ///
+  /// Firestore no filtra las consultas: o puede demostrar de antemano que todo
+  /// lo que devolverían cumple la regla, o rechaza la consulta entera. La regla
+  /// de `mensajes` dice «puedes leerlo si tu identificador está en su lista de
+  /// destinatarios», y eso solo se sabe mirando cada documento. Una consulta
+  /// por identificador no lo garantiza, así que se rechazaba con
+  /// `permission-denied`.
+  ///
+  /// El fallo estuvo escondido porque el coordinador y el auditor pueden leer
+  /// `mensajes` sin condiciones: para ellos la regla es cierta sin mirar
+  /// ningún documento, la consulta se aprueba, y la bandeja funcionaba. Solo
+  /// aparecía al entrar con una cuenta de catedrático de verdad — es decir,
+  /// con la única cuenta para la que se construyó esta pantalla.
+  ///
+  /// Una lectura suelta sí se evalúa documento por documento, y ahí la regla
+  /// se cumple. Son como mucho cincuenta lecturas por apertura de bandeja, que
+  /// a la escala de la sede no es nada comparado con no poder abrirla.
   Future<List<MensajeRecibido>> _combinarConMensajes(
     QuerySnapshot<Map<String, dynamic>> entregas,
   ) async {
@@ -59,19 +79,17 @@ class RepositorioBandejaFirebase implements RepositorioBandeja {
     final Map<String, Map<String, dynamic>> mensajes =
         <String, Map<String, dynamic>>{};
 
-    for (int i = 0; i < ids.length; i += _tamanoLote) {
-      final List<String> lote = ids.sublist(
-        i,
-        (i + _tamanoLote).clamp(0, ids.length),
-      );
-      final QuerySnapshot<Map<String, dynamic>> resultado = await _firestore
-          .collection('mensajes')
-          .where(FieldPath.documentId, whereIn: lote)
-          .get();
+    final List<DocumentSnapshot<Map<String, dynamic>>> documentos =
+        await Future.wait(
+          ids.map(
+            (String id) => _firestore.collection('mensajes').doc(id).get(),
+          ),
+        );
 
-      for (final QueryDocumentSnapshot<Map<String, dynamic>> doc
-          in resultado.docs) {
-        mensajes[doc.id] = doc.data();
+    for (final DocumentSnapshot<Map<String, dynamic>> doc in documentos) {
+      final Map<String, dynamic>? datos = doc.data();
+      if (datos != null) {
+        mensajes[doc.id] = datos;
       }
     }
 
