@@ -1,6 +1,6 @@
 /**
  * SIAN — Las cuatro estrategias concretas de recurrencia
- * (documento 02, sección 3 · RF-PRG-05..08).
+ * (documento 02, sección 4 · RF-PRG-05..08).
  */
 
 import type { DateTime } from 'luxon';

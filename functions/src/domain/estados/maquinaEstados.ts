@@ -1,5 +1,5 @@
 /**
- * SIAN — Máquinas de estado (patrón State, documento 02, sección 3).
+ * SIAN — Máquinas de estado (patrón State, documento 02, sección 4).
  *
  * Los diagramas de las secciones 9 y 10 del documento 01 están aquí como
  * tablas de transición, no como comentarios. Una transición que no aparece en
@@ -113,7 +113,7 @@ export const maquinaOcurrencia = new MaquinaEstados<EstadoOcurrencia>(
 //
 // TOMADO → PENDIENTE existe a propósito: es la liberación del bloqueo vencido
 // a los 5 minutos, que evita que una ejecución muerta deje la ocurrencia
-// bloqueada para siempre (documento 02, sección 4.3).
+// bloqueada para siempre (documento 02, sección 5.3).
 // ---------------------------------------------------------------------------
 
 const TRANSICIONES_ITEM_COLA: TablaTransiciones<EstadoItemCola> = {

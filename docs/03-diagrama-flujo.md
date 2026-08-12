@@ -126,7 +126,8 @@ flowchart TD
     ALERTA --> ABRE{"¿El catedrático<br/>la abre?"}
     ABRE -->|No| PENDIENTE["Queda pendiente<br/>en el historial"]
     PENDIENTE --> APP
-    ABRE -->|Sí| DETALLE["Mostrar detalle:<br/>texto, imagen y reproductor de voz"]
+    ABRE -->|Sí| DESPLIEGA["Despliega la fila<br/>en la bandeja"]
+    DESPLIEGA --> DETALLE["Mostrar detalle: texto y<br/>adjuntos EN EL ORDEN<br/>en que se adjuntaron"]
     DETALLE --> MARCARABIERTO["Registrar MENSAJE_ABIERTO<br/>estado = ABIERTO"]
     MARCARABIERTO --> REQCONF{"¿El mensaje requiere<br/>confirmación?"}
     REQCONF -->|No| FIN3(["Fin"])
@@ -156,6 +157,18 @@ flowchart TD
 ```
 
 ---
+
+> **Se marca como abierto al DESPLEGAR, no al dibujar la lista.** Antes bastaba
+> con que la bandeja se pintara para que todo constara como abierto: un dato de
+> seguimiento convertido en una casilla que se marca sola. Ahora se registra
+> cuando el texto aparece de verdad delante de la persona.
+>
+> Y **abrir sigue sin ser confirmar** (RF-CNF-02): abrir dice que lo miró;
+> confirmar, que declaró haberlo leído. Mezclarlos convertiría una evidencia en
+> una suposición.
+>
+> La única excepción es una urgente sin confirmar: nace desplegada, así que se
+> marca de entrada — su contenido sí está delante desde el primer momento.
 
 ## 2. Subflujo: cálculo de la siguiente ocurrencia recurrente
 

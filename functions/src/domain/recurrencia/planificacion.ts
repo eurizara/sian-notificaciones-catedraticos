@@ -76,7 +76,7 @@ export function calcularProximasOcurrencias(
  * Primera ocurrencia de una programación cualquiera.
  *
  * Es lo que la Function `programarMensaje` inserta en `cola_despacho`
- * (documento 02, sección 4.2). Devuelve `null` si el patrón ya nace agotado.
+ * (documento 02, sección 5.2). Devuelve `null` si el patrón ya nace agotado.
  */
 export function calcularPrimeraOcurrencia(prog: Programacion, ahora: Date = new Date()): Date | null {
   switch (prog.modo) {

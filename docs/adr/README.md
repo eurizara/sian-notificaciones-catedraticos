@@ -1,7 +1,7 @@
 # Registros de decisión de arquitectura (ADR)
 
 Toda decisión relevante se documenta aquí con el formato: contexto, opciones consideradas,
-decisión, consecuencias y estado (documento 02, sección 12).
+decisión, consecuencias y estado (documento 02, sección 14).
 
 ## Índice
 

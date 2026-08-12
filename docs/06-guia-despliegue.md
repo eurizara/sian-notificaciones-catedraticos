@@ -81,7 +81,7 @@ flutter doctor         # todo en verde salvo lo relativo a Android/iOS
 
 > `flutter doctor` marcará en rojo las herramientas de Android Studio y Xcode. **Para este
 > proyecto no importa**, porque compilamos a web. Solo harían falta si más adelante se activa
-> el plan de contingencia del documento 02, sección 11.
+> el plan de contingencia del documento 02, sección 13.
 
 Habilita el objetivo web una sola vez:
 
@@ -514,7 +514,7 @@ Recorre esta lista en un teléfono real, no en el emulador del navegador:
       iPhone durante 24 horas y verifico que siguen llegando todas
 
 > El último punto es el más importante de toda la lista. Si falla, se activa el plan de
-> contingencia del documento 02, sección 11, y hay que saberlo antes de prometer nada al
+> contingencia del documento 02, sección 13, y hay que saberlo antes de prometer nada al
 > coordinador académico.
 
 ---

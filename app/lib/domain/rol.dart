@@ -1,7 +1,7 @@
 /// SIAN — Roles, del lado del cliente.
 ///
 /// El rol viaja en los *custom claims* del token, sembrados por Cloud Function
-/// (documento 02, sección 9). Aquí se usa **solo para decidir qué pantalla
+/// (documento 02, sección 11). Aquí se usa **solo para decidir qué pantalla
 /// mostrar**.
 ///
 /// La autorización de verdad ocurre en tres sitios que deben coincidir, y

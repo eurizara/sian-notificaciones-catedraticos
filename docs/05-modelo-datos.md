@@ -15,7 +15,7 @@ erDiagram
     MENSAJE ||--o{ OCURRENCIA : "genera"
     OCURRENCIA ||--o{ ENTREGA : "produce"
     USUARIO ||--o{ ENTREGA : "recibe"
-    MENSAJE ||--o{ ADJUNTO : "contiene"
+    MENSAJE ||--o{ ADJUNTO : "lleva en orden"
     MENSAJE }o--o{ GRUPO : "se dirige a"
     USUARIO ||--o{ BITACORA : "origina"
     OCURRENCIA ||--|| ITEM_COLA : "se despacha por"
@@ -27,6 +27,9 @@ erDiagram
         string nombre
         string rol
         bool activo
+        bool recibeAvisos
+        bool puedeEmitirUrgentes
+        bool puedeCrearRecurrentes
         string proveedorAuth
         timestamp creadoEn
     }
@@ -49,18 +52,23 @@ erDiagram
         string titulo
         string cuerpo
         string tipo
-        string formato
+        array formato
+        map adjuntos
         bool requiereConfirmacion
         string estado
         map programacion
+        array destinatariosUids
+        map resumenEntrega
         string creadoPor FK
+        string creadoPorNombre
     }
     ADJUNTO {
-        string adjuntoId PK
-        string mensajeId FK
-        string clase
-        string rutaStorage
+        number posicion
+        string tipo
+        string ruta
         number bytes
+        string tipoMime
+        number duracionSeg
     }
     OCURRENCIA {
         string ocurrenciaId PK
@@ -104,6 +112,26 @@ erDiagram
         string creadaPor FK
     }
 ```
+
+
+> **`ADJUNTO` no es una colección.** Se dibuja como entidad para que se vea su
+> forma, pero vive **dentro** del mensaje, en `adjuntos.lista`: un arreglo
+> ordenado con hasta 3 imágenes y 2 notas de voz. El orden es el que eligió
+> quien redactó y es el que ve quien recibe, así que **la posición es parte del
+> dato** y no un detalle de presentación. Guardarlo como dos listas separadas
+> —audios por un lado, imágenes por otro— obligaría a reconstruir ese orden al
+> mostrarlo, y no hay forma de reconstruir lo que no se guardó.
+>
+> Los mensajes anteriores a agosto de 2026 llevan la forma antigua,
+> `{audio, imagen}`, con uno de cada como máximo. Se siguen leyendo: RN-03 dice
+> que un mensaje enviado no se reescribe, así que dejar de entenderla borraría
+> los adjuntos de todo lo entregado hasta entonces.
+>
+> **`creadoPorNombre` está repetido a propósito.** El nombre de quien envía se
+> guarda dentro del mensaje porque el catedrático **no tiene permiso para leer
+> `usuarios`**; sin esa copia vería un identificador aleatorio donde debería
+> decir quién le avisa. Queda congelado: si esa persona cambia de nombre, el
+> aviso sigue diciendo quién lo firmó cuando lo firmó (RF-BIT-02).
 
 ---
 
