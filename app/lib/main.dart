@@ -23,7 +23,7 @@ Future<void> main() async {
   final ResultadoArranque arranque = await inicializarFirebase();
 
   // ProviderScope es el contenedor de inyección de dependencias del cliente
-  // (documento 02, sección 3). Se monta en la raíz para poder sustituir
+  // (documento 02, sección 4). Se monta en la raíz para poder sustituir
   // cualquier implementación por un doble de prueba sin tocar la lógica.
   runApp(
     ProviderScope(

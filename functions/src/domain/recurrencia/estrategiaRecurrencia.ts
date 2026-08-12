@@ -1,5 +1,5 @@
 /**
- * SIAN — Estrategias de recurrencia (patrón Strategy, documento 02, sección 3).
+ * SIAN — Estrategias de recurrencia (patrón Strategy, documento 02, sección 4).
  *
  * Problema que resuelve: cada patrón de repetición calcula la siguiente
  * ocurrencia con su propio algoritmo. Sin Strategy esto sería un `if` anidado

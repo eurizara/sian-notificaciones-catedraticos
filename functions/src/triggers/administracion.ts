@@ -2,7 +2,7 @@
  * SIAN — Functions de administración: invitaciones, usuarios y grupos.
  *
  * Todas comparten la misma disciplina, que es la del patrón Command auditable
- * del documento 02, sección 3:
+ * del documento 02, sección 4:
  *
  *   1. Comprobar el permiso **en el servidor**, contra los custom claims. La
  *      interfaz ya oculta lo que no corresponde, pero ocultar no es impedir

@@ -1,6 +1,6 @@
 /**
  * SIAN — Entidad Mensaje y su fábrica (patrón Factory Method,
- * documento 02, sección 3).
+ * documento 02, sección 4).
  *
  * `MensajeFactory.crear` construye la entidad con sus invariantes ya validadas.
  * No existe forma de obtener un Mensaje a medio validar: o sale entero o lanza.

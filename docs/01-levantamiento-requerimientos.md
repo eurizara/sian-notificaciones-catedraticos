@@ -359,6 +359,12 @@ sobre el control de confirmación. Abrir un mensaje nunca lo marca como confirma
 | CU-11 | Suspender o cancelar una programación | Coordinador, Administradora | RF-PRG-10, 11 |
 | CU-12 | Despachar automáticamente las ocurrencias vencidas | Planificador | RF-PRG-12, 13, RF-ENT-14 |
 
+> **Este catálogo es el índice, no la especificación.** Cada caso está
+> desarrollado en el [documento 10](10-casos-de-uso.md) con el formato extendido
+> de la norma **ISO/IEC/IEEE 29148:2018**: actores, partes interesadas,
+> precondiciones, garantía mínima y de éxito, flujo principal, flujos
+> alternativos, excepciones y reglas de negocio.
+
 ---
 
 ## 9. Estados del mensaje

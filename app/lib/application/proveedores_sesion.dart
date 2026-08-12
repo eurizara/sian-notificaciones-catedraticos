@@ -2,7 +2,7 @@
 ///
 /// Es el cableado entre la infraestructura y la interfaz. Todo pasa por aquí,
 /// de modo que una prueba de widget puede sustituir el repositorio por un doble
-/// sin tocar ninguna pantalla (documento 02, sección 3).
+/// sin tocar ninguna pantalla (documento 02, sección 4).
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';

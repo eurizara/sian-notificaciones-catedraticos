@@ -57,7 +57,7 @@ completo, confirmación y bitácora, programación y recurrencia, y adjuntos de 
 
 | Entregable | Requisitos |
 |------------|-----------|
-| Repositorio con la estructura definida y la integración continua funcionando | documento 02, sección 6 |
+| Repositorio con la estructura definida y la integración continua funcionando | documento 02, sección 8 |
 | Proyecto `sian-umg-bdm-dev` creado, Blaze activo, alerta de presupuesto configurada | documento 06, etapa C |
 | Emuladores corriendo en local con datos sembrados | documento 06, etapa D |
 | Capa de dominio en TypeScript: entidades, máquinas de estado y estrategias de recurrencia, con pruebas unitarias | RF-PRG-05..09 |

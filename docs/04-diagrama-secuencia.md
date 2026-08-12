@@ -101,34 +101,43 @@ sequenceDiagram
 
     CO->>PA: Nuevo mensaje → tipo URGENTE
     CO->>PA: Título y cuerpo
+    CO->>PA: Adjunta el plano de evacuación
+    PA->>PA: Valida tipo y tamaño ANTES de subir
     CO->>PA: Graba nota de voz (42 s)
-    PA->>PA: Valida duración ≤ 60 s y tamaño ≤ 2 MB
-    PA->>ST: Sube audio a mensajes/{tmpId}/voz.webm
-    ST-->>PA: Ruta del archivo
-    CO->>PA: Adjunta imagen del plano de evacuación
-    PA->>PA: Comprime y valida tipo y tamaño
-    PA->>ST: Sube imagen a mensajes/{tmpId}/imagen.jpg
-    ST-->>PA: Ruta del archivo
+    PA->>PA: Valida duración ≤ 60 s y peso ≤ 2 MB
+    Note over PA: Nada se ha subido todavía.<br/>El orden en que se adjuntan es<br/>el que verá quien reciba.
 
     CO->>PA: Destinatarios = todos los catedráticos
-    PA->>FS: Consulta el conteo de destinatarios activos
-    FS-->>PA: 58 catedráticos
-    CO->>PA: Marca "requiere confirmación de lectura"
-    CO->>PA: Envío inmediato → pulsa Enviar
+    CO->>PA: Marca "exigir confirmación de lectura"
+    CO->>PA: Envío inmediato → pulsa Enviar ahora
 
-    PA->>CO: DOBLE CONFIRMACIÓN<br/>"Enviará una ALERTA URGENTE a 58 personas"
-    Note over PA,CO: RF-MSG-13 · RN-06
+    PA->>FN: contarDestinatarios()
+    FN-->>PA: 58 · con los excluidos y su motivo
+
+    PA->>CO: 1.ª confirmación: a cuántos va,<br/>quién queda fuera y QUÉ ADJUNTOS lleva
+    CO->>PA: Confirma
+    PA->>CO: 2.ª confirmación: es una ALERTA URGENTE
+    Note over PA,CO: RF-MSG-13 · RN-06 — el botón de<br/>enviar NO cuenta como confirmación
     CO->>PA: Confirma explícitamente
 
-    PA->>FN: enviarMensaje(payload)
+    Note over PA,ST: Recién ahora se sube. Si alguien cancelaba,<br/>no se gastaron los datos de nadie.
+    PA->>PA: Reserva el identificador del mensaje
+    PA->>ST: Sube 1-imagen.png a mensajes/{mensajeId}/
+    ST-->>PA: Ruta
+    PA->>ST: Sube 2-voz.webm a mensajes/{mensajeId}/
+    ST-->>PA: Ruta
+    Note over PA,ST: EN SERIE, no en paralelo: el orden de<br/>llegada lo decidiría la red, y con él<br/>el orden en que se ven.
+
+    PA->>FN: enviarInmediato(payload + adjuntos.lista)
     activate FN
-    FN->>FN: Cadena de validación:<br/>permisos → contenido →<br/>adjuntos → destinatarios → programación
-    FN->>FS: Crea mensajes/{mensajeId} en estado EN_COLA
-    FN->>ST: Mueve los adjuntos de tmpId a mensajeId
+    FN->>FN: Cadena de validación:<br/>permisos → contenido → adjuntos<br/>→ destinatarios → programación
+    FN->>FS: Lee el nombre del emisor para guardarlo con el mensaje
+    FN->>FS: create() de mensajes/{mensajeId} en EN_ENVIO
+    Note over FN,FS: create y no set: falla si ya existe,<br/>y eso impide pisar un mensaje ajeno<br/>pasando su identificador.
     FN->>FS: Crea ocurrencia número 1
     FN->>FS: Escribe bitacora: MENSAJE_CREADO
     FN->>FS: Inserta ítem en cola_despacho con ejecutarEn = ahora
-    FN-->>PA: 202 — mensaje aceptado, {mensajeId}
+    FN-->>PA: {mensajeId, estado, total, entregados, fallidos}
     deactivate FN
 
     PA->>FS: Se suscribe en tiempo real a la ocurrencia
