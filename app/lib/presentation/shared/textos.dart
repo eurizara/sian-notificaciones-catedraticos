@@ -498,6 +498,26 @@ abstract final class Textos {
   static const String entregasSinEsteEstado =
       'No hay avisos en este estado.';
 
+  /// Pestañas de la bandeja. El número va dentro: un filtro sin contador
+  /// obliga a entrar para descubrir que está vacío.
+  static String filtroBandeja(String cual, int n) => switch (cual) {
+    'sinLeer' => 'Sin leer ($n)',
+    'sinConfirmar' => 'Sin confirmar ($n)',
+    'leidos' => 'Leídos ($n)',
+    _ => 'Todos ($n)',
+  };
+
+  /// Una bandeja vacía tiene que decir POR QUÉ lo está: si no, se lee como que
+  /// algo se perdió, cuando es justo lo contrario.
+  static String filtroVacio(String cual) => switch (cual) {
+    'sinLeer' => 'Está al día: no tiene mensajes sin leer.',
+    'sinConfirmar' => 'No tiene nada pendiente de confirmar.',
+    'leidos' => 'Todavía no ha abierto ningún mensaje.',
+    _ => 'No hay mensajes.',
+  };
+
+  static const String filtroVerTodos = 'Ver todos los mensajes';
+
   static const String traeVoz = 'Nota de voz';
   static const String traeImagen = 'Imagen';
 
