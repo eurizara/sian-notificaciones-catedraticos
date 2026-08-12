@@ -502,10 +502,33 @@ vista** en vez de a una hora.
 
 ## Registro de rondas ejecutadas
 
-| Ronda | Fecha | Quién | Resultado | Incidencias abiertas |
+| Ronda | Fecha | Quién | Resultado | Incidencias |
 |---|---|---|---|---|
-| 1 | | | | |
-| 2 | | | | |
-| 3 | | | | |
-| 4 | | | | |
-| 5 | | | | |
+| 1 | 3 ago 2026 | Coordinación | Superada | — |
+| 2 | 4 ago 2026 | Coordinación | Superada | — |
+| 3 | 4 ago 2026 | Coordinación | Superada tras reprueba | Botón muerto tras el rechazo · Google rechazaba el ingreso · sin instructivo en móvil |
+| 4 | 8–10 ago 2026 | Coordinación | Superada tras reprueba | Adjuntos perdidos · audio mudo al primer intento · envío con adjunto a medias |
+| 5 | 10 ago 2026 | Coordinación | Superada | — |
+
+> Las tres rondas que necesitaron reprueba tienen algo en común: **el defecto
+> no estaba en lo que se probaba, sino en lo que se daba por hecho**. El botón
+> de volver, los adjuntos que se subían pero no se declaraban, el permiso de
+> notificaciones que la propia aplicación se denegaba. Ninguno habría salido de
+> una prueba de escritorio.
+
+## Hallazgos posteriores a las rondas
+
+Encontrados usando el sistema, no ejecutando el guion. Se anotan aquí porque
+cada uno señala un paso que al guion le falta.
+
+| Hallazgo | Qué lo destapó | Paso que hay que añadir |
+|---|---|---|
+| La bandeja no abría con una cuenta de catedrático | Entrar con un catedrático real | Recorrer **cada ronda** con una cuenta de cada rol, no solo con la de coordinación |
+| Un icono nuevo tardaba una semana en aparecer | Un despliegue con un botón nuevo | Comprobar los cambios en la **aplicación instalada**, no solo en una pestaña |
+| Girar el teléfono borraba el mensaje a medio escribir | Redactar en el celular | Girar el aparato **en mitad de cada formulario** |
+| iOS decía «notificaciones bloqueadas» estándolo | Abrir la aplicación varias veces seguidas | Reabrir la aplicación instalada tres veces y mirar la tarjeta |
+
+> **El más caro de los cuatro es el primero.** Todas las rondas se recorrieron
+> con cuentas de coordinación, que pueden leer los mensajes sin condiciones; la
+> pantalla del catedrático nunca se ejecutó con un catedrático. Una prueba con
+> el rol equivocado no es media prueba: es ninguna.

@@ -244,6 +244,7 @@ momento de tomarla**, no después.
 | DT-12 | Vulnerabilidades moderadas de `firebase-admin` | Plataforma | Baja | Abierta | 0 USD |
 | DT-13 | Política de contraseñas solo en el cliente | Plataforma | Media | Abierta | 0 USD |
 | DT-14 | Los correos salen del dominio de Firebase y caen en No deseado | Plataforma | **Media** | Abierta | 0 USD |
+| DT-15 | Reparación temporal de la fuente de iconos en `index.html` | Plataforma | Baja | Abierta | 0 USD |
 
 **Prioridad de pago recomendada, en orden:** DT-03 → DT-07 → DT-04 → DT-01.
 
@@ -277,3 +278,30 @@ alertas de emergencia deben sonar distinto en iPhone sin excepción.
 3. Al pagar una deuda, no se borra la entrada: se cambia su estado a **Pagada** y se anota la
    fecha y el commit que la resolvió. El historial es parte del valor didáctico del proyecto.
 4. Este documento se revisa al cierre de cada fase del plan de iteraciones.
+
+---
+
+## DT-15 — Reparación temporal de la fuente de iconos
+
+**Estado:** abierta, con fecha de retirada · **Impacto:** bajo
+
+`app/web/index.html` pide la fuente de iconos saltándose la caché antes de
+arrancar Flutter, una sola vez por dispositivo.
+
+Existe porque `assets/**` llegó a servirse con una semana de caché. Flutter
+recorta esa fuente en cada compilación para dejar solo los iconos que la
+aplicación usa, y la publica siempre con el mismo nombre: el contenido cambia,
+el nombre no. Al añadir un icono nuevo, quien tuviera guardada la copia anterior
+seguía usándola, y el icono **no se dibujaba** — con el botón funcionando y su
+ayuda emergente visible. Sin error, sin hueco, sin nada roto.
+
+La cabecera ya está corregida, pero cambiarla no rescata las copias guardadas:
+mientras no caduquen, el navegador ni siquiera pregunta. Pedir el archivo
+saltándose la caché es lo único que las repara desde el propio sitio.
+
+**Cuándo se retira:** pasada una semana desde el 11 de agosto de 2026 no queda
+ninguna copia con la caché antigua, y el bloque sobra.
+
+**La regla que deja:** una ruta sin huella de contenido no se puede cachear
+largo. Flutter Web no la pone ni en `main.dart.js` ni en `assets/`; para el
+primero ya estaba contemplado, para el segundo no.
