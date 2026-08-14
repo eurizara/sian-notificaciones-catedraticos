@@ -71,54 +71,67 @@ List<String> titulos(List<MensajeRecibido> l) =>
     l.map((MensajeRecibido m) => m.titulo).toList();
 
 void main() {
-  group('qué entra en cada filtro', () {
-    test('sin leer: solo lo que llegó y nadie abrió', () {
-      expect(titulos(aplicarFiltro(FiltroBandeja.sinLeer, _todos)), <String>[
-        'Sin abrir',
-        'Sin abrir y pide confirmar',
-      ]);
+  // ──────────────────────────────────────────────────────────────────────────
+  // CADA MENSAJE EN UNA SOLA ETAPA. Es la propiedad que sostiene la pantalla.
+  // ──────────────────────────────────────────────────────────────────────────
+  //
+  // La primera versión permitía que un aviso estuviera en dos pestañas. Sobre
+  // el papel se sostenía; en la mano no: uno recién llegado se veía en «Sin
+  // leer», desaparecía al abrirlo y reaparecía en «Leídos» aunque siguiera
+  // pendiente de confirmar.
+  group('el ciclo de vida de un mensaje en la bandeja', () {
+    test('llega sin abrir → SIN LEER, pida o no confirmación', () {
+      expect(etapaDe(_todos[0]), EtapaBandeja.sinLeer);
+      expect(etapaDe(_todos[1]), EtapaBandeja.sinLeer);
     });
 
-    test('sin confirmar: lo pendiente, esté abierto o no', () {
-      // Abrir no es confirmar. Un aviso abierto que sigue sin confirmarse
-      // tiene una acción pendiente exactamente igual que uno sin abrir.
-      expect(
-        titulos(aplicarFiltro(FiltroBandeja.sinConfirmar, _todos)),
-        <String>['Sin abrir y pide confirmar', 'Abierta urgente sin confirmar'],
-      );
+    test('abierto y pendiente de confirmar → SIN CONFIRMAR, no leído', () {
+      // Este es el caso que se reportó: pasaba a «Leídos» al abrirlo aunque
+      // siguiera habiendo algo que hacer.
+      expect(etapaDe(_todos[2]), EtapaBandeja.sinConfirmar);
     });
 
-    test('leídos: abiertos y confirmados', () {
-      expect(titulos(aplicarFiltro(FiltroBandeja.leidos, _todos)), <String>[
-        'Abierta urgente sin confirmar',
-        'Abierta sin más',
-        'Confirmada',
-      ]);
+    test('abierto y sin confirmación que dar → LEÍDO', () {
+      expect(etapaDe(_todos[3]), EtapaBandeja.leido);
     });
 
-    test('todos no deja fuera a nadie', () {
-      expect(aplicarFiltro(FiltroBandeja.todos, _todos).length, _todos.length);
+    test('confirmado → LEÍDO, y desde ahí no se vuelve', () {
+      expect(etapaDe(_todos[4]), EtapaBandeja.leido);
     });
 
-    test('«sin leer» y «sin confirmar» se solapan a propósito', () {
-      // Un aviso que llegó, nadie abrió y pedía confirmación responde que sí a
-      // las dos preguntas. Repartirlo en cajones excluyentes obligaría a elegir
-      // uno, y esa elección sería arbitraria justo con lo que más importa.
-      final MensajeRecibido b = _todos[1];
-      expect(entraEn(FiltroBandeja.sinLeer, b), isTrue);
-      expect(entraEn(FiltroBandeja.sinConfirmar, b), isTrue);
-    });
-
-    test('un aviso que NO llegó no cuenta como sin leer', () {
-      // No está sin leer: no está. Decir que hay uno sin leer cuando nunca
-      // llegó manda a buscar algo que no existe.
+    test('lo que no llegó queda fuera del ciclo', () {
+      // No está sin leer: no está. Pero sigue apareciendo en «Todos», porque
+      // esconderlo dejaría al catedrático sin saber que existe.
       final MensajeRecibido fallido = msg(
         id: 'f',
         titulo: 'No llegó',
         estado: 'FALLIDO',
       );
-      expect(entraEn(FiltroBandeja.sinLeer, fallido), isFalse);
-      expect(entraEn(FiltroBandeja.leidos, fallido), isFalse);
+      expect(etapaDe(fallido), EtapaBandeja.fueraDelCiclo);
+      expect(entraEn(FiltroBandeja.todos, fallido), isTrue);
+    });
+
+    test('NINGÚN mensaje aparece en dos pestañas', () {
+      // La propiedad, comprobada sobre todos los casos a la vez.
+      for (final MensajeRecibido m in _todos) {
+        final List<FiltroBandeja> donde = <FiltroBandeja>[
+          FiltroBandeja.sinLeer,
+          FiltroBandeja.sinConfirmar,
+          FiltroBandeja.leidos,
+        ].where((FiltroBandeja f) => entraEn(f, m)).toList();
+
+        expect(donde.length, 1, reason: '«${m.titulo}» está en $donde');
+      }
+    });
+
+    test('las tres pestañas suman el total: los contadores cuadran', () {
+      // Un contador que no cuadra es un contador en el que nadie vuelve a
+      // confiar.
+      final int suma =
+          contarEn(FiltroBandeja.sinLeer, _todos) +
+          contarEn(FiltroBandeja.sinConfirmar, _todos) +
+          contarEn(FiltroBandeja.leidos, _todos);
+      expect(suma, contarEn(FiltroBandeja.todos, _todos));
     });
 
     test('los contadores coinciden con lo que se muestra', () {
@@ -182,10 +195,10 @@ void main() {
 
       expect(find.text(Textos.filtroBandeja('sinLeer', 2)), findsOneWidget);
       expect(
-        find.text(Textos.filtroBandeja('sinConfirmar', 2)),
+        find.text(Textos.filtroBandeja('sinConfirmar', 1)),
         findsOneWidget,
       );
-      expect(find.text(Textos.filtroBandeja('leidos', 3)), findsOneWidget);
+      expect(find.text(Textos.filtroBandeja('leidos', 2)), findsOneWidget);
       expect(find.text(Textos.filtroBandeja('todos', 5)), findsOneWidget);
     });
 
@@ -195,7 +208,7 @@ void main() {
       await tester.pumpWidget(montar(_todos));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text(Textos.filtroBandeja('leidos', 3)));
+      await tester.tap(find.text(Textos.filtroBandeja('leidos', 2)));
       await tester.pumpAndSettle();
 
       expect(find.text('Abierta sin más'), findsOneWidget);
