@@ -173,16 +173,61 @@ class RepositorioSesionFalso implements RepositorioSesion {
 class RepositorioBandejaFalso implements RepositorioBandeja {
   RepositorioBandejaFalso(this.mensajes);
 
-  final List<MensajeRecibido> mensajes;
+  List<MensajeRecibido> mensajes;
 
   /// UIDs con los que se consultó el historial. Sirve para verificar que la
   /// bandeja pide **su** historial y no el de otro.
   final List<String> uidsConsultados = <String>[];
 
+  /// Firestore no devuelve una lista y se calla: la reemite cada vez que algo
+  /// cambia. Imitarlo importa porque hay comportamiento —qué desaparece de la
+  /// pantalla y cuándo— que solo se manifiesta en esa segunda emisión.
+  // ignore: close_sinks — lo cierra cada prueba en su `tearDown`.
+  final StreamController<List<MensajeRecibido>> _cambios =
+      StreamController<List<MensajeRecibido>>.broadcast();
+
+  /// Empuja una versión nueva del historial, como si el servidor hubiera
+  /// cambiado un estado.
+  void emitir(List<MensajeRecibido> nuevos) {
+    mensajes = nuevos;
+    if (_cambios.hasListener) {
+      _cambios.add(nuevos);
+    }
+  }
+
+  /// Cambia el estado de un mensaje y reemite, que es lo que hace el servidor
+  /// cuando alguien abre o confirma.
+  void cambiarEstado(String mensajeId, String estado) {
+    emitir(
+      mensajes
+          .map(
+            (MensajeRecibido m) => m.mensajeId == mensajeId
+                ? MensajeRecibido(
+                    mensajeId: m.mensajeId,
+                    titulo: m.titulo,
+                    cuerpo: m.cuerpo,
+                    tipo: m.tipo,
+                    estado: estado,
+                    requiereConfirmacion: m.requiereConfirmacion,
+                    emisor: m.emisor,
+                    entregadoEn: m.entregadoEn,
+                    abiertoEn: m.abiertoEn,
+                    confirmadoEn: m.confirmadoEn,
+                    adjuntos: m.adjuntos,
+                  )
+                : m,
+          )
+          .toList(),
+    );
+  }
+
+  Future<void> cerrar() => _cambios.close();
+
   @override
-  Stream<List<MensajeRecibido>> observarHistorial(String uid) {
+  Stream<List<MensajeRecibido>> observarHistorial(String uid) async* {
     uidsConsultados.add(uid);
-    return Stream<List<MensajeRecibido>>.value(mensajes);
+    yield mensajes;
+    yield* _cambios.stream;
   }
 }
 

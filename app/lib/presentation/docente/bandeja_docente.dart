@@ -84,6 +84,28 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
   /// dice cuánto hay antes de tocarla.
   FiltroBandeja _filtro = FiltroBandeja.sinLeer;
 
+  /// Mensajes que se quedan a la vista aunque el filtro ya no los incluya.
+  ///
+  /// ──────────────────────────────────────────────────────────────────────────
+  /// UN MENSAJE NO PUEDE IRSE DE DEBAJO DEL DEDO MIENTRAS SE LEE.
+  /// ──────────────────────────────────────────────────────────────────────────
+  ///
+  /// Al desplegar un aviso se registra como abierto, y con eso deja de estar
+  /// «sin leer». Si la lista le hiciera caso al instante, el mensaje
+  /// desaparecería en el mismo gesto de abrirlo: no da tiempo ni a empezar la
+  /// primera línea. Lo mismo al confirmar uno desde «Sin confirmar».
+  ///
+  /// La alternativa evidente —marcarlo al contraer— sale más cara de lo que
+  /// parece: quien lo lee y cierra la aplicación sin contraer no quedaría
+  /// registrado nunca, y «abierto» es un dato de seguimiento, no un adorno.
+  ///
+  /// Así que se registra en el momento correcto y lo que se retiene es la
+  /// FILA. Se sueltan todas al cambiar de pestaña o de búsqueda, que es cuando
+  /// la persona ya terminó con lo que estaba mirando. Es lo mismo que hace un
+  /// gestor de correo cuando uno abre un mensaje sin leer desde la vista de no
+  /// leídos: se queda ahí hasta que uno se va.
+  final Set<String> _retenidos = <String>{};
+
   /// Controla el desplazamiento para poder volver arriba de un toque.
   final ScrollController _scroll = ScrollController();
   bool _lejosDelInicio = false;
@@ -94,7 +116,10 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
     _busqueda.addListener(() {
       // Al buscar se vuelve al principio: seguir en la página 4 de un
       // resultado que tiene 2 elementos deja la pantalla vacía sin motivo.
-      setState(() => _visibles = _porPagina);
+      setState(() {
+        _visibles = _porPagina;
+        _retenidos.clear();
+      });
     });
 
     _scroll.addListener(() {
@@ -124,6 +149,8 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
     setState(() {
       _filtro = nuevo;
       _visibles = _porPagina;
+      // Cambiar de pestaña es haber terminado con lo que se estaba mirando.
+      _retenidos.clear();
     });
     if (_scroll.hasClients) {
       _scroll.jumpTo(0);
@@ -179,7 +206,13 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
               error: (Object e, StackTrace _) => _Error(detalle: e.toString()),
               data: (List<MensajeRecibido> todos) {
                 final List<MensajeRecibido> filtrados = filtrarMensajes(
-                  aplicarFiltro(_filtro, todos),
+                  todos
+                      .where(
+                        (MensajeRecibido m) =>
+                            entraEn(_filtro, m) ||
+                            _retenidos.contains(m.mensajeId),
+                      )
+                      .toList(),
                   _busqueda.text,
                 );
 
@@ -257,7 +290,12 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
                                   _cambiarFiltro(FiltroBandeja.todos),
                             )
                           else
-                            ...filasDeMensajes(context, pagina),
+                            ...filasDeMensajes(
+                              context,
+                              pagina,
+                              alDesplegar: (String id) =>
+                                  setState(() => _retenidos.add(id)),
+                            ),
 
                           VerMas(
                             mostrados: pagina.length,
@@ -307,11 +345,16 @@ List<MensajeRecibido> filtrarMensajes(
 /// exactamente lo que nadie espera al deslizar.
 List<Widget> filasDeMensajes(
   BuildContext context,
-  List<MensajeRecibido> mensajes,
-) {
+  List<MensajeRecibido> mensajes, {
+  ValueChanged<String>? alDesplegar,
+}) {
   return <Widget>[
     for (final MensajeRecibido mensaje in mensajes)
-      _Fila(key: ValueKey<String>(mensaje.mensajeId), mensaje: mensaje),
+      _Fila(
+        key: ValueKey<String>(mensaje.mensajeId),
+        mensaje: mensaje,
+        alDesplegar: alDesplegar,
+      ),
     if (Entorno.usaEmulador)
       const Padding(
         padding: EdgeInsets.only(top: 16),
@@ -321,9 +364,13 @@ List<Widget> filasDeMensajes(
 }
 
 class _Fila extends ConsumerStatefulWidget {
-  const _Fila({required this.mensaje, super.key});
+  const _Fila({required this.mensaje, this.alDesplegar, super.key});
 
   final MensajeRecibido mensaje;
+
+  /// Avisa a la bandeja de que esta fila se abrió, para que no se la lleve por
+  /// delante el filtro mientras se está leyendo.
+  final ValueChanged<String>? alDesplegar;
 
   @override
   ConsumerState<_Fila> createState() => _FilaState();
@@ -367,6 +414,13 @@ class _FilaState extends ConsumerState<_Fila> {
     // su contenido sí está delante de la persona desde el primer momento.
     if (_desplegado) {
       _marcarAbierto();
+      // Se retiene después del primer dibujado: tocar el estado del padre
+      // durante `initState` reventaría en mitad de la construcción.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          widget.alDesplegar?.call(widget.mensaje.mensajeId);
+        }
+      });
     }
   }
 
@@ -460,6 +514,9 @@ class _FilaState extends ConsumerState<_Fila> {
           setState(() => _desplegado = !_desplegado);
           if (_desplegado) {
             _marcarAbierto();
+            // Aunque luego se contraiga, la fila se queda hasta que la persona
+            // cambie de pestaña: seguir viéndola es parte de haberla leído.
+            widget.alDesplegar?.call(widget.mensaje.mensajeId);
           }
         },
         borderRadius: BorderRadius.circular(12),
