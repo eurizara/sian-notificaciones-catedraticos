@@ -1,50 +1,93 @@
 /// SIAN — Filtros de la bandeja.
 ///
 /// ────────────────────────────────────────────────────────────────────────────
-/// Tres preguntas distintas, no tres cajones excluyentes.
+/// UN MENSAJE ESTÁ EN UN SOLO SITIO. Las pestañas son etapas, no etiquetas.
 /// ────────────────────────────────────────────────────────────────────────────
 ///
-/// «Sin leer» y «Sin confirmar» se solapan a propósito: un aviso que llegó,
-/// nadie abrió y además pedía confirmación está en los dos, porque responde
-/// que sí a las dos preguntas. Repartirlos en cajones excluyentes obligaría a
-/// decidir en cuál de los dos «pertenece», y esa decisión sería arbitraria
-/// justo con los avisos que más importan.
+/// La primera versión dejaba que un aviso apareciera en dos pestañas a la vez
+/// —«sin leer» y «sin confirmar»— con el argumento de que respondía que sí a
+/// las dos preguntas. Sobre el papel se sostenía; en la mano, no: un aviso
+/// recién llegado se veía en «Sin leer», desaparecía de ahí al abrirlo y
+/// reaparecía en «Leídos» **aunque siguiera pendiente de confirmar**. Quien lo
+/// mira no está clasificando: está preguntando *qué me falta*, y esa pregunta
+/// solo tiene una respuesta por mensaje.
 ///
-/// La regla vive aquí, fuera de la pantalla, porque es lo que decide qué ve un
-/// catedrático al abrir la aplicación. Algo así no puede existir solo dentro de
-/// un `build`, donde no se puede comprobar.
+/// Ahora cada aviso recorre una fila de etapas, y está exactamente en una:
+///
+///     llega  →  SIN LEER  →  ¿pide confirmación?
+///                              │  no  →  LEÍDOS
+///                              └─ sí  →  SIN CONFIRMAR  →  LEÍDOS
+///
+/// La consecuencia práctica es que las cuentas cuadran: lo que suman las tres
+/// pestañas es lo que hay. Antes no, y un contador que no cuadra es un
+/// contador en el que nadie vuelve a confiar.
+///
+/// Lo urgente queda fuera de este reparto a propósito. Una alerta urgente sin
+/// confirmar se anuncia **por encima del filtro**, en la cabecera fija, porque
+/// es lo único de esta pantalla que no puede quedar detrás de una pestaña.
 library;
 
 import '../../domain/repositorios.dart';
 
-enum FiltroBandeja {
-  /// El historial completo.
-  todos,
-
-  /// Llegó y nadie lo ha abierto todavía.
-  ///
-  /// Es el filtro de partida: al abrir la aplicación, lo que se quiere saber
-  /// es qué hay de nuevo, no repasar lo de la semana pasada.
+/// La etapa en la que está un mensaje. Excluyentes por construcción.
+enum EtapaBandeja {
+  /// Llegó y nadie lo ha abierto.
   sinLeer,
 
-  /// Pedía confirmación de lectura y aún no se ha dado.
+  /// Ya se abrió, pedía confirmación y todavía no se ha dado.
   ///
-  /// Da igual si ya se abrió: abrir no es confirmar. Mientras no se confirme,
-  /// sigue habiendo algo que hacer.
+  /// Abrir no es confirmar: mirar un aviso no declara haberlo leído.
   sinConfirmar,
 
-  /// Ya se abrió o ya se confirmó. No queda nada pendiente con él.
+  /// No queda nada por hacer con él: se abrió y no pedía confirmación, o ya
+  /// se confirmó.
+  leido,
+
+  /// Ni llegó ni se leyó: entregas pendientes o fallidas.
+  ///
+  /// No se cuenta en ninguna de las tres etapas —no está sin leer, es que no
+  /// está— pero sigue apareciendo en «Todos», porque esconderlo del todo
+  /// dejaría al catedrático sin saber que existe.
+  fueraDelCiclo,
+}
+
+/// En qué etapa está este mensaje. **Devuelve una sola.**
+EtapaBandeja etapaDe(MensajeRecibido m) {
+  // Confirmado primero: es el final del camino, y desde ahí no se vuelve.
+  if (m.estaConfirmado) {
+    return EtapaBandeja.leido;
+  }
+  if (m.estado == 'ENTREGADO') {
+    return EtapaBandeja.sinLeer;
+  }
+  if (m.estado == 'ABIERTO') {
+    return m.requiereConfirmacion
+        ? EtapaBandeja.sinConfirmar
+        : EtapaBandeja.leido;
+  }
+  return EtapaBandeja.fueraDelCiclo;
+}
+
+enum FiltroBandeja {
+  /// El historial completo, incluido lo que quedó fuera del ciclo.
+  todos,
+
+  /// Etapa 1: llegó y nadie lo ha abierto. Es el filtro de partida.
+  sinLeer,
+
+  /// Etapa 2: abierto y esperando la confirmación de quien lo leyó.
+  sinConfirmar,
+
+  /// Etapa 3: cerrado.
   leidos,
 }
 
 /// ¿Este aviso entra en el filtro?
 bool entraEn(FiltroBandeja filtro, MensajeRecibido m) => switch (filtro) {
   FiltroBandeja.todos => true,
-  // ENTREGADO significa exactamente «llegó y nadie lo ha abierto». Un aviso
-  // que no llegó no está sin leer: no está.
-  FiltroBandeja.sinLeer => m.estado == 'ENTREGADO',
-  FiltroBandeja.sinConfirmar => m.requiereConfirmacion && !m.estaConfirmado,
-  FiltroBandeja.leidos => m.estado == 'ABIERTO' || m.estaConfirmado,
+  FiltroBandeja.sinLeer => etapaDe(m) == EtapaBandeja.sinLeer,
+  FiltroBandeja.sinConfirmar => etapaDe(m) == EtapaBandeja.sinConfirmar,
+  FiltroBandeja.leidos => etapaDe(m) == EtapaBandeja.leido,
 };
 
 List<MensajeRecibido> aplicarFiltro(

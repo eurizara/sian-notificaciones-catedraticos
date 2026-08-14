@@ -510,9 +510,9 @@ abstract final class Textos {
   /// Una bandeja vacía tiene que decir POR QUÉ lo está: si no, se lee como que
   /// algo se perdió, cuando es justo lo contrario.
   static String filtroVacio(String cual) => switch (cual) {
-    'sinLeer' => 'Está al día: no tiene mensajes sin leer.',
+    'sinLeer' => 'Está al día: no tiene mensajes sin abrir.',
     'sinConfirmar' => 'No tiene nada pendiente de confirmar.',
-    'leidos' => 'Todavía no ha abierto ningún mensaje.',
+    'leidos' => 'Todavía no ha terminado con ningún mensaje.',
     _ => 'No hay mensajes.',
   };
 
