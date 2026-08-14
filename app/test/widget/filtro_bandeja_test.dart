@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sian/application/proveedores_dispositivos.dart';
+import 'package:sian/application/proveedores_programacion.dart';
 import 'package:sian/application/proveedores_sesion.dart';
 import 'package:sian/core/navegador.dart';
 import 'package:sian/domain/repositorios.dart';
@@ -262,6 +263,155 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Ya leída'), findsOneWidget);
+    });
+  });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // UN MENSAJE NO SE VA DE DEBAJO DEL DEDO MIENTRAS SE LEE.
+  // ──────────────────────────────────────────────────────────────────────────
+  //
+  // Al desplegar un aviso se registra como abierto, y con eso deja de estar
+  // «sin leer». Si la lista obedeciera al instante, el mensaje desaparecería en
+  // el mismo gesto de abrirlo — que es justo lo que se reportó.
+  group('la fila se queda mientras se lee', () {
+    late RepositorioSesionFalso sesion;
+    late RepositorioDispositivosFalso dispositivos;
+    late RepositorioBandejaFalso bandeja;
+    late RepositorioProgramacionFalso programacion;
+
+    setUp(() {
+      sesion = RepositorioSesionFalso();
+      dispositivos = RepositorioDispositivosFalso(
+        entorno: EntornoNavegador.desconocido,
+        permiso: EstadoPermiso.concedido,
+      );
+      programacion = RepositorioProgramacionFalso();
+      bandeja = RepositorioBandejaFalso(<MensajeRecibido>[
+        msg(id: 'a', titulo: 'Recién llegado', estado: 'ENTREGADO'),
+        msg(id: 'b', titulo: 'Otro sin abrir', estado: 'ENTREGADO'),
+      ]);
+    });
+    tearDown(() async {
+      await sesion.cerrar();
+      await dispositivos.cerrar();
+      await bandeja.cerrar();
+    });
+
+    Future<void> montar(WidgetTester tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            repositorioSesionProvider.overrideWithValue(sesion),
+            repositorioDispositivosProvider.overrideWithValue(dispositivos),
+            repositorioBandejaProvider.overrideWithValue(bandeja),
+            repositorioProgramacionProvider.overrideWithValue(programacion),
+          ],
+          child: MaterialApp(
+            theme: TemaSian.claro(),
+            home: BandejaDocente(
+              usuario: usuarioDePrueba(rol: Rol.catedratico),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('abrirlo NO lo hace desaparecer de «Sin leer»', (
+      WidgetTester tester,
+    ) async {
+      await montar(tester);
+      await tester.tap(find.text('Recién llegado'));
+      await tester.pumpAndSettle();
+
+      // El servidor confirma el cambio de estado y reemite, como en la vida
+      // real. Aquí es donde antes se esfumaba.
+      bandeja.cambiarEstado('a', 'ABIERTO');
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Recién llegado'),
+        findsOneWidget,
+        reason: 'se estaba leyendo: no puede irse de la pantalla',
+      );
+    });
+
+    testWidgets('se queda incluso si se vuelve a contraer', (
+      WidgetTester tester,
+    ) async {
+      await montar(tester);
+      await tester.tap(find.text('Recién llegado'));
+      await tester.pumpAndSettle();
+      bandeja.cambiarEstado('a', 'ABIERTO');
+      await tester.pumpAndSettle();
+
+      // Contraer no es haber terminado con la pestaña: quizá quiera releerlo.
+      await tester.tap(find.text('Recién llegado'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Recién llegado'), findsOneWidget);
+    });
+
+    testWidgets('el contador SÍ baja: dice la verdad aunque siga a la vista', (
+      WidgetTester tester,
+    ) async {
+      await montar(tester);
+      expect(find.text(Textos.filtroBandeja('sinLeer', 2)), findsOneWidget);
+
+      await tester.tap(find.text('Recién llegado'));
+      await tester.pumpAndSettle();
+      bandeja.cambiarEstado('a', 'ABIERTO');
+      await tester.pumpAndSettle();
+
+      expect(find.text(Textos.filtroBandeja('sinLeer', 1)), findsOneWidget);
+      expect(find.text(Textos.filtroBandeja('leidos', 1)), findsOneWidget);
+    });
+
+    testWidgets('al cambiar de pestaña y volver, ya no está retenido', (
+      WidgetTester tester,
+    ) async {
+      // Cambiar de pestaña es haber terminado con lo que se miraba.
+      await montar(tester);
+      await tester.tap(find.text('Recién llegado'));
+      await tester.pumpAndSettle();
+      bandeja.cambiarEstado('a', 'ABIERTO');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(Textos.filtroBandeja('leidos', 1)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(Textos.filtroBandeja('sinLeer', 1)));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Recién llegado'), findsNothing);
+      expect(find.text('Otro sin abrir'), findsOneWidget);
+    });
+
+    testWidgets('confirmar desde «Sin confirmar» tampoco lo esfuma', (
+      WidgetTester tester,
+    ) async {
+      bandeja = RepositorioBandejaFalso(<MensajeRecibido>[
+        msg(
+          id: 'c',
+          titulo: 'Pide confirmación',
+          estado: 'ABIERTO',
+          pideConfirmacion: true,
+        ),
+      ]);
+      await montar(tester);
+
+      await tester.tap(find.text(Textos.filtroBandeja('sinConfirmar', 1)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Pide confirmación'));
+      await tester.pumpAndSettle();
+
+      bandeja.cambiarEstado('c', 'CONFIRMADO');
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Pide confirmación'),
+        findsOneWidget,
+        reason: 'acaba de confirmarlo: ver el resultado es parte del gesto',
+      );
     });
   });
 }
