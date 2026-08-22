@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guía del catedrático · SIAN UMG-BDM</title>
+<meta name="description" content="Todo lo que un catedrático necesita para usar SIAN: instalar en iPhone, Android o computadora, activar notificaciones, y leer, interpretar y confirmar los avisos.">
+<link rel="icon" href="../../favicon.png">
+<style>
+  :root{
+    --primario:#2E6DA4; --primario-oscuro:#1F4E79; --urgente:#B3261E;
+    --dorado:#B8860B; --confirmado:#2E7D32;
+    --fondo:#F7F9FC; --superficie:#FFFFFF; --borde:#DDE3EA;
+    --texto:#1A1C1E; --suave:#5A6472;
+    --ancho-menu:280px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--fondo); color:var(--texto);
+    /* Nada empuja la página de lado. En un celular, un documento que se
+       desplaza en horizontal se vuelve muy difícil de leer: se pierde el
+       margen izquierdo y hay que ir y venir con cada línea. */
+    overflow-x:hidden;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    line-height:1.75; font-size:18px;
+  }
+
+  /* ---- Barra superior ---- */
+  header{
+    position:sticky; top:0; z-index:30;
+    background:var(--primario); color:#fff;
+    display:flex; align-items:center; gap:12px; padding:12px 20px;
+    box-shadow:0 1px 4px rgba(0,0,0,.2);
+  }
+  header img{width:34px;height:34px;background:#fff;border-radius:50%;padding:2px}
+  header h1{font-size:19px;margin:0;font-weight:600}
+  header .sede{font-size:13px;opacity:.85;margin-left:auto;text-align:right}
+  #abrirMenu{
+    display:none; background:rgba(255,255,255,.15); color:#fff; border:0;
+    border-radius:8px; font-size:22px; width:42px; height:38px; cursor:pointer;
+  }
+
+  /* ---- Disposición ---- */
+  .envoltorio{display:flex; align-items:flex-start; max-width:1240px; margin:0 auto}
+  nav{
+    width:var(--ancho-menu); flex:0 0 var(--ancho-menu);
+    position:sticky; top:62px; max-height:calc(100vh - 62px); overflow-y:auto;
+    padding:24px 12px 40px;
+  }
+  nav h2{
+    font-size:12px; text-transform:uppercase; letter-spacing:.08em;
+    color:var(--suave); margin:22px 10px 8px;
+  }
+  nav a{
+    display:block; padding:8px 12px; margin:2px 0; border-radius:8px;
+    color:var(--texto); text-decoration:none; font-size:15px;
+  }
+  nav a:hover{background:#E8EEF6}
+  nav a.activo{background:#E8EEF6; color:var(--primario-oscuro); font-weight:600}
+
+  main{flex:1; min-width:0; padding:28px 28px 80px; background:var(--fondo)}
+
+  /* ---- Contenido ---- */
+  section{
+    background:var(--superficie); border:1px solid var(--borde); border-radius:14px;
+    padding:26px 30px; margin-bottom:26px; scroll-margin-top:76px;
+  }
+  h2{font-size:26px; color:var(--primario-oscuro); margin:0 0 4px; line-height:1.25}
+  h3{font-size:20px; color:var(--primario-oscuro); margin:30px 0 8px}
+  h4{font-size:17px; margin:22px 0 6px}
+  .entradilla{color:var(--suave); margin:0 0 18px; font-size:16px}
+  p{margin:12px 0}
+  ul,ol{margin:12px 0; padding-left:26px}
+  li{margin:7px 0}
+  code{
+    background:#EEF2F7; padding:2px 6px; border-radius:5px;
+    font-size:15px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  a{color:var(--primario)}
+
+  /* Pasos numerados */
+  ol.pasos{list-style:none; padding:0; counter-reset:paso}
+  ol.pasos>li{
+    counter-increment:paso; position:relative;
+    padding:2px 0 2px 46px; margin:16px 0;
+  }
+  ol.pasos>li::before{
+    content:counter(paso);
+    position:absolute; left:0; top:0;
+    width:32px; height:32px; border-radius:50%;
+    background:var(--primario); color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:600; font-size:15px;
+  }
+
+  /* Avisos */
+  .aviso{border-left:5px solid var(--primario); background:#EEF4FA;
+    padding:14px 18px; border-radius:0 10px 10px 0; margin:18px 0}
+  .aviso.critico{border-color:var(--urgente); background:#FCEEED}
+  .aviso.ojo{border-color:var(--dorado); background:#FBF5E6}
+  .aviso.bien{border-color:var(--confirmado); background:#EDF6EE}
+  .aviso>strong:first-child{display:block; margin-bottom:4px}
+
+  /* Etiquetas de plataforma */
+  .plataformas{display:flex; flex-wrap:wrap; gap:8px; margin:18px 0 4px}
+  .etiqueta{
+    font-size:13px; font-weight:600; padding:5px 12px; border-radius:20px;
+    background:#E8EEF6; color:var(--primario-oscuro);
+  }
+  .etiqueta.ios{background:#EFEFF4;color:#333}
+  .etiqueta.android{background:#E6F4EA;color:#1E6B33}
+  .etiqueta.escritorio{background:#EAF0FB;color:#274B8A}
+
+  /* Las tablas van dentro de su propio marco desplazable: son lo único que no
+     se puede encoger sin volverse ilegible, y si empujaran la página se
+     llevarían por delante todo lo demás. */
+  .tabla{overflow-x:auto; margin:18px 0; -webkit-overflow-scrolling:touch}
+  table{border-collapse:collapse; width:100%; margin:0; font-size:16px;
+    min-width:420px}
+  th,td{border:1px solid var(--borde); padding:9px 12px; text-align:left; vertical-align:top}
+  th{background:#F2F5F9; font-weight:600}
+
+  figure{margin:22px 0}
+  figure img{
+    display:block; max-width:100%; height:auto;
+    border:1px solid var(--borde); border-radius:10px;
+    box-shadow:0 2px 10px rgba(20,40,70,.07);
+  }
+  figure.movil img{max-width:330px; margin:0 auto}
+  figure.recorte img{max-width:560px; margin:0 auto}
+  figcaption{
+    color:var(--suave); font-size:14.5px; margin-top:8px; text-align:center;
+    max-width:640px; margin-left:auto; margin-right:auto;
+  }
+
+  .pendiente{
+    border:2px dashed var(--borde); border-radius:10px; padding:16px 18px;
+    color:var(--suave); font-size:15px; background:#FBFCFE; margin:16px 0;
+  }
+
+  footer{max-width:1240px;margin:0 auto;padding:0 28px 60px;color:var(--suave);font-size:14px}
+
+  @media print{
+    header,nav,#velo{display:none}
+    .envoltorio{display:block}
+    main{padding:0}
+    section{border:0; box-shadow:none; padding:0 0 18px; page-break-inside:avoid}
+    figure img{max-width:420px}
+    a{color:#000; text-decoration:none}
+    body{font-size:12pt}
+  }
+
+  @media (max-width:900px){
+    body{font-size:17px}
+    #abrirMenu{display:block}
+    header .sede{display:none}
+    .envoltorio{display:block; max-width:100%}
+    nav{
+      position:fixed; top:62px; left:0; bottom:0; width:min(86vw,320px);
+      background:var(--superficie); border-right:1px solid var(--borde);
+      transform:translateX(-101%); transition:transform .22s ease; z-index:25;
+      max-height:none; overflow-y:auto; visibility:hidden;
+    }
+    nav.abierto{visibility:visible}
+    nav.abierto{transform:none}
+    main{padding:20px 14px 70px; max-width:100%; overflow-x:hidden}
+    table{min-width:340px; font-size:15px}
+    section{padding:20px 18px; border-radius:12px}
+    h2{font-size:22px}
+    #velo{position:fixed;inset:62px 0 0;background:rgba(0,0,0,.35);z-index:20;display:none}
+    #velo.visible{display:block}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <button id="abrirMenu" aria-label="Abrir el índice">☰</button>
+  <img src="../../icons/Icon-192.png" alt="">
+  <h1>Guía del catedrático · SIAN</h1>
+  <div class="sede">Universidad Mariano Gálvez<br>Sede Boca del Monte</div>
+</header>
+
+<div id="velo"></div>
+
+<div class="envoltorio">
+<nav id="menu">
+  <h2>Empezar</h2>
+  <a href="#empiece">Empiece aquí</a>
+  <a href="#que-es">Qué es SIAN</a>
+  <a href="#entrar">Cómo entrar</a>
+
+  <h2>Instalar</h2>
+  <a href="#iphone">iPhone y iPad</a>
+  <a href="#android">Android</a>
+  <a href="#computadora">Computadora</a>
+  <a href="#notificaciones">Activar notificaciones</a>
+
+  <h2>Usar la aplicación</h2>
+  <a href="#bandeja">Su bandeja</a>
+  <a href="#pestanas">Las pestañas</a>
+  <a href="#colores">Los colores</a>
+  <a href="#confirmar">Confirmar lectura</a>
+  <a href="#adjuntos">Voz e imágenes</a>
+  <a href="#buscar">Buscar</a>
+
+  <h2>Ayuda</h2>
+  <a href="#palabras">Palabras del manual</a>
+  <a href="#problemas">Si algo no funciona</a>
+</nav>
+
+<main>
+
+<!-- ================= EMPIECE AQUÍ ================= -->
+<section id="empiece">
+  <h2>Empiece aquí</h2>
+  <p class="entradilla">Tres pasos. Diez minutos la primera vez, y ya no se vuelve a hacer.</p>
+
+  <ol class="pasos">
+    <li><strong>Entre a SIAN.</strong> Abra
+        <a href="https://sian-umg-bdm-dev.web.app"><code>sian-umg-bdm-dev.web.app</code></a>
+        y use <strong>Entrar con Google</strong> con su correo de la
+        universidad. <a href="#entrar">Ver cómo entrar</a></li>
+    <li><strong>Instale la aplicación en su celular.</strong> En iPhone es
+        obligatorio: sin ese paso no le llega ninguna alerta.
+        <a href="#iphone">iPhone</a> · <a href="#android">Android</a></li>
+    <li><strong>Active las notificaciones.</strong> Acepte el permiso que le
+        pide el celular. Le llegará un aviso de prueba.
+        <a href="#notificaciones">Ver cómo</a></li>
+  </ol>
+
+  <div class="aviso bien">
+    <strong>Cómo saber que quedó listo</strong>
+    Arriba de sus mensajes debe aparecer una línea que dice
+    <strong>Notificaciones activas</strong>. Si dice otra cosa,
+    <a href="#notificaciones">búsquela en esta tabla</a> y siga lo que indique.
+  </div>
+
+  <div class="aviso ojo">
+    <strong>Si se le complica algún paso, avise</strong>
+    No se quede a medias: escríbale a la coordinación académica. Un catedrático
+    que no completó la instalación no recibe las alertas, y no se entera de que
+    no las está recibiendo.
+  </div>
+</section>
+
+<!-- ================= QUÉ ES ================= -->
+<section id="que-es">
+  <h2>Qué es SIAN</h2>
+  <p class="entradilla">Sistema Institucional de Avisos y Notificaciones.</p>
+
+  <p>SIAN existe para que un aviso de la coordinación académica le llegue a su
+  celular <strong>aunque no tenga la aplicación abierta</strong>. Esa es la
+  razón de ser: un correo se lee cuando uno decide revisarlo; una alerta de
+  evacuación tiene que sonar en el momento.</p>
+
+  <p>No se descarga de ninguna tienda. Se abre desde el navegador, en esta
+  dirección:</p>
+
+  <p><a href="https://sian-umg-bdm-dev.web.app"><code>https://sian-umg-bdm-dev.web.app</code></a></p>
+
+  <h3>Los dos tipos de aviso</h3>
+  <div class="tabla">
+  <table>
+    <tr><th>Tipo</th><th>Cómo se ve</th><th>Qué significa</th></tr>
+    <tr>
+      <td><strong>Informativo</strong></td>
+      <td>Sin marca especial</td>
+      <td>Información que conviene conocer. Llega como cualquier notificación.</td>
+    </tr>
+    <tr>
+      <td><strong>Urgente</strong></td>
+      <td>Etiqueta roja <strong>URGENTE</strong></td>
+      <td>Requiere atención inmediata. Suena distinto, vibra más y el mensaje
+      se abre solo en la bandeja.</td>
+    </tr>
+  </table>
+  </div>
+
+  <p>Algunos avisos, además, <strong>le piden que confirme que los leyó</strong>.
+  Eso deja constancia de quién estaba enterado, que es lo que después permite
+  responder a la pregunta «¿quién sabía del simulacro?».</p>
+</section>
+
+<!-- ================= ENTRAR ================= -->
+<section id="entrar">
+  <h2>Cómo entrar</h2>
+  <p class="entradilla">Igual en el celular y en la computadora.</p>
+
+  <p>Abra <a href="https://sian-umg-bdm-dev.web.app"><code>sian-umg-bdm-dev.web.app</code></a>
+  y verá la pantalla de inicio de sesión. Hay dos formas de entrar.</p>
+
+  <figure>
+    <img src="../img/ingreso-escritorio.png" alt="La pantalla de inicio de sesión en una computadora" loading="lazy">
+    <figcaption>La pantalla de inicio de sesión en una computadora.</figcaption>
+  </figure>
+  <figure class="movil">
+    <img src="../img/ingreso-movil.png" alt="La misma pantalla en un celular" loading="lazy">
+    <figcaption>La misma pantalla en un celular.</figcaption>
+  </figure>
+
+  <h3>Opción 1 · Entrar con Google (recomendada)</h3>
+  <ol class="pasos">
+    <li>Presione <strong>Entrar con Google</strong>.</li>
+    <li>Elija su cuenta institucional en la lista que aparece.</li>
+    <li>Listo. No tiene que inventar ni recordar otra contraseña.</li>
+  </ol>
+
+  <h3>Opción 2 · Correo y contraseña</h3>
+  <ol class="pasos">
+    <li>Escriba su <strong>correo institucional</strong> y su contraseña.</li>
+    <li>Presione <strong>Entrar</strong>.</li>
+  </ol>
+
+  <p>Si todavía no tiene contraseña, use <strong>¿No tienes cuenta? Regístrate</strong>
+  y créela. La contraseña necesita al menos 10 caracteres, con mayúscula,
+  minúscula y un número.</p>
+
+  <div class="aviso ojo">
+    <strong>Su correo debe estar autorizado antes</strong>
+    Entrar con Google no basta: la coordinación académica debe haber registrado
+    su correo previamente. Si no lo está, el sistema se lo dirá con claridad y
+    no creará la cuenta.
+  </div>
+
+  <h3>Si olvidó su contraseña</h3>
+  <p>Presione <strong>¿Olvidaste tu contraseña?</strong> y escriba su correo.
+  Recibirá un enlace para restablecerla.</p>
+
+  <div class="aviso ojo">
+    <strong>Revise la carpeta de correo no deseado</strong>
+    Hoy ese correo se envía desde un dominio de Google y algunos servidores lo
+    clasifican como spam. Si no aparece en unos minutos, búsquelo ahí.
+  </div>
+
+  <h3>Si el sistema no lo deja entrar</h3>
+  <div class="tabla">
+  <table>
+    <tr><th>Lo que dice</th><th>Qué hacer</th></tr>
+    <tr>
+      <td><strong>Acceso no autorizado</strong></td>
+      <td>Su correo no está en la lista. Pida a la coordinación académica que lo
+      registre.</td>
+    </tr>
+    <tr>
+      <td><strong>Cuenta desactivada</strong></td>
+      <td>Su cuenta existe pero fue desactivada. Su historial se conserva
+      completo; contacte a la coordinación para reactivarla.</td>
+    </tr>
+    <tr>
+      <td><strong>Sesión sin rol asignado</strong></td>
+      <td>Cierre sesión y vuelva a entrar. El rol se asigna aparte, y su sesión
+      pudo haberse creado antes de que se lo asignaran.</td>
+    </tr>
+  </table>
+  </div>
+</section>
+
+<!-- ================= IPHONE ================= -->
+<section id="iphone">
+  <h2>Instalar en iPhone y iPad</h2>
+  <div class="plataformas"><span class="etiqueta ios">iOS 16.4 o superior</span><span class="etiqueta ios">Solo con Safari</span></div>
+
+  <div class="aviso critico">
+    <strong>En iPhone este paso NO es opcional</strong>
+    Apple solo permite notificaciones a las aplicaciones añadidas a la pantalla
+    de inicio. Si usa SIAN desde una pestaña de Safari, podrá leer sus mensajes
+    al abrirla, pero <strong>no le llegará ninguna alerta</strong>, ni siquiera
+    las urgentes.
+  </div>
+
+  <ol class="pasos">
+    <li>Abra <code>sian-umg-bdm-dev.web.app</code> <strong>en Safari</strong>.
+        Chrome y Firefox en iPhone no pueden hacer esto.</li>
+    <li>Presione el botón <strong>Compartir</strong>: el cuadrado con una
+        flecha hacia arriba, abajo en el centro de la pantalla.</li>
+    <li>Deslice hacia abajo en el menú y elija
+        <strong>Añadir a pantalla de inicio</strong>.</li>
+    <li>Presione <strong>Añadir</strong>, arriba a la derecha.</li>
+    <li>Cierre Safari y <strong>abra SIAN desde el ícono nuevo</strong> de su
+        pantalla de inicio. De ahí en adelante, entre siempre por ese ícono.</li>
+  </ol>
+
+  <h3>La aplicación le guía sola</h3>
+  <p>Si entra desde un iPhone sin haberla instalado, SIAN le muestra estos
+  mismos pasos antes que nada:</p>
+
+  <figure class="movil">
+    <img src="../img/instructivo-ios.png" alt="Las instrucciones que aparecen solas en iPhone" loading="lazy">
+    <figcaption>Las instrucciones que aparecen solas en iPhone.</figcaption>
+  </figure>
+
+  <div class="aviso">
+    <strong>Cómo saber que quedó bien</strong>
+    Al abrir desde el ícono, la aplicación ocupa toda la pantalla: no se ve la
+    barra de direcciones de Safari. Si la ve, está en una pestaña y las
+    notificaciones no le llegarán.
+  </div>
+
+  <div class="aviso ojo">
+    <strong>Si le aparece «Ábrela desde la pantalla de inicio»</strong>
+    Es que está en una pestaña de Safari. Si ya la instaló, cierre esa pestaña
+    y entre por el ícono; si no, siga los pasos de arriba.
+  </div>
+
+  <h3>Versión de iOS</h3>
+  <p>Las notificaciones necesitan <strong>iOS 16.4 o superior</strong>. Puede
+  revisarla en <em>Ajustes → General → Información → Versión del software</em>.
+  Con una versión anterior podrá leer los mensajes dentro de la aplicación,
+  pero el celular no le avisará.</p>
+</section>
+
+<!-- ================= ANDROID ================= -->
+<section id="android">
+  <h2>Instalar en Android</h2>
+  <div class="plataformas"><span class="etiqueta android">Chrome</span><span class="etiqueta android">Instalar es opcional</span></div>
+
+  <div class="aviso bien">
+    <strong>En Android las notificaciones funcionan sin instalar</strong>
+    Basta con entrar desde Chrome y aceptar el permiso. Instalarla es cómodo
+    —queda como una aplicación más— pero no es obligatorio como en iPhone.
+  </div>
+
+  <ol class="pasos">
+    <li>Abra <code>sian-umg-bdm-dev.web.app</code> en <strong>Chrome</strong>.</li>
+    <li>Chrome mostrará abajo un aviso de <strong>Instalar aplicación</strong>.
+        Presiónelo.<br>
+        Si no aparece: menú <strong>⋮</strong> (arriba a la derecha) →
+        <strong>Añadir a pantalla principal</strong> o
+        <strong>Instalar aplicación</strong>.</li>
+    <li>Confirme con <strong>Instalar</strong>.</li>
+    <li>El ícono queda en su pantalla de inicio, junto a las demás
+        aplicaciones.</li>
+  </ol>
+
+  <p>Instalada, SIAN abre a pantalla completa y sin barra de direcciones, y las
+  notificaciones se comportan igual que las de cualquier otra aplicación.</p>
+</section>
+
+<!-- ================= COMPUTADORA ================= -->
+<section id="computadora">
+  <h2>Instalar en computadora</h2>
+  <div class="plataformas"><span class="etiqueta escritorio">Chrome</span><span class="etiqueta escritorio">Edge</span><span class="etiqueta escritorio">Windows · Mac · Linux</span></div>
+
+  <p>En computadora tampoco es obligatorio: SIAN funciona en una pestaña
+  normal, notificaciones incluidas. Instalarla evita tener que buscar la
+  pestaña entre otras veinte.</p>
+
+  <ol class="pasos">
+    <li>Abra <code>sian-umg-bdm-dev.web.app</code> en <strong>Chrome</strong> o
+        <strong>Edge</strong>.</li>
+    <li>En la barra de direcciones, a la derecha, aparece un ícono de
+        <strong>instalar</strong> (una pantalla con una flecha hacia abajo).
+        Presiónelo.<br>
+        También desde el menú <strong>⋮</strong> →
+        <strong>Enviar, guardar y compartir</strong> →
+        <strong>Instalar página como aplicación</strong>.</li>
+    <li>Confirme con <strong>Instalar</strong>. Se abre en su propia ventana.</li>
+  </ol>
+
+  <div class="aviso">
+    <strong>Mantenga la ventana abierta</strong>
+    Las notificaciones de escritorio llegan mientras el navegador está
+    ejecutándose. Si cierra todo, el aviso lo estará esperando dentro de la
+    aplicación la próxima vez que entre.
+  </div>
+</section>
+
+<!-- ================= NOTIFICACIONES ================= -->
+<section id="notificaciones">
+  <h2>Activar las notificaciones</h2>
+  <p class="entradilla">El paso que decide si el sistema le sirve de algo.</p>
+
+  <p>La primera vez que entra, arriba de sus mensajes aparece una tarjeta
+  <strong>Activa las notificaciones</strong>. Presiónela y acepte el permiso
+  que pide el navegador. Le llegará una notificación de prueba: si llega, todo
+  está bien.</p>
+
+  <div class="aviso bien">
+    <strong>Cuando todo está bien, la tarjeta se hace pequeña</strong>
+    Se pliega a una línea que dice <em>Notificaciones activas</em>. Puede
+    tocarla para revisar el estado cuando quiera.
+  </div>
+
+  <h3>Qué hacer según lo que diga</h3>
+  <div class="tabla">
+  <table>
+    <tr><th>Mensaje</th><th>Significado y solución</th></tr>
+    <tr>
+      <td><strong>Notificaciones activas</strong></td>
+      <td>Todo correcto. No hay nada que hacer.</td>
+    </tr>
+    <tr>
+      <td><strong>Activa las notificaciones</strong></td>
+      <td>Todavía no ha dado el permiso. Presione el botón y acéptelo.</td>
+    </tr>
+    <tr>
+      <td><strong>Notificaciones bloqueadas</strong></td>
+      <td>El permiso fue denegado. La misma tarjeta le indica dónde cambiarlo
+      en su navegador; después recargue la página.</td>
+    </tr>
+    <tr>
+      <td><strong>Ábrela desde la pantalla de inicio</strong></td>
+      <td>Está en una pestaña de Safari en iPhone. Vaya a
+      <a href="#iphone">Instalar en iPhone</a>.</td>
+    </tr>
+  </table>
+  </div>
+
+  <div class="aviso ojo">
+    <strong>Revise que el celular no esté en silencio</strong>
+    El permiso puede estar concedido y aun así no oírse nada si el dispositivo
+    tiene activado el modo silencio o No molestar.
+  </div>
+</section>
+
+<!-- ================= BANDEJA ================= -->
+<section id="bandeja">
+  <h2>Su bandeja</h2>
+  <p class="entradilla">Lo que ve al entrar, y cómo leerlo de un vistazo.</p>
+
+  <p>Al entrar verá sus mensajes, del más reciente al más antiguo. Cada uno se
+  muestra plegado, con cuatro datos: <strong>título, estado, fecha y quién lo
+  envió</strong>. Toque cualquiera para desplegarlo y leerlo completo.</p>
+
+  <figure class="movil">
+    <img src="../img/bandeja-movil.png" alt="La bandeja en un celular" loading="lazy">
+    <figcaption>La bandeja en un celular. Fíjese en las franjas de color de la izquierda.</figcaption>
+  </figure>
+
+  <div class="aviso">
+    <strong>Si el aviso trae algo, lo dice sin abrirlo</strong>
+    Debajo del título aparece <em>Nota de voz</em> o <em>Imagen</em>. Así sabe
+    cuál abrir primero: en una alerta, la nota de voz puede ser lo único que
+    importe.
+  </div>
+
+  <h3>El estado de cada mensaje</h3>
+  <div class="tabla">
+  <table>
+    <tr><th>Dice</th><th>Significa</th></tr>
+    <tr><td><strong>Entregado</strong></td>
+        <td>Le llegó y usted todavía no lo ha abierto.</td></tr>
+    <tr><td><strong>Abierto</strong></td>
+        <td>Usted ya lo abrió. Queda registrado con la hora.</td></tr>
+    <tr><td><strong>Confirmado</strong></td>
+        <td>Usted declaró haberlo leído. Es el final del recorrido.</td></tr>
+  </table>
+  </div>
+
+  <figure>
+    <img src="../img/bandeja-escritorio.png" alt="La misma bandeja en una computadora" loading="lazy">
+    <figcaption>La misma bandeja en una computadora.</figcaption>
+  </figure>
+</section>
+
+<!-- ================= PESTAÑAS ================= -->
+<section id="pestanas">
+  <h2>Las pestañas</h2>
+  <p class="entradilla">Cuatro filtros, y cada mensaje está en uno solo.</p>
+
+  <p>La bandeja abre en <strong>Sin leer</strong>, que es la pregunta con la
+  que uno entra: qué hay de nuevo. Las otras están a un toque, y cada una lleva
+  su número.</p>
+
+  <div class="tabla">
+  <table>
+    <tr><th>Pestaña</th><th>Qué muestra</th></tr>
+    <tr><td><strong>Sin leer</strong></td>
+        <td>Llegó y usted todavía no lo ha abierto. Es la pestaña de entrada.</td></tr>
+    <tr><td><strong>Sin confirmar</strong></td>
+        <td>Ya lo abrió, pedía confirmación y aún no la ha dado.</td></tr>
+    <tr><td><strong>Leídos</strong></td>
+        <td>Ya no hay nada que hacer con él: lo abrió y no pedía confirmación,
+        o ya lo confirmó.</td></tr>
+    <tr><td><strong>Todos</strong></td>
+        <td>El historial completo.</td></tr>
+  </table>
+  </div>
+
+  <div class="aviso">
+    <strong>Cada mensaje está en una sola pestaña</strong>
+    Las tres primeras son etapas de un recorrido, no etiquetas sueltas. Un
+    aviso avanza así, y nunca está en dos sitios al mismo tiempo:
+    <br><br>
+    <strong>Sin leer</strong> → al abrirlo, si pedía confirmación pasa a
+    <strong>Sin confirmar</strong>; si no la pedía, pasa directo a
+    <strong>Leídos</strong> → al confirmarlo, <strong>Leídos</strong>.
+    <br><br>
+    Por eso los tres números suman el total: lo que ve es todo lo que hay.
+  </div>
+
+  <div class="aviso bien">
+    <strong>Un mensaje no se le va mientras lo lee</strong>
+    Al abrir un aviso desde «Sin leer» queda registrado como abierto y el
+    contador baja al momento, pero <strong>la tarjeta se queda donde está</strong>
+    hasta que usted cambie de pestaña. Puede leerlo con calma, cerrarlo y
+    volver a abrirlo.
+  </div>
+
+  <div class="aviso bien">
+    <strong>Si la bandeja aparece vacía, léala</strong>
+    Al abrir en «Sin leer», quien está al día ve la pantalla sin mensajes. No
+    se perdió nada —los mensajes están en las otras pestañas—: la pantalla se
+    lo dice y le ofrece el botón <strong>Ver todos los mensajes</strong>.
+  </div>
+
+  <div class="aviso critico">
+    <strong>Las alertas urgentes sin confirmar NUNCA se esconden</strong>
+    Aunque esté en una pestaña que no las incluya, arriba se mantiene un aviso
+    rojo con cuántas le faltan. Tóquelo y lo lleva directo a ellas.
+  </div>
+</section>
+
+<!-- ================= COLORES ================= -->
+<section id="colores">
+  <h2>Los colores no son decoración</h2>
+  <p class="entradilla">Una franja de color le dice qué le falta por atender.</p>
+
+  <p>A la izquierda de cada mensaje hay una franja de color, y le dice qué le
+  falta sin tener que abrir nada. Cada mensaje lleva <strong>un solo</strong>
+  color: el más importante que le corresponda.</p>
+
+  <div class="tabla">
+  <table>
+    <tr><th>Color</th><th>Qué significa</th><th>Qué hacer</th></tr>
+    <tr><td><strong style="color:#B3261E">Rojo</strong></td>
+        <td>Urgente y todavía sin confirmar.</td>
+        <td>Es lo primero que debe atender.</td></tr>
+    <tr><td><strong style="color:#B8860B">Dorado</strong></td>
+        <td>Espera su confirmación.</td>
+        <td>Ábralo y confirme cuando lo haya leído.</td></tr>
+    <tr><td><strong style="color:#2E6DA4">Azul</strong></td>
+        <td>Sin leer. Solo informa.</td>
+        <td>Léalo cuando pueda.</td></tr>
+    <tr><td>Sin color</td>
+        <td>Ya leído o ya confirmado.</td>
+        <td>Nada pendiente.</td></tr>
+  </table>
+  </div>
+
+  <p>Junto al título de los mensajes sin leer aparece además un
+  <strong>punto azul</strong>, igual que en el correo.</p>
+
+  <div class="aviso">
+    <strong>Por qué un solo color y no varios</strong>
+    Si un mensaje pudiera llevar dos o tres señales a la vez, todo llamaría la
+    atención y nada destacaría — que es justo el problema que los colores
+    vienen a resolver.
+  </div>
+</section>
+
+<!-- ================= CONFIRMAR ================= -->
+<section id="confirmar">
+  <h2>Confirmar lectura</h2>
+  <p class="entradilla">Abrir y confirmar no son lo mismo, y la diferencia importa.</p>
+
+  <div class="aviso">
+    <strong>La diferencia, en una línea cada una</strong>
+    <strong>Abrir</strong> deja constancia de que usted miró el mensaje.<br>
+    <strong>Confirmar</strong> es su declaración de que lo leyó, y tiene valor
+    probatorio: queda registrado con su nombre, la fecha, la hora y el
+    dispositivo.
+  </div>
+
+  <p>Por eso confirmar no pasa solo: usted tiene que presionar el botón. Cuando
+  un aviso lo exige, al desplegarlo aparece <strong>Confirmar lectura</strong>.
+  Presiónelo cuando de verdad ya lo haya leído.</p>
+
+  <figure class="movil">
+    <img src="../img/mensaje-desplegado.png" alt="Un mensaje desplegado con su botón de confirmar" loading="lazy">
+    <figcaption>Un mensaje desplegado, con su botón de confirmar.</figcaption>
+  </figure>
+
+  <div class="aviso ojo">
+    <strong>Confirmar no se deshace</strong>
+    Una vez confirmado no hay vuelta atrás, y no se puede confirmar dos veces.
+    El sistema le pide una confirmación extra antes de registrarlo.
+  </div>
+
+  <div class="aviso">
+    <strong>De los avisos que no piden confirmación también queda registro</strong>
+    De todos los mensajes se registra si usted los abrió. No se le pide nada,
+    pero la coordinación puede ver quién abrió cada aviso y quién no — y eso
+    les sirve para distinguir a quien lo vio de aquel a quien quizá no le están
+    llegando las notificaciones.
+  </div>
+</section>
+
+<!-- ================= ADJUNTOS ================= -->
+<section id="adjuntos">
+  <h2>Notas de voz e imágenes</h2>
+  <p class="entradilla">Hasta dos notas de voz y tres imágenes por aviso.</p>
+
+  <p>Un mensaje puede traer adjuntos, y aparecen <strong>en el mismo orden en
+  que los puso quien lo envió</strong>. Ese orden suele significar algo: un
+  plano, después la nota de voz que lo explica, después la foto del punto de
+  reunión.</p>
+
+  <ul>
+    <li><strong>Notas de voz:</strong> aparecen bajo el texto con su
+        reproductor. Presione reproducir.</li>
+    <li><strong>Imágenes:</strong> se muestran como un botón <em>Toque para ver
+        la imagen</em>. Se descargan solo cuando usted las pide, para que la
+        bandeja abra rápido cuando la conexión está mala. Ya cargada, tóquela
+        para verla a pantalla completa y agrandarla.</li>
+  </ul>
+
+  <div class="aviso">
+    <strong>Por qué las imágenes no se cargan solas</strong>
+    Una bandeja con diez avisos ilustrados serían diez descargas nada más
+    abrir, con sus datos y sin que usted las pidiera. Lo urgente de un aviso es
+    el texto; la imagen casi siempre es apoyo.
+  </div>
+</section>
+
+<!-- ================= BUSCAR ================= -->
+<section id="buscar">
+  <h2>Buscar</h2>
+  <p class="entradilla">Para cuando sabe que lo recibió pero no cuándo.</p>
+
+  <p>El buscador de arriba filtra por palabras del <strong>título y del
+  mensaje</strong>. Puede escribir varias en cualquier orden, y no necesita
+  poner tildes.</p>
+
+  <div class="aviso ojo">
+    <strong>La búsqueda respeta la pestaña en la que está</strong>
+    Si busca desde «Sin leer» y no aparece nada, pruebe en
+    <strong>Todos</strong>: puede que ese mensaje ya lo haya leído.
+  </div>
+
+  <p>La bandeja muestra los mensajes de quince en quince. Al final de la lista
+  hay un botón para ver más, con el número de los que quedan.</p>
+</section>
+
+<!-- ================= PALABRAS ================= -->
+<section id="palabras">
+  <h2>Palabras que aparecen en este manual</h2>
+  <p class="entradilla">Por si alguna no le resulta familiar.</p>
+
+  <div class="tabla">
+  <table>
+    <tr><th>Palabra</th><th>Qué quiere decir</th></tr>
+    <tr><td><strong>Navegador</strong></td>
+        <td>El programa con el que se entra a internet: Chrome, Safari, Edge,
+        Firefox.</td></tr>
+    <tr><td><strong>Pestaña</strong></td>
+        <td>Cada página abierta dentro del navegador. Cuando SIAN está
+        <em>instalada</em>, ya no vive en una pestaña sino en su propio ícono.</td></tr>
+    <tr><td><strong>Instalar la aplicación</strong></td>
+        <td>Agregar SIAN a la pantalla de inicio del celular, para abrirla con
+        un ícono como cualquier otra aplicación. No pasa por App Store ni por
+        Play Store, y no ocupa casi espacio.</td></tr>
+    <tr><td><strong>Notificación</strong></td>
+        <td>El aviso que aparece en la pantalla del celular aunque SIAN esté
+        cerrada.</td></tr>
+    <tr><td><strong>Permiso de notificaciones</strong></td>
+        <td>La autorización que el celular le pide una sola vez para poder
+        mostrarle esos avisos. Sin ella, SIAN no puede avisarle de nada.</td></tr>
+    <tr><td><strong>Bandeja</strong></td>
+        <td>La lista de los mensajes que usted ha recibido.</td></tr>
+    <tr><td><strong>Confirmar lectura</strong></td>
+        <td>Presionar el botón con el que usted declara que ya leyó un aviso.
+        Queda registrado con su nombre y la hora.</td></tr>
+    <tr><td><strong>Recargar</strong></td>
+        <td>Volver a cargar la aplicación desde cero. Es el botón del círculo
+        con la flecha, arriba a la derecha.</td></tr>
+  </table>
+  </div>
+</section>
+
+<!-- ================= PROBLEMAS ================= -->
+<section id="problemas">
+  <h2>Si algo no funciona</h2>
+
+  <h3>No me llegan las notificaciones</h3>
+  <ol>
+    <li><strong>¿Usa iPhone?</strong> Revise que haya abierto SIAN desde el
+        ícono de la pantalla de inicio y no desde una pestaña de Safari. Es la
+        causa más frecuente con diferencia.</li>
+    <li>Vea la tarjeta de arriba de sus mensajes y haga lo que diga
+        (<a href="#notificaciones">tabla de mensajes</a>).</li>
+    <li>Revise que el celular no esté en silencio o en No molestar.</li>
+    <li>Presione el botón <strong>recargar</strong> de la barra de arriba.</li>
+  </ol>
+
+  <h3>Abrí un mensaje y desapareció de la lista</h3>
+  <p>No desapareció: cambió de pestaña. Al abrirlo deja de estar «sin leer» y
+  pasa a <strong>Sin confirmar</strong> o a <strong>Leídos</strong>, según
+  pidiera confirmación o no. Mientras lo está leyendo se queda a la vista; se
+  mueve cuando usted cambia de pestaña.</p>
+
+  <h3>La pantalla se quedó pegada o veo algo raro</h3>
+  <p>Use el botón <strong>recargar</strong> (el círculo con la flecha), a la
+  izquierda del de cerrar sesión. Recarga la aplicación por completo y de paso
+  trae la versión más reciente, que en una aplicación instalada puede llevar
+  días sin renovarse.</p>
+
+  <h3>No encuentro un mensaje que sé que recibí</h3>
+  <p>Cambie a la pestaña <strong>Todos</strong> y use el buscador. Si aun así
+  no aparece, avísele a la coordinación: puede que la entrega haya fallado en
+  su dispositivo.</p>
+
+  <h3>El correo de recuperación no llega</h3>
+  <p>Revise la carpeta de correo no deseado. Hoy se envía desde un dominio de
+  Google y algunos servidores lo clasifican ahí.</p>
+
+  <div class="aviso">
+    <strong>¿Necesita el manual completo?</strong>
+    Esta guía cubre solo lo que usa un catedrático. Si además emite avisos,
+    consulte el <a href="../">manual general</a>, que incluye la creación de
+    mensajes, la programación y los reportes de entrega.
+  </div>
+</section>
+
+</main>
+</div>
+
+<footer>
+  Guía del catedrático · SIAN — Sistema Institucional de Avisos y Notificaciones ·
+  Universidad Mariano Gálvez de Guatemala, sede Boca del Monte.
+</footer>
+
+
+<script>
+  // Menú lateral en pantallas pequeñas.
+  const menu = document.getElementById('menu');
+  const velo = document.getElementById('velo');
+  const boton = document.getElementById('abrirMenu');
+
+  function cerrar(){ menu.classList.remove('abierto'); velo.classList.remove('visible'); }
+  boton.addEventListener('click', () => {
+    menu.classList.toggle('abierto');
+    velo.classList.toggle('visible');
+  });
+  velo.addEventListener('click', cerrar);
+  menu.addEventListener('click', e => { if (e.target.tagName === 'A') cerrar(); });
+
+  // Resalta en el índice la sección que se está leyendo.
+  const enlaces = [...menu.querySelectorAll('a')];
+  const porId = new Map(enlaces.map(a => [a.getAttribute('href').slice(1), a]));
+  const observador = new IntersectionObserver(entradas => {
+    entradas.forEach(e => {
+      if (!e.isIntersecting) return;
+      enlaces.forEach(a => a.classList.remove('activo'));
+      const a = porId.get(e.target.id);
+      if (a) a.classList.add('activo');
+    });
+  }, { rootMargin: '-70px 0px -70% 0px' });
+  document.querySelectorAll('section').forEach(s => observador.observe(s));
+</script>
+
+</body>
+</html>
