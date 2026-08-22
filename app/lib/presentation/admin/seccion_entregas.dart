@@ -400,6 +400,38 @@ class _ReporteState extends ConsumerState<_Reporte> {
             ),
             const SizedBox(height: 8),
 
+            // ────────────────────────────────────────────────────────────────
+            // LA APERTURA, ENTRE LA ENTREGA Y LA CONFIRMACIÓN.
+            // ────────────────────────────────────────────────────────────────
+            //
+            // Es la etapa de en medio, y se registra pida o no el aviso
+            // confirmación. Para uno que no la pedía es lo único que distingue
+            // «llegó al teléfono» de «llegó a la persona».
+            //
+            // Va en gris y sin barra propia a propósito: una segunda barra al
+            // lado de la de confirmación las pondría al mismo nivel, y no lo
+            // están.
+            Text(
+              Textos.entregasAbiertos(
+                mensaje.abiertos,
+                mensaje.totalDestinatarios,
+                mensaje.porcentajeAbierto,
+              ),
+              style: tema.textTheme.bodyMedium?.copyWith(
+                color: tema.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            if (mensaje.entregadosSinAbrir > 0) ...<Widget>[
+              const SizedBox(height: 2),
+              Text(
+                Textos.entregasSinAbrir(mensaje.entregadosSinAbrir),
+                style: tema.textTheme.bodySmall?.copyWith(
+                  color: tema.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+            const SizedBox(height: 8),
+
             if (porConfirmacion) ...<Widget>[
               Text(
                 Textos.entregasConfirmados(
@@ -538,48 +570,32 @@ class _ListaDestinatarios extends StatelessWidget {
           ),
 
         for (final DestinatarioEntrega d in destinatarios)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: Row(
-              children: <Widget>[
-                Icon(
-                  d.fallo
-                      ? Icons.error_outline
-                      : d.confirmo
-                      ? Icons.check_circle_outline
-                      : Icons.schedule,
-                  size: 16,
-                  // Un fallo de entrega NO es lo mismo que un descuido: uno se
-                  // resuelve revisando el dispositivo y el otro insistiendo a
-                  // la persona. Pintarlos igual mezclaría dos problemas.
-                  color: d.fallo
-                      ? ColoresSian.urgente
-                      : d.confirmo
-                      ? ColoresSian.confirmado
-                      : ColoresSian.doradoTexto,
+          Builder(
+            builder: (BuildContext _) {
+              final SituacionEntrega s = situacionDe(d, porConfirmacion);
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  children: <Widget>[
+                    Icon(s.icono, size: 16, color: s.color),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        d.nombre,
+                        style: tema.textTheme.bodySmall,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Text(
+                      s.etiqueta,
+                      style: tema.textTheme.bodySmall?.copyWith(
+                        color: tema.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    d.nombre,
-                    style: tema.textTheme.bodySmall,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                Text(
-                  d.fallo
-                      ? Textos.estadoNoLeLlego
-                      : d.confirmo
-                      ? Textos.estadoConfirmado
-                      : porConfirmacion
-                      ? Textos.estadoSinConfirmar
-                      : Textos.estadoEntregado,
-                  style: tema.textTheme.bodySmall?.copyWith(
-                    color: tema.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
+              );
+            },
           ),
       ],
     );
@@ -588,3 +604,71 @@ class _ListaDestinatarios extends StatelessWidget {
 
 /// Qué reportes se muestran en la lista.
 enum _Filtro { todos, pendientes, completos }
+
+/// Cómo se describe la situación de un destinatario en el detalle.
+class SituacionEntrega {
+  const SituacionEntrega({
+    required this.etiqueta,
+    required this.icono,
+    required this.color,
+  });
+
+  final String etiqueta;
+  final IconData icono;
+  final Color color;
+}
+
+/// En qué situación está esta persona con este aviso.
+///
+/// ──────────────────────────────────────────────────────────────────────────
+/// Cuatro situaciones distintas, y cada una se resuelve de otra manera.
+/// ──────────────────────────────────────────────────────────────────────────
+///
+/// Antes se decía «Entregado» de todo lo que no estuviera confirmado ni
+/// fallido, y ahí caían dos casos que no se parecen en nada: quien abrió el
+/// aviso y no lo confirmó —lo vio y no respondió— y quien no lo ha abierto
+/// siquiera. Al primero se le insiste; al segundo hay que averiguar si le
+/// están llegando las notificaciones.
+///
+/// Se calcula aparte de la pantalla para poder comprobarlo: es la parte del
+/// reporte de la que después salen decisiones sobre personas.
+SituacionEntrega situacionDe(DestinatarioEntrega d, bool porConfirmacion) {
+  // Un fallo de entrega NO es un descuido: uno se resuelve revisando el
+  // dispositivo y el otro insistiendo a la persona.
+  if (d.fallo) {
+    return const SituacionEntrega(
+      etiqueta: Textos.estadoNoLeLlego,
+      icono: Icons.error_outline,
+      color: ColoresSian.urgente,
+    );
+  }
+  if (d.confirmo) {
+    return const SituacionEntrega(
+      etiqueta: Textos.estadoConfirmado,
+      icono: Icons.check_circle_outline,
+      color: ColoresSian.confirmado,
+    );
+  }
+  if (!d.abrio) {
+    // Ni siquiera lo ha abierto. Es lo mismo pida o no confirmación, y es el
+    // caso que conviene distinguir: puede que no le estén llegando los avisos.
+    return const SituacionEntrega(
+      etiqueta: Textos.detalleNoAbrio,
+      icono: Icons.mail_outline,
+      color: ColoresSian.doradoTexto,
+    );
+  }
+  // Lo abrió. Con confirmación pendiente sigue habiendo algo que hacer; sin
+  // ella, es todo lo que se podía esperar.
+  return porConfirmacion
+      ? const SituacionEntrega(
+          etiqueta: Textos.detalleAbrioSinConfirmar,
+          icono: Icons.drafts_outlined,
+          color: ColoresSian.doradoTexto,
+        )
+      : const SituacionEntrega(
+          etiqueta: Textos.detalleAbrio,
+          icono: Icons.drafts_outlined,
+          color: ColoresSian.confirmado,
+        );
+}

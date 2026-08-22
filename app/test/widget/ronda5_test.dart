@@ -306,7 +306,8 @@ void main() {
       await tester.pumpWidget(
         montarConDetalle(<DestinatarioEntrega>[
           quien('Ana', 'CONFIRMADO'),
-          quien('Beto', 'ENTREGADO'),
+          quien('Beto', 'ABIERTO'),
+          quien('Carla', 'ENTREGADO'),
         ]),
       );
       await tester.pumpAndSettle();
@@ -319,7 +320,14 @@ void main() {
       expect(repo.vecesQuePidioDetalle, 1);
       expect(find.text('Ana'), findsOneWidget);
       expect(find.text('Beto'), findsOneWidget);
-      expect(find.text(Textos.estadoSinConfirmar), findsOneWidget);
+      expect(find.text('Carla'), findsOneWidget);
+
+      // Los dos que faltan por confirmar NO están en la misma situación: a
+      // Beto se le insiste, y con Carla hay que averiguar si le llegan los
+      // avisos. El detalle lo dice en vez de meterlos en el mismo saco.
+      expect(find.text(Textos.estadoConfirmado), findsOneWidget);
+      expect(find.text(Textos.detalleAbrioSinConfirmar), findsOneWidget);
+      expect(find.text(Textos.detalleNoAbrio), findsOneWidget);
     });
 
     testWidgets('un fallo de entrega se distingue de un descuido', (
@@ -341,7 +349,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(Textos.estadoNoLeLlego), findsOneWidget);
-      expect(find.text(Textos.estadoSinConfirmar), findsOneWidget);
+      expect(find.text(Textos.detalleNoAbrio), findsOneWidget);
     });
 
     testWidgets('si todos confirmaron, lo dice', (WidgetTester tester) async {
