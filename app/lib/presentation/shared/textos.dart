@@ -758,6 +758,31 @@ abstract final class Textos {
   static const String entregasSinConfirmacion =
       'Este aviso no exigía confirmación.';
 
+  /// La apertura, dicha con el peso que tiene y no más.
+  ///
+  /// ──────────────────────────────────────────────────────────────────────────
+  /// «Abrió» NO es «confirmó», y el reporte no puede insinuar que sí.
+  /// ──────────────────────────────────────────────────────────────────────────
+  ///
+  /// Abrir dice que la aplicación mostró el mensaje delante de la persona.
+  /// Confirmar dice que esa persona declaró haberlo leído, con su nombre y la
+  /// hora. Lo primero es un indicio; lo segundo, evidencia. Escribirlos con la
+  /// misma contundencia sería convertir uno en el otro.
+  static String entregasAbiertos(int abiertos, int total, int porcentaje) =>
+      'Abierto por $abiertos de $total · $porcentaje %';
+
+  static String entregasSinAbrir(int cuantos) => cuantos == 1
+      ? '1 lo recibió y no lo ha abierto'
+      : '$cuantos lo recibieron y no lo han abierto';
+
+  static const String entregasAbrirNoEsConfirmar =
+      'Abrir no es confirmar: indica que el mensaje se mostró, no que alguien '
+      'declarara haberlo leído.';
+
+  static const String detalleNoAbrio = 'No lo ha abierto';
+  static const String detalleAbrio = 'Lo abrió';
+  static const String detalleAbrioSinConfirmar = 'Lo abrió, sin confirmar';
+
   static String entregasResumen(int entregados, int total) =>
       'Entregado a $entregados de $total';
   static String entregasConfirmados(

@@ -91,6 +91,7 @@ class MensajeProgramado {
     this.nombresGrupos = const <String>[],
     this.totalDestinatarios = 0,
     this.entregados = 0,
+    this.abiertos = 0,
     this.confirmados = 0,
   });
 
@@ -147,6 +148,20 @@ class MensajeProgramado {
   final DateTime? proximaOcurrencia;
   final int totalDestinatarios;
   final int entregados;
+
+  /// Cuántos lo abrieron.
+  ///
+  /// ──────────────────────────────────────────────────────────────────────────
+  /// Se cuenta SIEMPRE, pida el aviso confirmación o no.
+  /// ──────────────────────────────────────────────────────────────────────────
+  ///
+  /// Para un aviso que no exigía confirmación, es la única señal de que llegó
+  /// a alguien y no solo al teléfono de alguien. Y **es más débil que
+  /// confirmar**: abrir dice que la aplicación mostró el mensaje; confirmar,
+  /// que una persona declaró haberlo leído. Presentarlos como equivalentes
+  /// convertiría un indicio en una prueba.
+  final int abiertos;
+
   final int confirmados;
 
   bool get esUrgente => tipo == 'URGENTE';
@@ -172,6 +187,19 @@ class MensajeProgramado {
   int get porcentajeConfirmado => totalDestinatarios == 0
       ? 0
       : ((confirmados / totalDestinatarios) * 100).round();
+
+  /// Porcentaje de apertura, sobre el total.
+  ///
+  /// El mismo denominador que los demás: a quien no le llegó tampoco lo abrió,
+  /// y cambiar la base según convenga es la forma más fácil de hacer que un
+  /// reporte diga lo que uno quiere oír.
+  int get porcentajeAbierto => totalDestinatarios == 0
+      ? 0
+      : ((abiertos / totalDestinatarios) * 100).round();
+
+  /// Cuántos lo recibieron pero no lo han abierto.
+  int get entregadosSinAbrir =>
+      entregados - abiertos < 0 ? 0 : entregados - abiertos;
 
   /// Porcentaje de entrega.
   ///
@@ -224,6 +252,9 @@ class DestinatarioEntrega {
   final DateTime? confirmadoEn;
 
   bool get confirmo => estado == 'CONFIRMADO';
+
+  /// Lo abrió. Confirmar implica haber abierto, así que cuenta también.
+  bool get abrio => estado == 'ABIERTO' || estado == 'CONFIRMADO';
   bool get leLlego =>
       estado == 'ENTREGADO' || estado == 'ABIERTO' || estado == 'CONFIRMADO';
 
@@ -390,6 +421,7 @@ class RepositorioProgramacion {
         enviadoEn: (x['enviadoEn'] as Timestamp?)?.toDate(),
         totalDestinatarios: (x['totalDestinatarios'] as num?)?.toInt() ?? 0,
         entregados: (resumen['entregados'] as num?)?.toInt() ?? 0,
+        abiertos: (resumen['abiertos'] as num?)?.toInt() ?? 0,
         confirmados: (resumen['confirmados'] as num?)?.toInt() ?? 0,
       );
     }).toList();
