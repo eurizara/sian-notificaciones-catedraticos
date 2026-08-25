@@ -566,6 +566,7 @@ flowchart LR
     subgraph GH["GitHub"]
         FEAT["feature/*"]
         DEV["develop"]
+        QAB["qa"]
         MAIN["main"]
         CI["GitHub Actions"]
     end
@@ -578,8 +579,9 @@ flowchart LR
     CODE --> EMU
     CODE --> FEAT
     FEAT -->|"pull request + revisión"| DEV
-    DEV -->|"release/* aprobado"| MAIN
-    DEV --> CI
+    DEV -->|"pull request"| QAB
+    QAB -->|"pull request aprobado"| MAIN
+    QAB --> CI
     MAIN --> CI
     CI -->|"despliegue automático"| Q
     CI -->|"despliegue con aprobación manual"| PR
@@ -676,13 +678,26 @@ sian/
 
 **GitFlow simplificado**, adecuado para un equipo pequeño y didáctico:
 
-| Rama | Propósito | Regla |
-|------|-----------|-------|
-| `main` | Refleja siempre lo que está en producción | Protegida. Solo entra por pull request desde `release/*` o `hotfix/*` |
-| `develop` | Integración continua de lo que va a la siguiente versión | Protegida. Solo entra por pull request revisado |
-| `feature/<id>-<descripcion>` | Una funcionalidad o un requisito | Nace de `develop` y regresa a `develop` |
-| `release/<version>` | Estabilización antes de producción | Solo correcciones, nada de funcionalidad nueva |
-| `hotfix/<id>` | Corrección urgente en producción | Nace de `main`, regresa a `main` y a `develop` |
+| Rama | Ambiente | Propósito | Regla |
+|------|----------|-----------|-------|
+| `main` | **producción** | Refleja siempre lo que está en producción | Protegida. Entra por pull request desde `qa` o `hotfix/*`, y despliega solo con aprobación |
+| `qa` | **calidad** | Lo que está bajo pruebas de calidad | Protegida. Solo entra por pull request desde `develop`; cada fusión despliega |
+| `develop` | desarrollo | Integración de lo que va a la siguiente versión | Protegida. Solo entra por pull request revisado |
+| `feature/<id>-<descripcion>` | — | Una funcionalidad o un requisito | Nace de `develop` y regresa a `develop` |
+| `hotfix/<id>` | — | Corrección urgente en producción | Nace de `main`, regresa a `main`, a `qa` y a `develop` |
+
+Las tres ramas permanentes corresponden una a una con los tres ambientes. El cambio se
+promueve siempre hacia adelante y **siempre es el mismo commit**: lo que se aprueba en
+calidad es literalmente lo que llega a producción, sin recompilar contra otra base ni
+rehacer la corrección a mano.
+
+```
+feature/*  ──PR──▶  develop  ──PR──▶  qa  ──PR──▶  main
+                   desarrollo       calidad      producción
+```
+
+`release/*` desaparece: la rama `qa` cumple su función de estabilización, y mantener las
+dos significaría estabilizar dos veces.
 
 **Convención de mensajes de commit** (Conventional Commits), con referencia obligatoria al
 requisito:
