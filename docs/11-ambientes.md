@@ -21,7 +21,7 @@ El procedimiento paso a paso para crear un ambiente desde cero está en el
 | Consola | [abrir](https://console.firebase.google.com/project/sian-umg-bdm-dev/overview) | [abrir](https://console.firebase.google.com/project/sian-umg-bdm-qa/overview) | [abrir](https://console.firebase.google.com/project/sian-umg-bdm/overview) |
 | Se despliega | a mano | al fusionar a `develop` | al fusionar a `main`, con aprobación |
 | Datos | de prueba, acumulados | limpio desde el 24-08-2026 | vacío |
-| Estado | en uso | **certificado el 24-08-2026** | aprovisionado, sin publicar |
+| Estado | en uso | **certificado y en línea desde el 24-08-2026** | aprovisionado, sin publicar |
 
 Los tres cuelgan de la organización `miumg.edu.gt` (id 372264284580) y comparten una
 sola cuenta de facturación. El código es idéntico en los tres: lo único que cambia son
@@ -156,7 +156,7 @@ Cada job arranca solo si la variable de su ambiente está puesta:
 
 | Variable | Efecto |
 |---|---|
-| `vars.QA_PROJECT_ID` | vacía, el job de QA se salta; con valor, se despliega al fusionar a `develop` |
+| `vars.QA_PROJECT_ID` | **puesta desde el 24-08-2026**: cada fusión a `develop` despliega QA |
 | `vars.PROD_PROJECT_ID` | vacía, el job de producción se salta; con valor, se despliega al fusionar a `main` tras aprobación |
 
 Es un interruptor deliberado: mientras un ambiente no esté listo, el job se omite en
