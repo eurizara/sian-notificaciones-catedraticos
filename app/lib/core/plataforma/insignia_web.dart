@@ -1,4 +1,4 @@
-/// Insignia real, sobre la Badging API del navegador.
+/// Insignia real, sobre la Badging API del navegador (RF-ENT-13).
 ///
 /// ────────────────────────────────────────────────────────────────────────────
 /// Es el número que aparece pegado al icono de la aplicación instalada.
@@ -22,11 +22,23 @@
 /// deja dar: no podemos definir sonido ni vibración propios (DT-02). Un número
 /// sobre el icono es poco, pero es lo que hay, y no depende de que la persona
 /// haya visto pasar la notificación.
+///
+/// ────────────────────────────────────────────────────────────────────────────
+/// Se llama sin preguntar antes si existe
+/// ────────────────────────────────────────────────────────────────────────────
+///
+/// La primera versión comprobaba `navigator.has('setAppBadge')` y solo llamaba
+/// si daba verdadero. Es una comprobación de más: si el método no existe, la
+/// llamada lanza y ya se está atrapando. Preguntar antes agrega una forma de
+/// fallar —que la comprobación diga que no donde el método sí está— sin evitar
+/// ninguna, así que se llama directo.
+///
+/// Además del navegador se avisa al **service worker**, que lleva su propia
+/// cuenta para poder sumar mientras la aplicación está cerrada. Sin ese aviso
+/// el worker seguiría sumando sobre un número que la persona ya resolvió.
 library;
 
 import 'dart:js_interop';
-// `has` —comprobar si una propiedad existe— vive aquí, no en `dart:js_interop`.
-import 'dart:js_interop_unsafe';
 
 import 'package:web/web.dart' as web;
 
@@ -39,13 +51,13 @@ extension type _NavegadorConInsignia._(JSObject _) implements JSObject {
   external JSPromise<JSAny?> clearAppBadge();
 }
 
-/// ¿Este navegador sabe pintar insignias?
-///
-/// Se comprueba la existencia del método en lugar de deducirlo del navegador o
-/// de su versión: la lista de quién lo soporta cambia sola con el tiempo, y una
-/// comprobación por nombre nunca se queda vieja.
-bool get insigniaSoportada =>
-    (web.window.navigator as JSObject).has('setAppBadge');
+extension type _ControladorSw._(JSObject _) implements JSObject {
+  external void postMessage(JSAny? mensaje);
+}
+
+/// Se conserva para que las pruebas puedan preguntarlo, pero **no** condiciona
+/// las llamadas: ver la nota de la biblioteca.
+bool get insigniaSoportada => true;
 
 /// Pinta [cuenta] sobre el icono. Con cero, retira la insignia.
 ///
@@ -54,28 +66,39 @@ bool get insigniaSoportada =>
 /// aplicación no está instalada, o porque el sistema no lo permite—, la bandeja
 /// ya muestra el mismo dato y nada se pierde. Reventar aquí sí rompería algo.
 void fijarInsignia(int cuenta) {
-  if (!insigniaSoportada) {
-    return;
-  }
-  if (cuenta <= 0) {
-    retirarInsignia();
-    return;
-  }
+  final int n = cuenta < 0 ? 0 : cuenta;
+  _avisarAlWorker(n);
+
   try {
-    (web.window.navigator as _NavegadorConInsignia).setAppBadge(cuenta);
+    final _NavegadorConInsignia navegador =
+        web.window.navigator as _NavegadorConInsignia;
+    if (n > 0) {
+      navegador.setAppBadge(n);
+    } else {
+      navegador.clearAppBadge();
+    }
   } on Object catch (_) {
     // Silencio deliberado: ver la nota de arriba.
   }
 }
 
 /// Quita la insignia del icono.
-void retirarInsignia() {
-  if (!insigniaSoportada) {
-    return;
-  }
+void retirarInsignia() => fijarInsignia(0);
+
+/// Le pasa el número al service worker, que es quien manda cuando la
+/// aplicación está cerrada.
+void _avisarAlWorker(int cuenta) {
   try {
-    (web.window.navigator as _NavegadorConInsignia).clearAppBadge();
+    final JSObject? controlador =
+        web.window.navigator.serviceWorker.controller as JSObject?;
+    if (controlador == null) {
+      return;
+    }
+    (controlador as _ControladorSw).postMessage(
+      <String, Object>{'tipo': 'sian:insignia', 'cuenta': cuenta}.jsify(),
+    );
   } on Object catch (_) {
-    // Silencio deliberado: ver la nota de arriba.
+    // El worker puede no estar controlando todavía (primera carga, o recarga
+    // dura). No es un problema: la próxima sincronización lo alcanza.
   }
 }

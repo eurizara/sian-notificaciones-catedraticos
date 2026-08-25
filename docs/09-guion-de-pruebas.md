@@ -530,12 +530,24 @@ cada uno señala un paso que al guion le falta.
 
 | Hallazgo | Qué lo destapó | Paso que hay que añadir |
 |---|---|---|
+| La insignia del icono no aparecía nunca en iPhone | Instalar la aplicación y mandarse un aviso | Probar la insignia **en el aparato instalado**, no solo con pruebas |
+| Un mensaje abierto se veía igual que uno cerrado | Leer cuatro avisos seguidos en el celular | Abrir un mensaje **y mirar la lista**, no solo el mensaje |
 | La bandeja no abría con una cuenta de catedrático | Entrar con un catedrático real | Recorrer **cada ronda** con una cuenta de cada rol, no solo con la de coordinación |
 | Un icono nuevo tardaba una semana en aparecer | Un despliegue con un botón nuevo | Comprobar los cambios en la **aplicación instalada**, no solo en una pestaña |
 | Girar el teléfono borraba el mensaje a medio escribir | Redactar en el celular | Girar el aparato **en mitad de cada formulario** |
 | iOS decía «notificaciones bloqueadas» estándolo | Abrir la aplicación varias veces seguidas | Reabrir la aplicación instalada tres veces y mirar la tarjeta |
 
-> **El más caro de los cuatro es el primero.** Todas las rondas se recorrieron
+> **La insignia merece una nota aparte.** El código llamaba a
+> `clearAppBadge()` cuando `registration.getNotifications()` daba cero. En
+> Android esa lista trae las notificaciones que siguen en pantalla y todo
+> cuadraba; en iOS devuelve vacío para las que muestra el propio service worker,
+> así que cada aviso que llegaba **apagaba** la insignia en lugar de encenderla.
+> Ninguna prueba podía verlo: la lógica de conteo era correcta y estaba probada,
+> y lo que fallaba era una suposición sobre el navegador. Solo aparece con la
+> aplicación instalada en un iPhone de verdad, que es exactamente el escenario
+> que el guion daba por cubierto.
+
+> **El más caro de los cinco es el primero.** Todas las rondas se recorrieron
 > con cuentas de coordinación, que pueden leer los mensajes sin condiciones; la
 > pantalla del catedrático nunca se ejecutó con un catedrático. Una prueba con
 > el rol equivocado no es media prueba: es ninguna.
