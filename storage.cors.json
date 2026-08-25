@@ -1,9 +1,14 @@
 [
   {
     "//": "Sin esto, una imagen de Storage NO se puede pintar en Flutter web. El navegador descarga sus bytes con fetch, y sin cabecera CORS los bloquea. La nota de voz sí funciona porque un <audio> reproduce sin pedir permiso de origen: por eso el fallo parecía afectar solo a las imágenes.",
+    "//2": "Un mismo archivo sirve a los tres ambientes. El bucket de cada proyecto solo verá tráfico de su propio dominio, pero listar los tres evita tener que mantener una copia por ambiente y olvidar actualizar una.",
     "origin": [
       "https://sian-umg-bdm-dev.web.app",
       "https://sian-umg-bdm-dev.firebaseapp.com",
+      "https://sian-umg-bdm-qa.web.app",
+      "https://sian-umg-bdm-qa.firebaseapp.com",
+      "https://sian-umg-bdm.web.app",
+      "https://sian-umg-bdm.firebaseapp.com",
       "http://localhost:5050",
       "http://localhost:5000"
     ],

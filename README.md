@@ -6,11 +6,16 @@ urgentes (texto, voz e imagen), programarlas, repetirlas con un patrón definido
 trazabilidad completa con confirmación de lectura.
 
 > **Estado:** Fase 1 completa y desplegada. Iteraciones 1.1 a 1.4 construidas, con
-> las rondas de prueba 1 a 5 superadas. En pruebas con usuarios reales antes de
-> pasar a la fase 2 ([plan](docs/08-plan-iteraciones.md)).
+> las rondas de prueba 1 a 5 superadas. Desde el 24 de agosto de 2026 las pruebas de
+> calidad corren en su propio ambiente ([plan](docs/08-plan-iteraciones.md)).
 >
-> **En línea:** [sian-umg-bdm-dev.web.app](https://sian-umg-bdm-dev.web.app) ·
-> **Manuales:** [/manuales](https://sian-umg-bdm-dev.web.app/manuales/)
+> | Ambiente | Aplicación | Manuales |
+> |---|---|---|
+> | Desarrollo | [sian-umg-bdm-dev.web.app](https://sian-umg-bdm-dev.web.app) | [/manuales](https://sian-umg-bdm-dev.web.app/manuales/) |
+> | **Calidad** | [sian-umg-bdm-qa.web.app](https://sian-umg-bdm-qa.web.app) | [/manuales](https://sian-umg-bdm-qa.web.app/manuales/) |
+> | Producción | aprovisionado, sin publicar | — |
+>
+> Detalle de cada ambiente en el [documento 11](docs/11-ambientes.md).
 
 ---
 
@@ -91,6 +96,7 @@ continua corren en cada solicitud de incorporación.
 | 08 | [Plan de iteraciones](docs/08-plan-iteraciones.md) | Prototipo → QA → producción, con criterios de salida por fase |
 | 09 | [Guion de pruebas](docs/09-guion-de-pruebas.md) | Qué probar en cada ronda, paso a paso, con su alcance y lo que queda fuera |
 | 10 | [Especificación de casos de uso](docs/10-casos-de-uso.md) | Los doce casos de uso en formato extendido ISO/IEC/IEEE 29148: actores, precondiciones, garantías, flujos principales, alternativos y de excepción, y trazabilidad a requisitos |
+| 11 | [Ambientes](docs/11-ambientes.md) | Los tres ambientes: proyectos, URL, quién tiene acceso, configuración por ambiente, costo real medido y cómo se promueve un cambio |
 
 ---
 

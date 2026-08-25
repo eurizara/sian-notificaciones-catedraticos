@@ -184,7 +184,7 @@ muy bien que se vea en las demás pruebas.
 
 ### Iteración 3.1 — Habilitar producción
 
-- Crear `sian-umg-bdm-prod` con Blaze y alerta de presupuesto.
+- Crear `sian-umg-bdm` con Blaze y alerta de presupuesto. *(Hecho el 24-08-2026; ver documento 11.)*
 - Proteger `main` y exigir aprobación manual en el ambiente `produccion` de GitHub.
 - Ejecutar la lista de verificación completa del documento 06, sección F.3.
 - Cargar la lista blanca institucional definitiva.

@@ -245,6 +245,7 @@ momento de tomarla**, no después.
 | DT-13 | Política de contraseñas solo en el cliente | Plataforma | Media | Abierta | 0 USD |
 | DT-14 | Los correos salen del dominio de Firebase y caen en No deseado | Plataforma | **Media** | Abierta | 0 USD |
 | DT-15 | Reparación temporal de la fuente de iconos en `index.html` | Plataforma | Baja | Abierta | 0 USD |
+| DT-16 | `Entorno.configuracionCompleta` promete un diagnóstico que nadie pinta | Conocimiento | Baja | Abierta | 0 USD |
 
 **Prioridad de pago recomendada, en orden:** DT-03 → DT-07 → DT-04 → DT-01.
 
@@ -305,3 +306,25 @@ ninguna copia con la caché antigua, y el bloque sobra.
 **La regla que deja:** una ruta sin huella de contenido no se puede cachear
 largo. Flutter Web no la pone ni en `main.dart.js` ni en `assets/`; para el
 primero ya estaba contemplado, para el segundo no.
+
+## DT-16 — `Entorno.configuracionCompleta` no se usa en ninguna parte
+
+**Qué pasa.** `app/lib/core/entorno.dart` expone `configuracionCompleta`, documentado
+así: «sirve para dar un diagnóstico honesto en pantalla en lugar de fallar con un error
+críptico de Firebase a mitad del arranque». Ninguna pantalla lo consulta. La búsqueda en
+`app/lib` y `app/test` devuelve una sola línea: su propia definición.
+
+**Por qué importa.** El daño no es el código muerto, que ocupa una línea. Es que
+cualquiera que lea el archivo concluye que la aplicación avisa cuando le falta
+configuración, y decide sin preocuparse. No avisa. Al aprovisionar el ambiente de calidad
+el 24 de agosto de 2026 se compiló sin clave VAPID y la aplicación arrancó normal, sin
+una palabra: se entra, se leen y se envían mensajes, y las notificaciones simplemente
+nunca llegan. Eso se persigue en el lugar equivocado durante bastante rato.
+
+**Cómo se paga.** Dos caminos, y el barato sirve. O se pinta el diagnóstico que el
+comentario promete —una tarjeta al arrancar cuando `configuracionCompleta` es falso—, o
+se borra la propiedad y con ella la promesa. Lo que no puede quedarse es la promesa sin
+la conducta.
+
+**Mientras tanto.** El documento 11, sección 4, lista las tres cosas que hay que hacer a
+mano por ambiente y que ningún despliegue verifica. La clave VAPID es la primera.

@@ -180,11 +180,15 @@ git push
 
 En `https://console.firebase.google.com`, crea **tres proyectos separados**:
 
-| Alias | Nombre sugerido | Cuándo crearlo |
-|-------|-----------------|----------------|
-| `dev` | `sian-umg-bdm-dev` | Ahora |
-| `qa` | `sian-umg-bdm-qa` | Al entrar a fase de pruebas |
-| `prod` | `sian-umg-bdm-prod` | Al aprobar el paso a producción |
+| Alias | Proyecto | Creado |
+|-------|----------|--------|
+| `dev` | `sian-umg-bdm-dev` | 3 de agosto de 2026 |
+| `qa` | `sian-umg-bdm-qa` | 24 de agosto de 2026 |
+| `prod` | `sian-umg-bdm` | 24 de agosto de 2026 |
+
+> Los tres ya existen. El estado de cada uno, sus URL y quién tiene acceso están en el
+> [documento 11](11-ambientes.md); esta etapa queda como el procedimiento a seguir si
+> hubiera que rehacer un ambiente desde cero.
 
 Desactiva Google Analytics en `dev` y `qa`; actívalo solo en `prod` si lo consideras útil.
 
@@ -195,10 +199,14 @@ Necesario para Cloud Functions, Cloud Storage y Cloud Scheduler.
 1. En la consola de Firebase, ve a **Configuración → Uso y facturación → Detalles y
    configuración**.
 2. Selecciona **Blaze — Pago por uso** y vincula una cuenta de facturación.
-3. **Antes de seguir**, ve a **Modificar presupuesto** y fija una alerta de **1 USD**
-   mensual. No es opcional (RNF-18).
-4. En Google Cloud Console → Billing → Budgets, agrega tu correo como destinatario de la
-   alerta.
+3. **Antes de seguir**, fija una alerta de presupuesto. No es opcional (RNF-18).
+4. En Google Cloud Console → Billing → Budgets, agrega tu correo como destinatario.
+
+> Una sola cuenta de facturación sirve a los tres ambientes, y el presupuesto se define
+> sobre la cuenta, no sobre cada proyecto: un único aviso cubre dev, QA y producción.
+> El que está puesto es de **10 USD mensuales**, con avisos al 50 %, 90 %, 100 % y al
+> 100 % proyectado. El desglose del consumo real medido está en el documento 11,
+> sección 5.
 
 > Con el consumo proyectado en el documento 05, sección 7, el costo esperado es **0.00 USD**.
 > La alerta existe para enterarte de inmediato si algo se comporta distinto a lo previsto.
@@ -232,8 +240,8 @@ Necesario para Cloud Functions, Cloud Storage y Cloud Scheduler.
 ```bash
 firebase login
 firebase use --add        # elige sian-umg-bdm-dev, alias: dev
-firebase use --add        # elige sian-umg-bdm-qa, alias: qa      (cuando exista)
-firebase use --add        # elige sian-umg-bdm-prod, alias: prod  (cuando exista)
+firebase use --add        # elige sian-umg-bdm-qa, alias: qa
+firebase use --add        # elige sian-umg-bdm, alias: prod
 firebase use dev          # trabaja en desarrollo por omisión
 ```
 
@@ -547,14 +555,14 @@ jobs:
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.QA_SERVICE_ACCOUNT }}
-          projectId: sian-umg-bdm-qa
+          projectId: ${{ vars.QA_PROJECT_ID }}
           channelId: live
 
   produccion:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: produccion      # con aprobación manual obligatoria
-    steps: [ ... equivalente, apuntando a sian-umg-bdm-prod ... ]
+    steps: [ ... equivalente, apuntando a ${{ vars.PROD_PROJECT_ID }} ... ]
 ```
 
 En GitHub → Settings → Environments, crea el ambiente `produccion` y marca **Required
