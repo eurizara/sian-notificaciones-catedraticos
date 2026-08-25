@@ -192,40 +192,8 @@ class _PantallaIngresoState extends ConsumerState<PantallaIngreso> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                const Center(child: EscudoUmg(tamano: 132)),
-                const SizedBox(height: 20),
-                Text(
-                  Textos.nombreApp,
-                  textAlign: TextAlign.center,
-                  style: tema.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: ColoresSian.primarioOscuro,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  Textos.nombreCompleto,
-                  textAlign: TextAlign.center,
-                  style: tema.textTheme.bodyMedium?.copyWith(
-                    color: tema.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  Textos.institucion,
-                  textAlign: TextAlign.center,
-                  style: tema.textTheme.labelLarge?.copyWith(
-                    color: ColoresSian.doradoTexto,
-                  ),
-                ),
-                Text(
-                  Textos.sede,
-                  textAlign: TextAlign.center,
-                  style: tema.textTheme.bodySmall?.copyWith(
-                    color: tema.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 32),
+                const _PortadaInstitucional(),
+                const SizedBox(height: 24),
 
                 // Google va PRIMERO: es el camino que la institución quiere
                 // por omisión, y el que no obliga a inventar otra contraseña.
@@ -431,6 +399,107 @@ class _AvisoInstalarIos extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+
+/// Encabezado de la portada, con la identidad de la universidad.
+///
+/// ────────────────────────────────────────────────────────────────────────────
+/// Es la banda azul marino del sitio institucional, no una decoración propia.
+/// ────────────────────────────────────────────────────────────────────────────
+///
+/// `umg.edu.gt` presenta su identidad sobre una banda oscura en azul marino
+/// —#003168, el color más presente del sitio— con el escudo encima y el
+/// contenido en blanco debajo. La portada de SIAN repite esa estructura para
+/// que quien entra reconozca de inmediato de qué institución es esto, en lugar
+/// de encontrarse una aplicación genérica con un escudo pegado arriba.
+///
+/// El escudo va sobre un disco blanco y no directamente sobre el azul: su
+/// campo central **es azul**, y puesto sobre una banda azul el centro se funde
+/// con el fondo y la figura se pierde.
+///
+/// El degradado va del azul marino al azul primario. El punto más claro es
+/// #1C72A5, que da 5.25:1 con texto blanco encima: incluso ahí se cumple AA
+/// (RNF-13), así que el texto es legible en toda la banda y no solo arriba.
+///
+/// **La banda está medida para no empujar el botón de entrar fuera de la
+/// pantalla.** La primera versión llevaba el escudo a 116 px y más aire, y con
+/// eso «Entrar con Google» quedaba por debajo del pliegue: quien abre la
+/// aplicación ve una portada bonita y ningún modo de entrar hasta que se le
+/// ocurre desplazar. Lo destapó una prueba de la ronda 3, que pulsa ese botón
+/// sin desplazar antes; si alguien vuelve a agrandar esto, esa prueba se cae, y
+/// eso es exactamente lo que tiene que pasar.
+class _PortadaInstitucional extends StatelessWidget {
+  const _PortadaInstitucional();
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData tema = Theme.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: <Color>[
+            ColoresSian.navyInstitucional,
+            ColoresSian.primario,
+          ],
+        ),
+        borderRadius: BorderRadius.all(Radius.circular(20)),
+      ),
+      child: Column(
+        children: <Widget>[
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: const EscudoUmg(tamano: 96),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            Textos.nombreApp,
+            textAlign: TextAlign.center,
+            style: tema.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            Textos.nombreCompleto,
+            textAlign: TextAlign.center,
+            style: tema.textTheme.bodyMedium?.copyWith(color: Colors.white),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            height: 1,
+            width: 56,
+            color: ColoresSian.dorado,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            Textos.institucion,
+            textAlign: TextAlign.center,
+            style: tema.textTheme.labelLarge?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          Text(
+            Textos.sede,
+            textAlign: TextAlign.center,
+            style: tema.textTheme.bodySmall?.copyWith(color: Colors.white),
+          ),
+        ],
       ),
     );
   }

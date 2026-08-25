@@ -22,6 +22,7 @@ import '../shared/barra_sesion.dart';
 import '../shared/buscador.dart';
 import 'aviso_en_primer_plano.dart';
 import 'filtro_bandeja.dart';
+import 'insignia_bandeja.dart';
 import 'instructivo_ios.dart';
 import 'realce_mensaje.dart';
 import 'reproductor_adjuntos.dart';
@@ -172,6 +173,16 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
         alOmitir: () => setState(() => _instructivoOmitido = true),
       );
     }
+
+    // La insignia del icono se pone al día sola, cada vez que llega o se abre
+    // un mensaje. Va en `listen` y no en `build` porque pintar sobre el icono
+    // es un efecto sobre el sistema operativo, no parte de esta pantalla.
+    ref.listen<AsyncValue<List<MensajeRecibido>>>(
+      historialProvider(usuario.uid),
+      (_, AsyncValue<List<MensajeRecibido>> siguiente) {
+        siguiente.whenData(sincronizarInsignia);
+      },
+    );
 
     final AsyncValue<List<MensajeRecibido>> historial = ref.watch(
       historialProvider(usuario.uid),

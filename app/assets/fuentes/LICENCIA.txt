@@ -1,0 +1,10 @@
+Urbanist — Copyright 2020 The Urbanist Project Authors
+https://github.com/coreyhu/Urbanist
+
+Distribuida bajo la SIL Open Font License, versión 1.1, que permite empaquetarla
+y redistribuirla dentro de una aplicación. Texto completo de la licencia:
+https://openfontlicense.org
+
+Se incluye porque es la tipografía del sitio institucional umg.edu.gt, y va
+empaquetada en lugar de cargarse desde Google Fonts para que SIAN siga
+funcionando instalada y sin conexión, que es su modo normal de uso.

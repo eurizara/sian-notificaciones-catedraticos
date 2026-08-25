@@ -86,7 +86,7 @@ catedrático a través de las reglas de seguridad, y el rechazo explicativo de R
 
 | # | Acción | Resultado esperado |
 |---|---|---|
-| 1.1 | Abre la aplicación | Escudo de la UMG, **SIAN UMG-BDM**, nombre completo del sistema, universidad y sede. Pestaña del navegador con el mismo nombre y el escudo como icono |
+| 1.1 | Abre la aplicación | Banda azul marino con el escudo de la UMG sobre un disco blanco, **SIAN UMG-BDM**, nombre completo del sistema, universidad y sede. El botón **Entrar con Google** se ve sin desplazar |
 | 1.2 | Entra con `coordinacion@umg.edu.gt` | Panel con **6 secciones**: Mensajes, Programación, Grupos, Usuarios, Entregas, Bitácora |
 | 1.3 | Recorre las 6 secciones | **Todas están construidas** desde la iteración 1.4: Mensajes, Programación, Grupos, Usuarios, Entregas y Bitácora |
 | 1.4 | Cierra sesión y entra con `admin1@umg.edu.gt` | Mismo panel **sin Usuarios ni Bitácora**. Solo 4 secciones |
@@ -98,7 +98,8 @@ catedrático a través de las reglas de seguridad, y el rechazo explicativo de R
 | 1.10 | Pulsa «Confirmar lectura» | Pide una confirmación aparte y avisa de que **no se puede deshacer**. Lo escribe el servidor, nunca el cliente (RF-CNF-04) |
 | 1.11 | Entra con un correo inventado, por ejemplo `nadie@gmail.com` | «Correo o contraseña incorrectos» — **nunca** «ese correo no existe»: distinguirlo permitiría averiguar quién tiene cuenta |
 | 1.12 | Reduce la ventana del navegador a ancho de teléfono | Nada se desborda. El menú del panel pasa a cajón desplegable; el nombre cede el sitio en la barra |
-| 1.13 | Instala la PWA desde el navegador | El icono es el escudo, y bajo él dice **SIAN UMG-BDM** |
+| 1.13 | Instala la PWA desde el navegador | El icono es el escudo completo, y bajo él dice **SIAN UMG-BDM**. En Android el anillo con «UNIVERSIDAD MARIANO GÁLVEZ» se ve **entero**, sin recortar por los bordes |
+| 1.14 | Mira el icono de la pestaña del navegador | **No** es el escudo: es la marca reducida, anillo rojo y campo azul con la inicial. A ese tamaño el escudo completo es ilegible |
 
 ### Criterio de salida
 
@@ -225,6 +226,11 @@ notificación real.
 | 3.12 | Instala en la pantalla de inicio y abre desde el icono | El instructivo ya no aparece. El icono es el escudo y dice SIAN UMG-BDM |
 | 3.13 | Activa las notificaciones desde la PWA instalada | Ahora sí llegan. En bitácora el dispositivo consta como instalado |
 | 3.14 | Abre y cierra la aplicación varias veces | El identificador se refresca solo en cada apertura — mitigación del riesgo R-01 |
+| 3.15 | Con la aplicación **instalada** y cerrada, pide que te manden dos avisos | Sobre el icono aparece el número **2** |
+| 3.16 | Abre la aplicación y mira la fila de filtros | Dice **Sin leer (2)**: el mismo número que traía el icono |
+| 3.17 | Abre los dos avisos y sal | El número desaparece del icono. **No** queda un «0» pegado |
+| 3.18 | Abre uno que pida confirmación, no lo confirmes y sal | El icono **no** muestra número. La insignia cuenta lo que está sin abrir, no lo que está sin confirmar |
+| 3.19 | Repite 3.15 desde una **pestaña** del navegador, sin instalar | No aparece ningún número, y las notificaciones siguen llegando igual: la insignia necesita un icono donde pintarse |
 
 ### Criterio de salida
 
@@ -233,6 +239,7 @@ notificación real.
 - [ ] Un permiso denegado explica dónde revertirse, en ese navegador (3.7)
 - [ ] En iPhone sin instalar, el instructivo aparece solo (3.9)
 - [ ] Instalada en iPhone, las notificaciones llegan (3.13)
+- [ ] El número del icono coincide con el del filtro «Sin leer», y desaparece al leerlo todo (3.15, 3.16, 3.17)
 
 ### Fuera de alcance
 
