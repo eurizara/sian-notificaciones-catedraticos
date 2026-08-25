@@ -818,6 +818,15 @@ bajarlo a cero.
 > síntoma —«no sale nada»— hacía pensar que la Badging API no estaba soportada
 > en iOS, cuando lo que pasaba es que la estábamos usando para apagarla.
 
+> **El worker cuenta mensajes distintos, no avisos recibidos.** La segunda
+> versión sumaba uno por cada `push`. Parecía equivalente y no lo es: el sistema
+> **reintenta la entrega hasta tres veces** (RF-ENT-10), así que un solo mensaje
+> que necesite sus reintentos llega tres veces al worker y el icono acababa
+> diciendo «3» donde había uno. Quien lo mira abre la aplicación esperando tres
+> avisos, encuentra uno, y a partir de ahí el número deja de significar algo.
+> Ahora se guarda el identificador del mensaje —el mismo que ya viajaba en la
+> carga para poder abrirlo desde la notificación— y se cuentan los distintos.
+
 Del lado de la aplicación, la insignia se sincroniza con lo que la bandeja tiene
 **ahora mismo**, no con lo que cambió. Escuchar los cambios del historial no
 basta: un escuchador solo se entera de lo que ocurre mientras está escuchando, y
@@ -833,10 +842,21 @@ datos, el mismo fondo, la misma tipografía, y el cuerpo apareciendo debajo sin
 nada que lo separase. Abrir un mensaje no se notaba, y en una lista de avisos
 parecidos se perdía cuál se estaba leyendo.
 
-El contenido —texto y adjuntos— vive ahora en un panel propio, sobre la
-superficie base y con su borde, dentro de la tarjeta. Eso convierte lo de arriba
-en lo que siempre fue: la cabecera. El título del mensaje abierto pesa además un
-poco más, para localizarlo al recorrer la lista.
+Desplegado, la cabecera —título, estado, fecha y quién envió— se asienta sobre
+una banda, y una línea la separa del texto. El título pesa además un poco más,
+para localizarlo al recorrer la lista.
+
+**La banda no es un color: es un velo translúcido sobre lo que haya debajo.** Y
+eso importa, porque el primer intento se hizo al revés y falló. Consistía en
+meter el cuerpo en un recuadro con fondo `surface` y borde. En un mensaje sin
+leer o sin confirmar funcionaba, porque la tarjeta va teñida y el recuadro
+resaltaba contra ella. En uno **ya leído** la tarjeta no lleva tinte: el recuadro
+quedaba exactamente del color de su fondo y no separaba nada. El defecto seguía
+ahí justo en el estado más común de la bandeja.
+
+Un velo acierta siempre porque no compite con el fondo: lo oscurece. Sobre la
+tarjeta blanca da un gris suave; sobre la teñida de urgente, un rosa un punto
+más oscuro.
 
 Plegado no cambia nada. Ahí se hojea una lista, y no había nada que arreglar.
 

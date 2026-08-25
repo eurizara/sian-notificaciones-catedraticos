@@ -531,7 +531,10 @@ cada uno señala un paso que al guion le falta.
 | Hallazgo | Qué lo destapó | Paso que hay que añadir |
 |---|---|---|
 | La insignia del icono no aparecía nunca en iPhone | Instalar la aplicación y mandarse un aviso | Probar la insignia **en el aparato instalado**, no solo con pruebas |
+| La insignia decía 3 donde había 1 mensaje | Un aviso que necesitó sus reintentos de entrega | Comprobar el número **después de un reintento**, no solo tras una entrega limpia |
+| La bandeja tardaba segundos en mostrar el aviso nuevo | Abrir la aplicación al recibir uno | Cronometrar **desde que se abre hasta que aparece**, no solo que aparezca |
 | Un mensaje abierto se veía igual que uno cerrado | Leer cuatro avisos seguidos en el celular | Abrir un mensaje **y mirar la lista**, no solo el mensaje |
+| La separación del detalle no se veía en los ya leídos | Abrir un mensaje viejo, sin nada pendiente | Probar cada cambio visual **en los cuatro estados**, no solo en el que se estaba mirando |
 | La bandeja no abría con una cuenta de catedrático | Entrar con un catedrático real | Recorrer **cada ronda** con una cuenta de cada rol, no solo con la de coordinación |
 | Un icono nuevo tardaba una semana en aparecer | Un despliegue con un botón nuevo | Comprobar los cambios en la **aplicación instalada**, no solo en una pestaña |
 | Girar el teléfono borraba el mensaje a medio escribir | Redactar en el celular | Girar el aparato **en mitad de cada formulario** |
@@ -547,7 +550,7 @@ cada uno señala un paso que al guion le falta.
 > aplicación instalada en un iPhone de verdad, que es exactamente el escenario
 > que el guion daba por cubierto.
 
-> **El más caro de los cinco es el primero.** Todas las rondas se recorrieron
+> **El más caro de todos es el de los roles.** Todas las rondas se recorrieron
 > con cuentas de coordinación, que pueden leer los mensajes sin condiciones; la
 > pantalla del catedrático nunca se ejecutó con un catedrático. Una prueba con
 > el rol equivocado no es media prueba: es ninguna.
