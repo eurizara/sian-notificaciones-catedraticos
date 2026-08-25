@@ -1,4 +1,4 @@
-/// SIAN — El número pegado al icono de la aplicación instalada.
+/// SIAN — El número pegado al icono de la aplicación instalada (RF-ENT-13).
 ///
 /// ────────────────────────────────────────────────────────────────────────────
 /// La insignia vale exactamente lo mismo que el filtro «Sin leer».
@@ -20,12 +20,34 @@ import '../../core/plataforma/insignia.dart';
 import '../../domain/repositorios.dart';
 import 'filtro_bandeja.dart';
 
+/// Último número que se mandó, para no repetir trabajo en cada dibujado.
+///
+/// La sincronización se dispara desde `build`, que corre muchas más veces de
+/// las que el número cambia. Sin esta memoria, cada redibujado —desplegar un
+/// mensaje, escribir en el buscador, girar el teléfono— mandaría otra vez el
+/// mismo dato al navegador y al service worker.
+int? _ultimoEnviado;
+
+/// Olvida lo último enviado. Solo para las pruebas, que comparten proceso.
+void olvidarUltimaInsignia() => _ultimoEnviado = null;
+
 /// Deja la insignia igual al número de mensajes sin leer.
 ///
 /// Con cero, la retira: un icono con un «0» pegado se lee como si algo
 /// estuviera pendiente.
+///
+/// Es idempotente y se puede llamar en cada dibujado. Se hace así, y no
+/// escuchando solo los cambios del historial, porque un escuchador únicamente
+/// se entera de lo que cambia **mientras está escuchando**: si la bandeja se
+/// vuelve a montar con los datos ya resueltos —volver de otra pantalla, girar
+/// el aparato— no llega ningún cambio y la insignia se queda como estaba.
 void sincronizarInsignia(List<MensajeRecibido> mensajes) {
   final int sinLeer = contarEn(FiltroBandeja.sinLeer, mensajes);
+  if (sinLeer == _ultimoEnviado) {
+    return;
+  }
+  _ultimoEnviado = sinLeer;
+
   if (sinLeer > 0) {
     fijarInsignia(sinLeer);
   } else {

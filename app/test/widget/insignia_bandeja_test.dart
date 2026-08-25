@@ -38,6 +38,7 @@ void main() {
   setUp(() {
     insigniaPedida = null;
     vecesQueSePidioInsignia = 0;
+    olvidarUltimaInsignia();
   });
 
   group('RF-ENT-06 · el número del icono', () {
@@ -91,6 +92,33 @@ void main() {
 
       sincronizarInsignia(<MensajeRecibido>[]);
       expect(insigniaPedida, isNull);
+    });
+
+    test('repetir el mismo número no vuelve a molestar al navegador', () {
+      // Se llama desde `build`, que corre en cada redibujado: desplegar un
+      // mensaje, escribir en el buscador, girar el teléfono. Sin esto, cada uno
+      // mandaría otra vez el mismo dato al navegador y al service worker.
+      final List<MensajeRecibido> mismos = <MensajeRecibido>[
+        msg(id: 'a', estado: 'ENTREGADO'),
+      ];
+
+      sincronizarInsignia(mismos);
+      sincronizarInsignia(mismos);
+      sincronizarInsignia(mismos);
+
+      expect(insigniaPedida, 1);
+      expect(vecesQueSePidioInsignia, 1);
+    });
+
+    test('pero un número distinto sí pasa', () {
+      sincronizarInsignia(<MensajeRecibido>[msg(id: 'a', estado: 'ENTREGADO')]);
+      sincronizarInsignia(<MensajeRecibido>[
+        msg(id: 'a', estado: 'ENTREGADO'),
+        msg(id: 'b', estado: 'ENTREGADO'),
+      ]);
+
+      expect(insigniaPedida, 2);
+      expect(vecesQueSePidioInsignia, 2);
     });
   });
 }

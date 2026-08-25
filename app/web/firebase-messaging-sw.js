@@ -33,40 +33,113 @@ function trazar(paso, extra) {
 }
 
 /**
- * Pone al día el número pegado al icono de la aplicación instalada.
+ * El número pegado al icono de la aplicación instalada (RF-ENT-13).
  *
  * ────────────────────────────────────────────────────────────────────────────
- * Se cuentan las notificaciones que siguen en pantalla, no las que llegaron.
+ * El worker SUMA. Solo la aplicación abierta puede fijar el número o quitarlo.
  * ────────────────────────────────────────────────────────────────────────────
  *
- * Aquí no hay forma barata de saber cuántos mensajes tiene la persona sin leer:
- * el worker no está autenticado y no puede consultar Firestore. Lo que sí sabe
- * es cuántas notificaciones suyas siguen sin descartar, y ese número se le
- * parece bastante.
+ * La primera versión contaba `registration.getNotifications()` y, si salía
+ * cero, llamaba a `clearAppBadge()`. En Android funcionaba. **En iOS ese método
+ * devuelve una lista vacía** para las notificaciones que muestra el propio
+ * worker, así que el resultado era el contrario del buscado: llegaba el aviso,
+ * se contaban cero notificaciones y se BORRABA la insignia. El número no
+ * aparecía nunca, y parecía que la Badging API no estaba soportada.
  *
- * Es una aproximación, y se corrige sola: en cuanto la aplicación se abre, la
- * bandeja fija la insignia con el número exacto de mensajes sin leer, que es el
- * mismo que muestra su filtro «Sin leer». El worker mantiene el número vivo
- * mientras la aplicación está cerrada; la aplicación manda cuando está abierta.
+ * Ahora el worker lleva su propia cuenta en IndexedDB y solo la incrementa. La
+ * aplicación, que sí sabe cuántos mensajes hay sin leer porque está
+ * autenticada, la fija con el número exacto cada vez que se abre o cambia algo,
+ * y es la única que puede bajarla a cero.
  *
  * Los fallos se tragan: pintar un número es un adorno útil, no parte de la
  * entrega. Si esto reventara, se llevaría por delante la notificación misma.
  */
-async function actualizarInsignia() {
-  if (!self.navigator || !('setAppBadge' in self.navigator)) {
+
+const BD_INSIGNIA = 'sian-insignia';
+const ALMACEN = 'estado';
+const LLAVE = 'sinLeer';
+
+function _abrirBase() {
+  return new Promise((resolver, rechazar) => {
+    const solicitud = indexedDB.open(BD_INSIGNIA, 1);
+    solicitud.onupgradeneeded = () => solicitud.result.createObjectStore(ALMACEN);
+    solicitud.onsuccess = () => resolver(solicitud.result);
+    solicitud.onerror = () => rechazar(solicitud.error);
+  });
+}
+
+function _enBase(modo, operacion) {
+  return _abrirBase().then(
+    (bd) =>
+      new Promise((resolver, rechazar) => {
+        const transaccion = bd.transaction(ALMACEN, modo);
+        const peticion = operacion(transaccion.objectStore(ALMACEN));
+        peticion.onsuccess = () => resolver(peticion.result);
+        peticion.onerror = () => rechazar(peticion.error);
+      }),
+  );
+}
+
+const leerCuenta = () => _enBase('readonly', (a) => a.get(LLAVE)).then((v) => v || 0);
+const guardarCuenta = (n) => _enBase('readwrite', (a) => a.put(n, LLAVE));
+
+/** ¿Sabe este navegador pintar insignias? */
+function hayInsignia() {
+  return typeof self.navigator !== 'undefined' && 'setAppBadge' in self.navigator;
+}
+
+/** Pinta `cuenta`, o retira la insignia si es cero. */
+async function pintarInsignia(cuenta) {
+  if (!hayInsignia()) {
+    trazar('insignia:no-soportada');
     return;
   }
   try {
-    const pendientes = await self.registration.getNotifications();
-    if (pendientes.length > 0) {
-      await self.navigator.setAppBadge(pendientes.length);
+    if (cuenta > 0) {
+      await self.navigator.setAppBadge(cuenta);
     } else {
       await self.navigator.clearAppBadge();
     }
+    trazar('insignia:pintada', { cuenta });
   } catch (e) {
     trazar('insignia:no-se-pudo', String(e));
   }
 }
+
+/** Un aviso más sin leer. Es lo único que el worker decide por su cuenta. */
+async function sumarInsignia() {
+  try {
+    const cuenta = (await leerCuenta()) + 1;
+    await guardarCuenta(cuenta);
+    await pintarInsignia(cuenta);
+  } catch (e) {
+    trazar('insignia:sumar-fallo', String(e));
+  }
+}
+
+/** El número exacto, que solo la aplicación autenticada conoce. */
+async function fijarInsignia(cuenta) {
+  try {
+    const n = Math.max(0, Number(cuenta) || 0);
+    await guardarCuenta(n);
+    await pintarInsignia(n);
+  } catch (e) {
+    trazar('insignia:fijar-fallo', String(e));
+  }
+}
+
+/**
+ * La bandeja manda su conteo de «Sin leer» cada vez que cambia.
+ *
+ * Es la vía por la que el worker y la aplicación se mantienen de acuerdo: sin
+ * esto, el worker seguiría sumando sobre un número que la persona ya resolvió.
+ */
+self.addEventListener('message', (evento) => {
+  const dato = evento.data || {};
+  if (dato.tipo === 'sian:insignia') {
+    evento.waitUntil(fijarInsignia(dato.cuenta));
+  }
+});
 
 /**
  * Compone la notificación a partir de lo que venga.
@@ -164,7 +237,6 @@ self.addEventListener('push', (evento) => {
       const { titulo, opciones } = componer(carga);
       trazar('push:primer-plano', { titulo });
       await self.registration.showNotification(titulo, opciones);
-      await actualizarInsignia();
     })(),
   );
 });
@@ -183,16 +255,17 @@ if (self.SIAN_FIREBASE_CONFIG && self.SIAN_FIREBASE_CONFIG.apiKey !== 'SIN-CONFI
     const { titulo, opciones } = componer(carga);
     trazar('fondo', { titulo });
     await self.registration.showNotification(titulo, opciones);
-    await actualizarInsignia();
+    await sumarInsignia();
   });
 }
 
 /** Abrir la notificación lleva al detalle del mensaje (RF-ENT-07). */
 self.addEventListener('notificationclick', (evento) => {
   evento.notification.close();
-  // Una notificación menos en pantalla es un número menos en el icono. La
-  // bandeja lo corregirá al abrirse, pero mientras tanto el icono no miente.
-  evento.waitUntil(actualizarInsignia());
+  // No se toca la insignia aquí. Abrir la notificación lleva a la bandeja, y
+  // es la bandeja la que fija el número exacto en cuanto carga. Restarlo aquí
+  // solo adelantaría medio segundo un dato que llega bien de todas formas, y a
+  // cambio dejaría dos sitios decidiendo lo mismo.
   const mensajeId = evento.notification.data && evento.notification.data.mensajeId;
   const destino = mensajeId ? `/mensajes/${mensajeId}` : '/';
 

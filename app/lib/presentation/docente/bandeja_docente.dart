@@ -174,19 +174,25 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
       );
     }
 
-    // La insignia del icono se pone al día sola, cada vez que llega o se abre
-    // un mensaje. Va en `listen` y no en `build` porque pintar sobre el icono
-    // es un efecto sobre el sistema operativo, no parte de esta pantalla.
-    ref.listen<AsyncValue<List<MensajeRecibido>>>(
-      historialProvider(usuario.uid),
-      (_, AsyncValue<List<MensajeRecibido>> siguiente) {
-        siguiente.whenData(sincronizarInsignia);
-      },
-    );
-
     final AsyncValue<List<MensajeRecibido>> historial = ref.watch(
       historialProvider(usuario.uid),
     );
+
+    // La insignia del icono se pone al día con lo que la bandeja tiene ahora
+    // mismo, no con lo que cambió. Antes esto escuchaba los cambios del
+    // historial, y un escuchador solo se entera de lo que pasa mientras está
+    // escuchando: al volver de otra pantalla, o al girar el aparato, la bandeja
+    // se monta con los datos ya resueltos, no llega ningún cambio y el número
+    // se quedaba sin poner.
+    //
+    // Va tras el dibujado porque pintar sobre el icono es un efecto sobre el
+    // sistema operativo, no parte de esta pantalla. Es idempotente: repetirlo
+    // no cuesta nada.
+    historial.whenData((List<MensajeRecibido> mensajes) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        sincronizarInsignia(mensajes);
+      });
+    });
 
     // Con la bandeja abierta, el navegador no muestra ninguna notificación del
     // sistema: entrega el mensaje a la aplicación y se desentiende. Es la
@@ -573,10 +579,15 @@ class _FilaState extends ConsumerState<_Fila> {
                           Expanded(
                             child: Text(
                               mensaje.titulo,
+                              // Desplegado el título pesa siempre, aunque el
+                              // mensaje ya no reclame nada: al recorrer la lista
+                              // es lo que dice de un vistazo cuál se está
+                              // leyendo. El realce manda cuando además hay algo
+                              // pendiente.
                               style: tema.textTheme.titleMedium?.copyWith(
                                 fontWeight: realce.tituloEnNegrita
                                     ? FontWeight.bold
-                                    : null,
+                                    : (abierto ? FontWeight.w600 : null),
                               ),
                             ),
                           ),
@@ -675,29 +686,61 @@ class _FilaState extends ConsumerState<_Fila> {
                         ),
                       ],
 
+                      // ────────────────────────────────────────────────────
+                      // EL CONTENIDO VA EN SU PROPIO PANEL.
+                      // ────────────────────────────────────────────────────
+                      //
+                      // Antes el cuerpo se añadía debajo de la cabecera, con el
+                      // mismo fondo y sin nada que lo separase. El resultado es
+                      // que un mensaje abierto y uno cerrado se veían igual
+                      // —los mismos datos arriba, la misma tipografía— y en una
+                      // lista de avisos parecidos se perdía cuál se estaba
+                      // leyendo.
+                      //
+                      // Con el texto y los adjuntos dentro de un panel propio,
+                      // lo de arriba pasa a leerse como lo que es: la cabecera
+                      // del mensaje que está abierto. Plegado no cambia nada:
+                      // ahí se hojea una lista y no había nada que arreglar.
                       if (abierto) ...<Widget>[
-                        const SizedBox(height: 8),
-                        Text(mensaje.cuerpo),
+                        const SizedBox(height: 12),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: tema.colorScheme.surface,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: tema.colorScheme.outlineVariant,
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text(mensaje.cuerpo),
 
-                        // RF-ENT-08 y RF-ENT-09. Van bajo el texto y no tras un botón:
-                        // una nota de voz que hay que buscar es una nota de voz que no se
-                        // escucha, y en un aviso urgente puede ser lo único que importa.
-                        //
-                        // En el ORDEN en que los adjuntó quien envió. Ese orden
-                        // dice algo —el plano, la voz que lo explica, la foto
-                        // del punto de reunión— y agruparlos por tipo aquí lo
-                        // destruiría sin que nadie se diera cuenta.
-                        for (final AdjuntoRecibido adjunto
-                            in mensaje.adjuntos) ...<Widget>[
-                          const SizedBox(height: 12),
-                          if (adjunto.esVoz)
-                            NotaDeVoz(
-                              ruta: adjunto.ruta,
-                              duracionSeg: adjunto.duracionSeg,
-                            )
-                          else
-                            ImagenAdjunta(ruta: adjunto.ruta),
-                        ],
+                              // RF-ENT-08 y RF-ENT-09. Van bajo el texto y no tras un
+                              // botón: una nota de voz que hay que buscar es una nota de
+                              // voz que no se escucha, y en un aviso urgente puede ser lo
+                              // único que importa.
+                              //
+                              // En el ORDEN en que los adjuntó quien envió. Ese orden
+                              // dice algo —el plano, la voz que lo explica, la foto del
+                              // punto de reunión— y agruparlos por tipo aquí lo
+                              // destruiría sin que nadie se diera cuenta.
+                              for (final AdjuntoRecibido adjunto
+                                  in mensaje.adjuntos) ...<Widget>[
+                                const SizedBox(height: 12),
+                                if (adjunto.esVoz)
+                                  NotaDeVoz(
+                                    ruta: adjunto.ruta,
+                                    duracionSeg: adjunto.duracionSeg,
+                                  )
+                                else
+                                  ImagenAdjunta(ruta: adjunto.ruta),
+                              ],
+                            ],
+                          ),
+                        ),
 
                         if (mensaje.requiereConfirmacion &&
                             !mensaje.estaConfirmado) ...[
