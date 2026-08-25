@@ -162,5 +162,28 @@ Cada job arranca solo si la variable de su ambiente está puesta:
 Es un interruptor deliberado: mientras un ambiente no esté listo, el job se omite en
 lugar de fallar. Un repositorio en rojo permanente enseña a ignorar el rojo.
 
+> **Las dos variables del interruptor van a nivel de repositorio, no de ambiente.** El
+> resto de variables (`QA_API_KEY`, `QA_APP_ID`, …) sí viven en el *environment*, porque
+> se leen dentro de los pasos. Pero el `if:` de un job se evalúa **antes** de que GitHub
+> aplique el ambiente, así que ahí una variable de ambiente se lee vacía y el job se
+> salta en silencio, como si el ambiente no existiera. Pasó el 24 de agosto de 2026:
+> `QA_PROJECT_ID` estaba puesta en el ambiente `qa`, todo lo demás en orden, y la fusión
+> a `develop` no desplegó nada sin dar ni un error. Se arregla moviendo esa sola variable
+> al repositorio.
+
+## 7 · Ramas
+
+No existen ramas `qa` ni `prod`, y no deben crearse. El ambiente al que va un cambio lo
+decide la rama en la que cae, no una rama con el nombre del ambiente:
+
+| Rama | Ambiente | Qué es |
+|---|---|---|
+| `develop` | calidad | rama por defecto; todo PR entra aquí |
+| `main` | producción | solo recibe fusiones desde `develop`, y despliega con aprobación |
+
+Una rama por ambiente obligaría a mantener tres historias en paralelo y a llevar cada
+corrección a mano de una a otra. Con dos ramas, lo que se probó en calidad es
+literalmente el mismo commit que llega a producción.
+
 El ambiente `produccion` de GitHub exige **revisor obligatorio**, y solo acepta
 despliegues desde ramas protegidas.

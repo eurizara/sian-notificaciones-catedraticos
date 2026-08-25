@@ -574,6 +574,11 @@ explícita.
 | Secreto | De dónde sale |
 |---------|---------------|
 | `QA_VAPID_KEY` / `PROD_VAPID_KEY` | Consola de Firebase → Cloud Messaging → Web configuration |
+
+> **`QA_PROJECT_ID` y `PROD_PROJECT_ID` van a nivel de repositorio**, no dentro del
+> *environment*: el `if:` del job se evalúa antes de que GitHub aplique el ambiente, y
+> ahí una variable de ambiente se lee vacía y el job se salta sin dar error. El detalle
+> está en el documento 11, sección 6.
 | `QA_SERVICE_ACCOUNT` / `PROD_SERVICE_ACCOUNT` | Consola de Firebase → Configuración → Cuentas de servicio → Generar nueva clave privada (contenido JSON completo) |
 
 Nunca los pegues en un archivo del repositorio, ni siquiera temporalmente: el historial de
