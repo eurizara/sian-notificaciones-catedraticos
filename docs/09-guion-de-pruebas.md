@@ -532,3 +532,36 @@ cada uno señala un paso que al guion le falta.
 > con cuentas de coordinación, que pueden leer los mensajes sin condiciones; la
 > pantalla del catedrático nunca se ejecutó con un catedrático. Una prueba con
 > el rol equivocado no es media prueba: es ninguna.
+
+## Certificación del ambiente de calidad
+
+Antes de que QA sirva para probar el sistema, hay que probar el ambiente. Un fallo de
+aprovisionamiento se disfraza de fallo de la aplicación y se persigue durante horas en el
+lugar equivocado, así que estas comprobaciones se hacen primero y se dejan escritas.
+
+Ejecutadas contra `sian-umg-bdm-qa` el 24 de agosto de 2026:
+
+| # | Qué se comprueba | Cómo | Resultado |
+|---|---|---|---|
+| C-1 | Las reglas de seguridad están puestas | Leer `mensajes` sin autenticar por REST | `PERMISSION_DENIED` |
+| C-2 | Las 19 Functions existen y arrancaron | Listar funciones de `us-central1` | 19 de 19 en estado `ACTIVE` |
+| C-3 | Las Functions rechazan a quien no se identificó | `POST` a `activarSesion` sin token | HTTP 401, `UNAUTHENTICATED` |
+| C-4 | El navegador puede llamarlas | `OPTIONS` con `Origin` de QA | HTTP 204 |
+| C-5 | El despachador quedó programado | Listar jobs de Cloud Scheduler | 1 job, cada minuto, `ENABLED` |
+| C-6 | La aplicación servida apunta a QA | Leer `/firebase-config.js` del sitio | `projectId: 'sian-umg-bdm-qa'` |
+| C-7 | La aplicación arranca de verdad | Abrir el sitio y mirar la consola | Pantalla de ingreso, consola sin errores |
+| C-8 | Los manuales y sus imágenes se sirven | Pedir las dos portadas y tres capturas | HTTP 200, `image/png`, tamaño correcto |
+| C-9 | Los manuales no se quedan cacheados | Leer la cabecera de `/manuales/` | `cache-control: no-cache` |
+| C-10 | La base arranca limpia | Contar documentos de las seis colecciones | `invitaciones` 2 · todo lo demás 0 |
+| C-11 | Solo entran los dos usuarios previstos | Leer `invitaciones` | COORDINADOR y CATEDRATICO, uno cada uno |
+| C-12 | El código que se desplegó pasa sus pruebas | `npm test`, `flutter test`, lint, analyze | 257 + 290 pruebas, sin hallazgos |
+
+**C-6 no es una formalidad.** El script que genera la configuración cargaba `.env.local`
+por encima de las variables exportadas, así que el primer paquete compilado «para QA»
+apuntaba a desarrollo y no lo decía. Se detectó porque esta comprobación existe. Mientras
+haya más de un ambiente, verificar contra cuál habla el paquete servido es parte del
+despliegue, no un extra.
+
+Queda fuera de esta certificación todo lo que depende de la clave VAPID y del proveedor
+de Google, que se habilitan a mano por ambiente: registro de notificaciones, entrega
+push e ingreso con Google. Se prueban con las rondas 1 y 3 una vez estén puestos.

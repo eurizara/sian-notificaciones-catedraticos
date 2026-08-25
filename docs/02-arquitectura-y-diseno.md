@@ -531,7 +531,7 @@ ambientes.
 |----------|-------------------|-----------|--------------|
 | **Desarrollo** | `sian-umg-bdm-dev` | Trabajo diario. Se usan los emuladores locales siempre que sea posible | Equipo de desarrollo |
 | **Pruebas de calidad** | `sian-umg-bdm-qa` | Validación funcional con el solicitante y con catedráticos voluntarios | Equipo + usuarios de prueba |
-| **Producción** | `sian-umg-bdm-prod` | Operación real | Usuarios institucionales |
+| **Producción** | `sian-umg-bdm` | Operación real | Usuarios institucionales |
 
 ### Convención de nombres
 
@@ -544,12 +544,18 @@ ambientes.
 | `bdm` | Sede Boca del Monte, que es el alcance de esta implantación |
 | `<ambiente>` | `dev`, `qa` o `prod`, siempre presente |
 
-**El sufijo de ambiente nunca se omite, ni siquiera en el primero que se crea.** Un
-identificador de proyecto de Firebase es global, único e **inmutable**: si el proyecto de
-desarrollo naciera sin sufijo, en la consola aparecería como si fuera el principal, y esa
-ambigüedad solo se corrige creando otro proyecto y abandonando el anterior. Si mañana el
-sistema se extiende a otra sede, la convención admite `sian-umg-<sede>-<ambiente>` sin tocar
-nada de lo ya desplegado.
+**El sufijo de ambiente no se omite.** Un identificador de proyecto de Firebase es
+global, único e **inmutable**: si un proyecto nace sin sufijo, en la consola aparece como
+si fuera el principal, y esa ambigüedad solo se corrige creando otro proyecto y
+abandonando el anterior. Si mañana el sistema se extiende a otra sede, la convención
+admite `sian-umg-<sede>-<ambiente>` sin tocar nada de lo ya desplegado.
+
+> **Producción no cumple esta convención: se llama `sian-umg-bdm`, sin sufijo.** Fue el
+> primer proyecto creado, antes de que la convención estuviera escrita. Como el
+> identificador es inmutable, corregirlo significaría abandonar el proyecto y crear otro,
+> y no vale la pena: el nombre está en el pipeline, en la documentación y en la URL
+> pública. Queda así, y esta nota existe para que nadie lo lea como un descuido ni intente
+> «arreglarlo». Los ambientes reales son los del [documento 11](11-ambientes.md).
 
 ```mermaid
 flowchart LR
@@ -566,7 +572,7 @@ flowchart LR
     subgraph FB["Firebase"]
         D["sian-umg-bdm-dev"]
         Q["sian-umg-bdm-qa"]
-        PR["sian-umg-bdm-prod"]
+        PR["sian-umg-bdm"]
     end
 
     CODE --> EMU

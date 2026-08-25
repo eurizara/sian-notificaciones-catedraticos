@@ -33,8 +33,31 @@ set -euo pipefail
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DESTINO="$RAIZ/app/lib/firebase_options.dart"
 
-# Si existe .env.local y no vienen valores por el entorno, se usan los de ahí.
-if [ -f "$RAIZ/.env.local" ]; then
+# De dónde salen los valores, en orden de precedencia:
+#
+#   1. Las variables que ya vengan en el entorno. Es lo que usa la integración
+#      continua, y lo que usa quien compila un ambiente distinto al de su
+#      copia local.
+#   2. El archivo que indique ARCHIVO_ENTORNO.
+#   3. .env.local, que por convención apunta al ambiente de desarrollo.
+#
+# El orden importa. Antes este bloque cargaba .env.local SIEMPRE, pisando lo
+# que se hubiera exportado: quien intentaba compilar QA con las variables de QA
+# exportadas obtenía, en silencio, un paquete apuntando a desarrollo. Con tres
+# ambientes vivos ese descuido publica datos en el proyecto equivocado, así que
+# el entorno explícito manda.
+if [ -n "${FIREBASE_PROJECT_ID:-}" ]; then
+  : # Ya viene configurado desde afuera: no se toca.
+elif [ -n "${ARCHIVO_ENTORNO:-}" ]; then
+  if [ ! -f "$ARCHIVO_ENTORNO" ]; then
+    echo "error: no existe el archivo de entorno «$ARCHIVO_ENTORNO»." >&2
+    exit 1
+  fi
+  set -a
+  # shellcheck disable=SC1090
+  . "$ARCHIVO_ENTORNO"
+  set +a
+elif [ -f "$RAIZ/.env.local" ]; then
   set -a
   # shellcheck disable=SC1091
   . "$RAIZ/.env.local"
