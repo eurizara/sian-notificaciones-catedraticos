@@ -26,6 +26,17 @@
 ///
 /// Todos los pares texto/fondo declarados aquí cumplen WCAG 2.1 nivel AA
 /// (RNF-13); los valores verificados van anotados en cada constante.
+///
+/// ────────────────────────────────────────────────────────────────────────────
+/// Los azules medios del sitio institucional NO sirven para texto
+/// ────────────────────────────────────────────────────────────────────────────
+///
+/// El sitio `umg.edu.gt` usa además #207FAF, #2984BB y #1D94CF. Se midieron:
+/// dan 4.45:1, 4.11:1 y 3.39:1 sobre blanco, y AA exige 4.5:1 para texto
+/// normal. Los tres se quedan cortos, así que aquí no entran: se toma el azul
+/// marino, que es el que el sitio usa para titulares, y los medios se dejan
+/// donde son legítimos —bordes, fondos, elementos gráficos— o no se usan.
+/// Parecerse al sitio no llega hasta copiarle un problema de contraste.
 library;
 
 import 'package:flutter/material.dart';
@@ -36,6 +47,18 @@ abstract final class ColoresSian {
 
   /// Azul oscurecido, para texto sobre fondo claro. Contraste 7.59:1.
   static const Color primarioOscuro = Color(0xFF15597F);
+
+  /// Azul marino de los titulares del sitio institucional `umg.edu.gt`.
+  ///
+  /// Muestreado del sitio en agosto de 2026, donde es con diferencia el color
+  /// más presente después del negro de texto. Se incorpora para que la portada
+  /// de SIAN se parezca a la de la universidad y no a una aplicación cualquiera
+  /// con el escudo pegado encima.
+  ///
+  /// Contraste 12.81:1 sobre blanco, y **el mismo 12.81:1 con blanco encima**:
+  /// sirve igual para texto oscuro sobre fondo claro que para una banda oscura
+  /// con texto blanco, que es como lo usa el sitio.
+  static const Color navyInstitucional = Color(0xFF003168);
 
   /// Rojo del anillo del escudo. Se usa **solo** en el escudo y en elementos
   /// de identidad, nunca como color de acción.
@@ -81,6 +104,14 @@ abstract final class TemaSian {
     return ThemeData(
       colorScheme: esquema,
       useMaterial3: true,
+      // Urbanist es la tipografía del sitio institucional umg.edu.gt. Se aplica
+      // a toda la aplicación y no solo a la portada: una pantalla con la letra
+      // de la universidad y la siguiente con la letra por omisión del sistema
+      // no se lee como estilo, se lee como si algo hubiera fallado al cargar.
+      //
+      // Va empaquetada con la aplicación (ver pubspec). Si el archivo faltara,
+      // Flutter cae a la fuente del sistema: se vería distinto, nunca vacío.
+      fontFamily: 'Urbanist',
       // El cuerpo no baja de 16 px (RNF-13): quien lee un aviso urgente suele
       // hacerlo de prisa y en la calle.
       textTheme: const TextTheme(

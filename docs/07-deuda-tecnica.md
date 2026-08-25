@@ -28,7 +28,7 @@ momento de tomarla**, no después.
 | **Decisión** | La aplicación se distribuye exclusivamente como PWA vía Firebase Hosting |
 | **Motivo** | Requisito explícito de no usar tiendas. App Store exige 99 USD anuales y un proceso de revisión que retrasaría semanas la validación |
 | **Consecuencia** | Las notificaciones en iOS dependen de la implementación web de Apple, que es menos capaz y menos confiable que APNs nativo. En Android se pierde el acceso a canales de notificación completos y a alarmas exactas |
-| **Mitigación actual** | Flutter fue elegido precisamente para poder compilar a nativo sin reescribir. Existe plan de contingencia documentado (documento 02, sección 13) |
+| **Mitigación actual** | Flutter fue elegido precisamente para poder compilar a nativo sin reescribir. Existe plan de contingencia documentado (documento 02, sección 14) |
 | **Plan de pago** | Compilar a Android nativo y distribuir el APK firmado por descarga directa desde Hosting, sin tienda. Costo: 0 USD. Esfuerzo estimado: 2 a 3 días |
 | **Disparador para pagarla** | Si la prueba de resistencia del prototipo demuestra pérdida de notificaciones, o si el coordinador reporta que una alerta urgente no llegó |
 

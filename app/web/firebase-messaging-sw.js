@@ -7,7 +7,7 @@
  * ────────────────────────────────────────────────────────────────────────────
  *
  * Mezclar la lógica de mensajería dentro del service worker que genera Flutter
- * es el riesgo R-03 del documento 02, sección 10, y la causa más frecuente de
+ * es el riesgo R-03 del documento 02, sección 13, y la causa más frecuente de
  * que las notificaciones dejen de llegar tras una actualización, en silencio.
  *
  * `firebase.json` lo sirve con `Cache-Control: no-cache`, porque un navegador
@@ -30,6 +30,42 @@ self.addEventListener('activate', (evento) => evento.waitUntil(self.clients.clai
 /** Traza visible en la consola del navegador. Diagnosticar a ciegas ya costó caro. */
 function trazar(paso, extra) {
   console.error(`SIAN.sw ${paso}`, extra === undefined ? '' : JSON.stringify(extra));
+}
+
+/**
+ * Pone al día el número pegado al icono de la aplicación instalada.
+ *
+ * ────────────────────────────────────────────────────────────────────────────
+ * Se cuentan las notificaciones que siguen en pantalla, no las que llegaron.
+ * ────────────────────────────────────────────────────────────────────────────
+ *
+ * Aquí no hay forma barata de saber cuántos mensajes tiene la persona sin leer:
+ * el worker no está autenticado y no puede consultar Firestore. Lo que sí sabe
+ * es cuántas notificaciones suyas siguen sin descartar, y ese número se le
+ * parece bastante.
+ *
+ * Es una aproximación, y se corrige sola: en cuanto la aplicación se abre, la
+ * bandeja fija la insignia con el número exacto de mensajes sin leer, que es el
+ * mismo que muestra su filtro «Sin leer». El worker mantiene el número vivo
+ * mientras la aplicación está cerrada; la aplicación manda cuando está abierta.
+ *
+ * Los fallos se tragan: pintar un número es un adorno útil, no parte de la
+ * entrega. Si esto reventara, se llevaría por delante la notificación misma.
+ */
+async function actualizarInsignia() {
+  if (!self.navigator || !('setAppBadge' in self.navigator)) {
+    return;
+  }
+  try {
+    const pendientes = await self.registration.getNotifications();
+    if (pendientes.length > 0) {
+      await self.navigator.setAppBadge(pendientes.length);
+    } else {
+      await self.navigator.clearAppBadge();
+    }
+  } catch (e) {
+    trazar('insignia:no-se-pudo', String(e));
+  }
 }
 
 /**
@@ -128,6 +164,7 @@ self.addEventListener('push', (evento) => {
       const { titulo, opciones } = componer(carga);
       trazar('push:primer-plano', { titulo });
       await self.registration.showNotification(titulo, opciones);
+      await actualizarInsignia();
     })(),
   );
 });
@@ -142,16 +179,20 @@ if (self.SIAN_FIREBASE_CONFIG && self.SIAN_FIREBASE_CONFIG.apiKey !== 'SIN-CONFI
    * Es lo que distingue un canal de avisos de una página web que hay que
    * recordar abrir.
    */
-  messaging.onBackgroundMessage((carga) => {
+  messaging.onBackgroundMessage(async (carga) => {
     const { titulo, opciones } = componer(carga);
     trazar('fondo', { titulo });
-    return self.registration.showNotification(titulo, opciones);
+    await self.registration.showNotification(titulo, opciones);
+    await actualizarInsignia();
   });
 }
 
 /** Abrir la notificación lleva al detalle del mensaje (RF-ENT-07). */
 self.addEventListener('notificationclick', (evento) => {
   evento.notification.close();
+  // Una notificación menos en pantalla es un número menos en el icono. La
+  // bandeja lo corregirá al abrirse, pero mientras tanto el icono no miente.
+  evento.waitUntil(actualizarInsignia());
   const mensajeId = evento.notification.data && evento.notification.data.mensajeId;
   const destino = mensajeId ? `/mensajes/${mensajeId}` : '/';
 

@@ -24,7 +24,7 @@ export { FieldValue, Timestamp };
  *
  * `maxInstances` es control de gasto, no de rendimiento: sin tope, un bucle
  * accidental podría escalar hasta cientos de instancias y convertir el costo
- * proyectado de 0.00 USD en una factura real (documento 02, sección 11).
+ * proyectado de 0.00 USD en una factura real (documento 02, sección 12).
  *
  * La región coincide con la de Firestore a propósito: una Function en otra
  * región paga latencia en cada lectura, y a la escala de este sistema eso no

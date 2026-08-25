@@ -117,20 +117,29 @@ Future<void> _cargarFuentes() async {
   // pantalla comunica son sus iconos: el sobre abierto, el sello de
   // confirmado, la campana.
   await cargar('MaterialIcons', <String>['MaterialIcons-Regular.otf']);
+
+  // Urbanist, la tipografía institucional, se carga desde los assets de la
+  // propia aplicación y no del SDK. Sin ella las capturas saldrían en Roboto y
+  // el manual enseñaría una letra que la aplicación ya no usa: quien compara la
+  // figura con su pantalla encuentra dos cosas distintas y duda de las dos.
+  final FontLoader urbanist = FontLoader('Urbanist');
+  for (final String peso in <String>['400', '500', '600', '700']) {
+    urbanist.addFont(rootBundle.load('assets/fuentes/Urbanist-$peso.ttf'));
+  }
+  await urbanist.load();
 }
 
 extension<T> on T {
   R let<R>(R Function(T) f) => f(this);
 }
 
-/// El tema de la aplicación, con la fuente ya cargada.
-ThemeData _tema() {
-  final ThemeData base = TemaSian.claro();
-  return base.copyWith(
-    textTheme: base.textTheme.apply(fontFamily: 'Roboto'),
-    primaryTextTheme: base.primaryTextTheme.apply(fontFamily: 'Roboto'),
-  );
-}
+/// El tema de la aplicación, tal cual, con las fuentes ya cargadas.
+///
+/// Antes se forzaba Roboto aquí porque era la única fuente disponible en el
+/// entorno de pruebas. Ahora que Urbanist viaja en los assets, el tema se usa
+/// sin tocar: la captura sale con la misma letra que la aplicación, que es la
+/// única forma de que el manual y la pantalla se parezcan.
+ThemeData _tema() => TemaSian.claro();
 
 /// Deja el lienzo del tamaño de un dispositivo real.
 Future<void> _encuadrar(WidgetTester tester, Size tamano) async {
@@ -140,7 +149,22 @@ Future<void> _encuadrar(WidgetTester tester, Size tamano) async {
 }
 
 /// Dibuja, espera a que todo asiente y guarda.
+///
+/// El paso de `runAsync` no es un adorno. Un `Image.asset` se decodifica de
+/// forma asíncrona, y el motor de pruebas corta el tiempo: sin darle un respiro
+/// real, la imagen nunca termina de cargar y se dibuja **un hueco**. Durante
+/// meses la figura del manual que enseña la pantalla de ingreso salió sin el
+/// escudo de la universidad, con un espacio en blanco donde la aplicación de
+/// verdad lo muestra, y nadie lo notó porque el resto de la captura estaba bien.
 Future<void> _guardar(WidgetTester tester, String nombre) async {
+  await tester.pumpAndSettle();
+
+  await tester.runAsync(() async {
+    for (final Element elemento in find.byType(Image).evaluate()) {
+      await precacheImage((elemento.widget as Image).image, elemento);
+    }
+  });
+
   await tester.pumpAndSettle();
   await expectLater(
     find.byType(MaterialApp),

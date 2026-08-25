@@ -207,9 +207,18 @@ notifica a su creador.
 | RF-ENT-10 | El sistema reintenta la entrega fallida hasta 3 veces con espera creciente | D |
 | RF-ENT-11 | El sistema registra el resultado individual de cada intento de entrega | D |
 | RF-ENT-12 | El catedrático consulta el historial completo de mensajes recibidos, ordenado del más reciente al más antiguo | D |
-| RF-ENT-13 | La aplicación muestra un contador de mensajes no leídos | B |
+| RF-ENT-13 | La aplicación muestra un contador de mensajes no leídos, sobre el icono de la aplicación instalada | B |
 | RF-ENT-14 | El envío se procesa por lotes para no exceder los límites del servicio de push | D |
 | RF-ENT-15 | El sistema muestra al emisor el avance del envío en tiempo real | B |
+
+**Criterio de aceptación de RF-ENT-13:** con la aplicación **instalada**, el icono muestra
+el número de mensajes sin abrir, y ese número es exactamente el que muestra el filtro
+«Sin leer» de la bandeja. Al abrirlos todos, la insignia se retira en lugar de mostrar
+cero. En una pestaña del navegador, sin instalar, no aparece número y las notificaciones
+siguen llegando igual: la insignia necesita un icono donde pintarse.
+
+En iOS es además la única señal de cantidad disponible, porque no se puede definir sonido
+ni vibración propios (DT-02).
 
 **Criterio de aceptación de RF-ENT-05:** en Android, avisos y alertas usan canales de
 notificación distintos con importancia `DEFAULT` y `HIGH` respectivamente. En iOS-PWA, donde
@@ -421,7 +430,7 @@ stateDiagram-v2
 |---|---|---|
 | Avisos informativos y alertas urgentes | RF-MSG-02, RF-ENT-05, RN-06 | CU-03 |
 | Mensajes de texto, voz e imagen | RF-MSG-01, 03, 04, 05 | CU-03 |
-| Sonido, vibración o alerta visible | RF-ENT-02, 03, 04, 05 | CU-06 |
+| Sonido, vibración o alerta visible | RF-ENT-02, 03, 04, 05, 13 | CU-06 |
 | Funcionamiento igual en Android e iOS | RNF-14, RES-05, RES-06, DT-02 | CU-06 |
 | Roles definidos para administradoras | RF-AUT-04, matriz RBAC, RN-01 | CU-10 |
 | Mensajes programados a fecha y hora | RF-PRG-02, 03, 04 | CU-04 |
