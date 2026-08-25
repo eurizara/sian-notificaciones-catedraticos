@@ -804,9 +804,41 @@ número de afuera queda desmentido por el de adentro, y a partir de ahí ninguno
 de los dos se cree.
 
 Con la aplicación cerrada, quien mantiene el número es el service worker, que
-cuenta las notificaciones que siguen sin descartar —no está autenticado y no
-puede consultar Firestore—. Es una aproximación que se corrige sola en cuanto
-la aplicación se abre.
+lleva su propia cuenta en IndexedDB y **solo la incrementa**. La aplicación, que
+sí sabe cuántos mensajes hay sin leer porque está autenticada, le manda el
+número exacto por `postMessage` cada vez que cambia, y es la única que puede
+bajarlo a cero.
+
+> **El worker suma; solo la aplicación fija o retira.** La primera versión
+> contaba `registration.getNotifications()` y, si salía cero, llamaba a
+> `clearAppBadge()`. En Android funcionaba. En iOS ese método devuelve una lista
+> vacía para las notificaciones que muestra el propio worker, así que el
+> resultado era el contrario del buscado: llegaba el aviso, se contaban cero
+> notificaciones y **se borraba la insignia**. El número no aparecía nunca, y el
+> síntoma —«no sale nada»— hacía pensar que la Badging API no estaba soportada
+> en iOS, cuando lo que pasaba es que la estábamos usando para apagarla.
+
+Del lado de la aplicación, la insignia se sincroniza con lo que la bandeja tiene
+**ahora mismo**, no con lo que cambió. Escuchar los cambios del historial no
+basta: un escuchador solo se entera de lo que ocurre mientras está escuchando, y
+al volver de otra pantalla o al girar el aparato la bandeja se monta con los
+datos ya resueltos, no llega ningún cambio y el número se queda sin poner. La
+llamada es idempotente y recuerda el último valor enviado, así que repetirla en
+cada dibujado no cuesta nada.
+
+### El mensaje abierto y el cerrado
+
+En la bandeja, la cabecera plegada y la desplegada eran idénticas: los mismos
+datos, el mismo fondo, la misma tipografía, y el cuerpo apareciendo debajo sin
+nada que lo separase. Abrir un mensaje no se notaba, y en una lista de avisos
+parecidos se perdía cuál se estaba leyendo.
+
+El contenido —texto y adjuntos— vive ahora en un panel propio, sobre la
+superficie base y con su borde, dentro de la tarjeta. Eso convierte lo de arriba
+en lo que siempre fue: la cabecera. El título del mensaje abierto pesa además un
+poco más, para localizarlo al recorrer la lista.
+
+Plegado no cambia nada. Ahí se hojea una lista, y no había nada que arreglar.
 
 ## 12. Seguridad
 
