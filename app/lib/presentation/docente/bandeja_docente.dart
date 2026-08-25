@@ -393,6 +393,20 @@ class _Fila extends ConsumerStatefulWidget {
   ConsumerState<_Fila> createState() => _FilaState();
 }
 
+/// Un velo para asentar la cabecera del mensaje abierto.
+///
+/// No es un color: es una capa translúcida sobre lo que haya debajo. Ese es el
+/// punto. La tarjeta de un mensaje cambia de fondo según lo que reclame —teñida
+/// de rojo si es urgente sin confirmar, de dorado si espera confirmación, sin
+/// teñir si ya está leído—, así que cualquier color fijo acertaría en unos
+/// casos y desaparecería en otros. Oscurecer lo que hay debajo acierta siempre.
+///
+/// Es deliberadamente sutil. La cabecera tiene que separarse del texto, no
+/// competir con él: quien abre un mensaje va a leerlo, no a mirar la banda.
+Color _velo(ThemeData tema) => tema.brightness == Brightness.light
+    ? Colors.black.withValues(alpha: 0.05)
+    : Colors.white.withValues(alpha: 0.07);
+
 class _FilaState extends ConsumerState<_Fila> {
   bool _confirmando = false;
 
@@ -546,228 +560,237 @@ class _FilaState extends ConsumerState<_Fila> {
               if (realce.franja != null)
                 Container(width: 5, color: realce.franja),
               Expanded(
-                child: Padding(
-                  // Plegado se aprieta; desplegado respira, porque ahí hay
-                  // texto que leer y no una lista que hojear.
-                  padding: EdgeInsets.fromLTRB(14, abierto ? 14 : 11, 14,
-                      abierto ? 14 : 11),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    // ──────────────────────────────────────────────────
+                    // LA CABECERA DEL MENSAJE ABIERTO ES UNA BANDA.
+                    // ──────────────────────────────────────────────────
+                    //
+                    // El primer intento metió el cuerpo en un recuadro con
+                    // borde y fondo `surface`. En un mensaje sin leer o sin
+                    // confirmar se veía, porque la tarjeta va teñida y el
+                    // recuadro resaltaba contra ella. En uno YA LEÍDO la
+                    // tarjeta no tiene tinte: el recuadro quedaba del mismo
+                    // color que su fondo y no separaba nada. Justo en el
+                    // caso más común no se distinguía qué estaba abierto.
+                    //
+                    // La banda no depende del fondo porque no es un color
+                    // fijo: es un velo sobre lo que haya debajo. Sobre la
+                    // tarjeta blanca da un gris suave; sobre la teñida de
+                    // urgente, un rosa un punto más oscuro. Siempre hay
+                    // contraste, porque siempre oscurece lo que hay.
+                    //
+                    // Debajo va una línea que marca dónde termina la
+                    // cabecera y empieza lo que hay que leer.
+                    Container(
+                      color: abierto ? _velo(tema) : null,
+                      padding: EdgeInsets.fromLTRB(
+                        14,
+                        abierto ? 12 : 11,
+                        14,
+                        abierto ? 12 : 11,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
-                          if (mensaje.esUrgente)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              margin: const EdgeInsets.only(right: 8),
-                              decoration: BoxDecoration(
-                                color: ColoresSian.urgente,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: const Text(
-                                Textos.etiquetaUrgente,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
+                          Row(
+                            children: <Widget>[
+                              if (mensaje.esUrgente)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
+                                  margin: const EdgeInsets.only(right: 8),
+                                  decoration: BoxDecoration(
+                                    color: ColoresSian.urgente,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: const Text(
+                                    Textos.etiquetaUrgente,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              Expanded(
+                                child: Text(
+                                  mensaje.titulo,
+                                  // Desplegado el título pesa siempre, aunque el
+                                  // mensaje ya no reclame nada: al recorrer la lista
+                                  // es lo que dice de un vistazo cuál se está
+                                  // leyendo. El realce manda cuando además hay algo
+                                  // pendiente.
+                                  style: tema.textTheme.titleMedium?.copyWith(
+                                    fontWeight: realce.tituloEnNegrita
+                                        ? FontWeight.bold
+                                        : (abierto ? FontWeight.w600 : null),
+                                  ),
                                 ),
                               ),
-                            ),
-                          Expanded(
-                            child: Text(
-                              mensaje.titulo,
-                              // Desplegado el título pesa siempre, aunque el
-                              // mensaje ya no reclame nada: al recorrer la lista
-                              // es lo que dice de un vistazo cuál se está
-                              // leyendo. El realce manda cuando además hay algo
-                              // pendiente.
-                              style: tema.textTheme.titleMedium?.copyWith(
-                                fontWeight: realce.tituloEnNegrita
-                                    ? FontWeight.bold
-                                    : (abierto ? FontWeight.w600 : null),
+                              if (realce.nivel == NivelAtencion.sinLeer)
+                                Container(
+                                  width: 9,
+                                  height: 9,
+                                  margin: const EdgeInsets.only(right: 8),
+                                  decoration: const BoxDecoration(
+                                    color: ColoresSian.primario,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              Icon(
+                                abierto ? Icons.expand_less : Icons.expand_more,
+                                color: tema.colorScheme.onSurfaceVariant,
                               ),
-                            ),
+                            ],
                           ),
-                          if (realce.nivel == NivelAtencion.sinLeer)
-                            Container(
-                              width: 9,
-                              height: 9,
-                              margin: const EdgeInsets.only(right: 8),
-                              decoration: const BoxDecoration(
-                                color: ColoresSian.primario,
-                                shape: BoxShape.circle,
-                              ),
+                          // ────────────────────────────────────────────────────
+                          // PLEGADO SE VE EL TÍTULO, NO UN TROZO DEL TEXTO.
+                          // ────────────────────────────────────────────────────
+                          //
+                          // Una línea suelta del cuerpo casi nunca es la que
+                          // resume el aviso: se corta a media frase y ocupa el
+                          // sitio de otro mensaje. Lo que sí ayuda a decidir cuál
+                          // abrir es SI TRAE ALGO — una nota de voz puede ser lo
+                          // único que importe de una alerta.
+                          if (!abierto && mensaje.llevaAdjuntos) ...<Widget>[
+                            const SizedBox(height: 5),
+                            Row(
+                              children: <Widget>[
+                                if (mensaje.llevaVoz)
+                                  const _Trae(
+                                    icono: Icons.graphic_eq,
+                                    texto: Textos.traeVoz,
+                                  ),
+                                if (mensaje.llevaVoz && mensaje.llevaImagen)
+                                  const SizedBox(width: 10),
+                                if (mensaje.llevaImagen)
+                                  const _Trae(
+                                    icono: Icons.image_outlined,
+                                    texto: Textos.traeImagen,
+                                  ),
+                              ],
                             ),
-                          Icon(
-                            abierto ? Icons.expand_less : Icons.expand_more,
-                            color: tema.colorScheme.onSurfaceVariant,
-                          ),
-                        ],
-                      ),
-                      // ────────────────────────────────────────────────────
-                      // PLEGADO SE VE EL TÍTULO, NO UN TROZO DEL TEXTO.
-                      // ────────────────────────────────────────────────────
-                      //
-                      // Una línea suelta del cuerpo casi nunca es la que
-                      // resume el aviso: se corta a media frase y ocupa el
-                      // sitio de otro mensaje. Lo que sí ayuda a decidir cuál
-                      // abrir es SI TRAE ALGO — una nota de voz puede ser lo
-                      // único que importe de una alerta.
-                      if (!abierto && mensaje.llevaAdjuntos) ...<Widget>[
-                        const SizedBox(height: 5),
-                        Row(
-                          children: <Widget>[
-                            if (mensaje.llevaVoz)
-                              const _Trae(
-                                icono: Icons.graphic_eq,
-                                texto: Textos.traeVoz,
-                              ),
-                            if (mensaje.llevaVoz && mensaje.llevaImagen)
-                              const SizedBox(width: 10),
-                            if (mensaje.llevaImagen)
-                              const _Trae(
-                                icono: Icons.image_outlined,
-                                texto: Textos.traeImagen,
-                              ),
                           ],
-                        ),
-                      ],
 
-                      // Estado y fecha se ven SIEMPRE, plegado o no: son lo que se
-                      // hojea. Esconderlos obligaría a abrir cada mensaje solo para
-                      // saber cuál falta por confirmar.
-                      SizedBox(height: abierto ? 10 : 6),
-                      Row(
-                        children: <Widget>[
-                          Icon(
-                            _iconoDeEstado(mensaje.estado),
-                            size: 16,
-                            color: mensaje.estaConfirmado
-                                ? ColoresSian.confirmado
-                                : tema.colorScheme.onSurfaceVariant,
+                          // Estado y fecha se ven SIEMPRE, plegado o no: son lo que se
+                          // hojea. Esconderlos obligaría a abrir cada mensaje solo para
+                          // saber cuál falta por confirmar.
+                          SizedBox(height: abierto ? 10 : 6),
+                          Row(
+                            children: <Widget>[
+                              Icon(
+                                _iconoDeEstado(mensaje.estado),
+                                size: 16,
+                                color: mensaje.estaConfirmado
+                                    ? ColoresSian.confirmado
+                                    : tema.colorScheme.onSurfaceVariant,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                _etiquetaDeEstado(mensaje.estado),
+                                style: tema.textTheme.bodySmall?.copyWith(
+                                  color: mensaje.estaConfirmado
+                                      ? ColoresSian.confirmado
+                                      : tema.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              const Spacer(),
+                              if (mensaje.entregadoEn != null)
+                                Text(
+                                  formato.format(mensaje.entregadoEn!),
+                                  style: tema.textTheme.bodySmall?.copyWith(
+                                    color: tema.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                            ],
                           ),
-                          const SizedBox(width: 6),
-                          Text(
-                            _etiquetaDeEstado(mensaje.estado),
-                            style: tema.textTheme.bodySmall?.copyWith(
-                              color: mensaje.estaConfirmado
-                                  ? ColoresSian.confirmado
-                                  : tema.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                          const Spacer(),
-                          if (mensaje.entregadoEn != null)
+
+                          // ──────────────────────────────────────────────────────
+                          // QUIÉN LO ENVÍA, VISIBLE SIN ABRIR.
+                          // ──────────────────────────────────────────────────────
+                          //
+                          // Ante un aviso que pide salir del edificio, saber quién
+                          // lo firma es parte de decidir si obedecerlo. Va en la
+                          // fila plegada porque ahí es donde se decide qué abrir.
+                          if (mensaje.emisor.isNotEmpty) ...<Widget>[
+                            const SizedBox(height: 4),
                             Text(
-                              formato.format(mensaje.entregadoEn!),
+                              Textos.enviadoPor(mensaje.emisor),
                               style: tema.textTheme.bodySmall?.copyWith(
                                 color: tema.colorScheme.onSurfaceVariant,
                               ),
                             ),
+                          ],
+
                         ],
                       ),
+                    ),
 
-                      // ──────────────────────────────────────────────────────
-                      // QUIÉN LO ENVÍA, VISIBLE SIN ABRIR.
-                      // ──────────────────────────────────────────────────────
-                      //
-                      // Ante un aviso que pide salir del edificio, saber quién
-                      // lo firma es parte de decidir si obedecerlo. Va en la
-                      // fila plegada porque ahí es donde se decide qué abrir.
-                      if (mensaje.emisor.isNotEmpty) ...<Widget>[
-                        const SizedBox(height: 4),
-                        Text(
-                          Textos.enviadoPor(mensaje.emisor),
-                          style: tema.textTheme.bodySmall?.copyWith(
-                            color: tema.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
+                    if (abierto) ...<Widget>[
+                      Container(
+                        height: 1,
+                        color: tema.colorScheme.outlineVariant,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(mensaje.cuerpo),
 
-                      // ────────────────────────────────────────────────────
-                      // EL CONTENIDO VA EN SU PROPIO PANEL.
-                      // ────────────────────────────────────────────────────
-                      //
-                      // Antes el cuerpo se añadía debajo de la cabecera, con el
-                      // mismo fondo y sin nada que lo separase. El resultado es
-                      // que un mensaje abierto y uno cerrado se veían igual
-                      // —los mismos datos arriba, la misma tipografía— y en una
-                      // lista de avisos parecidos se perdía cuál se estaba
-                      // leyendo.
-                      //
-                      // Con el texto y los adjuntos dentro de un panel propio,
-                      // lo de arriba pasa a leerse como lo que es: la cabecera
-                      // del mensaje que está abierto. Plegado no cambia nada:
-                      // ahí se hojea una lista y no había nada que arreglar.
-                      if (abierto) ...<Widget>[
-                        const SizedBox(height: 12),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: tema.colorScheme.surface,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: tema.colorScheme.outlineVariant,
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: <Widget>[
-                              Text(mensaje.cuerpo),
-
-                              // RF-ENT-08 y RF-ENT-09. Van bajo el texto y no tras un
-                              // botón: una nota de voz que hay que buscar es una nota de
-                              // voz que no se escucha, y en un aviso urgente puede ser lo
-                              // único que importa.
-                              //
-                              // En el ORDEN en que los adjuntó quien envió. Ese orden
-                              // dice algo —el plano, la voz que lo explica, la foto del
-                              // punto de reunión— y agruparlos por tipo aquí lo
-                              // destruiría sin que nadie se diera cuenta.
-                              for (final AdjuntoRecibido adjunto
-                                  in mensaje.adjuntos) ...<Widget>[
-                                const SizedBox(height: 12),
-                                if (adjunto.esVoz)
-                                  NotaDeVoz(
-                                    ruta: adjunto.ruta,
-                                    duracionSeg: adjunto.duracionSeg,
-                                  )
-                                else
-                                  ImagenAdjunta(ruta: adjunto.ruta),
-                              ],
+                            // RF-ENT-08 y RF-ENT-09. Van bajo el texto y no tras un
+                            // botón: una nota de voz que hay que buscar es una nota
+                            // de voz que no se escucha, y en un aviso urgente puede
+                            // ser lo único que importa.
+                            //
+                            // En el ORDEN en que los adjuntó quien envió. Ese orden
+                            // dice algo —el plano, la voz que lo explica, la foto del
+                            // punto de reunión— y agruparlos por tipo aquí lo
+                            // destruiría sin que nadie se diera cuenta.
+                            for (final AdjuntoRecibido adjunto
+                                in mensaje.adjuntos) ...<Widget>[
+                              const SizedBox(height: 12),
+                              if (adjunto.esVoz)
+                                NotaDeVoz(
+                                  ruta: adjunto.ruta,
+                                  duracionSeg: adjunto.duracionSeg,
+                                )
+                              else
+                                ImagenAdjunta(ruta: adjunto.ruta),
                             ],
-                          ),
-                        ),
 
-                        if (mensaje.requiereConfirmacion &&
-                            !mensaje.estaConfirmado) ...[
-                          const SizedBox(height: 12),
-                          // Confirmar es irreversible y con valor probatorio: lo escribe
-                          // el servidor, nunca el cliente (RF-CNF-04). Aquí solo se pide.
-                          FilledButton.icon(
-                            onPressed: _confirmando ? null : _confirmar,
-                            icon: _confirmando
-                                ? const SizedBox(
-                                    height: 16,
-                                    width: 16,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : const Icon(Icons.check),
-                            label: Text(
-                              _confirmando
-                                  ? Textos.confirmandoLectura
-                                  : Textos.botonConfirmarLectura,
-                            ),
-                          ),
-                        ],
-                      ],
+                            if (mensaje.requiereConfirmacion &&
+                                !mensaje.estaConfirmado) ...[
+                              const SizedBox(height: 12),
+                              // Confirmar es irreversible y con valor probatorio: lo escribe
+                              // el servidor, nunca el cliente (RF-CNF-04). Aquí solo se pide.
+                              FilledButton.icon(
+                                onPressed: _confirmando ? null : _confirmar,
+                                icon: _confirmando
+                                    ? const SizedBox(
+                                        height: 16,
+                                        width: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Icon(Icons.check),
+                                label: Text(
+                                  _confirmando
+                                      ? Textos.confirmandoLectura
+                                      : Textos.botonConfirmarLectura,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
                     ],
-                  ),
+                  ],
                 ),
               ),
             ],

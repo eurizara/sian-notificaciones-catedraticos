@@ -524,8 +524,16 @@ Advertencias que deben vigilarse:
 2. Cada invocación del despachador ejecuta al menos una consulta a `cola_despacho`. Con la
    consulta bien indexada y sin resultados, el costo de lectura es despreciable, pero debe
    confirmarse en producción durante el primer mes.
-3. Configurar **alerta de presupuesto en 1 USD** es obligatorio antes de desplegar a
-   producción (RNF-18).
+3. Configurar **alerta de presupuesto** es obligatorio antes de desplegar a producción
+   (RNF-18). Está puesta sobre la cuenta de facturación, que cubre los tres ambientes
+   (documento 11, sección 5).
+4. La bandeja lee las entregas por flujo y el contenido de cada mensaje por separado, y
+   **guarda ese contenido en memoria mientras la sesión dure**. Sin esa memoria, cada
+   emisión del flujo volvía a pedir los cincuenta mensajes: el flujo emite al abrir la
+   bandeja, al llegar un aviso y cada vez que alguien despliega uno, así que una sesión
+   normal multiplicaba las lecturas por diez o más. El contenido de un mensaje enviado no
+   se edita, de modo que releerlo no aportaba nada; lo que cambia —entregado, abierto,
+   confirmado— viaja en el flujo de entregas.
 
 ---
 

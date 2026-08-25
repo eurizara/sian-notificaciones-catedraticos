@@ -21,6 +21,29 @@ class RepositorioBandejaFirebase implements RepositorioBandeja {
   /// mensajes que esto sin paginar.
   static const int _limite = 50;
 
+  /// Contenido de los mensajes ya leídos, por identificador.
+  ///
+  /// ──────────────────────────────────────────────────────────────────────────
+  /// EL CONTENIDO DE UN MENSAJE NO CAMBIA. LA ENTREGA SÍ.
+  /// ──────────────────────────────────────────────────────────────────────────
+  ///
+  /// Lo que se mueve es la entrega —entregado, abierto, confirmado—, y eso ya
+  /// llega en el propio flujo. El título, el cuerpo, el tipo y los adjuntos se
+  /// escriben una vez y no se vuelven a tocar: un aviso enviado no se edita.
+  ///
+  /// Sin esta memoria, **cada emisión del flujo volvía a pedir por red los
+  /// cincuenta mensajes enteros**. Y el flujo emite mucho: al abrir la bandeja,
+  /// al llegar un aviso, y otra vez cada vez que alguien despliega uno y su
+  /// entrega pasa a «abierto». El efecto en la mano era que la bandeja tardaba
+  /// unos segundos en mostrar lo que tenía, y durante esa espera enseñaba una
+  /// lista incompleta —que es peor que no enseñar nada, porque afirma algo
+  /// falso: «está al día».
+  ///
+  /// Con la memoria, la primera carga paga las lecturas y las siguientes solo
+  /// piden lo que no habían visto: normalmente el mensaje que acaba de llegar.
+  final Map<String, Map<String, dynamic>> _contenidoConocido =
+      <String, Map<String, dynamic>>{};
+
   @override
   Stream<List<MensajeRecibido>> observarHistorial(String uid) {
     return _firestore
@@ -76,22 +99,27 @@ class RepositorioBandejaFirebase implements RepositorioBandeja {
         .toSet()
         .toList();
 
-    final Map<String, Map<String, dynamic>> mensajes =
-        <String, Map<String, dynamic>>{};
+    final List<String> porLeer = ids
+        .where((String id) => !_contenidoConocido.containsKey(id))
+        .toList();
 
-    final List<DocumentSnapshot<Map<String, dynamic>>> documentos =
-        await Future.wait(
-          ids.map(
-            (String id) => _firestore.collection('mensajes').doc(id).get(),
-          ),
-        );
+    if (porLeer.isNotEmpty) {
+      final List<DocumentSnapshot<Map<String, dynamic>>> documentos =
+          await Future.wait(
+            porLeer.map(
+              (String id) => _firestore.collection('mensajes').doc(id).get(),
+            ),
+          );
 
-    for (final DocumentSnapshot<Map<String, dynamic>> doc in documentos) {
-      final Map<String, dynamic>? datos = doc.data();
-      if (datos != null) {
-        mensajes[doc.id] = datos;
+      for (final DocumentSnapshot<Map<String, dynamic>> doc in documentos) {
+        final Map<String, dynamic>? datos = doc.data();
+        if (datos != null) {
+          _contenidoConocido[doc.id] = datos;
+        }
       }
     }
+
+    final Map<String, Map<String, dynamic>> mensajes = _contenidoConocido;
 
     final List<MensajeRecibido> recibidos = <MensajeRecibido>[];
 

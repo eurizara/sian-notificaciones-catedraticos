@@ -58,6 +58,7 @@ function trazar(paso, extra) {
 const BD_INSIGNIA = 'sian-insignia';
 const ALMACEN = 'estado';
 const LLAVE = 'sinLeer';
+const LLAVE_AVISADOS = 'avisados';
 
 function _abrirBase() {
   return new Promise((resolver, rechazar) => {
@@ -80,8 +81,17 @@ function _enBase(modo, operacion) {
   );
 }
 
-const leerCuenta = () => _enBase('readonly', (a) => a.get(LLAVE)).then((v) => v || 0);
-const guardarCuenta = (n) => _enBase('readwrite', (a) => a.put(n, LLAVE));
+const _leer = (llave, siFalta) =>
+  _enBase('readonly', (a) => a.get(llave)).then((v) => (v === undefined ? siFalta : v));
+const _guardar = (llave, valor) => _enBase('readwrite', (a) => a.put(valor, llave));
+
+/** Lo que la aplicación reportó la última vez que estuvo abierta. */
+const leerBase = () => _leer(LLAVE, 0);
+const guardarBase = (n) => _guardar(LLAVE, n);
+
+/** Identificadores de mensaje avisados desde entonces, sin repetir. */
+const leerAvisados = () => _leer(LLAVE_AVISADOS, []);
+const guardarAvisados = (lista) => _guardar(LLAVE_AVISADOS, lista);
 
 /** ¿Sabe este navegador pintar insignias? */
 function hayInsignia() {
@@ -106,22 +116,54 @@ async function pintarInsignia(cuenta) {
   }
 }
 
-/** Un aviso más sin leer. Es lo único que el worker decide por su cuenta. */
-async function sumarInsignia() {
+/**
+ * Un mensaje más sin leer.
+ *
+ * ────────────────────────────────────────────────────────────────────────────
+ * SE CUENTAN MENSAJES DISTINTOS, NO AVISOS RECIBIDOS.
+ * ────────────────────────────────────────────────────────────────────────────
+ *
+ * La primera versión sumaba uno por cada `push` que llegaba. Parecía
+ * equivalente y no lo es: **el sistema reintenta la entrega hasta tres veces**
+ * (RF-ENT-10). Un solo mensaje que necesite sus reintentos llega tres veces al
+ * worker, y el icono acababa diciendo «3» donde había uno. Quien lo mira
+ * entonces abre la aplicación esperando tres avisos, encuentra uno, y a partir
+ * de ahí el número deja de significar algo.
+ *
+ * Ahora se guarda el identificador del mensaje y se cuentan los distintos, así
+ * que un reintento no suma. Es el mismo dato que ya viajaba en la carga para
+ * poder abrir el mensaje al tocar la notificación.
+ */
+async function sumarInsignia(mensajeId) {
   try {
-    const cuenta = (await leerCuenta()) + 1;
-    await guardarCuenta(cuenta);
+    const avisados = await leerAvisados();
+    if (mensajeId && avisados.includes(mensajeId)) {
+      trazar('insignia:reintento-ignorado', { mensajeId });
+      return;
+    }
+    // Sin identificador no se puede distinguir un reintento de un mensaje
+    // nuevo. Se cuenta, porque perder un aviso es peor que contar uno de más.
+    avisados.push(mensajeId || `sin-id-${Date.now()}`);
+    await guardarAvisados(avisados);
+
+    const cuenta = (await leerBase()) + avisados.length;
     await pintarInsignia(cuenta);
   } catch (e) {
     trazar('insignia:sumar-fallo', String(e));
   }
 }
 
-/** El número exacto, que solo la aplicación autenticada conoce. */
+/**
+ * El número exacto, que solo la aplicación autenticada conoce.
+ *
+ * Al fijarlo se olvida la lista de avisados: lo que la bandeja acaba de contar
+ * ya incluye todo lo que había llegado.
+ */
 async function fijarInsignia(cuenta) {
   try {
     const n = Math.max(0, Number(cuenta) || 0);
-    await guardarCuenta(n);
+    await guardarBase(n);
+    await guardarAvisados([]);
     await pintarInsignia(n);
   } catch (e) {
     trazar('insignia:fijar-fallo', String(e));
@@ -255,7 +297,7 @@ if (self.SIAN_FIREBASE_CONFIG && self.SIAN_FIREBASE_CONFIG.apiKey !== 'SIN-CONFI
     const { titulo, opciones } = componer(carga);
     trazar('fondo', { titulo });
     await self.registration.showNotification(titulo, opciones);
-    await sumarInsignia();
+    await sumarInsignia(opciones.data && opciones.data.mensajeId);
   });
 }
 

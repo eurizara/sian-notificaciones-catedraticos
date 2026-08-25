@@ -32,30 +32,28 @@ import '../dobles/repositorios_falsos.dart';
 const String _titulo = 'Entrega de actas de medio ciclo';
 const String _cuerpo = 'El plazo vence el viernes 20 a las 17:00.';
 
-final MensajeRecibido _mensaje = MensajeRecibido(
+MensajeRecibido _mensajeCon(String estado) => MensajeRecibido(
   mensajeId: 'm1',
   titulo: _titulo,
   cuerpo: _cuerpo,
   tipo: 'INFORMATIVO',
-  estado: 'ENTREGADO',
+  estado: estado,
   requiereConfirmacion: false,
   emisor: 'Coordinación Académica',
   entregadoEn: DateTime(2026, 3, 16, 14, 30),
 );
 
-/// ¿Está [texto] dentro de un recuadro con borde propio?
-bool enPanelConBorde(WidgetTester tester, String texto) {
-  final Iterable<Container> contenedores = tester
-      .widgetList<Container>(
-        find.ancestor(
-          of: find.text(texto),
-          matching: find.byType(Container),
-        ),
-      );
-  return contenedores.any((Container c) {
-    final Decoration? d = c.decoration;
-    return d is BoxDecoration && d.border != null;
-  });
+/// ¿Está [texto] dentro de un contenedor con fondo propio, es decir, la banda?
+///
+/// Se comprueba que exista un fondo, no cuál es. El tono se podrá querer
+/// distinto —más claro, más oscuro, de otro color en modo oscuro— y eso no debe
+/// romper nada. Lo que no puede volver a pasar es que la cabecera y el cuerpo
+/// compartan superficie, que era el defecto.
+bool sobreBanda(WidgetTester tester, String texto) {
+  final Iterable<Container> contenedores = tester.widgetList<Container>(
+    find.ancestor(of: find.text(texto), matching: find.byType(Container)),
+  );
+  return contenedores.any((Container c) => c.color != null);
 }
 
 void main() {
@@ -75,12 +73,12 @@ void main() {
     await dispositivos.cerrar();
   });
 
-  Widget montar() => ProviderScope(
+  Widget montar({String estado = 'ENTREGADO'}) => ProviderScope(
     overrides: [
       repositorioSesionProvider.overrideWithValue(sesion),
       repositorioDispositivosProvider.overrideWithValue(dispositivos),
       repositorioBandejaProvider.overrideWithValue(
-        RepositorioBandejaFalso(<MensajeRecibido>[_mensaje]),
+        RepositorioBandejaFalso(<MensajeRecibido>[_mensajeCon(estado)]),
       ),
     ],
     child: MaterialApp(
@@ -98,7 +96,29 @@ void main() {
       expect(find.text(_cuerpo), findsNothing);
     });
 
-    testWidgets('al abrirlo, el cuerpo aparece en un panel propio', (
+    testWidgets('al abrirlo, la cabecera se asienta sobre una banda', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(montar());
+      await tester.pumpAndSettle();
+
+      expect(
+        sobreBanda(tester, _titulo),
+        isFalse,
+        reason: 'plegado no lleva banda: ahí se hojea una lista',
+      );
+
+      await tester.tap(find.text(_titulo));
+      await tester.pumpAndSettle();
+
+      expect(
+        sobreBanda(tester, _titulo),
+        isTrue,
+        reason: 'abierto, el título va sobre la banda de cabecera',
+      );
+    });
+
+    testWidgets('el cuerpo se queda FUERA de la banda', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(montar());
@@ -108,29 +128,34 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(_cuerpo), findsOneWidget);
+      // Si el cuerpo cayera dentro de la misma banda que el título, la
+      // frontera no separaría nada y estaríamos como antes.
       expect(
-        enPanelConBorde(tester, _cuerpo),
-        isTrue,
-        reason: 'el contenido tiene que estar delimitado, no suelto',
+        sobreBanda(tester, _cuerpo),
+        isFalse,
+        reason: 'el cuerpo es contenido: va debajo de la cabecera, no dentro',
       );
     });
 
-    testWidgets('la cabecera se queda FUERA de ese panel', (
+    testWidgets('esto vale también para un mensaje YA LEÍDO', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(montar());
+      // Es el caso donde el primer intento fallaba. La tarjeta de un mensaje
+      // leído no lleva tinte, así que el recuadro que se usaba antes quedaba
+      // del mismo color que su fondo y no separaba nada — justo en el estado
+      // más común de la bandeja.
+      await tester.pumpWidget(montar(estado: 'CONFIRMADO'));
+      await tester.pumpAndSettle();
+
+      // La bandeja arranca en «Sin leer», y un mensaje confirmado no está ahí.
+      await tester.tap(find.textContaining('Todos'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text(_titulo));
       await tester.pumpAndSettle();
 
-      // Si el título cayera dentro del mismo recuadro que el cuerpo, la
-      // frontera no separaría nada y estaríamos como antes.
-      expect(
-        enPanelConBorde(tester, _titulo),
-        isFalse,
-        reason: 'el título es cabecera: va fuera del panel del contenido',
-      );
+      expect(sobreBanda(tester, _titulo), isTrue);
+      expect(sobreBanda(tester, _cuerpo), isFalse);
     });
 
     testWidgets('quién lo envía sigue viéndose con el mensaje abierto', (
