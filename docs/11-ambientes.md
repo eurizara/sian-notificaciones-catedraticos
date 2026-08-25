@@ -19,7 +19,7 @@ El procedimiento paso a paso para crear un ambiente desde cero está en el
 | Manual general | [/manuales/](https://sian-umg-bdm-dev.web.app/manuales/) | [/manuales/](https://sian-umg-bdm-qa.web.app/manuales/) | /manuales/ |
 | Manual del catedrático | [/manuales/catedratico/](https://sian-umg-bdm-dev.web.app/manuales/catedratico/) | [/manuales/catedratico/](https://sian-umg-bdm-qa.web.app/manuales/catedratico/) | /manuales/catedratico/ |
 | Consola | [abrir](https://console.firebase.google.com/project/sian-umg-bdm-dev/overview) | [abrir](https://console.firebase.google.com/project/sian-umg-bdm-qa/overview) | [abrir](https://console.firebase.google.com/project/sian-umg-bdm/overview) |
-| Se despliega | a mano | al fusionar a `develop` | al fusionar a `main`, con aprobación |
+| Se despliega | a mano | al fusionar a `qa` | al fusionar a `main`, con aprobación |
 | Datos | de prueba, acumulados | limpio desde el 24-08-2026 | vacío |
 | Estado | en uso | **certificado y en línea desde el 24-08-2026** | aprovisionado, sin publicar |
 
@@ -143,9 +143,9 @@ distinto a lo previsto.
 ## 6 · Cómo se promueve un cambio
 
 ```
-rama de trabajo  ──PR──▶  develop  ──automático──▶  QA
-                             │
-                             └──PR──▶  main  ──aprobación manual──▶  producción
+rama de trabajo  ──PR──▶  develop  ──PR──▶  qa  ──automático──▶  calidad
+                                             │
+                                             └──PR──▶  main  ──aprobación──▶  producción
 ```
 
 El pipeline vive en [.github/workflows/deploy.yml](../.github/workflows/deploy.yml).
@@ -156,7 +156,7 @@ Cada job arranca solo si la variable de su ambiente está puesta:
 
 | Variable | Efecto |
 |---|---|
-| `vars.QA_PROJECT_ID` | **puesta desde el 24-08-2026**: cada fusión a `develop` despliega QA |
+| `vars.QA_PROJECT_ID` | **puesta desde el 24-08-2026**: cada fusión a `qa` despliega QA |
 | `vars.PROD_PROJECT_ID` | vacía, el job de producción se salta; con valor, se despliega al fusionar a `main` tras aprobación |
 
 Es un interruptor deliberado: mientras un ambiente no esté listo, el job se omite en
@@ -173,17 +173,29 @@ lugar de fallar. Un repositorio en rojo permanente enseña a ignorar el rojo.
 
 ## 7 · Ramas
 
-No existen ramas `qa` ni `prod`, y no deben crearse. El ambiente al que va un cambio lo
-decide la rama en la que cae, no una rama con el nombre del ambiente:
+Hay tres ramas permanentes, una por ambiente:
 
-| Rama | Ambiente | Qué es |
-|---|---|---|
-| `develop` | calidad | rama por defecto; todo PR entra aquí |
-| `main` | producción | solo recibe fusiones desde `develop`, y despliega con aprobación |
+| Rama | Ambiente | Qué es | Al fusionar |
+|---|---|---|---|
+| `develop` | desarrollo | rama por defecto; todo PR de trabajo entra aquí | no despliega solo |
+| `qa` | calidad | lo que está bajo pruebas de calidad | despliega a QA |
+| `main` | producción | lo que está publicado | despliega con aprobación |
 
-Una rama por ambiente obligaría a mantener tres historias en paralelo y a llevar cada
-corrección a mano de una a otra. Con dos ramas, lo que se probó en calidad es
-literalmente el mismo commit que llega a producción.
+```
+feature/*  ──PR──▶  develop  ──PR──▶  qa  ──PR──▶  main
+```
+
+El cambio se promueve siempre hacia adelante y **siempre es el mismo commit**. Eso es lo
+que hace útil la rama intermedia: a producción no llega nada que no haya estado antes en
+calidad, y lo que se aprobó en calidad no se recompila contra otra base ni se rehace a
+mano. Si una corrección urgente entra por `hotfix/*` desde `main`, tiene que regresar
+también a `qa` y a `develop`, o la siguiente promoción la borra.
+
+Desarrollo se publica a mano, con:
+
+```bash
+bash scripts/generar-firebase-options.sh && cd app && flutter build web --release
+```
 
 El ambiente `produccion` de GitHub exige **revisor obligatorio**, y solo acepta
 despliegues desde ramas protegidas.

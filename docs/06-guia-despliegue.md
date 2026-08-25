@@ -537,11 +537,11 @@ Recorre esta lista en un teléfono real, no en el emulador del navegador:
 name: Despliegue
 on:
   push:
-    branches: [develop, main]
+    branches: [qa, main]
 
 jobs:
   qa:
-    if: github.ref == 'refs/heads/develop'
+    if: github.ref == 'refs/heads/qa'
     runs-on: ubuntu-latest
     environment: qa
     steps:

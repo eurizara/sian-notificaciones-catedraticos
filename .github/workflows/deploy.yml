@@ -1,16 +1,22 @@
 name: Despliegue
 
-# Esquema del documento 06, etapa F.1.
+# Una rama por ambiente (documento 11, sección 7):
 #
-#   develop → sian-umg-bdm-qa   automático
-#   main    → sian-umg-bdm-prod con aprobación manual obligatoria
+#   develop → integración. No despliega solo; desarrollo se publica a mano.
+#   qa      → sian-umg-bdm-qa  automático
+#   main    → sian-umg-bdm     con aprobación manual obligatoria
+#
+# El ambiente al que va un cambio lo decide la rama en la que cae. Una rama
+# intermedia significa que a producción no llega nada que no haya estado antes
+# en calidad, y que es el MISMO commit el que se promueve: no se recompila
+# contra otra base ni se rehace la corrección a mano.
 #
 # Ningún secreto vive en el repositorio (RNF-10): todos entran por los secrets
 # de GitHub Actions declarados en el documento 06, etapa F.2.
 
 on:
   push:
-    branches: [develop, main]
+    branches: [qa, main]
   workflow_dispatch:
 
 permissions:
@@ -19,10 +25,16 @@ permissions:
 jobs:
   qa:
     name: Desplegar a QA
-    # `vars.QA_PROJECT_ID` actúa de interruptor: mientras el ambiente QA no
-    # exista (iteración 2.1 del documento 08), el trabajo se omite en vez de
-    # fallar. Un repositorio en rojo permanente enseña a ignorar el rojo.
-    if: github.ref == 'refs/heads/develop' && vars.QA_PROJECT_ID != ''
+    # `vars.QA_PROJECT_ID` actúa de interruptor: si está vacía, el trabajo se
+    # omite en vez de fallar. Un repositorio en rojo permanente enseña a
+    # ignorar el rojo.
+    #
+    # Esa variable vive a NIVEL DE REPOSITORIO, no en el environment `qa`. El
+    # `if:` de un trabajo se evalúa antes de que GitHub aplique el ambiente, así
+    # que una variable de ambiente se leería vacía aquí y el trabajo se saltaría
+    # en silencio. Las demás variables sí viven en el environment, porque se
+    # leen dentro de los pasos.
+    if: github.ref == 'refs/heads/qa' && vars.QA_PROJECT_ID != ''
     runs-on: ubuntu-latest
     environment: qa
     steps:
