@@ -555,6 +555,9 @@ Ejecutadas contra `sian-umg-bdm-qa` el 24 de agosto de 2026:
 | C-10 | La base arranca limpia | Contar documentos de las seis colecciones | `invitaciones` 2 · todo lo demás 0 |
 | C-11 | Solo entran los dos usuarios previstos | Leer `invitaciones` | COORDINADOR y CATEDRATICO, uno cada uno |
 | C-12 | El código que se desplegó pasa sus pruebas | `npm test`, `flutter test`, lint, analyze | 257 + 290 pruebas, sin hallazgos |
+| C-13 | La clave VAPID viaja en el paquete servido | Buscarla dentro de `main.dart.js` ya publicado | presente |
+| C-14 | El proveedor de Google quedó habilitado | Consultar `defaultSupportedIdpConfigs` | `google.com` activo |
+| C-15 | Google acepta la URL de retorno | Pedir el `authorize` de Google con el `redirect_uri` de QA | HTTP 302 a la pantalla de acceso |
 
 **C-6 no es una formalidad.** El script que genera la configuración cargaba `.env.local`
 por encima de las variables exportadas, así que el primer paquete compilado «para QA»
@@ -562,6 +565,14 @@ apuntaba a desarrollo y no lo decía. Se detectó porque esta comprobación exis
 haya más de un ambiente, verificar contra cuál habla el paquete servido es parte del
 despliegue, no un extra.
 
-Queda fuera de esta certificación todo lo que depende de la clave VAPID y del proveedor
-de Google, que se habilitan a mano por ambiente: registro de notificaciones, entrega
-push e ingreso con Google. Se prueban con las rondas 1 y 3 una vez estén puestos.
+**C-15 tampoco es una formalidad.** En desarrollo, cambiar el dominio de autenticación
+dejó el ingreso con Google roto con un `Error 400: redirect_uri_mismatch`, y el síntoma
+aparece recién al pulsar el botón, con una cuenta real. La comprobación pide a Google el
+`authorize` con la URL de retorno del ambiente y mira si responde: si el `redirect_uri`
+no estuviera registrado, Google contesta el error ahí mismo, sin necesidad de entrar con
+ninguna cuenta.
+
+Lo que esta certificación **no** cubre es el recorrido completo con cuentas reales:
+entrar, redactar, enviar, recibir la notificación en el aparato y confirmar la lectura.
+Eso son las rondas 1 a 5, y se recorren con una cuenta de cada rol —la ronda que se
+recorrió solo con coordinación fue la que dejó pasar el defecto más caro del proyecto.
