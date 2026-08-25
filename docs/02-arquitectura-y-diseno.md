@@ -732,7 +732,83 @@ confirmación y hasta la última.
 
 ---
 
-## 11. Seguridad
+## 11. Identidad visual
+
+Los colores, la tipografía y los iconos se toman de la universidad, no se
+inventan. La razón es práctica: SIAN manda avisos que la gente tiene que creer,
+y un aviso se cree en parte por venir de donde dice venir.
+
+### Colores
+
+Los tres del escudo, muestreados del archivo original y no estimados a ojo, más
+el azul marino de los titulares del sitio `umg.edu.gt`:
+
+| Color | Uso | Contraste sobre blanco |
+|---|---|---|
+| `#003168` azul marino | Titulares y la banda de la portada | 12.81:1 |
+| `#1C72A5` azul del escudo | Color primario: barra, botones | 5.25:1 |
+| `#A32826` rojo de urgencia | **Solo** alertas urgentes (RF-ENT-05) | 7.27:1 |
+| `#AE8436` dorado del escudo | Filetes y elementos gráficos, nunca texto pequeño | 3.41:1 |
+
+El rojo institucional del escudo, `#CB3332`, no se usa como color de acción. Si
+el rojo fuera también el de los botones dejaría de significar «urgente» para
+significar «SIAN», y en una emergencia real eso importa. Se oscurece a `#A32826`
+para separarlo en luminancia del azul primario, porque los dos originales tienen
+una relación de contraste **entre sí** de 1.01: en escala de grises, o para
+quien no distingue el rojo del verde, son el mismo color.
+
+El sitio institucional usa además `#207FAF`, `#2984BB` y `#1D94CF`. Se midieron:
+4.45:1, 4.11:1 y 3.39:1 sobre blanco, y AA exige 4.5:1 para texto normal. Los
+tres se quedan cortos, así que no entran (RNF-13). Parecerse al sitio no llega
+hasta copiarle un problema de contraste.
+
+### Tipografía
+
+**Urbanist**, la del sitio institucional, empaquetada con la aplicación en
+`app/assets/fuentes` bajo SIL Open Font License 1.1. Va empaquetada y no traída
+de Google Fonts porque SIAN se usa instalada y a veces sin conexión: una fuente
+que llega por red se convierte, el día que no llega, en una pantalla con otra
+letra.
+
+### Iconos
+
+Los genera `scripts/generar-iconos.py` a partir del escudo, y su salida se
+versiona. Dos decisiones que el archivo explica en detalle:
+
+**Por debajo de 64 px no se usa el escudo.** El escudo es un anillo con el
+nombre completo de la universidad rodeando una figura. A 16 px —el tamaño de la
+pestaña del navegador— el anillo se vuelve un cerco de píxeles sueltos y la
+figura una mancha: queda «un círculo rojo con algo adentro», indistinguible de
+cualquier otro sello. En ese tamaño se usa una marca reducida con el anillo
+rojo y el campo azul del propio escudo. De 180 px en adelante vuelve el escudo
+entero.
+
+**Los iconos «maskable» llevan 20 % de margen.** Android aplica su propia
+máscara —círculo, cuadrado redondeado, gota— y recorta hasta un 20 % por lado.
+Los iconos anteriores tenían **0 % de margen**: el escudo llegaba al borde
+exacto del lienzo, así que en cualquier teléfono con máscara circular el anillo
+con «UNIVERSIDAD MARIANO GÁLVEZ» salía cortado por los cuatro costados.
+
+### La insignia del icono
+
+Con mensajes sin leer, sobre el icono de la aplicación instalada aparece un
+número (`navigator.setAppBadge`). Funciona en Android, en escritorio y en iOS
+16.4 en adelante, y en los tres **exige que la aplicación esté instalada**: en
+una pestaña no hay icono sobre el cual pintar.
+
+El número vale exactamente lo que dice el filtro «Sin leer», y no se le suma lo
+que está sin confirmar aunque también espere una acción. El motivo es que los
+dos números se ven juntos: la persona abre porque el icono decía «3», y lo
+primero que encuentra es la fila de filtros. Si ahí dijera «Sin leer 2», el
+número de afuera queda desmentido por el de adentro, y a partir de ahí ninguno
+de los dos se cree.
+
+Con la aplicación cerrada, quien mantiene el número es el service worker, que
+cuenta las notificaciones que siguen sin descartar —no está autenticado y no
+puede consultar Firestore—. Es una aproximación que se corrige sola en cuanto
+la aplicación se abre.
+
+## 12. Seguridad
 
 | Control | Implementación |
 |---------|----------------|
@@ -749,7 +825,7 @@ confirmación y hasta la última.
 
 ---
 
-## 12. Riesgos técnicos abiertos
+## 13. Riesgos técnicos abiertos
 
 | ID | Riesgo | Probabilidad | Impacto | Mitigación |
 |----|--------|:---:|:---:|------------|
@@ -762,7 +838,7 @@ confirmación y hasta la última.
 
 ---
 
-## 13. Plan de contingencia si R-01 se materializa
+## 14. Plan de contingencia si R-01 se materializa
 
 Si la prueba de resistencia en iOS demuestra que las notificaciones web no son confiables
 para alertas urgentes, se aplica esta secuencia, en orden:
@@ -784,7 +860,7 @@ aplicación web convencional: el paso 3 no requiere reescribir nada.
 
 ---
 
-## 14. Registros de decisión de arquitectura
+## 15. Registros de decisión de arquitectura
 
 Toda decisión relevante se documenta en `docs/adr/` con el formato: contexto, opciones
 consideradas, decisión, consecuencias y estado.

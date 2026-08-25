@@ -65,6 +65,23 @@ flutter:
   assets:
     - assets/escudo-umg.png
 
+  # Urbanist es la tipografía del sitio institucional umg.edu.gt. Va empaquetada
+  # y no cargada desde Google Fonts: SIAN se usa instalada y a veces sin
+  # conexión, y una fuente que llega por red se convierte, el día que no llega,
+  # en una pantalla con otra letra. La licencia (SIL OFL 1.1) permite
+  # redistribuirla; el texto está junto a los archivos.
+  fonts:
+    - family: Urbanist
+      fonts:
+        - asset: assets/fuentes/Urbanist-400.ttf
+          weight: 400
+        - asset: assets/fuentes/Urbanist-500.ttf
+          weight: 500
+        - asset: assets/fuentes/Urbanist-600.ttf
+          weight: 600
+        - asset: assets/fuentes/Urbanist-700.ttf
+          weight: 700
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

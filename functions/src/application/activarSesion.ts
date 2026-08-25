@@ -42,7 +42,7 @@ export interface PerfilUsuario {
   readonly zonaHoraria: string;
 }
 
-/** Custom claims que se siembran en el token (documento 02, sección 11). */
+/** Custom claims que se siembran en el token (documento 02, sección 12). */
 export interface ClaimsUsuario {
   readonly rol: Rol;
   readonly activo: boolean;
