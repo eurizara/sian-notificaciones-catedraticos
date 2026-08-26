@@ -158,7 +158,12 @@ rama de trabajo  ──PR──▶  develop  ──PR──▶  qa  ──autom�
                                              └──PR──▶  main  ──aprobación──▶  producción
 ```
 
-El pipeline vive en [.github/workflows/deploy.yml](../.github/workflows/deploy.yml).
+El pipeline vive en [.github/workflows/deploy.yml](../.github/workflows/deploy.yml), y la
+integración continua en [ci.yml](../.github/workflows/ci.yml). **Las tres ramas tienen que
+estar en las dos.** Al introducir `qa` se actualizó solo el de despliegue, y el efecto no
+se ve hasta que se intenta promover a producción: sin ninguna ejecución de integración
+continua sobre el commit de `qa`, el pull request a `main` queda bloqueado esperando unos
+checks obligatorios que nunca van a llegar.
 Cada ambiente tiene su propio *environment* de GitHub con sus variables y su cuenta de
 servicio, y ninguna credencial vive en el repositorio (RNF-10).
 
