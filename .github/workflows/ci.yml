@@ -4,11 +4,20 @@ name: Integración continua
 # se verifican aquí. Si este flujo no está en verde, la funcionalidad no está
 # terminada (documento 02, sección 7, «Definición de terminado»).
 
+# `qa` va en las dos listas. Se quedó fuera al introducir la rama, y el efecto
+# no se ve hasta que se intenta promover a producción: sin ninguna ejecución de
+# integración continua sobre el commit de `qa`, el pull request a `main` queda
+# bloqueado por unos checks obligatorios que nunca van a llegar. La rama
+# intermedia es justo la que más necesita estar en verde, porque es la que
+# gobierna el ambiente donde alguien está probando.
+#
+# `release/**` se conserva por si quedara alguna rama viva con ese nombre; la
+# convención ya no la usa, porque `qa` cumple su función (documento 02, §9).
 on:
   push:
-    branches: [main, develop, 'feature/**', 'release/**', 'hotfix/**']
+    branches: [main, qa, develop, 'feature/**', 'release/**', 'hotfix/**']
   pull_request:
-    branches: [main, develop]
+    branches: [main, qa, develop]
 
 concurrency:
   group: ci-${{ github.ref }}
