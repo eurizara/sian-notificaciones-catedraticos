@@ -18,10 +18,19 @@ export const TIPOS_EVENTO = [
   'SESION_RECHAZADA',
   'SESION_CERRADA',
   'USUARIO_CREADO',
+  // Registrar el aparato de alguien no es darlo de alta. Se anotaba como
+  // USUARIO_CREADO, y con eso el filtro «Altas de usuario» de la bitácora
+  // mostraba diecisiete altas donde había dos personas.
+  'DISPOSITIVO_REGISTRADO',
   'USUARIO_ROL_CAMBIADO',
   'USUARIO_DESACTIVADO',
   'USUARIO_REACTIVADO',
   'INVITACION_CREADA',
+  // Volver a cargar un correo que ya estaba en la lista NO es crearlo. La
+  // bitácora tiene valor probatorio (RF-BIT): si una carga masiva de doscientas
+  // líneas escribe doscientas «altas» cuando ciento noventa ya existían, el
+  // registro deja de servir para reconstruir qué pasó.
+  'INVITACION_ACTUALIZADA',
   'INVITACION_ELIMINADA',
   'GRUPO_CREADO',
   'GRUPO_MODIFICADO',

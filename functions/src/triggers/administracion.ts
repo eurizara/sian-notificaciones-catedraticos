@@ -132,22 +132,39 @@ export const crearInvitaciones = onCall(OPCIONES_FUNCION, async (peticion) => {
     // suelta es una carga masiva de una línea.
     if (typeof datos.csv === 'string' && datos.csv.trim().length > 0) {
       const resultado = interpretarCsv(datos.csv, solicitante.actor.uid);
-      await guardarInvitaciones(resultado.validas);
-      await escribirAsientos(
-        resultado.validas.map((i) =>
+      const guardado = await guardarInvitaciones(resultado.validas);
+      const rolDe = new Map(resultado.validas.map((i) => [i.correo, i.rolAsignado]));
+
+      // Cada asiento dice lo que de verdad ocurrió con ese correo. Antes se
+      // escribía «INVITACION_CREADA» para los tres casos, así que una carga
+      // repetida dejaba en la bitácora doscientas altas de gente que ya estaba.
+      await escribirAsientos([
+        ...guardado.creadas.map((correo) =>
           asiento(
             'INVITACION_CREADA',
             solicitante,
             'INVITACION',
-            i.correo,
-            `Invitación por carga masiva: ${i.correo} como ${i.rolAsignado}`,
-            { rolAsignado: i.rolAsignado, origenCarga: 'CSV' },
+            correo,
+            `Invitación por carga masiva: ${correo} como ${rolDe.get(correo)}`,
+            { rolAsignado: rolDe.get(correo), origenCarga: 'CSV' },
           ),
         ),
-      );
+        ...guardado.actualizadas.map((correo) =>
+          asiento(
+            'INVITACION_ACTUALIZADA',
+            solicitante,
+            'INVITACION',
+            correo,
+            `Invitación ya existente, actualizada a ${rolDe.get(correo)}: ${correo}`,
+            { rolAsignado: rolDe.get(correo), origenCarga: 'CSV' },
+          ),
+        ),
+      ]);
 
       return {
-        creadas: resultado.validas.length,
+        creadas: guardado.creadas.length,
+        actualizadas: guardado.actualizadas.length,
+        yaEntraron: guardado.yaEntraron,
         rechazadas: resultado.rechazadas,
       };
     }
@@ -159,19 +176,30 @@ export const crearInvitaciones = onCall(OPCIONES_FUNCION, async (peticion) => {
       creadaPor: solicitante.actor.uid,
     });
 
-    await guardarInvitaciones([invitacion]);
-    await escribirAsiento(
-      asiento(
-        'INVITACION_CREADA',
-        solicitante,
-        'INVITACION',
-        invitacion.correo,
-        `Invitación creada para ${invitacion.correo} como ${invitacion.rolAsignado}`,
-        { rolAsignado: invitacion.rolAsignado },
-      ),
-    );
+    const guardado = await guardarInvitaciones([invitacion]);
 
-    return { creadas: 1, rechazadas: [] };
+    if (guardado.yaEntraron.length === 0) {
+      const nueva = guardado.creadas.length === 1;
+      await escribirAsiento(
+        asiento(
+          nueva ? 'INVITACION_CREADA' : 'INVITACION_ACTUALIZADA',
+          solicitante,
+          'INVITACION',
+          invitacion.correo,
+          nueva
+            ? `Invitación creada para ${invitacion.correo} como ${invitacion.rolAsignado}`
+            : `Invitación ya existente, actualizada a ${invitacion.rolAsignado}: ${invitacion.correo}`,
+          { rolAsignado: invitacion.rolAsignado },
+        ),
+      );
+    }
+
+    return {
+      creadas: guardado.creadas.length,
+      actualizadas: guardado.actualizadas.length,
+      yaEntraron: guardado.yaEntraron,
+      rechazadas: [],
+    };
   } catch (e) {
     throw comoHttps(e);
   }

@@ -310,10 +310,34 @@ garantiza unicidad sin necesidad de consulta.
 |-------|------|-------------|
 | `rolAsignado` | string | Rol que se otorgará al consumirse |
 | `nombre` | string | Nombre esperado, para prellenar el perfil |
-| `consumida` | boolean | |
+| `consumida` | boolean | La invitación ya se usó. **Una carga masiva nunca lo reescribe** |
 | `consumidaPor` | string | UID resultante |
+| `consumidaEn` | timestamp | Cuándo se usó |
 | `creadaPor` | string | UID del coordinador |
 | `creadaEn` | timestamp | |
+
+**Volver a cargar un correo que ya está en la lista.** El identificador es el correo, así que
+una recarga no puede duplicar: cae sobre el mismo documento. Lo que decide qué pasa es si esa
+invitación ya se usó.
+
+| Estado previo | Qué ocurre |
+|---|---|
+| No existe | Se crea |
+| Existe y `consumida = false` | Se actualizan `rolAsignado` y `nombre`. Corregir una lista antes de que la gente entre es legítimo |
+| Existe y `consumida = true` | **No se toca nada**, y quien cargó recibe la lista de esos correos |
+
+A quien ya entró no se le toca la invitación porque su rol de verdad no vive aquí: vive en su
+perfil (`usuarios/{uid}`) y en sus custom claims. Cambiarlo en la invitación no se lo cambia a
+la persona; solo deja a los dos sitios diciendo cosas distintas. Se cambia desde la pantalla
+de usuarios, que sí mueve las dos (RF-USR-02).
+
+> **Esto se escribió después de romperlo.** La carga masiva escribía `consumida: false` sobre
+> todo lo que llegaba, con `merge: true` y un comentario que decía servir para lo contrario.
+> `merge` respeta los campos que **no** se mandan, y `consumida` iba en el objeto. Una persona
+> que ya había entrado quedó con `consumida: false` junto a su `consumidaPor` y su
+> `consumidaEn` intactos: un documento contradiciéndose. Y con eso desarmado deja de funcionar
+> la comprobación de `decidirActivacion` que rechaza a quien intenta usar una invitación que
+> otro ya consumió. La regla vive ahora en `decidirCarga`, en el dominio, con sus pruebas.
 
 ### 2.11 `configuracion/institucional`
 
