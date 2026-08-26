@@ -184,11 +184,23 @@ muy bien que se vea en las demás pruebas.
 
 ### Iteración 3.1 — Habilitar producción
 
-- Crear `sian-umg-bdm` con Blaze y alerta de presupuesto. *(Hecho el 24-08-2026; ver documento 11.)*
-- Proteger `main` y exigir aprobación manual en el ambiente `produccion` de GitHub.
-- Ejecutar la lista de verificación completa del documento 06, sección F.3.
-- Cargar la lista blanca institucional definitiva.
-- Pagar la deuda DT-07 antes de abrir a todos: nadie debe operar producción a ciegas.
+*Ejecutada el 26 de agosto de 2026.*
+
+- [x] Crear `sian-umg-bdm` con Blaze y alerta de presupuesto. *(24-08-2026; documento 11.)*
+- [x] Proteger `main` y exigir aprobación manual en el ambiente `produccion` de GitHub.
+- [x] Reglas de seguridad, índices, Storage y las 19 Functions desplegadas.
+- [x] CORS del bucket aplicado. No lo hace `firebase deploy` (documento 11, sección 4).
+- [x] Sembrar la primera invitación: `eua031989@gmail.com` como COORDINADOR.
+- [x] Manuales publicados, con la dirección del sitio resuelta en tiempo de ejecución.
+- [ ] Cargar la lista blanca institucional definitiva. *La hace coordinación desde la
+      aplicación, por carga masiva.*
+- [ ] Pagar la deuda **DT-07** (sin observabilidad ni alertas) antes de abrir a todos:
+      nadie debe operar producción a ciegas.
+- [ ] Pagar la deuda **DT-14** (los correos de recuperación caen en No deseado) antes de
+      que la gente empiece a olvidar contraseñas de verdad.
+
+> Las dos deudas abiertas no bloquean el arranque con coordinación, que es la semana 1
+> del despliegue escalonado. Sí bloquean la semana 3.
 
 ### Iteración 3.2 — Despliegue escalonado
 

@@ -228,7 +228,7 @@
 
   <ol class="pasos">
     <li><strong>Entre a SIAN.</strong> Abra
-        <a href="https://sian-umg-bdm-dev.web.app"><code>sian-umg-bdm-dev.web.app</code></a>
+        <a class="direccion" href="https://sian-umg-bdm.web.app"><code>sian-umg-bdm.web.app</code></a>
         y use <strong>Entrar con Google</strong> con su correo de la
         universidad. <a href="#entrar">Ver cómo entrar</a></li>
     <li><strong>Instale la aplicación en su celular.</strong> En iPhone es
@@ -267,7 +267,7 @@
   <p>No se descarga de ninguna tienda. Se abre desde el navegador, en esta
   dirección:</p>
 
-  <p><a href="https://sian-umg-bdm-dev.web.app"><code>https://sian-umg-bdm-dev.web.app</code></a></p>
+  <p><a class="direccion" href="https://sian-umg-bdm.web.app"><code>https://sian-umg-bdm.web.app</code></a></p>
 
   <div class="aviso">
     <strong>Funciona en cualquier dispositivo</strong>
@@ -303,7 +303,7 @@
   <h2>Cómo entrar</h2>
   <p class="entradilla">Igual en todos los dispositivos.</p>
 
-  <p>Abra <a href="https://sian-umg-bdm-dev.web.app"><code>sian-umg-bdm-dev.web.app</code></a>
+  <p>Abra <a class="direccion" href="https://sian-umg-bdm.web.app"><code>sian-umg-bdm.web.app</code></a>
   y verá la pantalla de inicio de sesión. Hay dos formas de entrar.</p>
   <figure>
     <img src="img/ingreso-escritorio.png" alt="La pantalla de inicio de sesión en una computadora." loading="lazy">
@@ -387,7 +387,7 @@
   </div>
 
   <ol class="pasos">
-    <li>Abra <code>sian-umg-bdm-dev.web.app</code> <strong>en Safari</strong>.
+    <li>Abra <code class="direccion">sian-umg-bdm.web.app</code> <strong>en Safari</strong>.
         Chrome y Firefox en iPhone no pueden hacer esto.</li>
     <li>Presione el botón <strong>Compartir</strong>: el cuadrado con una flecha
         hacia arriba, abajo en el centro de la pantalla.</li>
@@ -442,7 +442,7 @@
   </div>
 
   <ol class="pasos">
-    <li>Abra <code>sian-umg-bdm-dev.web.app</code> en <strong>Chrome</strong>.</li>
+    <li>Abra <code class="direccion">sian-umg-bdm.web.app</code> en <strong>Chrome</strong>.</li>
     <li>Chrome mostrará abajo un aviso de <strong>Instalar aplicación</strong>.
         Presiónelo.<br>
         Si no aparece: menú <strong>⋮</strong> (arriba a la derecha) →
@@ -468,7 +468,7 @@
   pestaña entre otras veinte.</p>
 
   <ol class="pasos">
-    <li>Abra <code>sian-umg-bdm-dev.web.app</code> en <strong>Chrome</strong> o
+    <li>Abra <code class="direccion">sian-umg-bdm.web.app</code> en <strong>Chrome</strong> o
         <strong>Edge</strong>.</li>
     <li>En la barra de direcciones, a la derecha, aparece un icono de
         <strong>instalar</strong> (una pantalla con una flecha hacia abajo).
@@ -1288,5 +1288,34 @@
   document.querySelectorAll('section').forEach(s => observador.observe(s));
 </script>
 
+
+<script>
+  // ───────────────────────────────────────────────────────────────────────────
+  // La dirección que enseña el manual es la del sitio que lo está sirviendo.
+  // ───────────────────────────────────────────────────────────────────────────
+  //
+  // Estaba escrita a mano, y era la de desarrollo. Publicado en producción, el
+  // manual le habría dicho a cada catedrático que instalara el ambiente de
+  // pruebas: la aplicación se ve idéntica, así que nadie lo habría notado hasta
+  // preguntarse por qué no le llegan los avisos que sí llegaron a los demás.
+  //
+  // El texto que viene escrito en el HTML es el de producción, de modo que si
+  // este script no corriera —JavaScript apagado, o el manual impreso— la
+  // dirección seguiría siendo la correcta para quien lo lee.
+  (function () {
+    var sitio = window.location.origin;
+    var anfitrion = window.location.host;
+    var nodos = document.querySelectorAll('.direccion');
+    for (var i = 0; i < nodos.length; i++) {
+      var nodo = nodos[i];
+      var texto = nodo.tagName === 'A' ? (nodo.querySelector('code') || nodo) : nodo;
+      var conProtocolo = /^https?:/.test(texto.textContent || '');
+      texto.textContent = conProtocolo ? sitio : anfitrion;
+      if (nodo.tagName === 'A') {
+        nodo.setAttribute('href', sitio);
+      }
+    }
+  })();
+</script>
 </body>
 </html>

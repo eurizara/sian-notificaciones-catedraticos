@@ -530,6 +530,7 @@ cada uno señala un paso que al guion le falta.
 
 | Hallazgo | Qué lo destapó | Paso que hay que añadir |
 |---|---|---|
+| El manual mandaba a instalar el ambiente de **desarrollo** | Revisar el manual antes de publicarlo en producción | Abrir el manual **desde el ambiente donde se va a publicar** y seguir sus pasos al pie de la letra |
 | Una recarga masiva reseteaba a quien ya había entrado | Cargar el CSV completo por segunda vez | Cargar la lista **dos veces** y revisar el estado de quien ya entró |
 | La carga decía «17 creadas» donde 16 ya existían | Mirar el mensaje después de recargar | Comparar el número que anuncia con el que había antes |
 | Registrar un aparato se anotaba como «alta de usuario» | Filtrar la bitácora por «Altas de usuario» | Contrastar el filtro contra la lista real de usuarios |
@@ -543,7 +544,14 @@ cada uno señala un paso que al guion le falta.
 | Girar el teléfono borraba el mensaje a medio escribir | Redactar en el celular | Girar el aparato **en mitad de cada formulario** |
 | iOS decía «notificaciones bloqueadas» estándolo | Abrir la aplicación varias veces seguidas | Reabrir la aplicación instalada tres veces y mirar la tarjeta |
 
-> **Los tres primeros salieron del mismo gesto: repetir algo.** Cargar la
+> **El del manual es el más silencioso de la lista.** La dirección del sitio
+> estaba escrita a mano en dieciocho sitios, y era la de desarrollo. Publicado
+> en producción, el manual le habría dicho a cada catedrático que instalara el
+> ambiente de pruebas. La aplicación se ve idéntica en los tres ambientes, así
+> que nadie lo habría notado hasta preguntarse por qué no le llegan los avisos
+> que sí llegaron a los demás. Nada de esto falla: simplemente sale mal.
+
+> **Tres de ellos salieron del mismo gesto: repetir algo.** Cargar la
 > misma lista dos veces, entrar dos veces, registrar el aparato dos veces. El
 > guion recorre cada paso una vez y da por hecho que repetirlo da lo mismo, y
 > casi siempre da lo mismo — hasta que hay estado de por medio. Todo paso que
