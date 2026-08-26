@@ -5,15 +5,15 @@ académico y a personal administrativo autorizado emitir notificaciones informat
 urgentes (texto, voz e imagen), programarlas, repetirlas con un patrón definido y llevar
 trazabilidad completa con confirmación de lectura.
 
-> **Estado:** Fase 1 completa y desplegada. Iteraciones 1.1 a 1.4 construidas, con
-> las rondas de prueba 1 a 5 superadas. Desde el 24 de agosto de 2026 las pruebas de
-> calidad corren en su propio ambiente ([plan](docs/08-plan-iteraciones.md)).
+> **Estado:** Fase 1 **en producción** desde el 26 de agosto de 2026. Iteraciones 1.1
+> a 1.4 construidas, rondas de prueba 1 a 5 superadas y ambiente de calidad certificado
+> ([plan](docs/08-plan-iteraciones.md)).
 >
 > | Ambiente | Aplicación | Manuales |
 > |---|---|---|
 > | Desarrollo | [sian-umg-bdm-dev.web.app](https://sian-umg-bdm-dev.web.app) | [/manuales](https://sian-umg-bdm-dev.web.app/manuales/) |
 > | **Calidad** | [sian-umg-bdm-qa.web.app](https://sian-umg-bdm-qa.web.app) | [/manuales](https://sian-umg-bdm-qa.web.app/manuales/) |
-> | Producción | aprovisionado, sin publicar | — |
+> | **Producción** | [sian-umg-bdm.web.app](https://sian-umg-bdm.web.app) | [/manuales](https://sian-umg-bdm.web.app/manuales/) |
 >
 > Detalle de cada ambiente en el [documento 11](docs/11-ambientes.md).
 

@@ -16,12 +16,12 @@ El procedimiento paso a paso para crear un ambiente desde cero está en el
 | Proyecto | `sian-umg-bdm-dev` | `sian-umg-bdm-qa` | `sian-umg-bdm` |
 | Número | 863854823370 | 186815040849 | 199298701333 |
 | Aplicación | https://sian-umg-bdm-dev.web.app | https://sian-umg-bdm-qa.web.app | https://sian-umg-bdm.web.app |
-| Manual general | [/manuales/](https://sian-umg-bdm-dev.web.app/manuales/) | [/manuales/](https://sian-umg-bdm-qa.web.app/manuales/) | /manuales/ |
-| Manual del catedrático | [/manuales/catedratico/](https://sian-umg-bdm-dev.web.app/manuales/catedratico/) | [/manuales/catedratico/](https://sian-umg-bdm-qa.web.app/manuales/catedratico/) | /manuales/catedratico/ |
+| Manual general | [/manuales/](https://sian-umg-bdm-dev.web.app/manuales/) | [/manuales/](https://sian-umg-bdm-qa.web.app/manuales/) | [/manuales/](https://sian-umg-bdm.web.app/manuales/) |
+| Manual del catedrático | [/manuales/catedratico/](https://sian-umg-bdm-dev.web.app/manuales/catedratico/) | [/manuales/catedratico/](https://sian-umg-bdm-qa.web.app/manuales/catedratico/) | [/manuales/catedratico/](https://sian-umg-bdm.web.app/manuales/catedratico/) |
 | Consola | [abrir](https://console.firebase.google.com/project/sian-umg-bdm-dev/overview) | [abrir](https://console.firebase.google.com/project/sian-umg-bdm-qa/overview) | [abrir](https://console.firebase.google.com/project/sian-umg-bdm/overview) |
 | Se despliega | a mano | al fusionar a `qa` | al fusionar a `main`, con aprobación |
-| Datos | de prueba, acumulados | limpio desde el 24-08-2026 | vacío |
-| Estado | en uso | **certificado y en línea desde el 24-08-2026** | aprovisionado, sin publicar |
+| Datos | de prueba, acumulados | de prueba, acumulados | **en operación desde el 26-08-2026** |
+| Estado | en uso | certificado el 24-08-2026 | **en producción desde el 26-08-2026** |
 
 Los tres cuelgan de la organización `miumg.edu.gt` (id 372264284580) y comparten una
 sola cuenta de facturación. El código es idéntico en los tres: lo único que cambia son
@@ -51,9 +51,19 @@ Para agregar a alguien más a QA:
 ARCHIVO_ENTORNO=$PWD/.env.qa.local npm run seed:invitacion -- --correo=alguien@miumg.edu.gt --rol=CATEDRATICO --proyecto=sian-umg-bdm-qa
 ```
 
-Producción tiene la lista blanca **vacía a propósito**. Sembrar la primera invitación
-ahí es el acto que abre el sistema a gente real, y se hace deliberadamente el día de la
-salida a producción, no antes.
+En producción la lista blanca arrancó con **una sola entrada**, el 26 de agosto de 2026:
+
+| Correo | Rol |
+|---|---|
+| `eua031989@gmail.com` | COORDINADOR |
+
+Sembrar esa primera invitación es el acto que abre el sistema a gente real, y por eso se
+hace deliberadamente el día de la salida, no antes. El resto de la planta entra por carga
+masiva desde la propia aplicación, hecha por quien coordina.
+
+> **Recargar una lista no altera a quien ya entró.** Si el archivo trae correos que ya
+> usaron su invitación, esos no se tocan y la pantalla los nombra. El detalle está en el
+> documento 05, sección 2.10.
 
 ---
 
@@ -157,7 +167,7 @@ Cada job arranca solo si la variable de su ambiente está puesta:
 | Variable | Efecto |
 |---|---|
 | `vars.QA_PROJECT_ID` | **puesta desde el 24-08-2026**: cada fusión a `qa` despliega QA |
-| `vars.PROD_PROJECT_ID` | vacía, el job de producción se salta; con valor, se despliega al fusionar a `main` tras aprobación |
+| `vars.PROD_PROJECT_ID` | **puesta desde el 26-08-2026**: cada fusión a `main` despliega producción, tras aprobación |
 
 Es un interruptor deliberado: mientras un ambiente no esté listo, el job se omite en
 lugar de fallar. Un repositorio en rojo permanente enseña a ignorar el rojo.

@@ -586,15 +586,26 @@ git conserva todo.
 
 ### F.3 Antes de habilitar producción
 
-- [ ] Los tres proyectos de Firebase tienen alerta de presupuesto de 1 USD
-- [ ] Existen exactamente 3 jobs de Cloud Scheduler en total
-- [ ] Las pruebas de reglas de seguridad pasan en la integración continua
+- [x] Hay alerta de presupuesto sobre la cuenta de facturación, que cubre los tres ambientes
+- [x] Existen exactamente 3 jobs de Cloud Scheduler en total
+- [x] Las pruebas de reglas de seguridad pasan en la integración continua
 - [ ] Se ejecutó el simulacro con al menos 10 dispositivos reales
-- [ ] La lista blanca de correos institucionales está cargada y verificada
-- [ ] El branding institucional está aplicado
-- [ ] `main` está protegida y `produccion` exige aprobación
-- [ ] El documento de deuda técnica está actualizado
-- [ ] Se verificó que no hay secretos en el historial de git
+- [x] La lista blanca arranca con el coordinador; el resto entra por carga masiva
+- [x] El branding institucional está aplicado
+- [x] `main` está protegida y `produccion` exige aprobación
+- [x] El documento de deuda técnica está actualizado
+- [x] Se verificó que no hay secretos en el historial de git
+- [x] **Los manuales no nombran otro ambiente.** La dirección se resuelve en tiempo de
+      ejecución desde el sitio que los sirve. Estaba escrita a mano, apuntando a
+      desarrollo, y publicada en producción habría mandado a instalar el ambiente de
+      pruebas: la aplicación se ve idéntica, así que nadie lo habría notado
+- [x] **El CORS del bucket de producción está aplicado.** No lo hace `firebase deploy`
+- [ ] **La clave VAPID de producción está puesta.** Sin ella no llega ninguna notificación,
+      y la aplicación funciona en todo lo demás sin decir palabra. Se genera a mano en la
+      consola: es por proyecto y no tiene API
+- [ ] **El proveedor de Google está habilitado en producción.** El botón aparece en
+      pantalla aunque no lo esté, y falla al pulsarlo. Ese clic crea el cliente OAuth,
+      que la API no crea sola
 
 ```bash
 # Verificación de secretos filtrados
