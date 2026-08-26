@@ -248,10 +248,46 @@ abstract final class Textos {
 
   static String confirmarRevocar(String correo) =>
       '¿Revocar la invitación de $correo? Podrá volver a invitarse después.';
-  static String cargaCorrecta(int creadas) =>
-      creadas == 1 ? '1 invitación creada.' : '$creadas invitaciones creadas.';
-  static String cargaParcial(int creadas, int rechazadas) =>
-      '$creadas creadas, $rechazadas rechazadas.';
+  /// Resumen de una carga, contando cada cosa por su nombre.
+  ///
+  /// Antes decía «N invitaciones creadas» con el total de líneas válidas, así
+  /// que volver a cargar una lista de doscientos correos anunciaba doscientas
+  /// altas aunque ciento noventa ya estuvieran. Quien carga necesita saber
+  /// **qué cambió**, no cuántas líneas se leyeron.
+  static String resumenCarga({
+    required int creadas,
+    required int actualizadas,
+    required int yaEntraron,
+    required int rechazadas,
+  }) {
+    final List<String> partes = <String>[];
+    if (creadas > 0) {
+      partes.add(creadas == 1 ? '1 invitación nueva' : '$creadas invitaciones nuevas');
+    }
+    if (actualizadas > 0) {
+      partes.add(
+        actualizadas == 1 ? '1 actualizada' : '$actualizadas actualizadas',
+      );
+    }
+    if (yaEntraron > 0) {
+      partes.add(
+        yaEntraron == 1 ? '1 sin tocar porque ya entró' : '$yaEntraron sin tocar porque ya entraron',
+      );
+    }
+    if (rechazadas > 0) {
+      partes.add(rechazadas == 1 ? '1 rechazada' : '$rechazadas rechazadas');
+    }
+    if (partes.isEmpty) {
+      return 'No había nada que cargar.';
+    }
+    return '${partes.join(' · ')}.';
+  }
+
+  static const String tituloYaEntraron = 'Correos que ya habían entrado';
+  static const String explicacionYaEntraron =
+      'Estas personas ya usaron su invitación, así que no se tocó. Para '
+      'cambiarles el rol, hazlo desde la lista de usuarios: ahí sí les cambia '
+      'el rol de verdad.';
 
   // --- Bitácora ------------------------------------------------------------
   static const String filtroTipoEvento = 'Tipo de evento';

@@ -4,7 +4,7 @@
 
 import type { PerfilUsuario } from '../application/activarSesion';
 import type { AsientoBitacora } from '../domain/bitacora';
-import type { Invitacion } from '../domain/invitacion';
+import { decidirCarga, type Invitacion } from '../domain/invitacion';
 import type { Rol } from '../domain/tipos';
 import { DOC_CONFIGURACION, FieldValue, RUTAS, aTimestamp, db } from './firebase';
 
@@ -61,24 +61,111 @@ export async function buscarInvitacion(correo: string): Promise<Invitacion | nul
   };
 }
 
-export async function guardarInvitaciones(invitaciones: readonly Invitacion[]): Promise<void> {
+/** Qué pasó con cada correo de una carga. */
+export interface ResultadoGuardado {
+  /** No estaban en la lista. Son las altas de verdad. */
+  readonly creadas: readonly string[];
+  /** Estaban, sin haber entrado todavía. Se les actualizó rol y nombre. */
+  readonly actualizadas: readonly string[];
+  /** Estaban y ya entraron. **No se tocan**: ver la nota de abajo. */
+  readonly yaEntraron: readonly string[];
+}
+
+/**
+ * Escribe una carga de invitaciones sin pisar lo que ya pasó.
+ *
+ * ────────────────────────────────────────────────────────────────────────────
+ * `merge: true` NO protege un campo que va en el objeto que se escribe.
+ * ────────────────────────────────────────────────────────────────────────────
+ *
+ * La versión anterior escribía `consumida: i.consumida` con `merge: true` y un
+ * comentario que decía «para no borrar `consumida`/`consumidaPor` si se vuelve
+ * a cargar un correo que ya entró». El comentario describía la intención; el
+ * código hacía lo contrario. `merge` respeta los campos **que no mandas**, y
+ * `consumida` iba en el objeto, siempre en `false`, porque `crearInvitacion`
+ * lo fija así para toda invitación nueva.
+ *
+ * El resultado, visto en la carga masiva del 25 de agosto de 2026: una persona
+ * que ya había entrado quedó con `consumida: false` y, a la vez, con su
+ * `consumidaPor` y su `consumidaEn` intactos. Un documento que se contradice a
+ * sí mismo. Y con eso desarmado, el camino 5 de `decidirActivacion` —«sin
+ * perfil, invitación ya consumida por OTRO uid → rechazo»— deja de proteger.
+ *
+ * Ahora se lee antes de escribir y cada caso se trata como lo que es:
+ *
+ *   · No existe        → se crea.
+ *   · Existe sin usar  → se actualizan rol y nombre. Corregir una lista antes
+ *                        de que la gente entre es legítimo y frecuente.
+ *   · Existe y ya usó  → **no se toca nada**. Cambiarle el rol en la invitación
+ *                        no le cambia el rol de verdad, que vive en su perfil y
+ *                        en sus claims: solo dejaría a los dos diciendo cosas
+ *                        distintas. El rol de alguien que ya entró se cambia
+ *                        desde la pantalla de usuarios, que sí mueve las dos.
+ *
+ * Quien carga recibe los tres grupos por separado, en lugar de un número que
+ * cuenta como «creadas» cosas que ya estaban.
+ */
+export async function guardarInvitaciones(
+  invitaciones: readonly Invitacion[],
+): Promise<ResultadoGuardado> {
+  if (invitaciones.length === 0) {
+    return { creadas: [], actualizadas: [], yaEntraron: [] };
+  }
+
+  const referencias = invitaciones.map((i) => db.collection(RUTAS.invitaciones).doc(i.correo));
+  const existentes = await db.getAll(...referencias);
+
+  const creadas: string[] = [];
+  const actualizadas: string[] = [];
+  const yaEntraron: string[] = [];
   const lote = db.batch();
-  for (const i of invitaciones) {
+
+  invitaciones.forEach((i, indice) => {
+    const referencia = referencias[indice];
+    const actual = existentes[indice];
+    if (referencia === undefined || actual === undefined) {
+      return;
+    }
+
+    // La regla vive en el dominio y está probada ahí; aquí solo se aplica.
+    const destino = decidirCarga({
+      existe: actual.exists,
+      consumida: actual.get('consumida') === true,
+    });
+
+    if (destino === 'NO_TOCAR') {
+      yaEntraron.push(i.correo);
+      return;
+    }
+
+    if (destino === 'CREAR') {
+      lote.set(referencia, {
+        rolAsignado: i.rolAsignado,
+        nombre: i.nombre,
+        consumida: false,
+        creadaPor: i.creadaPor,
+        creadaEn: aTimestamp(i.creadaEn),
+      });
+      creadas.push(i.correo);
+      return;
+    }
+
+    // `consumida` NO viaja aquí. Es justo el campo que no debe tocarse.
     lote.set(
-      db.collection(RUTAS.invitaciones).doc(i.correo),
+      referencia,
       {
         rolAsignado: i.rolAsignado,
         nombre: i.nombre,
-        consumida: i.consumida,
         creadaPor: i.creadaPor,
         creadaEn: aTimestamp(i.creadaEn),
       },
-      // `merge` para no borrar `consumida`/`consumidaPor` si se vuelve a
-      // cargar un correo que ya entró.
       { merge: true },
     );
-  }
+    actualizadas.push(i.correo);
+  });
+
   await lote.commit();
+  return { creadas, actualizadas, yaEntraron };
 }
 
 export async function marcarInvitacionConsumida(correo: string, uid: string): Promise<void> {

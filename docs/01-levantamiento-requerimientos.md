@@ -128,7 +128,7 @@ se le crea perfil, y el intento queda registrado en la bitácora.
 
 | ID | Requisito | Prioridad |
 |----|-----------|:---:|
-| RF-USR-01 | El coordinador puede registrar la lista de correos institucionales autorizados, individualmente o por carga masiva desde archivo CSV | D |
+| RF-USR-01 | El coordinador puede registrar la lista de correos institucionales autorizados, individualmente o por carga masiva desde archivo CSV, sin que una recarga altere a quien ya entró | D |
 | RF-USR-02 | El coordinador puede asignar y cambiar el rol de cualquier usuario | D |
 | RF-USR-03 | El sistema permite crear grupos de destinatarios con nombre y descripción | D |
 | RF-USR-04 | El sistema permite agregar y quitar catedráticos de un grupo | D |

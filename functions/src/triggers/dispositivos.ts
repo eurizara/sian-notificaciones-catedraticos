@@ -122,7 +122,7 @@ export const registrarDispositivo = onCall(OPCIONES_FUNCION, async (peticion) =>
 
     await escribirAsiento(
       crearAsiento({
-        tipo: yaExistia ? 'SESION_INICIADA' : 'USUARIO_CREADO',
+        tipo: yaExistia ? 'SESION_INICIADA' : 'DISPOSITIVO_REGISTRADO',
         actor: { uid, correo, rol },
         entidad: 'USUARIO',
         entidadId: uid,

@@ -280,24 +280,34 @@ class _Invitaciones extends ConsumerWidget {
         return;
       }
 
-      // El detalle de lo rechazado importa tanto como el conteo de lo creado:
-      // sin el número de línea, corregir un CSV de 200 filas es adivinar.
-      final String detalle = r.rechazadas.isEmpty
-          ? Textos.cargaCorrecta(r.creadas)
-          : Textos.cargaParcial(r.creadas, r.rechazadas.length);
+      // El detalle importa tanto como el conteo: sin el número de línea,
+      // corregir un CSV de 200 filas es adivinar; y sin separar lo creado de lo
+      // que ya estaba, una recarga completa parece un alta masiva.
+      final String detalle = Textos.resumenCarga(
+        creadas: r.creadas,
+        actualizadas: r.actualizadas,
+        yaEntraron: r.yaEntraron.length,
+        rechazadas: r.rechazadas.length,
+      );
+
+      final bool hayDetalle = r.rechazadas.isNotEmpty || r.yaEntraron.isNotEmpty;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(detalle),
           duration: const Duration(seconds: 6),
-          action: r.rechazadas.isEmpty
+          action: !hayDetalle
               ? null
               : SnackBarAction(
                   label: Textos.botonVerDetalle,
                   onPressed: () => showDialog<void>(
                     context: context,
                     builder: (BuildContext c) => AlertDialog(
-                      title: const Text(Textos.tituloLineasRechazadas),
+                      title: Text(
+                        r.rechazadas.isNotEmpty
+                            ? Textos.tituloLineasRechazadas
+                            : Textos.tituloYaEntraron,
+                      ),
                       content: SizedBox(
                         width: 420,
                         child: ListView(
@@ -310,6 +320,30 @@ class _Invitaciones extends ConsumerWidget {
                                 leading: Text('${x.numero}'),
                                 title: Text(x.error),
                               ),
+
+                            // Quien ya entró no es un error de la carga: es
+                            // información que hay que dar, porque su rol NO
+                            // cambió y quien cargó la lista probablemente creía
+                            // que sí.
+                            if (r.yaEntraron.isNotEmpty) ...<Widget>[
+                              if (r.rechazadas.isNotEmpty) const Divider(),
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                                child: Text(
+                                  Textos.explicacionYaEntraron,
+                                  style: Theme.of(c).textTheme.bodySmall,
+                                ),
+                              ),
+                              for (final String correo in r.yaEntraron)
+                                ListTile(
+                                  dense: true,
+                                  leading: const Icon(
+                                    Icons.how_to_reg_outlined,
+                                    size: 20,
+                                  ),
+                                  title: Text(correo),
+                                ),
+                            ],
                           ],
                         ),
                       ),
