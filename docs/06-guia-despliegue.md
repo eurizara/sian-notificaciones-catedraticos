@@ -624,6 +624,7 @@ git log -p | grep -iE "AIza|-----BEGIN|serviceAccount" || echo "Sin secretos apa
 | En iOS no llega ninguna notificación | La aplicación no está instalada en la pantalla de inicio, o iOS es anterior a 16.4 | Instructivo de instalación obligatorio (documento 03, sección 3) |
 | En iOS dejan de llegar tras varios envíos | Riesgo R-01, conocido y reportado por la comunidad | Refrescar el token en cada apertura; si persiste, activar el plan de contingencia |
 | `firebase deploy --only functions` falla por facturación | El proyecto sigue en plan Spark | Activar Blaze (etapa C.2) |
+| `Permissions denied enabling <api>.googleapis.com` | La cuenta de servicio del pipeline no puede habilitar APIs, y `firebase deploy` intenta encender la que falte | Habilitar esa API en el proyecto con una cuenta de propietario. Antes de estrenar un ambiente, comparar sus APIs contra uno que ya despliegue bien (documento 11, sección 4) |
 | El token de sesión no trae el rol | Los custom claims se sembraron después de emitir el token | Llamar a `getIdToken(forceRefresh: true)` después de asignar el rol |
 | El despachador no dispara nada | El job de Cloud Scheduler no existe o apunta a la URL equivocada | `gcloud scheduler jobs list` y verificar la URI |
 | Firestore rechaza una consulta por falta de índice | El índice compuesto no está declarado | Copiar el enlace del mensaje de error, o agregarlo a `firestore.indexes.json` y desplegar |
