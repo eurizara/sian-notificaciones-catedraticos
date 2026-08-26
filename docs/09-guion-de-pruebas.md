@@ -530,6 +530,9 @@ cada uno señala un paso que al guion le falta.
 
 | Hallazgo | Qué lo destapó | Paso que hay que añadir |
 |---|---|---|
+| Una recarga masiva reseteaba a quien ya había entrado | Cargar el CSV completo por segunda vez | Cargar la lista **dos veces** y revisar el estado de quien ya entró |
+| La carga decía «17 creadas» donde 16 ya existían | Mirar el mensaje después de recargar | Comparar el número que anuncia con el que había antes |
+| Registrar un aparato se anotaba como «alta de usuario» | Filtrar la bitácora por «Altas de usuario» | Contrastar el filtro contra la lista real de usuarios |
 | La insignia del icono no aparecía nunca en iPhone | Instalar la aplicación y mandarse un aviso | Probar la insignia **en el aparato instalado**, no solo con pruebas |
 | La insignia decía 3 donde había 1 mensaje | Un aviso que necesitó sus reintentos de entrega | Comprobar el número **después de un reintento**, no solo tras una entrega limpia |
 | La bandeja tardaba segundos en mostrar el aviso nuevo | Abrir la aplicación al recibir uno | Cronometrar **desde que se abre hasta que aparece**, no solo que aparezca |
@@ -539,6 +542,13 @@ cada uno señala un paso que al guion le falta.
 | Un icono nuevo tardaba una semana en aparecer | Un despliegue con un botón nuevo | Comprobar los cambios en la **aplicación instalada**, no solo en una pestaña |
 | Girar el teléfono borraba el mensaje a medio escribir | Redactar en el celular | Girar el aparato **en mitad de cada formulario** |
 | iOS decía «notificaciones bloqueadas» estándolo | Abrir la aplicación varias veces seguidas | Reabrir la aplicación instalada tres veces y mirar la tarjeta |
+
+> **Los tres primeros salieron del mismo gesto: repetir algo.** Cargar la
+> misma lista dos veces, entrar dos veces, registrar el aparato dos veces. El
+> guion recorre cada paso una vez y da por hecho que repetirlo da lo mismo, y
+> casi siempre da lo mismo — hasta que hay estado de por medio. Todo paso que
+> escriba algo merece hacerse **dos veces seguidas** y comprobar que la segunda
+> no deshace la primera.
 
 > **La insignia merece una nota aparte.** El código llamaba a
 > `clearAppBadge()` cuando `registration.getNotifications()` daba cero. En

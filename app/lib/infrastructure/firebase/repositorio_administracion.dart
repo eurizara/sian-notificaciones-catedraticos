@@ -78,10 +78,27 @@ class AsientoVista {
 }
 
 /// Resultado de una carga masiva, con el detalle de lo rechazado.
+///
+/// Los tres primeros números son cosas distintas y por eso van separados:
+/// crear una invitación, corregir una que todavía nadie usó, y toparse con una
+/// que ya se usó no son el mismo suceso. Contarlas juntas —como se hacía— hacía
+/// que recargar una lista completa anunciara altas que no ocurrieron.
 class ResultadoCarga {
-  const ResultadoCarga({required this.creadas, required this.rechazadas});
+  const ResultadoCarga({
+    required this.creadas,
+    required this.rechazadas,
+    this.actualizadas = 0,
+    this.yaEntraron = const <String>[],
+  });
 
+  /// No estaban en la lista blanca.
   final int creadas;
+
+  /// Estaban, sin haber entrado todavía: se les actualizó rol y nombre.
+  final int actualizadas;
+
+  /// Estaban y ya entraron. No se tocaron.
+  final List<String> yaEntraron;
 
   /// Pares «número de línea → motivo».
   final List<({int numero, String error})> rechazadas;
@@ -226,6 +243,11 @@ class RepositorioAdministracion {
 
     return ResultadoCarga(
       creadas: (m['creadas'] as num?)?.toInt() ?? 0,
+      actualizadas: (m['actualizadas'] as num?)?.toInt() ?? 0,
+      yaEntraron: ((m['yaEntraron'] as List<Object?>?) ?? <Object?>[])
+          .map((Object? e) => e?.toString() ?? '')
+          .where((String e) => e.isNotEmpty)
+          .toList(),
       rechazadas: rechazadas.map((Object? e) {
         final Map<Object?, Object?> x =
             (e as Map<Object?, Object?>?) ?? <Object?, Object?>{};

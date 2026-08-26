@@ -66,6 +66,48 @@ export function crearInvitacion(entrada: EntradaInvitacion): Invitacion {
   });
 }
 
+/** Qué hacer con un correo que llega en una carga. */
+export type DestinoCarga = 'CREAR' | 'ACTUALIZAR' | 'NO_TOCAR';
+
+/** Lo que la lista blanca ya sabía de ese correo. */
+export interface EstadoEnLista {
+  readonly existe: boolean;
+  readonly consumida: boolean;
+}
+
+/**
+ * Decide qué hacer con un correo que vuelve a llegar en una carga (RF-USR-01).
+ *
+ * ────────────────────────────────────────────────────────────────────────────
+ * A quien YA ENTRÓ no se le toca la invitación.
+ * ────────────────────────────────────────────────────────────────────────────
+ *
+ * Los tres casos no son el mismo suceso, y tratarlos igual fue el defecto:
+ *
+ *   · No existe        → se crea. Es un alta de verdad.
+ *   · Existe sin usar  → se actualizan rol y nombre. Corregir una lista antes
+ *                        de que la gente entre es legítimo y frecuente: se
+ *                        equivocó una tilde, o alguien pasa de catedrático a
+ *                        coordinación antes de su primer acceso.
+ *   · Existe y ya usó  → no se toca nada. Su rol de verdad vive en su perfil y
+ *                        en sus claims, no aquí: cambiarlo en la invitación no
+ *                        se lo cambia a la persona, solo deja a los dos sitios
+ *                        diciendo cosas distintas. Se cambia desde la pantalla
+ *                        de usuarios, que sí mueve las dos.
+ *
+ * Antes, una recarga escribía `consumida: false` sobre quien ya había entrado.
+ * El documento quedaba contradiciéndose —`consumida` en falso junto a su
+ * `consumidaPor` y su `consumidaEn`— y con eso se desarmaba la comprobación de
+ * `decidirActivacion` que rechaza a quien intenta usar una invitación que otro
+ * ya consumió.
+ */
+export function decidirCarga(actual: EstadoEnLista): DestinoCarga {
+  if (!actual.existe) {
+    return 'CREAR';
+  }
+  return actual.consumida ? 'NO_TOCAR' : 'ACTUALIZAR';
+}
+
 /** Resultado de interpretar una línea del CSV de carga masiva. */
 export interface LineaCsv {
   readonly numero: number;

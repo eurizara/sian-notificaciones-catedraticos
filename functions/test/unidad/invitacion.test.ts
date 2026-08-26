@@ -6,6 +6,7 @@ import { ErrorValidacion } from '../../src/domain/errores';
 import {
   MAX_INVITACIONES_POR_CARGA,
   crearInvitacion,
+  decidirCarga,
   interpretarCsv,
 } from '../../src/domain/invitacion';
 import { esperarCodigo } from './ayudas';
@@ -147,5 +148,46 @@ describe('RF-USR-01 · carga masiva por CSV', () => {
     ).join('\n');
 
     expect(() => interpretarCsv(csv, CREADOR)).toThrow(ErrorValidacion);
+  });
+});
+
+/**
+ * Volver a cargar un correo que ya está en la lista — RF-USR-01.
+ *
+ * ────────────────────────────────────────────────────────────────────────────
+ * Es el caso que rompió la carga masiva del 25 de agosto de 2026.
+ * ────────────────────────────────────────────────────────────────────────────
+ *
+ * La carga escribía `consumida: false` sobre TODO lo que llegaba, incluida
+ * gente que ya había entrado. El documento quedaba diciendo que la invitación
+ * seguía sin usar mientras conservaba su `consumidaPor` y su `consumidaEn`: se
+ * contradecía a sí mismo, y con eso desarmaba la comprobación de
+ * `decidirActivacion` que rechaza a quien intenta usar una invitación ajena ya
+ * consumida.
+ */
+describe('decidirCarga', () => {
+  it('un correo que no está en la lista se crea', () => {
+    expect(decidirCarga({ existe: false, consumida: false })).toBe('CREAR');
+  });
+
+  it('un correo que está pero nadie ha usado se actualiza', () => {
+    // Corregir una lista antes de que la gente entre es legítimo: una tilde
+    // mal puesta, o alguien que pasa a coordinación antes de su primer acceso.
+    expect(decidirCarga({ existe: true, consumida: false })).toBe('ACTUALIZAR');
+  });
+
+  it('un correo de alguien que YA ENTRÓ no se toca', () => {
+    // Su rol de verdad vive en su perfil y en sus claims. Cambiarlo aquí no se
+    // lo cambia a la persona: solo deja a los dos sitios en desacuerdo.
+    expect(decidirCarga({ existe: true, consumida: true })).toBe('NO_TOCAR');
+  });
+
+  it('«ya entró» manda sobre cualquier otra cosa', () => {
+    // La propiedad que sostiene todo lo anterior: si la invitación consta como
+    // consumida, ninguna carga la reescribe. Si alguien invierte este orden,
+    // vuelve el defecto exacto.
+    for (const existe of [true]) {
+      expect(decidirCarga({ existe, consumida: true })).toBe('NO_TOCAR');
+    }
   });
 });
