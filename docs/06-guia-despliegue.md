@@ -32,7 +32,7 @@ funciona primero.
 |-------------|:---:|----------|
 | Git | 2.40 | Control de versiones |
 | Node.js | 20 LTS | Cloud Functions e interfaz de línea de comandos de Firebase |
-| Flutter SDK | 3.24 | Aplicación web y futura compilación nativa |
+| Flutter SDK | 3.24 (referencia: 3.44) | Aplicación web y futura compilación nativa |
 | Java JDK | 17 | Requerido por los emuladores de Firebase |
 | Firebase CLI | 13 | Despliegue y emuladores |
 | Un editor | — | VS Code con las extensiones de Flutter y Dart |
@@ -81,7 +81,7 @@ flutter doctor         # todo en verde salvo lo relativo a Android/iOS
 
 > `flutter doctor` marcará en rojo las herramientas de Android Studio y Xcode. **Para este
 > proyecto no importa**, porque compilamos a web. Solo harían falta si más adelante se activa
-> el plan de contingencia del documento 02, sección 11.
+> el plan de contingencia del documento 02, sección 14.
 
 Habilita el objetivo web una sola vez:
 
@@ -180,11 +180,15 @@ git push
 
 En `https://console.firebase.google.com`, crea **tres proyectos separados**:
 
-| Alias | Nombre sugerido | Cuándo crearlo |
-|-------|-----------------|----------------|
-| `dev` | `sian-dev` | Ahora |
-| `qa` | `sian-qa` | Al entrar a fase de pruebas |
-| `prod` | `sian-prod` | Al aprobar el paso a producción |
+| Alias | Proyecto | Creado |
+|-------|----------|--------|
+| `dev` | `sian-umg-bdm-dev` | 3 de agosto de 2026 |
+| `qa` | `sian-umg-bdm-qa` | 24 de agosto de 2026 |
+| `prod` | `sian-umg-bdm` | 24 de agosto de 2026 |
+
+> Los tres ya existen. El estado de cada uno, sus URL y quién tiene acceso están en el
+> [documento 11](11-ambientes.md); esta etapa queda como el procedimiento a seguir si
+> hubiera que rehacer un ambiente desde cero.
 
 Desactiva Google Analytics en `dev` y `qa`; actívalo solo en `prod` si lo consideras útil.
 
@@ -195,10 +199,14 @@ Necesario para Cloud Functions, Cloud Storage y Cloud Scheduler.
 1. En la consola de Firebase, ve a **Configuración → Uso y facturación → Detalles y
    configuración**.
 2. Selecciona **Blaze — Pago por uso** y vincula una cuenta de facturación.
-3. **Antes de seguir**, ve a **Modificar presupuesto** y fija una alerta de **1 USD**
-   mensual. No es opcional (RNF-18).
-4. En Google Cloud Console → Billing → Budgets, agrega tu correo como destinatario de la
-   alerta.
+3. **Antes de seguir**, fija una alerta de presupuesto. No es opcional (RNF-18).
+4. En Google Cloud Console → Billing → Budgets, agrega tu correo como destinatario.
+
+> Una sola cuenta de facturación sirve a los tres ambientes, y el presupuesto se define
+> sobre la cuenta, no sobre cada proyecto: un único aviso cubre dev, QA y producción.
+> El que está puesto es de **10 USD mensuales**, con avisos al 50 %, 90 %, 100 % y al
+> 100 % proyectado. El desglose del consumo real medido está en el documento 11,
+> sección 5.
 
 > Con el consumo proyectado en el documento 05, sección 7, el costo esperado es **0.00 USD**.
 > La alerta existe para enterarte de inmediato si algo se comporta distinto a lo previsto.
@@ -231,9 +239,9 @@ Necesario para Cloud Functions, Cloud Storage y Cloud Scheduler.
 
 ```bash
 firebase login
-firebase use --add        # elige sian-dev, alias: dev
-firebase use --add        # elige sian-qa, alias: qa      (cuando exista)
-firebase use --add        # elige sian-prod, alias: prod  (cuando exista)
+firebase use --add        # elige sian-umg-bdm-dev, alias: dev
+firebase use --add        # elige sian-umg-bdm-qa, alias: qa
+firebase use --add        # elige sian-umg-bdm, alias: prod
 firebase use dev          # trabaja en desarrollo por omisión
 ```
 
@@ -242,21 +250,92 @@ firebase use dev          # trabaja en desarrollo por omisión
 ```bash
 dart pub global activate flutterfire_cli
 cd app
-flutterfire configure --project=sian-dev --platforms=web
+flutterfire configure --project=sian-umg-bdm-dev --platforms=web
 ```
 
 Esto genera `app/lib/firebase_options.dart`, que **está en el `.gitignore`** por contener
 identificadores de tu proyecto. Cada persona que replique el proyecto genera el suyo.
 
+> **Alternativa sin interacción.** `flutterfire configure` es interactivo y exige estar
+> autenticado contra el proyecto, lo que no sirve en un runner de integración continua ni
+> cuando se automatiza la réplica. Para esos casos:
+>
+> ```bash
+> firebase apps:sdkconfig WEB <appId> --project sian-umg-bdm-dev   # obtener los valores
+> bash scripts/generar-firebase-options.sh                          # generar el archivo
+> ```
+>
+> El script lee `.env.local`, o las variables de entorno si vienen dadas. Sin valores genera
+> marcadores de posición: el código compila y las pruebas pasan, pero la aplicación no puede
+> conectarse a nada. Es justo lo que se quiere en integración continua, donde un runner con
+> acceso real a Firebase sería un problema, no una ventaja.
+
 Crea `.env.local` en la raíz (ignorado por git):
 
 ```bash
 FIREBASE_VAPID_KEY=BN...tu_clave_vapid_publica
-FIREBASE_PROJECT_ID=sian-dev
+FIREBASE_PROJECT_ID=sian-umg-bdm-dev
 ZONA_HORARIA=America/Guatemala
 ```
 
 Y versiona `.env.example` con las mismas llaves vacías y un comentario que explique cada una.
+
+> **`FIREBASE_AUTH_DOMAIN` debe quedarse en `.firebaseapp.com`. No lo cambies solo.**
+>
+> Es tentador apuntarlo a `<proyecto>.web.app`, que es de donde se sirve el sitio: dejaría todo
+> el flujo de Google en un único origen y evitaría que Safari lo trate como un tercero. **Y
+> Hosting sirve el manejador `/__/auth/` en todos los dominios del proyecto, así que parece que
+> basta con cambiarlo.** No basta, y el fallo es total:
+>
+> ```
+> Error 400: redirect_uri_mismatch
+> ```
+>
+> Firebase crea en Google Cloud un cliente de OAuth que autoriza **un solo** redirector, el de
+> `.firebaseapp.com`. Al cambiar el dominio, la aplicación pide uno que ese cliente no conoce y
+> Google bloquea el acceso por completo — peor que el problema que se quería resolver.
+>
+> Que el manejador responda no significa que Google lo acepte; son dos comprobaciones
+> distintas y solo la primera se puede hacer con `curl`:
+>
+> ```bash
+> curl -s -o /dev/null -w "%{http_code}\n" https://sian-umg-bdm-dev.web.app/__/auth/handler
+> ```
+>
+> Para cambiarlo de verdad hay que **añadir antes** el redirector nuevo al cliente de OAuth, en
+> Google Cloud → APIs y servicios → Credenciales → el cliente web de Firebase → URI de
+> redireccionamiento autorizados:
+>
+> ```
+> https://sian-umg-bdm-dev.web.app/__/auth/handler
+> ```
+>
+> Y solo después tocar `FIREBASE_AUTH_DOMAIN`. Mientras no se haga ese paso en la consola, el
+> valor correcto es el que da Firebase:
+>
+> ```bash
+> FIREBASE_AUTH_DOMAIN=sian-umg-bdm-dev.firebaseapp.com
+> ```
+
+> **CORS del bucket: se aplica aparte, y sin esto las imágenes no se ven.**
+>
+> Flutter web descarga los bytes de una imagen con `fetch` para decodificarla, y el navegador
+> bloquea esa descarga si el bucket no declara CORS. La nota de voz sí funciona, porque un
+> elemento `<audio>` reproduce sin pedir permiso de origen. El síntoma resultante despista
+> mucho: **la voz se escucha y la imagen no**, y parece un problema de la imagen o de la red.
+>
+> No lo despliega `firebase deploy`: la configuración vive en el bucket, no en
+> `storage.rules`. Se aplica una vez por ambiente:
+>
+> ```bash
+> bash scripts/aplicar-cors-storage.sh sian-umg-bdm-dev
+> ```
+>
+> Y se comprueba así — sin `access-control-allow-origin` en la respuesta, no hay imágenes:
+>
+> ```bash
+> curl -sI -H 'Origin: https://sian-umg-bdm-dev.web.app' '<url-de-descarga>' | grep -i access-control
+> ```
 
 ---
 
@@ -382,7 +461,7 @@ firebase deploy --only hosting
 ```
 
 Al terminar obtienes la URL de la demostración:
-`https://sian-dev.web.app`
+`https://sian-umg-bdm-dev.web.app`
 
 ### E.4 Crear el job de Cloud Scheduler
 
@@ -392,19 +471,19 @@ Si prefieres crearlo a mano:
 
 ```bash
 gcloud scheduler jobs create http sian-despachador-dev \
-  --project=sian-dev \
+  --project=sian-umg-bdm-dev \
   --location=us-central1 \
   --schedule="* * * * *" \
   --time-zone="America/Guatemala" \
-  --uri="https://us-central1-sian-dev.cloudfunctions.net/despachador" \
+  --uri="https://us-central1-sian-umg-bdm-dev.cloudfunctions.net/despachador" \
   --http-method=POST \
-  --oidc-service-account-email=sian-dev@appspot.gserviceaccount.com
+  --oidc-service-account-email=sian-umg-bdm-dev@appspot.gserviceaccount.com
 ```
 
 Verifica que solo exista **un job por proyecto**:
 
 ```bash
-gcloud scheduler jobs list --project=sian-dev --location=us-central1
+gcloud scheduler jobs list --project=sian-umg-bdm-dev --location=us-central1
 ```
 
 > **Vigila este número.** Tres jobs en total —uno por ambiente— es la cuota gratuita completa.
@@ -416,14 +495,14 @@ Como la lista blanca controla el acceso y aún está vacía, nadie podría entra
 propio correo:
 
 ```bash
-npx tsx scripts/seed-invitacion.ts --correo=eua031989@gmail.com --rol=COORDINADOR --proyecto=sian-dev
+npx tsx scripts/seed-invitacion.ts --correo=eua031989@gmail.com --rol=COORDINADOR --proyecto=sian-umg-bdm-dev
 ```
 
 ### E.6 Lista de verificación de la demostración
 
 Recorre esta lista en un teléfono real, no en el emulador del navegador:
 
-- [ ] Abro `https://sian-dev.web.app` en Chrome en Android e inicio sesión con Google
+- [ ] Abro `https://sian-umg-bdm-dev.web.app` en Chrome en Android e inicio sesión con Google
 - [ ] El sistema me reconoce como Coordinador y muestra el panel
 - [ ] Instalo la aplicación en la pantalla de inicio y llega la notificación de prueba
 - [ ] Repito lo anterior en Safari en iPhone: **instalar en la pantalla de inicio es
@@ -443,7 +522,7 @@ Recorre esta lista en un teléfono real, no en el emulador del navegador:
       iPhone durante 24 horas y verifico que siguen llegando todas
 
 > El último punto es el más importante de toda la lista. Si falla, se activa el plan de
-> contingencia del documento 02, sección 11, y hay que saberlo antes de prometer nada al
+> contingencia del documento 02, sección 14, y hay que saberlo antes de prometer nada al
 > coordinador académico.
 
 ---
@@ -458,11 +537,11 @@ Recorre esta lista en un teléfono real, no en el emulador del navegador:
 name: Despliegue
 on:
   push:
-    branches: [develop, main]
+    branches: [qa, main]
 
 jobs:
   qa:
-    if: github.ref == 'refs/heads/develop'
+    if: github.ref == 'refs/heads/qa'
     runs-on: ubuntu-latest
     environment: qa
     steps:
@@ -476,14 +555,14 @@ jobs:
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.QA_SERVICE_ACCOUNT }}
-          projectId: sian-qa
+          projectId: ${{ vars.QA_PROJECT_ID }}
           channelId: live
 
   produccion:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: produccion      # con aprobación manual obligatoria
-    steps: [ ... equivalente, apuntando a sian-prod ... ]
+    steps: [ ... equivalente, apuntando a ${{ vars.PROD_PROJECT_ID }} ... ]
 ```
 
 En GitHub → Settings → Environments, crea el ambiente `produccion` y marca **Required
@@ -495,6 +574,11 @@ explícita.
 | Secreto | De dónde sale |
 |---------|---------------|
 | `QA_VAPID_KEY` / `PROD_VAPID_KEY` | Consola de Firebase → Cloud Messaging → Web configuration |
+
+> **`QA_PROJECT_ID` y `PROD_PROJECT_ID` van a nivel de repositorio**, no dentro del
+> *environment*: el `if:` del job se evalúa antes de que GitHub aplique el ambiente, y
+> ahí una variable de ambiente se lee vacía y el job se salta sin dar error. El detalle
+> está en el documento 11, sección 6.
 | `QA_SERVICE_ACCOUNT` / `PROD_SERVICE_ACCOUNT` | Consola de Firebase → Configuración → Cuentas de servicio → Generar nueva clave privada (contenido JSON completo) |
 
 Nunca los pegues en un archivo del repositorio, ni siquiera temporalmente: el historial de
@@ -502,15 +586,26 @@ git conserva todo.
 
 ### F.3 Antes de habilitar producción
 
-- [ ] Los tres proyectos de Firebase tienen alerta de presupuesto de 1 USD
-- [ ] Existen exactamente 3 jobs de Cloud Scheduler en total
-- [ ] Las pruebas de reglas de seguridad pasan en la integración continua
+- [x] Hay alerta de presupuesto sobre la cuenta de facturación, que cubre los tres ambientes
+- [x] Existen exactamente 3 jobs de Cloud Scheduler en total
+- [x] Las pruebas de reglas de seguridad pasan en la integración continua
 - [ ] Se ejecutó el simulacro con al menos 10 dispositivos reales
-- [ ] La lista blanca de correos institucionales está cargada y verificada
-- [ ] El branding institucional está aplicado
-- [ ] `main` está protegida y `produccion` exige aprobación
-- [ ] El documento de deuda técnica está actualizado
-- [ ] Se verificó que no hay secretos en el historial de git
+- [x] La lista blanca arranca con el coordinador; el resto entra por carga masiva
+- [x] El branding institucional está aplicado
+- [x] `main` está protegida y `produccion` exige aprobación
+- [x] El documento de deuda técnica está actualizado
+- [x] Se verificó que no hay secretos en el historial de git
+- [x] **Los manuales no nombran otro ambiente.** La dirección se resuelve en tiempo de
+      ejecución desde el sitio que los sirve. Estaba escrita a mano, apuntando a
+      desarrollo, y publicada en producción habría mandado a instalar el ambiente de
+      pruebas: la aplicación se ve idéntica, así que nadie lo habría notado
+- [x] **El CORS del bucket de producción está aplicado.** No lo hace `firebase deploy`
+- [ ] **La clave VAPID de producción está puesta.** Sin ella no llega ninguna notificación,
+      y la aplicación funciona en todo lo demás sin decir palabra. Se genera a mano en la
+      consola: es por proyecto y no tiene API
+- [ ] **El proveedor de Google está habilitado en producción.** El botón aparece en
+      pantalla aunque no lo esté, y falla al pulsarlo. Ese clic crea el cliente OAuth,
+      que la API no crea sola
 
 ```bash
 # Verificación de secretos filtrados

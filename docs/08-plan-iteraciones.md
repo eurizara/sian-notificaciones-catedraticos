@@ -57,8 +57,8 @@ completo, confirmación y bitácora, programación y recurrencia, y adjuntos de 
 
 | Entregable | Requisitos |
 |------------|-----------|
-| Repositorio con la estructura definida y la integración continua funcionando | documento 02, sección 6 |
-| Proyecto `sian-dev` creado, Blaze activo, alerta de presupuesto configurada | documento 06, etapa C |
+| Repositorio con la estructura definida y la integración continua funcionando | documento 02, sección 8 |
+| Proyecto `sian-umg-bdm-dev` creado, Blaze activo, alerta de presupuesto configurada | documento 06, etapa C |
 | Emuladores corriendo en local con datos sembrados | documento 06, etapa D |
 | Capa de dominio en TypeScript: entidades, máquinas de estado y estrategias de recurrencia, con pruebas unitarias | RF-PRG-05..09 |
 | Reglas de seguridad con sus pruebas automatizadas | RNF-08 |
@@ -131,11 +131,11 @@ callar sin avisar.
 ## Fase 2 — Pruebas de calidad
 
 **Objetivo:** verificar que el sistema aguanta el uso real, con gente real, en el ambiente
-`sian-qa`.
+`sian-umg-bdm-qa`.
 
 ### Iteración 2.1 — Habilitar el ambiente QA
 
-- Crear `sian-qa` con Blaze y alerta de presupuesto.
+- Crear `sian-umg-bdm-qa` con Blaze y alerta de presupuesto.
 - Configurar el despliegue automático desde `develop`.
 - Cargar la lista blanca con los correos de los participantes de la prueba.
 - Aplicar el branding institucional que proporciones.
@@ -184,11 +184,23 @@ muy bien que se vea en las demás pruebas.
 
 ### Iteración 3.1 — Habilitar producción
 
-- Crear `sian-prod` con Blaze y alerta de presupuesto.
-- Proteger `main` y exigir aprobación manual en el ambiente `produccion` de GitHub.
-- Ejecutar la lista de verificación completa del documento 06, sección F.3.
-- Cargar la lista blanca institucional definitiva.
-- Pagar la deuda DT-07 antes de abrir a todos: nadie debe operar producción a ciegas.
+*Ejecutada el 26 de agosto de 2026.*
+
+- [x] Crear `sian-umg-bdm` con Blaze y alerta de presupuesto. *(24-08-2026; documento 11.)*
+- [x] Proteger `main` y exigir aprobación manual en el ambiente `produccion` de GitHub.
+- [x] Reglas de seguridad, índices, Storage y las 19 Functions desplegadas.
+- [x] CORS del bucket aplicado. No lo hace `firebase deploy` (documento 11, sección 4).
+- [x] Sembrar la primera invitación: `eua031989@gmail.com` como COORDINADOR.
+- [x] Manuales publicados, con la dirección del sitio resuelta en tiempo de ejecución.
+- [ ] Cargar la lista blanca institucional definitiva. *La hace coordinación desde la
+      aplicación, por carga masiva.*
+- [ ] Pagar la deuda **DT-07** (sin observabilidad ni alertas) antes de abrir a todos:
+      nadie debe operar producción a ciegas.
+- [ ] Pagar la deuda **DT-14** (los correos de recuperación caen en No deseado) antes de
+      que la gente empiece a olvidar contraseñas de verdad.
+
+> Las dos deudas abiertas no bloquean el arranque con coordinación, que es la semana 1
+> del despliegue escalonado. Sí bloquean la semana 3.
 
 ### Iteración 3.2 — Despliegue escalonado
 

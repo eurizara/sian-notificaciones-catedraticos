@@ -1,0 +1,77 @@
+{
+  "hosting": {
+    "public": "app/build/web",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [{ "source": "**", "destination": "/index.html" }],
+    "headers": [
+      {
+        "source": "/firebase-messaging-sw.js",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
+          { "key": "Service-Worker-Allowed", "value": "/" }
+        ]
+      },
+      {
+        "//": "La raíz sirve index.html por reescritura, pero la regla de cabeceras casa contra la RUTA PEDIDA: sin esta entrada, «/» —que es como entra todo el mundo— se cachearía una hora.",
+        "source": "/",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+        ]
+      },
+      {
+        "//": "Flutter Web NO pone huella de contenido en estos archivos: el nombre es siempre el mismo aunque el contenido cambie. Con el max-age de 3600 que Firebase aplica por omisión, un despliegue tarda hasta una hora en verse, y mientras tanto se depura contra código viejo sin saberlo.",
+        "source": "**/@(index.html|flutter_bootstrap.js|main.dart.js|flutter_service_worker.js|firebase-config.js|manifest.json|version.json)",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+        ]
+      },
+      {
+        "//": "El sitio de manuales. La reescritura general sirve index.html para CUALQUIER ruta que no exista, con código 200: mientras faltaba una imagen, el navegador guardaba ese HTML como si fuera el PNG y la imagen aparecía rota durante la hora siguiente aunque ya se hubiera publicado. Con revalidación no se hereda un error pasajero.",
+        "source": "/manuales/**",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache" }
+        ]
+      },
+      {
+        "//": "assets/ NO lleva huella de contenido, y su contenido SÍ cambia. El caso que lo demostró: la fuente de iconos se recorta en cada compilación para dejar solo los iconos que la aplicación usa, y se sirve siempre como assets/fonts/MaterialIcons-Regular.otf. Al añadir el botón de recargar, quien ya tenía la fuente anterior guardada seguía usándola durante una semana: el botón existía, respondía y mostraba su ayuda emergente, pero su icono NO SE DIBUJABA. Un fallo así no da ningún error y parece que la función no se desplegó. Se revalida siempre: son 1,5 MB de archivos pequeños y una revalidación sin cambios responde 304 sin cuerpo.",
+        "source": "**/assets/**",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache" }
+        ]
+      },
+      {
+        "//": "CanvasKit son 37 MB y solo cambia al actualizar el SDK de Flutter, así que aquí sí compensa guardarlo. Un día, y no una semana, para que una actualización del motor no conviva una semana entera con un paquete compilado contra otra versión.",
+        "source": "**/canvaskit/**",
+        "headers": [
+          { "key": "Cache-Control", "value": "public, max-age=86400" }
+        ]
+      }
+    ]
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "runtime": "nodejs20",
+      "//": "Sin este predeploy, `firebase deploy` sube lo que hubiera en lib/ de una compilación anterior. No falla: despliega código viejo y dice «Deploy complete». Una función nueva simplemente no aparece, y se diagnostica a ciegas.",
+      "predeploy": ["npm --prefix \"$RESOURCE_DIR\" run build"],
+      "ignore": ["node_modules", ".git", "**/*.test.ts", "test/**"]
+    }
+  ],
+  "emulators": {
+    "auth": { "port": 9099 },
+    "firestore": { "port": 8080 },
+    "functions": { "port": 5001 },
+    "storage": { "port": 9199 },
+    "hosting": { "port": 5050 },
+    "ui": { "enabled": true, "port": 4000 },
+    "singleProjectMode": true
+  }
+}

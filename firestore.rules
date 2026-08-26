@@ -1,0 +1,204 @@
+rules_version = '2';
+
+// SIAN — Reglas de seguridad de Cloud Firestore
+// Fuente normativa: documento 05, sección 5 · matriz RBAC del documento 01, sección 2.2
+//
+// Principio rector (RN-01, RNF-08):
+//   El cliente lee lo que le corresponde, pero NO escribe nada que tenga valor
+//   probatorio. Enviar, confirmar lectura y auditar son operaciones de servidor.
+//   Así RF-CNF-04 y RF-BIT-03 no dependen de la buena fe del cliente.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------------------------------------------------------------------
+    // Predicados de autorización — se resuelven contra los custom claims del
+    // token, sembrados por Cloud Function (documento 02, sección 9).
+    // ---------------------------------------------------------------------
+
+    function autenticado() {
+      return request.auth != null;
+    }
+
+    function claims() {
+      return request.auth.token;
+    }
+
+    function rol() {
+      return autenticado() && 'rol' in claims() ? claims().rol : '';
+    }
+
+    function activo() {
+      return autenticado() && claims().get('activo', false) == true;
+    }
+
+    function esCoordinador() {
+      return activo() && rol() == 'COORDINADOR';
+    }
+
+    function esAuditor() {
+      return activo() && rol() == 'AUDITOR';
+    }
+
+    function esEmisor() {
+      return activo() && rol() in ['COORDINADOR', 'ADMINISTRADORA'];
+    }
+
+    function esDueno(uid) {
+      return autenticado() && request.auth.uid == uid;
+    }
+
+    // Lo que el propio usuario SÍ puede editar de su perfil (RF-USR-08).
+    //
+    // Es una lista blanca a propósito. Con una lista negra, cualquier campo
+    // nuevo que se añada al modelo de datos quedaría editable por el cliente
+    // hasta que alguien se acordara de prohibirlo; así, un campo nuevo nace
+    // cerrado. El resto —rol, activo, correo, las autorizaciones finas— define
+    // identidad y privilegios, y solo lo escriben las Cloud Functions (RN-01).
+    function camposEditablesDelPerfil() {
+      return ['nombre', 'unidadAcademica', 'zonaHoraria', 'actualizadoEn', 'ultimoAcceso'];
+    }
+
+    // ---------------------------------------------------------------------
+    // usuarios/{uid}
+    // Lectura: el propio usuario, el coordinador y el auditor.
+    // Escritura: solo campos de perfil no privilegiados, y solo el dueño.
+    // ---------------------------------------------------------------------
+
+    match /usuarios/{uid} {
+      allow read: if esDueno(uid) || esCoordinador() || esAuditor();
+
+      // Alta y baja pasan siempre por Cloud Functions (RF-AUT-03, RF-AUT-08).
+      allow create, delete: if false;
+
+      allow update: if esDueno(uid)
+                    && activo()
+                    && request.resource.data.diff(resource.data)
+                         .affectedKeys()
+                         .hasOnly(camposEditablesDelPerfil());
+
+      // dispositivos/{tokenId} — el cliente SÍ escribe aquí: es el único dato
+      // que le pertenece por completo y que debe poder refrescar en cada
+      // apertura de la aplicación (RF-USR-09, mitigación de R-01).
+      match /dispositivos/{tokenId} {
+        allow read, write: if esDueno(uid);
+      }
+    }
+
+    // ---------------------------------------------------------------------
+    // grupos/{grupoId} — lectura para todo usuario activo; escritura solo
+    // por Function, que valida el límite de 200 miembros (DT-08).
+    // ---------------------------------------------------------------------
+
+    match /grupos/{grupoId} {
+      allow read: if activo();
+      allow write: if false;
+    }
+
+    // ---------------------------------------------------------------------
+    // mensajes/{mensajeId}
+    // El emisor lee lo suyo; el destinatario lee lo que le fue enviado.
+    // `destinatariosUids` existe precisamente para hacer posible esta segunda
+    // comprobación sin consultar otra colección (documento 05, sección 5).
+    // ---------------------------------------------------------------------
+
+    match /mensajes/{mensajeId} {
+      allow read: if esCoordinador()
+                  || esAuditor()
+                  || (esEmisor() && resource.data.creadoPor == request.auth.uid)
+                  || (autenticado()
+                      && request.auth.uid in resource.data.get('destinatariosUids', []));
+
+      // Toda escritura pasa por Functions: RN-03 (un mensaje enviado no se
+      // edita ni se borra) no puede quedar a criterio del cliente.
+      allow write: if false;
+
+      match /ocurrencias/{ocurrenciaId} {
+        allow read: if esCoordinador() || esAuditor() || esEmisor();
+        allow write: if false;
+
+        match /entregas/{uid} {
+          allow read: if esDueno(uid) || esCoordinador() || esAuditor() || esEmisor();
+          // Incluida la confirmación de lectura: es irreversible y con valor
+          // probatorio, así que solo la escribe el servidor (RF-CNF-04).
+          allow write: if false;
+        }
+      }
+    }
+
+    // ---------------------------------------------------------------------
+    // Consulta por grupo de colecciones sobre `entregas`.
+    //
+    // El historial del catedrático (RF-ENT-12) y el reporte de confirmación
+    // (RF-CNF-06) son consultas de grupo de colecciones, y esas **no** las
+    // cubre la regla anidada de arriba: una regla escrita sobre la ruta
+    // completa nunca se evalúa en una consulta de grupo. Sin esta declaración,
+    // el catedrático no podría leer su propio historial.
+    //
+    // La comprobación NO puede usar el comodín de ruta: en una consulta de
+    // grupo no hay un documento concreto todavía, así que el segmento del
+    // identificador llega nulo y la evaluación falla con «Null value error».
+    //
+    // Se usa `resource.data.uid`, el campo que el documento 05, sección 2.7,
+    // duplica dentro de la entrega «a propósito» por exactamente este motivo.
+    // Para una consulta, Firestore exige que el filtro garantice que todo lo
+    // devuelto cumple la regla: `where('uid','==',miUid)` lo garantiza, y una
+    // consulta sin ese filtro se rechaza entera en lugar de recortarse.
+    // ---------------------------------------------------------------------
+
+    match /{rutaEntregas=**}/entregas/{entregaId} {
+      allow read: if (autenticado() && resource.data.uid == request.auth.uid)
+                  || esCoordinador()
+                  || esAuditor()
+                  || esEmisor();
+      allow write: if false;
+    }
+
+    // ---------------------------------------------------------------------
+    // bitacora/{eventoId} — inmutable (RF-BIT-03), legible solo por
+    // Coordinador y Auditor (RF-BIT-04).
+    // ---------------------------------------------------------------------
+
+    match /bitacora/{eventoId} {
+      allow read: if esCoordinador() || esAuditor();
+      allow create, update, delete: if false;
+    }
+
+    // ---------------------------------------------------------------------
+    // cola_despacho/{itemId} — exclusiva del servidor. Ningún cliente,
+    // ningún rol, en ninguna circunstancia (documento 05, sección 2.8).
+    // ---------------------------------------------------------------------
+
+    match /cola_despacho/{itemId} {
+      allow read, write: if false;
+    }
+
+    // ---------------------------------------------------------------------
+    // invitaciones/{correo} — lista blanca institucional (RF-AUT-03).
+    // ---------------------------------------------------------------------
+
+    match /invitaciones/{correo} {
+      allow read: if esCoordinador();
+      allow write: if false;
+    }
+
+    // ---------------------------------------------------------------------
+    // configuracion/{doc} — parámetros globales legibles por todo usuario
+    // activo; solo el coordinador los cambia, y lo hace vía Function
+    // (RF-ADM-01..03).
+    // ---------------------------------------------------------------------
+
+    match /configuracion/{doc} {
+      allow read: if activo();
+      allow write: if false;
+    }
+
+    // ---------------------------------------------------------------------
+    // Cierre por omisión: todo lo no contemplado arriba queda denegado.
+    // ---------------------------------------------------------------------
+
+    match /{documento=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Avisos y alertas institucionales para catedráticos. Universidad Mariano Gálvez de Guatemala, sede Boca del Monte.">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#1C72A5">
+  <meta name="apple-mobile-web-app-title" content="SIAN UMG-BDM">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/Icon-180.png">
+
+  <!-- Favicon -->
+  <!-- Varios tamaños y formatos: los navegadores eligen distinto, y el .ico
+       sigue siendo el que menos discute. -->
+  <link rel="icon" type="image/x-icon" href="favicon.ico"/>
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png"/>
+  <link rel="icon" type="image/png" sizes="16x16" href="icons/Icon-16.png"/>
+  <link rel="icon" type="image/png" sizes="48x48" href="icons/Icon-48.png"/>
+
+  <title>SIAN UMG-BDM — Avisos y Notificaciones</title>
+  <link rel="manifest" href="manifest.json">
+
+  <style>
+    /*
+      NADA de `overflow: hidden` ni de `height: 100%` aquí.
+
+      Se probaron, y rompieron el desplazamiento vertical dentro de la
+      aplicación en iOS: Flutter monta su propia vista y gestiona el
+      desplazamiento por su cuenta, así que fijar el alto del documento le
+      quita el sitio por el que se mueve. La cura salió peor que la
+      enfermedad.
+
+      `overscroll-behavior-x` sí es seguro: solo cancela el rebote lateral y
+      la navegación por arrastre en los navegadores que la implementan, sin
+      tocar el desplazamiento vertical.
+    */
+    html, body {
+      margin: 0;
+      padding: 0;
+      overscroll-behavior-x: none;
+    }
+
+    /*
+      ────────────────────────────────────────────────────────────────────────
+      NO se le pone CSS a la vista de Flutter. Ya rompió el desplazamiento
+      dos veces.
+      ────────────────────────────────────────────────────────────────────────
+
+      Primero fue `overflow: hidden` en el documento; después `touch-action:
+      pan-y` sobre `flt-glass-pane`. Flutter fija `touch-action: none` en su
+      lienzo A PROPÓSITO, porque quiere atender él todos los gestos.
+      Devolverle al navegador el gesto vertical hace que los dos tiren del
+      mismo dedo: el desplazamiento se traba, sobre todo al cambiar de
+      dirección.
+
+      Lo único que se toca aquí es el documento, y solo con
+      `overscroll-behavior-x`, que cancela el rebote lateral sin decir nada
+      sobre el vertical. Lo demás lo resuelve la trampa de historial de abajo,
+      que actúa cuando el gesto ya ocurrió en vez de intentar impedirlo.
+    */
+  </style>
+</head>
+<body>
+  <!--
+    You can customize the "flutter_bootstrap.js" script.
+    This is useful to provide a custom configuration to the Flutter loader
+    or to give the user feedback during the initialization process.
+
+    For more details:
+    * https://docs.flutter.dev/platform-integration/web/initialization
+  -->
+  <script>
+    /*
+      Atrapa la navegación hacia atrás para que no saque de la aplicación.
+
+      El CSS de arriba frena el arrastre lateral en casi todo, pero en Safari
+      sobre iOS el gesto que nace en el borde exacto de la pantalla pertenece
+      al sistema y ninguna página web puede cancelarlo. Lo que sí se puede es
+      que no lleve a ninguna parte.
+
+      Se deja una entrada de historial propia al arrancar. Cuando el gesto la
+      consume, se vuelve a poner: el navegador cree que retrocedió y la
+      persona se queda donde estaba, en vez de mirar una pantalla en blanco.
+
+      Es seguro aquí porque SIAN no usa la barra de direcciones para navegar:
+      es una sola página cuyo contenido depende de la sesión. En una
+      aplicación con rutas reales esto rompería el botón de atrás.
+    */
+    (function () {
+      var marca = { sian: true };
+      history.pushState(marca, '');
+
+      window.addEventListener('popstate', function () {
+        history.pushState(marca, '');
+      });
+    })();
+  </script>
+
+  <!--
+    ══════════════════════════════════════════════════════════════════════════
+    REPARA UNA COPIA CADUCADA DE LA FUENTE DE ICONOS.
+    ══════════════════════════════════════════════════════════════════════════
+
+    Flutter recorta la fuente de iconos en cada compilación y la publica
+    siempre con el mismo nombre. Durante un tiempo esa ruta se sirvió con una
+    semana de caché, así que quien ya tuviera guardada una copia anterior
+    seguía usándola: los iconos añadidos después NO SE DIBUJABAN, mientras el
+    botón existía y respondía. Sin error, sin hueco, sin nada roto.
+
+    Cambiar la cabecera en el servidor no rescata esas copias: mientras no
+    caduquen, el navegador ni siquiera pregunta. La única forma de repararlas
+    desde aquí es pedir el archivo saltándose la caché, que además ACTUALIZA
+    la entrada guardada.
+
+    Se espera a que termine antes de arrancar Flutter —son 17 KB— para que
+    quien abra la aplicación la vea bien ya en este mismo arranque y no en el
+    siguiente. Y se hace una sola vez por dispositivo.
+
+    Esto se puede borrar cuando haya pasado una semana desde el despliegue del
+    11 de agosto de 2026: para entonces no queda ninguna copia con la caché
+    antigua.
+  -->
+  <script>
+    (function () {
+      var CLAVE = 'sian.fuente-iconos-reparada';
+      var FUENTE = 'assets/fonts/MaterialIcons-Regular.otf';
+
+      function arrancar() {
+        var s = document.createElement('script');
+        s.src = 'flutter_bootstrap.js';
+        s.async = true;
+        document.body.appendChild(s);
+      }
+
+      var hecho = false;
+      try {
+        hecho = window.localStorage.getItem(CLAVE) === '1';
+      } catch (e) {
+        // Sin almacenamiento local se revalida siempre: son 17 KB y, ya
+        // reparada, la respuesta es un 304 sin cuerpo.
+      }
+
+      if (hecho) {
+        arrancar();
+        return;
+      }
+
+      // Pase lo que pase se arranca. Un fallo aquí no puede dejar la
+      // aplicación sin abrir: es una reparación cosmética, no un requisito.
+      var seguir = function () {
+        try {
+          window.localStorage.setItem(CLAVE, '1');
+        } catch (e) {}
+        arrancar();
+      };
+
+      try {
+        fetch(FUENTE, { cache: 'reload' }).then(seguir, seguir);
+      } catch (e) {
+        arrancar();
+      }
+    })();
+  </script>
+</body>
+</html>

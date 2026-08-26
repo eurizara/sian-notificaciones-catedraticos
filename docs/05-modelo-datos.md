@@ -15,7 +15,7 @@ erDiagram
     MENSAJE ||--o{ OCURRENCIA : "genera"
     OCURRENCIA ||--o{ ENTREGA : "produce"
     USUARIO ||--o{ ENTREGA : "recibe"
-    MENSAJE ||--o{ ADJUNTO : "contiene"
+    MENSAJE ||--o{ ADJUNTO : "lleva en orden"
     MENSAJE }o--o{ GRUPO : "se dirige a"
     USUARIO ||--o{ BITACORA : "origina"
     OCURRENCIA ||--|| ITEM_COLA : "se despacha por"
@@ -27,6 +27,9 @@ erDiagram
         string nombre
         string rol
         bool activo
+        bool recibeAvisos
+        bool puedeEmitirUrgentes
+        bool puedeCrearRecurrentes
         string proveedorAuth
         timestamp creadoEn
     }
@@ -49,18 +52,23 @@ erDiagram
         string titulo
         string cuerpo
         string tipo
-        string formato
+        array formato
+        map adjuntos
         bool requiereConfirmacion
         string estado
         map programacion
+        array destinatariosUids
+        map resumenEntrega
         string creadoPor FK
+        string creadoPorNombre
     }
     ADJUNTO {
-        string adjuntoId PK
-        string mensajeId FK
-        string clase
-        string rutaStorage
+        number posicion
+        string tipo
+        string ruta
         number bytes
+        string tipoMime
+        number duracionSeg
     }
     OCURRENCIA {
         string ocurrenciaId PK
@@ -104,6 +112,26 @@ erDiagram
         string creadaPor FK
     }
 ```
+
+
+> **`ADJUNTO` no es una colección.** Se dibuja como entidad para que se vea su
+> forma, pero vive **dentro** del mensaje, en `adjuntos.lista`: un arreglo
+> ordenado con hasta 3 imágenes y 2 notas de voz. El orden es el que eligió
+> quien redactó y es el que ve quien recibe, así que **la posición es parte del
+> dato** y no un detalle de presentación. Guardarlo como dos listas separadas
+> —audios por un lado, imágenes por otro— obligaría a reconstruir ese orden al
+> mostrarlo, y no hay forma de reconstruir lo que no se guardó.
+>
+> Los mensajes anteriores a agosto de 2026 llevan la forma antigua,
+> `{audio, imagen}`, con uno de cada como máximo. Se siguen leyendo: RN-03 dice
+> que un mensaje enviado no se reescribe, así que dejar de entenderla borraría
+> los adjuntos de todo lo entregado hasta entonces.
+>
+> **`creadoPorNombre` está repetido a propósito.** El nombre de quien envía se
+> guarda dentro del mensaje porque el catedrático **no tiene permiso para leer
+> `usuarios`**; sin esa copia vería un identificador aleatorio donde debería
+> decir quién le avisa. Queda congelado: si esa persona cambia de nombre, el
+> aviso sigue diciendo quién lo firmó cuando lo firmó (RF-BIT-02).
 
 ---
 
@@ -282,10 +310,34 @@ garantiza unicidad sin necesidad de consulta.
 |-------|------|-------------|
 | `rolAsignado` | string | Rol que se otorgará al consumirse |
 | `nombre` | string | Nombre esperado, para prellenar el perfil |
-| `consumida` | boolean | |
+| `consumida` | boolean | La invitación ya se usó. **Una carga masiva nunca lo reescribe** |
 | `consumidaPor` | string | UID resultante |
+| `consumidaEn` | timestamp | Cuándo se usó |
 | `creadaPor` | string | UID del coordinador |
 | `creadaEn` | timestamp | |
+
+**Volver a cargar un correo que ya está en la lista.** El identificador es el correo, así que
+una recarga no puede duplicar: cae sobre el mismo documento. Lo que decide qué pasa es si esa
+invitación ya se usó.
+
+| Estado previo | Qué ocurre |
+|---|---|
+| No existe | Se crea |
+| Existe y `consumida = false` | Se actualizan `rolAsignado` y `nombre`. Corregir una lista antes de que la gente entre es legítimo |
+| Existe y `consumida = true` | **No se toca nada**, y quien cargó recibe la lista de esos correos |
+
+A quien ya entró no se le toca la invitación porque su rol de verdad no vive aquí: vive en su
+perfil (`usuarios/{uid}`) y en sus custom claims. Cambiarlo en la invitación no se lo cambia a
+la persona; solo deja a los dos sitios diciendo cosas distintas. Se cambia desde la pantalla
+de usuarios, que sí mueve las dos (RF-USR-02).
+
+> **Esto se escribió después de romperlo.** La carga masiva escribía `consumida: false` sobre
+> todo lo que llegaba, con `merge: true` y un comentario que decía servir para lo contrario.
+> `merge` respeta los campos que **no** se mandan, y `consumida` iba en el objeto. Una persona
+> que ya había entrado quedó con `consumida: false` junto a su `consumidaPor` y su
+> `consumidaEn` intactos: un documento contradiciéndose. Y con eso desarmado deja de funcionar
+> la comprobación de `decidirActivacion` que rechaza a quien intenta usar una invitación que
+> otro ya consumió. La regla vive ahora en `decidirCarga`, en el dominio, con sus pruebas.
 
 ### 2.11 `configuracion/institucional`
 
@@ -496,8 +548,16 @@ Advertencias que deben vigilarse:
 2. Cada invocación del despachador ejecuta al menos una consulta a `cola_despacho`. Con la
    consulta bien indexada y sin resultados, el costo de lectura es despreciable, pero debe
    confirmarse en producción durante el primer mes.
-3. Configurar **alerta de presupuesto en 1 USD** es obligatorio antes de desplegar a
-   producción (RNF-18).
+3. Configurar **alerta de presupuesto** es obligatorio antes de desplegar a producción
+   (RNF-18). Está puesta sobre la cuenta de facturación, que cubre los tres ambientes
+   (documento 11, sección 5).
+4. La bandeja lee las entregas por flujo y el contenido de cada mensaje por separado, y
+   **guarda ese contenido en memoria mientras la sesión dure**. Sin esa memoria, cada
+   emisión del flujo volvía a pedir los cincuenta mensajes: el flujo emite al abrir la
+   bandeja, al llegar un aviso y cada vez que alguien despliega uno, así que una sesión
+   normal multiplicaba las lecturas por diez o más. El contenido de un mensaje enviado no
+   se edita, de modo que releerlo no aportaba nada; lo que cambia —entregado, abierto,
+   confirmado— viaja en el flujo de entregas.
 
 ---
 

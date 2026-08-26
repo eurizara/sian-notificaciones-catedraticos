@@ -1,0 +1,506 @@
+/// SIAN — Pantalla de inicio de sesión (RF-AUT-02, RF-AUT-05, RF-AUT-06).
+library;
+
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../application/proveedores_dispositivos.dart';
+import '../../application/proveedores_sesion.dart';
+import '../../core/entorno.dart';
+import '../../core/navegador.dart';
+import '../demo/tarjeta_demostracion.dart';
+import '../docente/instructivo_ios.dart';
+import 'tema.dart';
+import 'textos.dart';
+
+class PantallaIngreso extends ConsumerStatefulWidget {
+  const PantallaIngreso({this.alRegistrarse, super.key});
+
+  /// Lleva a la pantalla de registro (RF-AUT-02).
+  final VoidCallback? alRegistrarse;
+
+  @override
+  ConsumerState<PantallaIngreso> createState() => _PantallaIngresoState();
+}
+
+class _PantallaIngresoState extends ConsumerState<PantallaIngreso> {
+  final GlobalKey<FormState> _formulario = GlobalKey<FormState>();
+  final TextEditingController _correo = TextEditingController();
+  final TextEditingController _contrasena = TextEditingController();
+  final FocusNode _focoCorreo = FocusNode();
+
+  bool _enviando = false;
+  bool _contrasenaVisible = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _correo.dispose();
+    _contrasena.dispose();
+    _focoCorreo.dispose();
+    super.dispose();
+  }
+
+  /// Deja el formulario en blanco y el cursor en el correo.
+  ///
+  /// Se borran **los dos** campos, no solo la contraseña: estos equipos son
+  /// compartidos —una sala de catedráticos, una oficina de coordinación—, y
+  /// dejar el correo de la persona anterior escrito en pantalla le dice al
+  /// siguiente quién estuvo ahí.
+  void _limpiarYVolverAlCorreo() {
+    _correo.clear();
+    _contrasena.clear();
+    _formulario.currentState?.reset();
+    FocusScope.of(context).requestFocus(_focoCorreo);
+  }
+
+  /// Traduce el código de Firebase a algo que una persona pueda leer.
+  ///
+  /// Deliberadamente **no** se distingue «correo inexistente» de «contraseña
+  /// incorrecta»: hacerlo permitiría averiguar qué correos tienen cuenta en el
+  /// sistema probando uno por uno.
+  String _mensajeDeError(FirebaseAuthException e) => switch (e.code) {
+    'invalid-email' => Textos.errorCorreoInvalido,
+    'user-disabled' => Textos.errorCuentaDesactivada,
+    'too-many-requests' => Textos.errorDemasiadosIntentos,
+    'network-request-failed' => Textos.errorSinRed,
+    _ => Textos.errorCredenciales,
+  };
+
+  Future<void> _entrar() async {
+    if (!(_formulario.currentState?.validate() ?? false)) {
+      return;
+    }
+
+    setState(() {
+      _enviando = true;
+      _error = null;
+    });
+
+    try {
+      await ref
+          .read(repositorioSesionProvider)
+          .entrarConCorreo(correo: _correo.text, contrasena: _contrasena.text);
+      // No se navega aquí: el cambio de sesión lo observa el enrutador, que es
+      // el único que decide qué pantalla toca (RN-01 aplicado a la interfaz).
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        setState(() => _error = _mensajeDeError(e));
+        _limpiarYVolverAlCorreo();
+      }
+    } on Object catch (_) {
+      if (mounted) {
+        setState(() => _error = Textos.errorInesperado);
+        _limpiarYVolverAlCorreo();
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _enviando = false);
+      }
+    }
+  }
+
+  Future<void> _entrarConGoogle() async {
+    setState(() {
+      _enviando = true;
+      _error = null;
+    });
+
+    try {
+      await ref.read(repositorioSesionProvider).entrarConGoogle();
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        setState(
+          () => _error = switch (e.code) {
+            'popup-closed-by-user' => Textos.errorGoogleCancelado,
+            'popup-blocked' => Textos.errorGoogleBloqueado,
+            'network-request-failed' => Textos.errorSinRed,
+            _ => Textos.errorInesperado,
+          },
+        );
+      }
+    } on Object catch (_) {
+      if (mounted) {
+        setState(() => _error = Textos.errorInesperado);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _enviando = false);
+      }
+    }
+  }
+
+  Future<void> _recuperar() async {
+    final String correo = _correo.text.trim();
+    if (correo.isEmpty) {
+      setState(() => _error = Textos.errorCorreoParaRecuperar);
+      return;
+    }
+
+    try {
+      await ref.read(repositorioSesionProvider).recuperarContrasena(correo);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(Textos.recuperacionEnviada)),
+        );
+      }
+    } on Object catch (_) {
+      // Se responde igual exista o no la cuenta: lo contrario delataría qué
+      // correos están registrados.
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(Textos.recuperacionEnviada)),
+        );
+      }
+    }
+  }
+
+  String? _validarCorreo(String? valor) {
+    final String v = (valor ?? '').trim();
+    if (v.isEmpty) {
+      return Textos.validacionCorreoObligatorio;
+    }
+    if (!RegExp(r'^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$').hasMatch(v)) {
+      return Textos.validacionCorreoInvalido;
+    }
+    return null;
+  }
+
+  String? _validarContrasena(String? valor) {
+    if ((valor ?? '').isEmpty) {
+      return Textos.validacionContrasenaObligatoria;
+    }
+    return null;
+  }
+
+  EntornoNavegador _entorno() =>
+      ref.read(repositorioDispositivosProvider).entorno;
+
+  bool _necesitaInstalar() => _entorno().necesitaInstructivoInstalacion;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData tema = Theme.of(context);
+
+    return Scaffold(
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                const _PortadaInstitucional(),
+                const SizedBox(height: 24),
+
+                // Google va PRIMERO: es el camino que la institución quiere
+                // por omisión, y el que no obliga a inventar otra contraseña.
+                OutlinedButton.icon(
+                  onPressed: _enviando ? null : _entrarConGoogle,
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(88, 52),
+                  ),
+                  icon: const Icon(Icons.account_circle_outlined),
+                  label: const Text(Textos.botonEntrarConGoogle),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: <Widget>[
+                    const Expanded(child: Divider()),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(
+                        Textos.separadorO,
+                        style: tema.textTheme.bodySmall?.copyWith(
+                          color: tema.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                    const Expanded(child: Divider()),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                Form(
+                  key: _formulario,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      TextFormField(
+                        controller: _correo,
+                        focusNode: _focoCorreo,
+                        autofocus: true,
+                        autofillHints: const <String>[AutofillHints.email],
+                        keyboardType: TextInputType.emailAddress,
+                        textInputAction: TextInputAction.next,
+                        decoration: const InputDecoration(
+                          labelText: Textos.etiquetaCorreo,
+                          prefixIcon: Icon(Icons.alternate_email),
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: _validarCorreo,
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _contrasena,
+                        obscureText: !_contrasenaVisible,
+                        autofillHints: const <String>[AutofillHints.password],
+                        textInputAction: TextInputAction.done,
+                        onFieldSubmitted: (_) => _entrar(),
+                        decoration: InputDecoration(
+                          labelText: Textos.etiquetaContrasena,
+                          prefixIcon: const Icon(Icons.lock_outline),
+                          border: const OutlineInputBorder(),
+                          suffixIcon: IconButton(
+                            onPressed: () => setState(
+                              () => _contrasenaVisible = !_contrasenaVisible,
+                            ),
+                            icon: Icon(
+                              _contrasenaVisible
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                            ),
+                            tooltip: _contrasenaVisible
+                                ? Textos.ocultarContrasena
+                                : Textos.mostrarContrasena,
+                          ),
+                        ),
+                        validator: _validarContrasena,
+                      ),
+                    ],
+                  ),
+                ),
+
+                if (_error != null) ...<Widget>[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: tema.colorScheme.errorContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: <Widget>[
+                        Icon(
+                          Icons.error_outline,
+                          color: tema.colorScheme.onErrorContainer,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            _error!,
+                            style: TextStyle(
+                              color: tema.colorScheme.onErrorContainer,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
+                const SizedBox(height: 24),
+                FilledButton(
+                  onPressed: _enviando ? null : _entrar,
+                  child: _enviando
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text(Textos.botonEntrar),
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: _enviando ? null : _recuperar,
+                  child: const Text(Textos.botonOlvideContrasena),
+                ),
+                if (widget.alRegistrarse != null)
+                  TextButton(
+                    onPressed: _enviando ? null : widget.alRegistrarse,
+                    child: const Text(Textos.botonNoTengoCuenta),
+                  ),
+
+                // En iPhone no existe ningún botón de instalar: se hace desde
+                // el menú Compartir de Safari, y quien no lo sepa no lo va a
+                // encontrar. El instructivo estaba solo tras el ingreso, que
+                // es tarde y además inalcanzable para quien todavía no entró.
+                if (_necesitaInstalar()) ...<Widget>[
+                  const SizedBox(height: 16),
+                  _AvisoInstalarIos(entorno: _entorno()),
+                ],
+
+                // Solo con emuladores. Cuando USE_EMULATOR es false esta rama
+                // no se compila: el modo demostración no puede llegar a
+                // producción ni por descuido (RF-AUT-03).
+                if (Entorno.usaEmulador) ...<Widget>[
+                  const SizedBox(height: 32),
+                  const TarjetaDemostracion(),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Invitación a instalar, en la pantalla de ingreso y solo en iPhone.
+///
+/// No bloquea: quien tenga prisa entra igual y lee sus mensajes. Pero deja de
+/// ser invisible, que era el problema — en iPhone ningún navegador ofrece un
+/// botón de instalar, así que sin decirlo nadie lo descubre.
+class _AvisoInstalarIos extends StatelessWidget {
+  const _AvisoInstalarIos({required this.entorno});
+
+  final EntornoNavegador entorno;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData tema = Theme.of(context);
+
+    return Card(
+      color: ColoresSian.dorado.withValues(alpha: 0.12),
+      child: InkWell(
+        onTap: () => Navigator.of(context).push<void>(
+          MaterialPageRoute<void>(
+            builder: (BuildContext _) => InstructivoIos(entorno: entorno),
+          ),
+        ),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: <Widget>[
+              const Icon(Icons.add_to_home_screen, color: ColoresSian.dorado),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      Textos.ingresoInstalarTitulo,
+                      style: tema.textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      Textos.ingresoInstalarDetalle,
+                      style: tema.textTheme.bodySmall?.copyWith(
+                        color: tema.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+/// Encabezado de la portada, con la identidad de la universidad.
+///
+/// ────────────────────────────────────────────────────────────────────────────
+/// Es la banda azul marino del sitio institucional, no una decoración propia.
+/// ────────────────────────────────────────────────────────────────────────────
+///
+/// `umg.edu.gt` presenta su identidad sobre una banda oscura en azul marino
+/// —#003168, el color más presente del sitio— con el escudo encima y el
+/// contenido en blanco debajo. La portada de SIAN repite esa estructura para
+/// que quien entra reconozca de inmediato de qué institución es esto, en lugar
+/// de encontrarse una aplicación genérica con un escudo pegado arriba.
+///
+/// El escudo va sobre un disco blanco y no directamente sobre el azul: su
+/// campo central **es azul**, y puesto sobre una banda azul el centro se funde
+/// con el fondo y la figura se pierde.
+///
+/// El degradado va del azul marino al azul primario. El punto más claro es
+/// #1C72A5, que da 5.25:1 con texto blanco encima: incluso ahí se cumple AA
+/// (RNF-13), así que el texto es legible en toda la banda y no solo arriba.
+///
+/// **La banda está medida para no empujar el botón de entrar fuera de la
+/// pantalla.** La primera versión llevaba el escudo a 116 px y más aire, y con
+/// eso «Entrar con Google» quedaba por debajo del pliegue: quien abre la
+/// aplicación ve una portada bonita y ningún modo de entrar hasta que se le
+/// ocurre desplazar. Lo destapó una prueba de la ronda 3, que pulsa ese botón
+/// sin desplazar antes; si alguien vuelve a agrandar esto, esa prueba se cae, y
+/// eso es exactamente lo que tiene que pasar.
+class _PortadaInstitucional extends StatelessWidget {
+  const _PortadaInstitucional();
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData tema = Theme.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: <Color>[
+            ColoresSian.navyInstitucional,
+            ColoresSian.primario,
+          ],
+        ),
+        borderRadius: BorderRadius.all(Radius.circular(20)),
+      ),
+      child: Column(
+        children: <Widget>[
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: const EscudoUmg(tamano: 96),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            Textos.nombreApp,
+            textAlign: TextAlign.center,
+            style: tema.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            Textos.nombreCompleto,
+            textAlign: TextAlign.center,
+            style: tema.textTheme.bodyMedium?.copyWith(color: Colors.white),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            height: 1,
+            width: 56,
+            color: ColoresSian.dorado,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            Textos.institucion,
+            textAlign: TextAlign.center,
+            style: tema.textTheme.labelLarge?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          Text(
+            Textos.sede,
+            textAlign: TextAlign.center,
+            style: tema.textTheme.bodySmall?.copyWith(color: Colors.white),
+          ),
+        ],
+      ),
+    );
+  }
+}

@@ -12,6 +12,7 @@ app/build/
 app/.dart_tool/
 app/.flutter-plugins*
 app/lib/firebase_options.dart
+app/web/firebase-config.js
 
 # Node
 functions/node_modules/

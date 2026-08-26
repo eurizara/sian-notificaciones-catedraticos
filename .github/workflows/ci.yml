@@ -1,0 +1,156 @@
+name: Integración continua
+
+# RNF-15 (cobertura ≥ 70%) y RNF-16 (cero advertencias del analizador estático)
+# se verifican aquí. Si este flujo no está en verde, la funcionalidad no está
+# terminada (documento 02, sección 7, «Definición de terminado»).
+
+# `qa` va en las dos listas. Se quedó fuera al introducir la rama, y el efecto
+# no se ve hasta que se intenta promover a producción: sin ninguna ejecución de
+# integración continua sobre el commit de `qa`, el pull request a `main` queda
+# bloqueado por unos checks obligatorios que nunca van a llegar. La rama
+# intermedia es justo la que más necesita estar en verde, porque es la que
+# gobierna el ambiente donde alguien está probando.
+#
+# `release/**` se conserva por si quedara alguna rama viva con ese nombre; la
+# convención ya no la usa, porque `qa` cumple su función (documento 02, §9).
+on:
+  push:
+    branches: [main, qa, develop, 'feature/**', 'release/**', 'hotfix/**']
+  pull_request:
+    branches: [main, qa, develop]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  functions:
+    name: Dominio y Cloud Functions
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: functions
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Analizador estático (RNF-16)
+        run: npm run lint
+
+      - name: Compilar TypeScript
+        run: npm run build
+
+      - name: Pruebas unitarias con cobertura (RNF-15)
+        run: npm run test:cobertura
+
+      # Documento 02, sección 9. El umbral es «alta» y no «moderada» a
+      # propósito: las moderadas abiertas están heredadas de firebase-admin y
+      # registradas como DT-12; hacer fallar la CI por ellas solo entrenaría al
+      # equipo a ignorar el reporte.
+      - name: Auditoría de dependencias
+        run: npm audit --audit-level=high
+
+      - name: Publicar reporte de cobertura
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: cobertura-functions
+          path: functions/coverage/
+          retention-days: 14
+
+  reglas:
+    name: Reglas de seguridad (RNF-08)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '20'
+          cache: npm
+
+      # Los emuladores de Firebase necesitan Java 17 (documento 06, etapa A.1).
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Instalar dependencias de la raíz
+        run: npm ci
+
+      - name: Instalar dependencias de functions
+        run: npm ci --prefix functions
+
+      - name: Ejecutar pruebas de reglas contra el emulador
+        run: npm run test:reglas
+
+  secretos:
+    name: Búsqueda de secretos (RNF-10, RES-10)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Analizar el árbol de trabajo
+        run: npx --yes @secretlint/quick-start "**/*"
+
+      - name: Patrones evidentes en el historial
+        run: bash scripts/check-secrets.sh
+
+  flutter:
+    name: Aplicación Flutter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # `app/` se genera con `flutter create` en la iteración 1.2. Hasta
+      # entonces este trabajo pasa sin hacer nada, en lugar de fallar por un
+      # proyecto que todavía no existe (documento 08, iteración 1.2).
+      - name: ¿Existe ya el proyecto Flutter?
+        id: comprobar
+        run: |
+          if [ -f app/pubspec.yaml ]; then
+            echo "existe=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "existe=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::app/pubspec.yaml todavía no existe; se omite hasta la iteración 1.2."
+          fi
+
+      - uses: subosito/flutter-action@v2
+        if: steps.comprobar.outputs.existe == 'true'
+        with:
+          flutter-version: '3.44.x'
+          cache: true
+
+      # `firebase_options.dart` está en .gitignore: contiene los
+      # identificadores de un proyecto concreto (documento 06, C.5). Aquí se
+      # generan marcadores de posición, porque este trabajo solo necesita que
+      # el código COMPILE. Un runner que pudiera conectarse a Firebase sería
+      # un problema, no una ventaja.
+      - name: Generar firebase_options.dart
+        if: steps.comprobar.outputs.existe == 'true'
+        run: bash scripts/generar-firebase-options.sh
+
+      - name: Dependencias
+        if: steps.comprobar.outputs.existe == 'true'
+        run: flutter pub get
+        working-directory: app
+
+      - name: Analizador estático (RNF-16)
+        if: steps.comprobar.outputs.existe == 'true'
+        run: flutter analyze --fatal-infos --fatal-warnings
+        working-directory: app
+
+      - name: Pruebas
+        if: steps.comprobar.outputs.existe == 'true'
+        run: flutter test --coverage
+        working-directory: app

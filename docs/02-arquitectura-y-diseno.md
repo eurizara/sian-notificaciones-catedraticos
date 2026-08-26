@@ -60,7 +60,235 @@ cola de despacho.
 
 ---
 
-## 2. Estilo arquitectónico
+## 2. Qué tecnología se usó, para qué, y cómo encaja
+
+> Los datos de esta sección se comprobaron contra el proyecto desplegado el
+> **11 de agosto de 2026**, no contra la memoria de nadie. Los comandos para
+> volver a comprobarlos están en la sección 6.
+
+### 2.1 La respuesta corta, por capa
+
+Si lo que se busca es **qué se usó para cada cosa**, es esta tabla. Cada fila
+se desarrolla más abajo.
+
+| Capa | Tecnología | Versión | Dónde está en el repositorio |
+|---|---|---|---|
+| **Frontend** | Flutter Web (motor CanvasKit) · Dart | 3.44.8 · 3.12.2 | `app/lib/presentation/` |
+| **Estado del frontend** | Riverpod | 3.4.2 | `app/lib/application/` |
+| **Backend** | Cloud Functions v2 · Node.js · TypeScript | 6.6.0 · 20 · 5.9.3 | `functions/src/` |
+| **Base de datos** | Cloud Firestore, modo Native — **NoSQL documental** | — | `firestore.rules`, `firestore.indexes.json` |
+| **Seguridad · identidad** | Firebase Authentication con *custom claims* | 6.5.6 | `functions/src/triggers/activarSesion.ts` |
+| **Seguridad · autorización** | Reglas de Firestore y de Storage, evaluadas por el servidor | — | `firestore.rules`, `storage.rules` |
+| **Seguridad · reglas de negocio** | Dominio puro en TypeScript, del lado del servidor | — | `functions/src/domain/` |
+| **Notificaciones** | Firebase Cloud Messaging + Service Worker propio | 16.4.3 | `app/web/firebase-messaging-sw.js` |
+| **Almacenamiento de archivos** | Cloud Storage | 13.4.5 | `app/lib/infrastructure/firebase/repositorio_adjuntos.dart` |
+| **Planificación** | Cloud Scheduler → Cloud Function cada minuto | — | `functions/src/triggers/despachador.ts` |
+| **Alojamiento** | Firebase Hosting | — | `firebase.json` |
+| **Integración continua** | GitHub Actions, cuatro trabajos | — | `.github/workflows/` |
+| **Pruebas** | `flutter_test` · Jest · `@firebase/rules-unit-testing` | — | `app/test/`, `functions/test/` |
+
+**La seguridad no es una capa aparte, son tres cosas a la vez**, y conviene
+verlas juntas porque cada una tapa un hueco distinto:
+
+| Nivel | Qué impide | Dónde se decide |
+|---|---|---|
+| **Identidad** | Que entre alguien que no está en la lista blanca | `activarSesion`, contra la colección `invitaciones` |
+| **Autorización** | Que alguien lea o escriba lo que no le toca, aunque llame a la base directamente desde la consola del navegador | Reglas de Firestore y Storage — **las evalúa Google, no el cliente** |
+| **Reglas de negocio** | Que salga una alerta urgente sin doble confirmación, o un mensaje de 19 MB | Dominio en TypeScript, dentro de las Functions |
+
+Ninguno de los tres confía en la interfaz. Lo que el panel comprueba antes de
+enviar es cortesía —avisar temprano—, no seguridad: la Function vuelve a
+comprobarlo todo, porque quien llame a la Function directamente se saltaría el
+diálogo.
+
+### 2.2 El resumen en una frase
+
+Una **aplicación Flutter compilada a web**, servida como sitio estático, que
+habla con **Firebase** para todo lo demás: identidad, base de datos,
+notificaciones, archivos y la lógica que no puede vivir en el navegador.
+
+No hay servidor propio. No hay contenedores. No hay nada que administrar entre
+el navegador de un catedrático y los servicios de Google.
+
+```mermaid
+flowchart LR
+    subgraph Cliente["Navegador · celular o computadora"]
+        F["Flutter Web<br/>CanvasKit"]
+        SW["Service Worker<br/>firebase-messaging-sw.js"]
+    end
+
+    subgraph Firebase["Firebase · proyecto sian-umg-bdm-dev"]
+        H["Hosting<br/>sirve el sitio"]
+        A["Authentication<br/>identidad + claims"]
+        D[("Firestore<br/>base de datos")]
+        S["Cloud Storage<br/>voz e imágenes"]
+        C["Cloud Functions<br/>Node 20 · TypeScript"]
+        M["Cloud Messaging<br/>FCM"]
+        Q["Cloud Scheduler<br/>cada minuto"]
+    end
+
+    F -->|"lee"| D
+    F -->|"escribe SIEMPRE por aquí"| C
+    F --> A
+    F --> S
+    C --> D
+    C --> S
+    C --> M
+    M --> SW
+    Q --> C
+    H --> F
+
+    style D fill:#e8f4ea,stroke:#2d6a3e,stroke-width:2px
+    style C fill:#fff4e5,stroke:#b8860b,stroke-width:2px
+```
+
+**La flecha que define el sistema es la segunda.** El navegador *lee* de
+Firestore directamente, pero **nunca escribe**: toda escritura pasa por una
+Cloud Function. Las reglas de seguridad lo hacen literal —
+`allow write: if false` en las colecciones que importan— porque una regla que
+solo viva en el cliente no es una regla, es una sugerencia.
+
+### 2.3 Framework de la interfaz
+
+| | |
+|---|---|
+| **Qué es** | Flutter 3.44.8 · Dart 3.12.2, compilado a web con el motor CanvasKit |
+| **Para qué aquí** | Una sola base de código para celular y computadora, instalable como aplicación sin pasar por App Store ni Play Store |
+| **Dónde vive** | `app/lib/` |
+| **Por qué** | ADR-003. Publicar en tiendas exigía cuentas de desarrollador de pago y revisiones de días por cada corrección; con una aplicación web instalable, un arreglo urgente llega en el siguiente despliegue |
+
+**Sí se usa un framework**, y esto responde a la pregunta directamente: la
+interfaz no está hecha con HTML y JavaScript sueltos. Flutter dibuja toda la
+pantalla sobre un lienzo, que es la razón de que las capturas del manual se
+generen desde el propio motor y no fotografiando el navegador.
+
+### 2.4 Librerías de la aplicación
+
+Once en total, y ninguna de adorno. Estas son **todas**:
+
+| Librería | Versión | Para qué se usa aquí |
+|---|---|---|
+| `flutter_riverpod` | ^3.4.2 | Manejo de estado e inyección de dependencias. Es lo que permite cambiar un repositorio real por uno falso en las pruebas sin tocar la pantalla |
+| `firebase_core` | ^4.12.1 | Arranque del SDK; lo exigen todos los demás |
+| `firebase_auth` | ^6.5.6 | Ingreso con Google y con correo, y lectura de los *claims* que llevan el rol |
+| `cloud_firestore` | ^6.7.1 | Lectura de la base de datos y suscripciones en tiempo real |
+| `cloud_functions` | ^6.3.5 | Llamada a las Functions: el único camino de escritura |
+| `firebase_messaging` | ^16.4.3 | Registro del dispositivo y recepción de notificaciones |
+| `firebase_storage` | ^13.4.5 | Subida y descarga de notas de voz e imágenes |
+| `web` | ^1.1.1 | Acceso tipado al navegador: `MediaRecorder` para grabar voz, `<input type=file>` para las imágenes, `<audio>` para reproducir |
+| `intl` | ^0.20.3 | Fechas y horas en español y en la zona de Guatemala |
+| `cupertino_icons` | ^1.0.8 | Iconos de la familia iOS |
+
+**Lo que deliberadamente NO se usó**, porque la pregunta también se responde
+por lo que falta:
+
+| Se evitó | Por qué |
+|---|---|
+| Paquete para grabar audio | El navegador ya trae `MediaRecorder`. Un paquete traería su propia cadena de dependencias y su propio ritmo de actualizaciones a cambio de nada |
+| Paquete para elegir archivos | `<input type="file">` hace exactamente eso, y en celular abre cámara o galería por sí solo |
+| Reproductor de audio propio | El `<audio>` del navegador entiende tanto el formato de Safari como el de Chrome, y trae resueltos el teclado y el lector de pantalla |
+| Generador de código (`build_runner`, `freezed`) | Añade una compilación intermedia a un proyecto que se lee para aprender |
+
+### 2.5 El servidor: Cloud Functions
+
+| | |
+|---|---|
+| **Qué es** | Cloud Functions de segunda generación, **Node.js 20**, escritas en **TypeScript 5.9** |
+| **Para qué aquí** | Todo lo que no puede confiarse al navegador: crear mensajes, resolver destinatarios, despachar notificaciones, confirmar lecturas, administrar usuarios y roles |
+| **Dónde vive** | `functions/src/` |
+| **Cuántas hay** | 19 desplegadas y activas |
+
+Sus tres únicas dependencias de ejecución:
+
+| Librería | Versión | Para qué |
+|---|---|---|
+| `firebase-admin` | ^13.10.0 | Acceso privilegiado a Firestore, Auth, Storage y FCM, saltándose las reglas —que es justo lo que hace falta del lado del servidor— |
+| `firebase-functions` | ^6.6.0 | Declaración de las funciones y sus disparadores |
+| `luxon` | ^3.7.2 | Fechas con zona horaria. La única de las tres que se eligió: calcular «todos los martes a las 7:00 en Guatemala» a mano, con cambios de mes y años bisiestos, es exactamente la clase de problema que no se debe resolver dos veces |
+
+Para probar y compilar: `jest`, `ts-jest`, `typescript`, `eslint` y
+`@firebase/rules-unit-testing` —esta última levanta un emulador para verificar
+que las reglas de seguridad hacen lo que dicen—.
+
+### 2.6 La base de datos
+
+| | |
+|---|---|
+| **Producto** | Cloud Firestore, en modo **Native** |
+| **Tipo** | **NoSQL documental**. No es una base de datos relacional: no hay tablas, ni filas, ni `JOIN`, ni SQL |
+| **Cómo se organiza** | Colecciones que contienen documentos; un documento puede tener subcolecciones dentro |
+| **Instancia** | `(default)`, región `us-central1` |
+| **Concurrencia** | Pesimista, con transacciones y bloqueos |
+
+Las seis colecciones que existen hoy en el proyecto:
+
+| Colección | Qué guarda |
+|---|---|
+| `usuarios` | Perfil de cada persona: nombre, correo, rol, si está activa, si recibe avisos |
+| `invitaciones` | La lista blanca. Sin estar aquí, nadie puede crear cuenta |
+| `grupos` | Conjuntos de destinatarios por carrera o jornada |
+| `mensajes` | Cada aviso, con sus adjuntos y su lista de destinatarios |
+| `cola_despacho` | Lo que está esperando salir. Es el corazón del planificador |
+| `bitacora` | Quién hizo qué y cuándo. Solo se escribe; nunca se modifica |
+
+Dentro de `mensajes` cuelgan dos subcolecciones: `ocurrencias` (cada vez que un
+mensaje recurrente sale) y, dentro de cada una, `entregas` (una por
+destinatario, con su estado y su confirmación).
+
+**Por qué NoSQL y no una base relacional.** No fue una preferencia: Firestore
+es lo que permite que el navegador **lea directamente** con reglas de seguridad
+evaluadas por documento, y que la bandeja se actualice sola cuando llega un
+aviso, sin preguntar cada cierto tiempo. Con una base relacional haría falta un
+servidor propio delante, y con él, alguien que lo administre.
+
+**Lo que cuesta esa decisión**, dicho sin adornos:
+
+- No hay `JOIN`. Los datos que se muestran juntos se guardan juntos aunque se
+  repitan: el nombre de quien envía viaja **dentro** del mensaje, porque el
+  catedrático no tiene permiso para leer la lista de usuarios.
+- Las consultas necesitan índices declarados de antemano. Los diez que usa el
+  sistema están en `firestore.indexes.json`, versionados junto al código.
+- **Una consulta no se recorta: se aprueba entera o se rechaza entera.** Esta
+  es la que más cara sale de aprender. Provocó dos defectos reales —el panel
+  del administrador y la bandeja del catedrático— y ambos aparecen explicados
+  en el código, en el sitio exacto donde se equivocaron.
+
+### 2.7 Los demás servicios, y para qué cada uno
+
+| Servicio | Para qué se usa | Dónde se toca en el código |
+|---|---|---|
+| **Authentication** | Identidad, y los *claims* que llevan el rol dentro del token. El rol NO se lee de la base de datos al decidir permisos: viaja firmado en el token (RN-01) | `functions/src/triggers/activarSesion.ts` |
+| **Hosting** | Sirve el sitio y el manual. Aquí viven también las reglas de caché | `firebase.json` |
+| **Cloud Storage** | Notas de voz e imágenes. Se sube contra un identificador reservado *antes* de que el mensaje exista | `app/lib/infrastructure/firebase/repositorio_adjuntos.dart` |
+| **Cloud Messaging** | La notificación que suena con la aplicación cerrada. Se envían mensajes **solo de datos** para que el Service Worker decida cómo mostrarlos | `app/web/firebase-messaging-sw.js` |
+| **Cloud Scheduler** | Despierta al planificador cada minuto. Un solo trabajo para todo el sistema, no uno por mensaje | `functions/src/triggers/despachador.ts` |
+
+### 2.8 Cómo encajan las capas con la tecnología
+
+La arquitectura de la sección 3 no es un dibujo: se puede medir. Estas son las
+líneas reales de cada capa, y lo que hay dentro:
+
+| Capa | Líneas | Qué contiene | Qué NO puede contener |
+|---|---|---|---|
+| `app/lib/domain` | 618 | Reglas, entidades e interfaces | Ni una línea de Firebase |
+| `app/lib/application` | 121 | Proveedores que conectan pantalla y datos | Lógica de negocio |
+| `app/lib/infrastructure` | 2 120 | Los repositorios que sí hablan con Firebase | Reglas de negocio |
+| `app/lib/presentation` | 9 424 | Pantallas y widgets | Acceso directo a Firebase |
+| `functions/src/domain` | 2 495 | Las reglas críticas, puras | `import ... from 'firebase-admin'` |
+| `functions/src/application` | 642 | Casos de uso puros | Acceso a la red |
+| `functions/src/triggers` | 2 402 | Las Functions y su plomería | Reglas de negocio sin probar aparte |
+
+Que el dominio esté limpio **es verificable**, no una promesa:
+
+```bash
+grep -rl "firebase" app/lib/domain functions/src/domain
+```
+
+Hoy devuelve un solo archivo, y es un comentario que prohíbe exactamente eso.
+
+---
+
+## 3. Estilo arquitectónico
 
 **Clean Architecture con cuatro capas** y regla de dependencia estricta: las flechas de
 dependencia apuntan siempre hacia adentro, hacia el dominio.
@@ -116,7 +344,7 @@ flowchart TB
 
 ---
 
-## 3. Patrones de diseño aplicados
+## 4. Patrones de diseño aplicados
 
 Cada patrón está justificado por un problema concreto del sistema. No se incluye ninguno por
 adorno académico.
@@ -147,17 +375,17 @@ adorno académico.
 
 ---
 
-## 4. Diseño del planificador
+## 5. Diseño del planificador
 
 Es la pieza más delicada del sistema y la que más restricciones tiene encima.
 
-### 4.1 El problema
+### 5.1 El problema
 
 Cloud Scheduler regala **3 jobs por cuenta de facturación**, no por proyecto. Crear un job
 por cada mensaje programado agotaría la cuota con el cuarto mensaje y empezaría a cobrar
 0.10 USD por job cada 31 días.
 
-### 4.2 La solución: patrón Outbox con un único job por ambiente
+### 5.2 La solución: patrón Outbox con un único job por ambiente
 
 ```mermaid
 flowchart TB
@@ -178,7 +406,7 @@ flowchart TB
     N --> D
 ```
 
-### 4.3 Garantías de diseño
+### 5.3 Garantías de diseño
 
 | Garantía | Mecanismo |
 |----------|-----------|
@@ -189,7 +417,7 @@ flowchart TB
 | Precisión ≤ 60 s (RNF-04) | El job corre cada minuto; la desviación máxima es el intervalo del job |
 | Costo cero | 1 job × 3 ambientes = 3 jobs = exactamente la cuota gratuita |
 
-### 4.4 Alternativas evaluadas y descartadas
+### 5.4 Alternativas evaluadas y descartadas
 
 | Alternativa | Por qué se descartó |
 |-------------|---------------------|
@@ -201,16 +429,133 @@ flowchart TB
 
 ---
 
-## 5. Modelo de despliegue y ambientes
+## 6. Dónde está el código que Firebase ejecuta ahora mismo
+
+Una pregunta razonable, y con respuesta exacta: **Firebase no guarda código
+editable**. Ejecuta un paquete compilado que se subió desde este repositorio.
+El código fuente vive en un solo sitio, y es GitHub.
+
+### 6.1 Qué corre cada cosa
+
+| Lo que ve el usuario | Qué se ejecuta | Compilado desde | Fuente en el repositorio |
+|---|---|---|---|
+| El sitio web | Archivos estáticos servidos por Hosting | `flutter build web --release` | `app/lib/` y `app/web/` |
+| Las 19 Functions | JavaScript de Node 20 | `npm run build` (TypeScript → JavaScript) | `functions/src/` |
+| Las reglas de seguridad | Se ejecutan tal cual, sin compilar | — | `firestore.rules`, `storage.rules` |
+| El manual | HTML estático | Se copia sin tocar | `app/web/manuales/` |
+
+Lo publicado **nunca** es lo que se edita: `app/build/web` y `functions/lib`
+son resultados de compilación y no se versionan. Modificarlos a mano no
+serviría de nada, porque la siguiente compilación los reescribe.
+
+### 6.2 Cómo verlo
+
+**En GitHub, que es la fuente de verdad:**
+
+```
+https://github.com/eurizara/sian-notificaciones-catedraticos
+```
+
+Rama `develop`. Cada cambio entró por una solicitud de incorporación con su
+explicación, así que el historial dice *por qué* además de *qué*.
+
+**En la consola de Firebase**, para ver qué está desplegado:
+
+| Qué mirar | Dónde |
+|---|---|
+| Las Functions, con su fecha y su registro | Consola → Functions |
+| El código exacto que se subió | Consola de Google Cloud → Cloud Functions → *Source* |
+| Los datos reales | Consola → Firestore Database |
+| Las versiones publicadas del sitio | Consola → Hosting |
+
+El paquete que Google guarda de cada Function está en un bucket propio, por si
+alguna vez hace falta auditarlo:
+
+```
+gs://gcf-v2-sources-863854823370-us-central1/<nombre>/function-source.zip
+```
+
+Es JavaScript compilado y minificado. **Sirve para comprobar, no para leer**:
+para entender qué hace una función, el sitio es `functions/src/`.
+
+### 6.3 Cómo comprobar que lo desplegado es lo que está en Git
+
+Esta es la pregunta que de verdad importa, y tiene respuesta de un comando.
+
+**El sitio web** — compara byte a byte lo compilado con lo publicado:
+
+```bash
+cd app && flutter build web --release
+shasum -a 256 build/web/main.dart.js
+curl -s https://sian-umg-bdm-dev.web.app/main.dart.js | shasum -a 256
+```
+
+Si los dos resúmenes coinciden, lo que hay publicado es exactamente lo que
+produce el código de esta rama. Es la comprobación que destapó que un icono
+nuevo no se estaba viendo por culpa de la caché (DT-15).
+
+**Las Functions** — pregunta cuándo se actualizó cada una:
+
+```bash
+firebase functions:list --project dev
+```
+
+Si alguna es más antigua que el último cambio en `functions/src/`, no está
+desplegada. Pasó una vez: un despliegue en verde subió código viejo porque no
+había paso de compilación previo. Ahora `firebase.json` declara ese paso, y por
+eso está ahí.
+
+**Las reglas** — se comparan contra el archivo del repositorio desde la consola
+de Firebase, en Firestore → Reglas, donde también queda el historial de
+versiones publicadas.
+
+### 6.4 Qué hay que instalar para trabajar sobre esto
+
+```bash
+git clone https://github.com/eurizara/sian-notificaciones-catedraticos.git
+cd sian && ./scripts/bootstrap.sh
+```
+
+Hace falta Flutter 3.44 o superior, Node 20 y la herramienta `firebase-tools`.
+El guion comprueba las versiones antes de empezar y dice qué falta, en vez de
+fallar a mitad con un error del compilador.
+
+---
+
+## 7. Modelo de despliegue y ambientes
 
 Tres proyectos de Firebase **completamente separados**. Nunca se comparten datos entre
 ambientes.
 
 | Ambiente | Proyecto Firebase | Propósito | Quién accede |
 |----------|-------------------|-----------|--------------|
-| **Desarrollo** | `sian-dev` | Trabajo diario. Se usan los emuladores locales siempre que sea posible | Equipo de desarrollo |
-| **Pruebas de calidad** | `sian-qa` | Validación funcional con el solicitante y con catedráticos voluntarios | Equipo + usuarios de prueba |
-| **Producción** | `sian-prod` | Operación real | Usuarios institucionales |
+| **Desarrollo** | `sian-umg-bdm-dev` | Trabajo diario. Se usan los emuladores locales siempre que sea posible | Equipo de desarrollo |
+| **Pruebas de calidad** | `sian-umg-bdm-qa` | Validación funcional con el solicitante y con catedráticos voluntarios | Equipo + usuarios de prueba |
+| **Producción** | `sian-umg-bdm` | Operación real | Usuarios institucionales |
+
+### Convención de nombres
+
+`sian-umg-bdm-<ambiente>`, donde:
+
+| Segmento | Significado |
+|----------|-------------|
+| `sian` | El sistema. Por sí solo es demasiado genérico para un identificador global de Google Cloud |
+| `umg` | Universidad Mariano Gálvez |
+| `bdm` | Sede Boca del Monte, que es el alcance de esta implantación |
+| `<ambiente>` | `dev`, `qa` o `prod`, siempre presente |
+
+**El sufijo de ambiente no se omite.** Un identificador de proyecto de Firebase es
+global, único e **inmutable**: si un proyecto nace sin sufijo, en la consola aparece como
+si fuera el principal, y esa ambigüedad solo se corrige creando otro proyecto y
+abandonando el anterior. Si mañana el sistema se extiende a otra sede, la convención
+admite `sian-umg-<sede>-<ambiente>` sin tocar nada de lo ya desplegado.
+
+> **Producción no cumple esta convención: se llama `sian-umg-bdm`, sin sufijo.** Fue el
+> primer proyecto creado, antes de que la convención estuviera escrita. Como el
+> identificador es inmutable, corregirlo significaría abandonar el proyecto y crear otro,
+> y no vale la pena: el nombre está en el pipeline, en la documentación y en la URL
+> pública. Queda así, y esta nota existe para que nadie lo lea como un descuido ni intente
+> «arreglarlo». Los ambientes reales son los del [documento 11](11-ambientes.md).
 
 ```mermaid
 flowchart LR
@@ -221,20 +566,22 @@ flowchart LR
     subgraph GH["GitHub"]
         FEAT["feature/*"]
         DEV["develop"]
+        QAB["qa"]
         MAIN["main"]
         CI["GitHub Actions"]
     end
     subgraph FB["Firebase"]
-        D["sian-dev"]
-        Q["sian-qa"]
-        PR["sian-prod"]
+        D["sian-umg-bdm-dev"]
+        Q["sian-umg-bdm-qa"]
+        PR["sian-umg-bdm"]
     end
 
     CODE --> EMU
     CODE --> FEAT
     FEAT -->|"pull request + revisión"| DEV
-    DEV -->|"release/* aprobado"| MAIN
-    DEV --> CI
+    DEV -->|"pull request"| QAB
+    QAB -->|"pull request aprobado"| MAIN
+    QAB --> CI
     MAIN --> CI
     CI -->|"despliegue automático"| Q
     CI -->|"despliegue con aprobación manual"| PR
@@ -251,7 +598,7 @@ flowchart LR
 
 ---
 
-## 6. Estructura del repositorio
+## 8. Estructura del repositorio
 
 ```
 sian/
@@ -327,17 +674,30 @@ sian/
 
 ---
 
-## 7. Estrategia de ramas y control de cambios
+## 9. Estrategia de ramas y control de cambios
 
 **GitFlow simplificado**, adecuado para un equipo pequeño y didáctico:
 
-| Rama | Propósito | Regla |
-|------|-----------|-------|
-| `main` | Refleja siempre lo que está en producción | Protegida. Solo entra por pull request desde `release/*` o `hotfix/*` |
-| `develop` | Integración continua de lo que va a la siguiente versión | Protegida. Solo entra por pull request revisado |
-| `feature/<id>-<descripcion>` | Una funcionalidad o un requisito | Nace de `develop` y regresa a `develop` |
-| `release/<version>` | Estabilización antes de producción | Solo correcciones, nada de funcionalidad nueva |
-| `hotfix/<id>` | Corrección urgente en producción | Nace de `main`, regresa a `main` y a `develop` |
+| Rama | Ambiente | Propósito | Regla |
+|------|----------|-----------|-------|
+| `main` | **producción** | Refleja siempre lo que está en producción | Protegida. Entra por pull request desde `qa` o `hotfix/*`, y despliega solo con aprobación |
+| `qa` | **calidad** | Lo que está bajo pruebas de calidad | Protegida. Solo entra por pull request desde `develop`; cada fusión despliega |
+| `develop` | desarrollo | Integración de lo que va a la siguiente versión | Protegida. Solo entra por pull request revisado |
+| `feature/<id>-<descripcion>` | — | Una funcionalidad o un requisito | Nace de `develop` y regresa a `develop` |
+| `hotfix/<id>` | — | Corrección urgente en producción | Nace de `main`, regresa a `main`, a `qa` y a `develop` |
+
+Las tres ramas permanentes corresponden una a una con los tres ambientes. El cambio se
+promueve siempre hacia adelante y **siempre es el mismo commit**: lo que se aprueba en
+calidad es literalmente lo que llega a producción, sin recompilar contra otra base ni
+rehacer la corrección a mano.
+
+```
+feature/*  ──PR──▶  develop  ──PR──▶  qa  ──PR──▶  main
+                   desarrollo       calidad      producción
+```
+
+`release/*` desaparece: la rama `qa` cumple su función de estabilización, y mantener las
+dos significaría estabilizar dos veces.
 
 **Convención de mensajes de commit** (Conventional Commits), con referencia obligatoria al
 requisito:
@@ -355,7 +715,7 @@ documentada, cumple su criterio de aceptación y fue revisada por otra persona.
 
 ---
 
-## 8. Estrategia de pruebas
+## 10. Estrategia de pruebas
 
 | Nivel | Qué cubre | Herramienta | Dónde corre |
 |-------|-----------|-------------|-------------|
@@ -372,7 +732,135 @@ confirmación y hasta la última.
 
 ---
 
-## 9. Seguridad
+## 11. Identidad visual
+
+Los colores, la tipografía y los iconos se toman de la universidad, no se
+inventan. La razón es práctica: SIAN manda avisos que la gente tiene que creer,
+y un aviso se cree en parte por venir de donde dice venir.
+
+### Colores
+
+Los tres del escudo, muestreados del archivo original y no estimados a ojo, más
+el azul marino de los titulares del sitio `umg.edu.gt`:
+
+| Color | Uso | Contraste sobre blanco |
+|---|---|---|
+| `#003168` azul marino | Titulares y la banda de la portada | 12.81:1 |
+| `#1C72A5` azul del escudo | Color primario: barra, botones | 5.25:1 |
+| `#A32826` rojo de urgencia | **Solo** alertas urgentes (RF-ENT-05) | 7.27:1 |
+| `#AE8436` dorado del escudo | Filetes y elementos gráficos, nunca texto pequeño | 3.41:1 |
+
+El rojo institucional del escudo, `#CB3332`, no se usa como color de acción. Si
+el rojo fuera también el de los botones dejaría de significar «urgente» para
+significar «SIAN», y en una emergencia real eso importa. Se oscurece a `#A32826`
+para separarlo en luminancia del azul primario, porque los dos originales tienen
+una relación de contraste **entre sí** de 1.01: en escala de grises, o para
+quien no distingue el rojo del verde, son el mismo color.
+
+El sitio institucional usa además `#207FAF`, `#2984BB` y `#1D94CF`. Se midieron:
+4.45:1, 4.11:1 y 3.39:1 sobre blanco, y AA exige 4.5:1 para texto normal. Los
+tres se quedan cortos, así que no entran (RNF-13). Parecerse al sitio no llega
+hasta copiarle un problema de contraste.
+
+### Tipografía
+
+**Urbanist**, la del sitio institucional, empaquetada con la aplicación en
+`app/assets/fuentes` bajo SIL Open Font License 1.1. Va empaquetada y no traída
+de Google Fonts porque SIAN se usa instalada y a veces sin conexión: una fuente
+que llega por red se convierte, el día que no llega, en una pantalla con otra
+letra.
+
+### Iconos
+
+Los genera `scripts/generar-iconos.py` a partir del escudo, y su salida se
+versiona. Dos decisiones que el archivo explica en detalle:
+
+**Por debajo de 64 px no se usa el escudo.** El escudo es un anillo con el
+nombre completo de la universidad rodeando una figura. A 16 px —el tamaño de la
+pestaña del navegador— el anillo se vuelve un cerco de píxeles sueltos y la
+figura una mancha: queda «un círculo rojo con algo adentro», indistinguible de
+cualquier otro sello. En ese tamaño se usa una marca reducida con el anillo
+rojo y el campo azul del propio escudo. De 180 px en adelante vuelve el escudo
+entero.
+
+**Los iconos «maskable» llevan 20 % de margen.** Android aplica su propia
+máscara —círculo, cuadrado redondeado, gota— y recorta hasta un 20 % por lado.
+Los iconos anteriores tenían **0 % de margen**: el escudo llegaba al borde
+exacto del lienzo, así que en cualquier teléfono con máscara circular el anillo
+con «UNIVERSIDAD MARIANO GÁLVEZ» salía cortado por los cuatro costados.
+
+### La insignia del icono
+
+Con mensajes sin leer, sobre el icono de la aplicación instalada aparece un
+número (`navigator.setAppBadge`). Funciona en Android, en escritorio y en iOS
+16.4 en adelante, y en los tres **exige que la aplicación esté instalada**: en
+una pestaña no hay icono sobre el cual pintar.
+
+El número vale exactamente lo que dice el filtro «Sin leer», y no se le suma lo
+que está sin confirmar aunque también espere una acción. El motivo es que los
+dos números se ven juntos: la persona abre porque el icono decía «3», y lo
+primero que encuentra es la fila de filtros. Si ahí dijera «Sin leer 2», el
+número de afuera queda desmentido por el de adentro, y a partir de ahí ninguno
+de los dos se cree.
+
+Con la aplicación cerrada, quien mantiene el número es el service worker, que
+lleva su propia cuenta en IndexedDB y **solo la incrementa**. La aplicación, que
+sí sabe cuántos mensajes hay sin leer porque está autenticada, le manda el
+número exacto por `postMessage` cada vez que cambia, y es la única que puede
+bajarlo a cero.
+
+> **El worker suma; solo la aplicación fija o retira.** La primera versión
+> contaba `registration.getNotifications()` y, si salía cero, llamaba a
+> `clearAppBadge()`. En Android funcionaba. En iOS ese método devuelve una lista
+> vacía para las notificaciones que muestra el propio worker, así que el
+> resultado era el contrario del buscado: llegaba el aviso, se contaban cero
+> notificaciones y **se borraba la insignia**. El número no aparecía nunca, y el
+> síntoma —«no sale nada»— hacía pensar que la Badging API no estaba soportada
+> en iOS, cuando lo que pasaba es que la estábamos usando para apagarla.
+
+> **El worker cuenta mensajes distintos, no avisos recibidos.** La segunda
+> versión sumaba uno por cada `push`. Parecía equivalente y no lo es: el sistema
+> **reintenta la entrega hasta tres veces** (RF-ENT-10), así que un solo mensaje
+> que necesite sus reintentos llega tres veces al worker y el icono acababa
+> diciendo «3» donde había uno. Quien lo mira abre la aplicación esperando tres
+> avisos, encuentra uno, y a partir de ahí el número deja de significar algo.
+> Ahora se guarda el identificador del mensaje —el mismo que ya viajaba en la
+> carga para poder abrirlo desde la notificación— y se cuentan los distintos.
+
+Del lado de la aplicación, la insignia se sincroniza con lo que la bandeja tiene
+**ahora mismo**, no con lo que cambió. Escuchar los cambios del historial no
+basta: un escuchador solo se entera de lo que ocurre mientras está escuchando, y
+al volver de otra pantalla o al girar el aparato la bandeja se monta con los
+datos ya resueltos, no llega ningún cambio y el número se queda sin poner. La
+llamada es idempotente y recuerda el último valor enviado, así que repetirla en
+cada dibujado no cuesta nada.
+
+### El mensaje abierto y el cerrado
+
+En la bandeja, la cabecera plegada y la desplegada eran idénticas: los mismos
+datos, el mismo fondo, la misma tipografía, y el cuerpo apareciendo debajo sin
+nada que lo separase. Abrir un mensaje no se notaba, y en una lista de avisos
+parecidos se perdía cuál se estaba leyendo.
+
+Desplegado, la cabecera —título, estado, fecha y quién envió— se asienta sobre
+una banda, y una línea la separa del texto. El título pesa además un poco más,
+para localizarlo al recorrer la lista.
+
+**La banda no es un color: es un velo translúcido sobre lo que haya debajo.** Y
+eso importa, porque el primer intento se hizo al revés y falló. Consistía en
+meter el cuerpo en un recuadro con fondo `surface` y borde. En un mensaje sin
+leer o sin confirmar funcionaba, porque la tarjeta va teñida y el recuadro
+resaltaba contra ella. En uno **ya leído** la tarjeta no lleva tinte: el recuadro
+quedaba exactamente del color de su fondo y no separaba nada. El defecto seguía
+ahí justo en el estado más común de la bandeja.
+
+Un velo acierta siempre porque no compite con el fondo: lo oscurece. Sobre la
+tarjeta blanca da un gris suave; sobre la teñida de urgente, un rosa un punto
+más oscuro.
+
+Plegado no cambia nada. Ahí se hojea una lista, y no había nada que arreglar.
+
+## 12. Seguridad
 
 | Control | Implementación |
 |---------|----------------|
@@ -389,7 +877,7 @@ confirmación y hasta la última.
 
 ---
 
-## 10. Riesgos técnicos abiertos
+## 13. Riesgos técnicos abiertos
 
 | ID | Riesgo | Probabilidad | Impacto | Mitigación |
 |----|--------|:---:|:---:|------------|
@@ -402,7 +890,7 @@ confirmación y hasta la última.
 
 ---
 
-## 11. Plan de contingencia si R-01 se materializa
+## 14. Plan de contingencia si R-01 se materializa
 
 Si la prueba de resistencia en iOS demuestra que las notificaciones web no son confiables
 para alertas urgentes, se aplica esta secuencia, en orden:
@@ -424,7 +912,7 @@ aplicación web convencional: el paso 3 no requiere reescribir nada.
 
 ---
 
-## 12. Registros de decisión de arquitectura
+## 15. Registros de decisión de arquitectura
 
 Toda decisión relevante se documenta en `docs/adr/` con el formato: contexto, opciones
 consideradas, decisión, consecuencias y estado.

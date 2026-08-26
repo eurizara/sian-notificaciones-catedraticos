@@ -109,11 +109,16 @@ Notación: `RF-<módulo>-<número>`. Prioridad según MoSCoW —
 | RF-AUT-03 | El sistema restringe el acceso a correos previamente autorizados en la lista institucional, sea cual sea el proveedor de identidad | D |
 | RF-AUT-04 | El sistema asigna a cada usuario exactamente un rol, y lo refleja en el token de sesión | D |
 | RF-AUT-05 | El sistema permite recuperar la contraseña por correo electrónico | D |
-| RF-AUT-06 | El sistema exige contraseña de mínimo 10 caracteres con al menos una mayúscula, una minúscula y un dígito | D |
+| RF-AUT-06 | El sistema exige contraseña de mínimo 10 caracteres con al menos una mayúscula, una minúscula, un dígito y un símbolo; y rechaza además las que contienen datos personales del propio usuario, las de uso común y las secuencias o repeticiones obvias | D |
 | RF-AUT-07 | El sistema cierra sesión de forma explícita y revoca el token del dispositivo | D |
 | RF-AUT-08 | El coordinador puede desactivar una cuenta sin borrarla, conservando su historial | D |
 | RF-AUT-09 | El sistema bloquea el acceso tras 5 intentos fallidos consecutivos durante 15 minutos | B |
 | RF-AUT-10 | El sistema permite verificación en dos pasos para cuentas con rol Coordinador | P |
+
+**Criterio de aceptación de RF-AUT-06:** una contraseña que contenga el nombre o el correo de
+quien la elige se rechaza, aunque cumpla longitud y composición, y aunque el fragmento venga
+disfrazado con sustituciones del tipo `3` por `e`. El sistema informa de **todos** los
+incumplimientos a la vez, no de uno cada vez.
 
 **Criterio de aceptación de RF-AUT-03:** un usuario con correo no incluido en la lista de
 autorizados que complete correctamente el flujo de Google recibe un rechazo explicativo, no
@@ -123,7 +128,7 @@ se le crea perfil, y el intento queda registrado en la bitácora.
 
 | ID | Requisito | Prioridad |
 |----|-----------|:---:|
-| RF-USR-01 | El coordinador puede registrar la lista de correos institucionales autorizados, individualmente o por carga masiva desde archivo CSV | D |
+| RF-USR-01 | El coordinador puede registrar la lista de correos institucionales autorizados, individualmente o por carga masiva desde archivo CSV, sin que una recarga altere a quien ya entró | D |
 | RF-USR-02 | El coordinador puede asignar y cambiar el rol de cualquier usuario | D |
 | RF-USR-03 | El sistema permite crear grupos de destinatarios con nombre y descripción | D |
 | RF-USR-04 | El sistema permite agregar y quitar catedráticos de un grupo | D |
@@ -202,9 +207,18 @@ notifica a su creador.
 | RF-ENT-10 | El sistema reintenta la entrega fallida hasta 3 veces con espera creciente | D |
 | RF-ENT-11 | El sistema registra el resultado individual de cada intento de entrega | D |
 | RF-ENT-12 | El catedrático consulta el historial completo de mensajes recibidos, ordenado del más reciente al más antiguo | D |
-| RF-ENT-13 | La aplicación muestra un contador de mensajes no leídos | B |
+| RF-ENT-13 | La aplicación muestra un contador de mensajes no leídos, sobre el icono de la aplicación instalada | B |
 | RF-ENT-14 | El envío se procesa por lotes para no exceder los límites del servicio de push | D |
 | RF-ENT-15 | El sistema muestra al emisor el avance del envío en tiempo real | B |
+
+**Criterio de aceptación de RF-ENT-13:** con la aplicación **instalada**, el icono muestra
+el número de mensajes sin abrir, y ese número es exactamente el que muestra el filtro
+«Sin leer» de la bandeja. Al abrirlos todos, la insignia se retira en lugar de mostrar
+cero. En una pestaña del navegador, sin instalar, no aparece número y las notificaciones
+siguen llegando igual: la insignia necesita un icono donde pintarse.
+
+En iOS es además la única señal de cantidad disponible, porque no se puede definir sonido
+ni vibración propios (DT-02).
 
 **Criterio de aceptación de RF-ENT-05:** en Android, avisos y alertas usan canales de
 notificación distintos con importancia `DEFAULT` y `HIGH` respectivamente. En iOS-PWA, donde
@@ -354,6 +368,12 @@ sobre el control de confirmación. Abrir un mensaje nunca lo marca como confirma
 | CU-11 | Suspender o cancelar una programación | Coordinador, Administradora | RF-PRG-10, 11 |
 | CU-12 | Despachar automáticamente las ocurrencias vencidas | Planificador | RF-PRG-12, 13, RF-ENT-14 |
 
+> **Este catálogo es el índice, no la especificación.** Cada caso está
+> desarrollado en el [documento 10](10-casos-de-uso.md) con el formato extendido
+> de la norma **ISO/IEC/IEEE 29148:2018**: actores, partes interesadas,
+> precondiciones, garantía mínima y de éxito, flujo principal, flujos
+> alternativos, excepciones y reglas de negocio.
+
 ---
 
 ## 9. Estados del mensaje
@@ -410,7 +430,7 @@ stateDiagram-v2
 |---|---|---|
 | Avisos informativos y alertas urgentes | RF-MSG-02, RF-ENT-05, RN-06 | CU-03 |
 | Mensajes de texto, voz e imagen | RF-MSG-01, 03, 04, 05 | CU-03 |
-| Sonido, vibración o alerta visible | RF-ENT-02, 03, 04, 05 | CU-06 |
+| Sonido, vibración o alerta visible | RF-ENT-02, 03, 04, 05, 13 | CU-06 |
 | Funcionamiento igual en Android e iOS | RNF-14, RES-05, RES-06, DT-02 | CU-06 |
 | Roles definidos para administradoras | RF-AUT-04, matriz RBAC, RN-01 | CU-10 |
 | Mensajes programados a fecha y hora | RF-PRG-02, 03, 04 | CU-04 |

@@ -1,0 +1,161 @@
+name: Despliegue
+
+# Una rama por ambiente (documento 11, sección 7):
+#
+#   develop → integración. No despliega solo; desarrollo se publica a mano.
+#   qa      → sian-umg-bdm-qa  automático
+#   main    → sian-umg-bdm     con aprobación manual obligatoria
+#
+# El ambiente al que va un cambio lo decide la rama en la que cae. Una rama
+# intermedia significa que a producción no llega nada que no haya estado antes
+# en calidad, y que es el MISMO commit el que se promueve: no se recompila
+# contra otra base ni se rehace la corrección a mano.
+#
+# Ningún secreto vive en el repositorio (RNF-10): todos entran por los secrets
+# de GitHub Actions declarados en el documento 06, etapa F.2.
+
+on:
+  push:
+    branches: [qa, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qa:
+    name: Desplegar a QA
+    # `vars.QA_PROJECT_ID` actúa de interruptor: si está vacía, el trabajo se
+    # omite en vez de fallar. Un repositorio en rojo permanente enseña a
+    # ignorar el rojo.
+    #
+    # Esa variable vive a NIVEL DE REPOSITORIO, no en el environment `qa`. El
+    # `if:` de un trabajo se evalúa antes de que GitHub aplique el ambiente, así
+    # que una variable de ambiente se leería vacía aquí y el trabajo se saltaría
+    # en silencio. Las demás variables sí viven en el environment, porque se
+    # leen dentro de los pasos.
+    if: github.ref == 'refs/heads/qa' && vars.QA_PROJECT_ID != ''
+    runs-on: ubuntu-latest
+    environment: qa
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Compilar y probar las Functions
+        run: |
+          npm ci --prefix functions
+          npm run lint --prefix functions
+          npm run build --prefix functions
+          npm test --prefix functions
+
+      - name: Compilar la aplicación web
+        if: hashFiles('app/pubspec.yaml') != ''
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.x'
+
+      - name: Generar firebase_options.dart
+        if: hashFiles('app/pubspec.yaml') != ''
+        run: bash scripts/generar-firebase-options.sh
+        env:
+          FIREBASE_API_KEY: ${{ vars.QA_API_KEY }}
+          FIREBASE_APP_ID: ${{ vars.QA_APP_ID }}
+          FIREBASE_MESSAGING_SENDER_ID: ${{ vars.QA_SENDER_ID }}
+          FIREBASE_PROJECT_ID: ${{ vars.QA_PROJECT_ID }}
+          FIREBASE_AUTH_DOMAIN: ${{ vars.QA_AUTH_DOMAIN }}
+          FIREBASE_STORAGE_BUCKET: ${{ vars.QA_STORAGE_BUCKET }}
+
+      - name: Construir la PWA
+        if: hashFiles('app/pubspec.yaml') != ''
+        working-directory: app
+        run: |
+          flutter pub get
+          flutter build web --release \
+            --dart-define=FIREBASE_VAPID_KEY=${{ secrets.QA_VAPID_KEY }} \
+            --dart-define=USE_EMULATOR=false
+
+      - name: Desplegar reglas, índices y Functions
+        uses: w9jds/firebase-action@v13.24.1
+        with:
+          args: deploy --only firestore:rules,firestore:indexes,storage,functions --project ${{ vars.QA_PROJECT_ID }}
+        env:
+          GCP_SA_KEY: ${{ secrets.QA_SERVICE_ACCOUNT }}
+
+      - name: Desplegar Hosting
+        if: hashFiles('app/pubspec.yaml') != ''
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.QA_SERVICE_ACCOUNT }}
+          projectId: ${{ vars.QA_PROJECT_ID }}
+          channelId: live
+
+  produccion:
+    name: Desplegar a producción
+    # Mismo interruptor que en QA: producción se habilita en la iteración 3.1,
+    # y además exige aprobación manual por el ambiente `produccion`.
+    if: github.ref == 'refs/heads/main' && vars.PROD_PROJECT_ID != ''
+    runs-on: ubuntu-latest
+    # El ambiente `produccion` exige revisores obligatorios en
+    # Settings → Environments: ningún despliegue ocurre sin aprobación explícita.
+    environment: produccion
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Compilar y probar las Functions
+        run: |
+          npm ci --prefix functions
+          npm run lint --prefix functions
+          npm run build --prefix functions
+          npm test --prefix functions
+
+      - name: Compilar la aplicación web
+        if: hashFiles('app/pubspec.yaml') != ''
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.x'
+
+      - name: Generar firebase_options.dart
+        if: hashFiles('app/pubspec.yaml') != ''
+        run: bash scripts/generar-firebase-options.sh
+        env:
+          FIREBASE_API_KEY: ${{ vars.PROD_API_KEY }}
+          FIREBASE_APP_ID: ${{ vars.PROD_APP_ID }}
+          FIREBASE_MESSAGING_SENDER_ID: ${{ vars.PROD_SENDER_ID }}
+          FIREBASE_PROJECT_ID: ${{ vars.PROD_PROJECT_ID }}
+          FIREBASE_AUTH_DOMAIN: ${{ vars.PROD_AUTH_DOMAIN }}
+          FIREBASE_STORAGE_BUCKET: ${{ vars.PROD_STORAGE_BUCKET }}
+
+      - name: Construir la PWA
+        if: hashFiles('app/pubspec.yaml') != ''
+        working-directory: app
+        run: |
+          flutter pub get
+          flutter build web --release \
+            --dart-define=FIREBASE_VAPID_KEY=${{ secrets.PROD_VAPID_KEY }} \
+            --dart-define=USE_EMULATOR=false
+
+      - name: Desplegar reglas, índices y Functions
+        uses: w9jds/firebase-action@v13.24.1
+        with:
+          args: deploy --only firestore:rules,firestore:indexes,storage,functions --project ${{ vars.PROD_PROJECT_ID }}
+        env:
+          GCP_SA_KEY: ${{ secrets.PROD_SERVICE_ACCOUNT }}
+
+      - name: Desplegar Hosting
+        if: hashFiles('app/pubspec.yaml') != ''
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.PROD_SERVICE_ACCOUNT }}
+          projectId: ${{ vars.PROD_PROJECT_ID }}
+          channelId: live

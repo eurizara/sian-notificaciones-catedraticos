@@ -1,0 +1,58 @@
+rules_version = '2';
+
+// SIAN — Reglas de seguridad de Cloud Storage
+// Fuente normativa: documento 05, sección 6
+//
+// LIMITACIÓN CONOCIDA (DT-04): las reglas de Storage no pueden consultar
+// Firestore, así que aquí es imposible verificar si quien lee es destinatario
+// del mensaje. La lectura queda abierta a todo usuario autenticado y activo del
+// sistema. Se paga sirviendo los adjuntos mediante URLs firmadas de vigencia
+// corta generadas por una Cloud Function que sí valide la pertenencia.
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function autenticado() {
+      return request.auth != null;
+    }
+
+    function activo() {
+      return autenticado() && request.auth.token.get('activo', false) == true;
+    }
+
+    function esEmisor() {
+      return activo() && request.auth.token.get('rol', '') in ['COORDINADOR', 'ADMINISTRADORA'];
+    }
+
+    // Adjuntos de mensaje: el emisor sube, el servidor y los usuarios del
+    // sistema leen. Las rutas incluyen identificadores aleatorios no
+    // adivinables como mitigación parcial de DT-04.
+    match /mensajes/{mensajeId}/{archivo} {
+
+      allow read: if activo();
+
+      // Imagen: hasta 5 MB, JPEG/PNG/WebP (RF-MSG-08).
+      // Audio: hasta 2 MB (RF-MSG-07). La duración máxima de 60 s no es
+      // verificable aquí; la valida el cliente y la reconfirma la Function.
+      allow create: if esEmisor()
+                    && request.resource.size > 0
+                    && (
+                      (
+                        request.resource.contentType.matches('image/(jpeg|png|webp)')
+                        && request.resource.size < 5 * 1024 * 1024
+                      ) || (
+                        request.resource.contentType.matches('audio/.*')
+                        && request.resource.size < 2 * 1024 * 1024
+                      )
+                    );
+
+      // Los adjuntos son inmutables mientras exista el mensaje (RN-09).
+      allow update, delete: if false;
+    }
+
+    // Cierre por omisión.
+    match /{rutaLibre=**} {
+      allow read, write: if false;
+    }
+  }
+}
