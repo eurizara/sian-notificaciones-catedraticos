@@ -233,6 +233,8 @@ notificación real.
 | 3.19 | Repite 3.15 desde una **pestaña** del navegador, sin instalar | No aparece ningún número, y las notificaciones siguen llegando igual: la insignia necesita un icono donde pintarse |
 | 3.20 | Activa las notificaciones en un aparato recién instalado y **mira el icono antes de mandar nada** | Llega la notificación de prueba «tu dispositivo quedó registrado» y el icono **sigue en cero**: esa notificación no es un mensaje |
 | 3.21 | Con dos dispositivos registrados para la misma persona, mándale un aviso | El icono dice **1**, no 2. Un mensaje cuenta una vez aunque llegue por varios caminos |
+| 3.22 | Con el icono marcando un número, **abre la aplicación** | El número se corrige solo al que diga «Sin leer». Si no baja, la aplicación no está alcanzando al worker de mensajería |
+| 3.23 | Entra, cierra sesión y vuelve a entrar tres veces; después mándate un aviso | El icono dice **1**. Cada ingreso deja un token nuevo, y ninguno debe sumar |
 
 ### Criterio de salida
 
@@ -575,6 +577,7 @@ cada uno señala un paso que al guion le falta.
 
 | Hallazgo | Qué lo destapó | Paso que hay que añadir |
 |---|---|---|
+| El número del icono solo subía, nunca bajaba | Tres ingresos y un aviso: marcaba 3 con 1 sin leer | **Abrir la aplicación y mirar si el número se corrige solo.** Si no baja, el aviso no está llegando al worker |
 | Entrar con Google falla en la PWA de iOS | Cerrar sesión y volver a entrar desde el iPhone | Probar el ingreso **cerrando sesión y volviendo a entrar**, no solo la primera vez |
 | La insignia decía 3 con un solo mensaje sin leer | Varios ingresos seguidos, luego un aviso | Entrar **varias veces** antes de mandar el aviso: cada ingreso deja un token más |
 | La insignia decía 2 con un solo mensaje sin leer | Activar notificaciones y mandarse el primer aviso | Activar el permiso **y mirar el icono antes de mandar nada**: tiene que quedar en cero |
@@ -615,8 +618,10 @@ cada uno señala un paso que al guion le falta.
 > escriba algo merece hacerse **dos veces seguidas** y comprobar que la segunda
 > no deshace la primera.
 
-> **La insignia lleva tres defectos, y los tres los encontró una persona.** No
-> aparecía nunca, luego decía 3 donde había 1, luego 2 donde había 1. Los tres
+> **La insignia lleva cuatro defectos, y los cuatro los encontró una persona.**
+> No aparecía nunca; luego decía 3 donde había 1; luego 2 donde había 1; luego
+> solo subía y nunca bajaba, porque el aviso de la aplicación se iba al service
+> worker equivocado. Los tres
 > vivían enteros dentro del service worker, que no tiene ni una prueba
 > automatizada, y las 307 pruebas de Flutter y las 261 de Functions estuvieron
 > en verde durante los tres. Está registrado como **DT-17**. Mientras no se

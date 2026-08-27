@@ -38,6 +38,8 @@
 /// el worker seguiría sumando sobre un número que la persona ya resolvió.
 library;
 
+import 'dart:async';
+
 import 'dart:js_interop';
 
 import 'package:web/web.dart' as web;
@@ -49,10 +51,6 @@ import 'package:web/web.dart' as web;
 extension type _NavegadorConInsignia._(JSObject _) implements JSObject {
   external JSPromise<JSAny?> setAppBadge(int cuenta);
   external JSPromise<JSAny?> clearAppBadge();
-}
-
-extension type _ControladorSw._(JSObject _) implements JSObject {
-  external void postMessage(JSAny? mensaje);
 }
 
 /// Se conserva para que las pruebas puedan preguntarlo, pero **no** condiciona
@@ -87,18 +85,51 @@ void retirarInsignia() => fijarInsignia(0);
 
 /// Le pasa el número al service worker, que es quien manda cuando la
 /// aplicación está cerrada.
+///
+/// ────────────────────────────────────────────────────────────────────────────
+/// Se avisa a TODOS los workers registrados, no al que controla la página.
+/// ────────────────────────────────────────────────────────────────────────────
+///
+/// Aquí conviven dos service workers con ámbitos distintos: el que genera
+/// Flutter, que controla la página, y `firebase-messaging-sw.js`, que registra
+/// el SDK de Firebase por su cuenta bajo `/firebase-cloud-messaging-push-scope`.
+/// El de la insignia es **el segundo**.
+///
+/// La versión anterior usaba `navigator.serviceWorker.controller`, que es el
+/// primero. El mensaje se iba al worker equivocado y el de mensajería no se
+/// enteraba nunca del número real. Como es él quien guarda la lista de mensajes
+/// ya avisados, y solo la limpia cuando la aplicación le manda el conteo
+/// exacto, **esa lista no se limpiaba jamás**: iba acumulando todos los avisos
+/// que habían llegado alguna vez, y el número del icono crecía sin volver a
+/// bajar. En un teléfono con tres mensajes recibidos y uno solo sin leer, el
+/// icono decía tres.
+///
+/// Recorrer los registros y avisar a todos cuesta lo mismo y no depende de qué
+/// worker controle la página ni de bajo qué ámbito se registró cada uno. El que
+/// no entienda el mensaje lo ignora.
 void _avisarAlWorker(int cuenta) {
+  unawaited(_repartirAlosWorkers(cuenta));
+}
+
+Future<void> _repartirAlosWorkers(int cuenta) async {
   try {
-    final JSObject? controlador =
-        web.window.navigator.serviceWorker.controller as JSObject?;
-    if (controlador == null) {
-      return;
+    final JSArray<web.ServiceWorkerRegistration> registros = await web
+        .window
+        .navigator
+        .serviceWorker
+        .getRegistrations()
+        .toDart;
+
+    final JSAny? aviso = <String, Object>{
+      'tipo': 'sian:insignia',
+      'cuenta': cuenta,
+    }.jsify();
+
+    for (final web.ServiceWorkerRegistration registro in registros.toDart) {
+      registro.active?.postMessage(aviso);
     }
-    (controlador as _ControladorSw).postMessage(
-      <String, Object>{'tipo': 'sian:insignia', 'cuenta': cuenta}.jsify(),
-    );
   } on Object catch (_) {
-    // El worker puede no estar controlando todavía (primera carga, o recarga
-    // dura). No es un problema: la próxima sincronización lo alcanza.
+    // Puede no haber ninguno todavía en la primera carga. No es un problema:
+    // la próxima sincronización lo alcanza.
   }
 }

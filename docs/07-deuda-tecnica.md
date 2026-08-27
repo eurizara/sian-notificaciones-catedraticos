@@ -268,7 +268,7 @@ gratuita.
 | DT-16 | `Entorno.configuracionCompleta` promete un diagnóstico que nadie pinta | Conocimiento | Baja | Abierta | 0 USD |
 | DT-17 | El service worker no tiene ninguna prueba automatizada | Alcance | **Media** | Abierta | 0 USD |
 | DT-18 | Se acumula un token de FCM por cada ingreso en iOS | Plataforma | **Media** | Abierta | 0 USD |
-| DT-19 | Entrar con Google falla en la PWA de iOS por aislamiento de almacenamiento | Plataforma | **Alta** | Abierta | 0 USD |
+| DT-19 | Entrar con Google falla en la PWA de iOS por aislamiento de almacenamiento | Plataforma | Alta | **Pagada** | 0 USD |
 
 **Prioridad de pago recomendada, en orden:** DT-03 → DT-14 → DT-04 → DT-01.
 
@@ -458,3 +458,13 @@ el `authDomain` después.
 > ingreso con Google roto con `Error 400: redirect_uri_mismatch`. Por eso se hace en ese
 > orden —primero registrar la URL, después cambiar el dominio— y se prueba en desarrollo
 > antes de tocar producción.
+
+**Pagada el 27 de agosto de 2026.** Se siguió ese orden: se registró la URL de retorno, se
+cambió el `authDomain` en desarrollo y se comprobó en un iPhone real entrando, saliendo y
+volviendo a entrar tres veces seguidas, que era el escenario que fallaba. Después se llevó
+a los demás ambientes.
+
+**Cada ambiente necesita lo suyo**, porque el cliente OAuth es uno por proyecto: hay que
+registrar `https://<proyecto>.web.app/__/auth/handler` en cada uno antes de cambiarle el
+`authDomain`. Está en el documento 11, sección 4, entre las cosas que se hacen una vez por
+ambiente.
