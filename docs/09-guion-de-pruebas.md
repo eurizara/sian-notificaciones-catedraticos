@@ -575,6 +575,8 @@ cada uno señala un paso que al guion le falta.
 
 | Hallazgo | Qué lo destapó | Paso que hay que añadir |
 |---|---|---|
+| Entrar con Google falla en la PWA de iOS | Cerrar sesión y volver a entrar desde el iPhone | Probar el ingreso **cerrando sesión y volviendo a entrar**, no solo la primera vez |
+| La insignia decía 3 con un solo mensaje sin leer | Varios ingresos seguidos, luego un aviso | Entrar **varias veces** antes de mandar el aviso: cada ingreso deja un token más |
 | La insignia decía 2 con un solo mensaje sin leer | Activar notificaciones y mandarse el primer aviso | Activar el permiso **y mirar el icono antes de mandar nada**: tiene que quedar en cero |
 | El despliegue dio **verde** con 18 de 19 Functions caídas | Contar los endpoints después de estrenar producción | **Contar** lo desplegado contra lo que el código publica, en vez de creerle al color del trabajo |
 | El manual mandaba a instalar el ambiente de **desarrollo** | Revisar el manual antes de publicarlo en producción | Abrir el manual **desde el ambiente donde se va a publicar** y seguir sus pasos al pie de la letra |
