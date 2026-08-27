@@ -550,7 +550,7 @@ Advertencias que deben vigilarse:
    confirmarse en producción durante el primer mes.
 3. Configurar **alerta de presupuesto** es obligatorio antes de desplegar a producción
    (RNF-18). Está puesta sobre la cuenta de facturación, que cubre los tres ambientes
-   (documento 11, sección 5).
+   (documento 11, sección 6).
 4. La bandeja lee las entregas por flujo y el contenido de cada mensaje por separado, y
    **guarda ese contenido en memoria mientras la sesión dure**. Sin esa memoria, cada
    emisión del flujo volvía a pedir los cincuenta mensajes: el flujo emite al abrir la

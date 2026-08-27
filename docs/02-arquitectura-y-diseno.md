@@ -818,6 +818,18 @@ bajarlo a cero.
 > síntoma —«no sale nada»— hacía pensar que la Badging API no estaba soportada
 > en iOS, cuando lo que pasaba es que la estábamos usando para apagarla.
 
+> **Y nada que no sea un mensaje cuenta.** Al activar las notificaciones el
+> servidor manda una de prueba —«tu dispositivo quedó registrado»— que no
+> corresponde a ningún aviso y no lleva `mensajeId`. La tercera versión la
+> contaba igual, razonando que «perder un aviso es peor que contar uno de más».
+> Ese razonamiento estaba mal: la insignia no es un contador de cosas que
+> pasaron, vale exactamente lo que dice el filtro «Sin leer», y algo sin
+> `mensajeId` no puede estar en ese filtro porque no es un mensaje. Contarlo
+> garantiza que los dos números discrepen, que es el defecto contra el que se
+> diseñó todo esto. Se vio en producción: activar las notificaciones sumó uno,
+> el primer mensaje sumó otro, y el icono decía «2» con la bandeja en «Sin leer
+> (1)». Lo que no lleva identificador se muestra, pero no cuenta.
+
 > **El worker cuenta mensajes distintos, no avisos recibidos.** La segunda
 > versión sumaba uno por cada `push`. Parecía equivalente y no lo es: el sistema
 > **reintenta la entrega hasta tres veces** (RF-ENT-10), así que un solo mensaje

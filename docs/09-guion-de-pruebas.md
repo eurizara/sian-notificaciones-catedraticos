@@ -231,6 +231,8 @@ notificación real.
 | 3.17 | Abre los dos avisos y sal | El número desaparece del icono. **No** queda un «0» pegado |
 | 3.18 | Abre uno que pida confirmación, no lo confirmes y sal | El icono **no** muestra número. La insignia cuenta lo que está sin abrir, no lo que está sin confirmar |
 | 3.19 | Repite 3.15 desde una **pestaña** del navegador, sin instalar | No aparece ningún número, y las notificaciones siguen llegando igual: la insignia necesita un icono donde pintarse |
+| 3.20 | Activa las notificaciones en un aparato recién instalado y **mira el icono antes de mandar nada** | Llega la notificación de prueba «tu dispositivo quedó registrado» y el icono **sigue en cero**: esa notificación no es un mensaje |
+| 3.21 | Con dos dispositivos registrados para la misma persona, mándale un aviso | El icono dice **1**, no 2. Un mensaje cuenta una vez aunque llegue por varios caminos |
 
 ### Criterio de salida
 
@@ -523,6 +525,49 @@ vista** en vez de a una hora.
 > notificaciones que la propia aplicación se denegaba. Ninguno habría salido de
 > una prueba de escritorio.
 
+## Comprobar que las alertas de operación funcionan
+
+Una alerta que nadie probó no es una alerta: es una suposición. Y su fallo es del peor
+tipo, porque se descubre el día que se necesitaba.
+
+Estas comprobaciones se hacen **una vez por ambiente**, después de correr
+`scripts/configurar-alertas.py`, y se repiten si cambia el correo de destino.
+
+| # | Acción | Resultado esperado |
+|---|---|---|
+| A-1 | Listar las políticas del proyecto | Dos: «está fallando» y «dejó de correr», ambas habilitadas y con un canal |
+| A-2 | Mirar el canal de notificación | Tipo correo, habilitado, con la dirección correcta |
+| A-3 | Crear una política desechable que **sí** vaya a saltar —por ejemplo, ejecuciones del despachador mayores que cero— y esperar | **Llega el correo.** Es la única forma de saber que el canal entrega, y no solo que está configurado |
+| A-4 | Borrar la política desechable | Deja de haber alertas de mentira que enseñen a ignorar las de verdad |
+| A-5 | Abrir el cuerpo de cada alerta | Dice qué mirar y en qué orden, sin dar por sabido el sistema |
+
+**A-3 es la que importa.** Una política puede estar impecable y el correo no salir nunca:
+la dirección mal escrita, el canal deshabilitado, el mensaje en No deseado. Comprobar la
+configuración solo demuestra que la configuración existe.
+
+> **Y hay que hacerla en LOS TRES ambientes, no en uno.** Cada proyecto tiene su propio
+> canal de notificación: son objetos distintos, en proyectos distintos, aunque apunten al
+> mismo correo y se hayan creado con el mismo script. Probar el de desarrollo y dar por
+> buenos los otros dos es dar por probado justamente el de producción, que es el único que
+> va a sonar cuando importe.
+>
+> El día que se pusieron las alertas se hizo esa prueba solo en desarrollo. Llegó el
+> correo, y por un momento pareció que todo estaba comprobado. Lo que estaba comprobado
+> era un tercio.
+
+**Ejecutada el 26 de agosto de 2026 en los tres ambientes.** Los tres canales entregaron
+el correo, y las tres políticas de prueba se borraron después. Queda en cada proyecto
+exactamente lo que tiene que quedar: dos alertas, habilitadas, con un canal cada una.
+
+Correr el script una segunda vez es además una comprobación en sí misma: tiene que decir
+«ya existía» y «actualizada», nunca crear una segunda copia. Una alerta duplicada manda
+dos correos por incidente, y dos correos idénticos se aprenden a borrar sin leer.
+
+Queda fuera de esto la tasa de entrega —si los avisos llegaron a los catedráticos—, que
+sigue viéndose mensaje por mensaje en Entregas. Es la mitad que queda de DT-07.
+
+---
+
 ## Hallazgos posteriores a las rondas
 
 Encontrados usando el sistema, no ejecutando el guion. Se anotan aquí porque
@@ -530,6 +575,7 @@ cada uno señala un paso que al guion le falta.
 
 | Hallazgo | Qué lo destapó | Paso que hay que añadir |
 |---|---|---|
+| La insignia decía 2 con un solo mensaje sin leer | Activar notificaciones y mandarse el primer aviso | Activar el permiso **y mirar el icono antes de mandar nada**: tiene que quedar en cero |
 | El despliegue dio **verde** con 18 de 19 Functions caídas | Contar los endpoints después de estrenar producción | **Contar** lo desplegado contra lo que el código publica, en vez de creerle al color del trabajo |
 | El manual mandaba a instalar el ambiente de **desarrollo** | Revisar el manual antes de publicarlo en producción | Abrir el manual **desde el ambiente donde se va a publicar** y seguir sus pasos al pie de la letra |
 | Una recarga masiva reseteaba a quien ya había entrado | Cargar el CSV completo por segunda vez | Cargar la lista **dos veces** y revisar el estado de quien ya entró |
@@ -566,6 +612,14 @@ cada uno señala un paso que al guion le falta.
 > casi siempre da lo mismo — hasta que hay estado de por medio. Todo paso que
 > escriba algo merece hacerse **dos veces seguidas** y comprobar que la segunda
 > no deshace la primera.
+
+> **La insignia lleva tres defectos, y los tres los encontró una persona.** No
+> aparecía nunca, luego decía 3 donde había 1, luego 2 donde había 1. Los tres
+> vivían enteros dentro del service worker, que no tiene ni una prueba
+> automatizada, y las 307 pruebas de Flutter y las 261 de Functions estuvieron
+> en verde durante los tres. Está registrado como **DT-17**. Mientras no se
+> pague, estos pasos hay que hacerlos **en un teléfono con la aplicación
+> instalada**: en el escritorio, dos de los tres no se reproducen.
 
 > **La insignia merece una nota aparte.** El código llamaba a
 > `clearAppBadge()` cuando `registration.getNotifications()` daba cero. En
