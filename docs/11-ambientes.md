@@ -174,6 +174,11 @@ y hay que volver a correrlo si cambian los umbrales o el correo de destino.
 > errores porque no produce. Con solo la alerta de tasa de error, la avería más grave —que
 > el despachador esté muerto— se vería como un cero y se daría por buena.
 
+**Cada proyecto tiene su propio canal de correo.** Son objetos distintos aunque apunten a
+la misma dirección y los cree el mismo script, así que probar uno no prueba los otros: hay
+que comprobar la entrega en los tres, y sobre todo en producción, que es el único que va a
+sonar cuando importe (documento 09, comprobación A-3).
+
 Cada alerta lleva escrito en su cuerpo qué mirar y en qué orden: los registros de la
 función, la colección `cola_despacho` y la pantalla de Programados. Quien la recibe a las
 once de la noche no debería tener que reconstruir por dónde empezar.
