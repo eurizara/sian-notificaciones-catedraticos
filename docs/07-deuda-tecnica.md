@@ -266,6 +266,7 @@ gratuita.
 | DT-14 | Los correos salen del dominio de Firebase y caen en No deseado | Plataforma | **Media** | Abierta | 0 USD |
 | DT-15 | Reparación temporal de la fuente de iconos en `index.html` | Plataforma | Baja | Abierta | 0 USD |
 | DT-16 | `Entorno.configuracionCompleta` promete un diagnóstico que nadie pinta | Conocimiento | Baja | Abierta | 0 USD |
+| DT-17 | El service worker no tiene ninguna prueba automatizada | Alcance | **Media** | Abierta | 0 USD |
 
 **Prioridad de pago recomendada, en orden:** DT-03 → DT-14 → DT-04 → DT-01.
 
@@ -351,3 +352,38 @@ la conducta.
 
 **Mientras tanto.** El documento 11, sección 4, lista las cosas que hay que hacer a
 mano por ambiente y que ningún despliegue verifica. La clave VAPID es la primera.
+
+## DT-17 — El service worker no tiene ninguna prueba automatizada
+
+**Qué pasa.** `app/web/firebase-messaging-sw.js` son 300 líneas de JavaScript sin una sola
+prueba. No hay dónde ponerlas: es un archivo que carga el navegador, fuera del paquete de
+Flutter y fuera del de Functions, y ninguno de los dos arneses lo alcanza. Se comprueba
+mirando un teléfono.
+
+**Por qué importa.** Es la pieza que decide qué se ve cuando llega un aviso con la
+aplicación cerrada — o sea, **la razón de ser del sistema**. Y la evidencia de que ahí se
+esconden defectos ya no es teórica: la insignia del icono se rompió **tres veces
+seguidas**, y las tres las encontró una persona mirando su pantalla, nunca una prueba.
+
+| Cuándo | Qué pasaba | Por qué ninguna prueba podía verlo |
+|---|---|---|
+| 25 ago 2026 | El número no aparecía nunca en iPhone | El worker llamaba a `clearAppBadge()` porque `getNotifications()` devuelve vacío en iOS. Es una suposición sobre el navegador, no una regla del dominio |
+| 25 ago 2026 | Decía «3» donde había 1 mensaje | Contaba `push` recibidos, y la entrega se reintenta hasta tres veces |
+| 26 ago 2026 | Decía «2» donde había 1 mensaje | Contaba la notificación de prueba del registro, que no es un mensaje |
+
+Los tres defectos vivían **enteros** dentro del worker. Las 307 pruebas de Flutter y las
+261 de Functions estaban en verde durante los tres.
+
+**El agravante.** El lado de Dart sí tiene pruebas —`insignia_bandeja_test.dart` ata la
+insignia al conteo del filtro «Sin leer»—, y eso da una falsa sensación de cobertura: lo
+probado es la mitad que casi nunca falla.
+
+**Cómo se paga.** Extraer del worker las decisiones que son lógica pura —qué cuenta para la
+insignia, cómo se compone una notificación, cuándo se muestra en primer plano— a un módulo
+que un runner de Node pueda importar, y dejar en el archivo del worker solo el pegamento
+con las APIs del navegador. Esfuerzo estimado: 1 día, más un runner de Node para `app/web`,
+que hoy no existe.
+
+**Mientras tanto.** El guion de pruebas tiene las comprobaciones manuales, y hay que
+hacerlas **en un teléfono con la aplicación instalada**: en el escritorio, dos de los tres
+defectos de arriba no se reproducen.

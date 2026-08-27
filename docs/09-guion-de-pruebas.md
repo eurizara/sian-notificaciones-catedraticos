@@ -231,6 +231,8 @@ notificación real.
 | 3.17 | Abre los dos avisos y sal | El número desaparece del icono. **No** queda un «0» pegado |
 | 3.18 | Abre uno que pida confirmación, no lo confirmes y sal | El icono **no** muestra número. La insignia cuenta lo que está sin abrir, no lo que está sin confirmar |
 | 3.19 | Repite 3.15 desde una **pestaña** del navegador, sin instalar | No aparece ningún número, y las notificaciones siguen llegando igual: la insignia necesita un icono donde pintarse |
+| 3.20 | Activa las notificaciones en un aparato recién instalado y **mira el icono antes de mandar nada** | Llega la notificación de prueba «tu dispositivo quedó registrado» y el icono **sigue en cero**: esa notificación no es un mensaje |
+| 3.21 | Con dos dispositivos registrados para la misma persona, mándale un aviso | El icono dice **1**, no 2. Un mensaje cuenta una vez aunque llegue por varios caminos |
 
 ### Criterio de salida
 
@@ -573,6 +575,7 @@ cada uno señala un paso que al guion le falta.
 
 | Hallazgo | Qué lo destapó | Paso que hay que añadir |
 |---|---|---|
+| La insignia decía 2 con un solo mensaje sin leer | Activar notificaciones y mandarse el primer aviso | Activar el permiso **y mirar el icono antes de mandar nada**: tiene que quedar en cero |
 | El despliegue dio **verde** con 18 de 19 Functions caídas | Contar los endpoints después de estrenar producción | **Contar** lo desplegado contra lo que el código publica, en vez de creerle al color del trabajo |
 | El manual mandaba a instalar el ambiente de **desarrollo** | Revisar el manual antes de publicarlo en producción | Abrir el manual **desde el ambiente donde se va a publicar** y seguir sus pasos al pie de la letra |
 | Una recarga masiva reseteaba a quien ya había entrado | Cargar el CSV completo por segunda vez | Cargar la lista **dos veces** y revisar el estado de quien ya entró |
@@ -609,6 +612,14 @@ cada uno señala un paso que al guion le falta.
 > casi siempre da lo mismo — hasta que hay estado de por medio. Todo paso que
 > escriba algo merece hacerse **dos veces seguidas** y comprobar que la segunda
 > no deshace la primera.
+
+> **La insignia lleva tres defectos, y los tres los encontró una persona.** No
+> aparecía nunca, luego decía 3 donde había 1, luego 2 donde había 1. Los tres
+> vivían enteros dentro del service worker, que no tiene ni una prueba
+> automatizada, y las 307 pruebas de Flutter y las 261 de Functions estuvieron
+> en verde durante los tres. Está registrado como **DT-17**. Mientras no se
+> pague, estos pasos hay que hacerlos **en un teléfono con la aplicación
+> instalada**: en el escritorio, dos de los tres no se reproducen.
 
 > **La insignia merece una nota aparte.** El código llamaba a
 > `clearAppBadge()` cuando `registration.getNotifications()` daba cero. En

@@ -120,30 +120,54 @@ async function pintarInsignia(cuenta) {
  * Un mensaje más sin leer.
  *
  * ────────────────────────────────────────────────────────────────────────────
- * SE CUENTAN MENSAJES DISTINTOS, NO AVISOS RECIBIDOS.
+ * SE CUENTAN MENSAJES DISTINTOS. NADA QUE NO SEA UN MENSAJE CUENTA.
  * ────────────────────────────────────────────────────────────────────────────
  *
- * La primera versión sumaba uno por cada `push` que llegaba. Parecía
- * equivalente y no lo es: **el sistema reintenta la entrega hasta tres veces**
- * (RF-ENT-10). Un solo mensaje que necesite sus reintentos llega tres veces al
- * worker, y el icono acababa diciendo «3» donde había uno. Quien lo mira
- * entonces abre la aplicación esperando tres avisos, encuentra uno, y a partir
- * de ahí el número deja de significar algo.
+ * Esta función lleva dos correcciones, y las dos vinieron de ver el número
+ * equivocado en un teléfono de verdad.
  *
- * Ahora se guarda el identificador del mensaje y se cuentan los distintos, así
- * que un reintento no suma. Es el mismo dato que ya viajaba en la carga para
- * poder abrir el mensaje al tocar la notificación.
+ * **Primera: se cuentan mensajes, no `push` recibidos.** El sistema reintenta
+ * la entrega hasta tres veces (RF-ENT-10), y además una persona puede tener
+ * varios dispositivos registrados: un solo aviso puede llegar aquí tres o
+ * cuatro veces. Contando llegadas, el icono decía «3» donde había uno. Por eso
+ * se guarda el identificador del mensaje y se cuentan los distintos.
+ *
+ * **Segunda: no todo lo que llega por push es un mensaje.** Al activar las
+ * notificaciones, el servidor manda una de prueba —«tu dispositivo quedó
+ * registrado»— que no corresponde a ningún aviso y por lo tanto no lleva
+ * `mensajeId`. La versión anterior la contaba igual, con este razonamiento
+ * escrito al lado:
+ *
+ *     «Sin identificador no se puede distinguir un reintento de un mensaje
+ *      nuevo. Se cuenta, porque perder un aviso es peor que contar uno de más.»
+ *
+ * Ese razonamiento estaba mal. La insignia no es un contador de cosas que
+ * pasaron: **vale exactamente lo que dice el filtro «Sin leer»**, y algo sin
+ * `mensajeId` no puede estar en ese filtro, porque no es un mensaje. Contarlo
+ * no es «pecar de prudente»: es garantizar que los dos números discrepen, que
+ * es justo el defecto contra el que se diseñó todo esto.
+ *
+ * Se vio en producción el 26 de agosto de 2026: activar las notificaciones
+ * sumó uno, el primer mensaje real sumó otro, y el icono decía «2» con la
+ * bandeja diciendo «Sin leer (1)».
+ *
+ * Lo que no lleva identificador se muestra igual —la notificación de prueba
+ * tiene que verse, es la confirmación de que el permiso quedó bien— pero no
+ * toca el número.
  */
 async function sumarInsignia(mensajeId) {
+  if (!mensajeId) {
+    trazar('insignia:no-es-un-mensaje');
+    return;
+  }
+
   try {
     const avisados = await leerAvisados();
-    if (mensajeId && avisados.includes(mensajeId)) {
-      trazar('insignia:reintento-ignorado', { mensajeId });
+    if (avisados.includes(mensajeId)) {
+      trazar('insignia:repetido-ignorado', { mensajeId });
       return;
     }
-    // Sin identificador no se puede distinguir un reintento de un mensaje
-    // nuevo. Se cuenta, porque perder un aviso es peor que contar uno de más.
-    avisados.push(mensajeId || `sin-id-${Date.now()}`);
+    avisados.push(mensajeId);
     await guardarAvisados(avisados);
 
     const cuenta = (await leerBase()) + avisados.length;
