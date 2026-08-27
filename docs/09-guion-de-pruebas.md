@@ -530,6 +530,7 @@ cada uno señala un paso que al guion le falta.
 
 | Hallazgo | Qué lo destapó | Paso que hay que añadir |
 |---|---|---|
+| El despliegue dio **verde** con 18 de 19 Functions caídas | Contar los endpoints después de estrenar producción | **Contar** lo desplegado contra lo que el código publica, en vez de creerle al color del trabajo |
 | El manual mandaba a instalar el ambiente de **desarrollo** | Revisar el manual antes de publicarlo en producción | Abrir el manual **desde el ambiente donde se va a publicar** y seguir sus pasos al pie de la letra |
 | Una recarga masiva reseteaba a quien ya había entrado | Cargar el CSV completo por segunda vez | Cargar la lista **dos veces** y revisar el estado de quien ya entró |
 | La carga decía «17 creadas» donde 16 ya existían | Mirar el mensaje después de recargar | Comparar el número que anuncia con el que había antes |
@@ -543,6 +544,14 @@ cada uno señala un paso que al guion le falta.
 | Un icono nuevo tardaba una semana en aparecer | Un despliegue con un botón nuevo | Comprobar los cambios en la **aplicación instalada**, no solo en una pestaña |
 | Girar el teléfono borraba el mensaje a medio escribir | Redactar en el celular | Girar el aparato **en mitad de cada formulario** |
 | iOS decía «notificaciones bloqueadas» estándolo | Abrir la aplicación varias veces seguidas | Reabrir la aplicación instalada tres veces y mirar la tarjeta |
+
+> **El del despliegue en verde es el más peligroso.** Un despliegue que se cae
+> ruidosamente es un problema; uno que se cae en silencio y se declara exitoso
+> es peor, porque nadie va a mirar. `firebase deploy` avisó de las dieciocho
+> fallas con un ⚠ y salió con código 0, así que el trabajo apareció en verde y
+> el pipeline siguió adelante a desplegar el hosting. Producción quedó con la
+> aplicación entera y un solo endpoint vivo. Ahora hay un paso que cuenta lo
+> desplegado contra lo que el código publica y falla si falta algo.
 
 > **El del manual es el más silencioso de la lista.** La dirección del sitio
 > estaba escrita a mano en dieciocho sitios, y era la de desarrollo. Publicado
