@@ -236,3 +236,29 @@ bash scripts/generar-firebase-options.sh && cd app && flutter build web --releas
 
 El ambiente `produccion` de GitHub exige **revisor obligatorio**, y solo acepta
 despliegues desde ramas protegidas.
+
+### Protección de las tres ramas
+
+Las tres exigen pull request y los cuatro trabajos de integración continua en verde.
+Ninguna admite `force push` ni borrado.
+
+Lo que **no** exigen es que la rama de origen esté al día con la de destino —el
+«require branches to be up to date», `strict`—, y eso es deliberado. Cada promoción deja
+en la rama de destino un commit de fusión que la de origen nunca va a tener: al fusionar
+`qa` en `main`, `main` gana ese commit, y desde ese momento toda promoción futura
+aparecería como *behind* aunque el contenido sea idéntico. La única forma de satisfacerlo
+sería fusionar `main` de vuelta en `qa` antes de cada entrega, un pull request por
+release que no cambia un solo archivo.
+
+La garantía no se pierde: los cuatro trabajos ya corrieron sobre el commit exacto que se
+promueve, y la promoción solo avanza hacia adelante, así que la rama de destino nunca
+lleva contenido que la de origen no tenga. Se comprueba fácil:
+
+```bash
+git rev-parse origin/main^{tree}
+git rev-parse origin/develop^{tree}   # tiene que dar lo mismo tras una promoción
+```
+
+Con `strict` activado la alternativa práctica habría sido fusionar saltándose la
+protección como administrador, que es peor: acostumbrarse a rodear una regla la vuelve
+decorativa.
