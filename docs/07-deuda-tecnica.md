@@ -121,13 +121,33 @@ momento de tomarla**, no después.
 |---|---|
 | **Origen** | Alcance |
 | **Severidad** | Media |
-| **Estado** | Abierta |
+| **Estado** | **Pagada a medias** desde el 26 de agosto de 2026 |
 | **Decisión** | La versión 1 no incluye monitoreo proactivo de fallos de entrega |
 | **Motivo** | Reducir el alcance del prototipo para validar más rápido |
 | **Consecuencia** | Si el despachador falla o si las entregas empiezan a fallar masivamente, nadie se entera hasta que alguien lo nota |
-| **Mitigación actual** | Los registros de Cloud Functions quedan disponibles en la consola de Google Cloud, aunque hay que ir a buscarlos |
-| **Plan de pago** | Alertas de Cloud Monitoring por tasa de error de la función despachadora, más un tablero de tasa de entrega en el panel. Costo: dentro de la capa gratuita. Esfuerzo estimado: 1 a 2 días |
-| **Disparador para pagarla** | Antes de producción, o al primer incidente no detectado a tiempo |
+| **Mitigación actual** | Dos alertas de Cloud Monitoring por ambiente avisan por correo cuando el despachador falla o deja de correr (ver abajo). Los registros de Cloud Functions siguen disponibles en la consola para el diagnóstico |
+| **Lo que falta** | El indicador de tasa de entrega en el panel: hoy, saber si los avisos de la semana llegaron sigue exigiendo abrir mensaje por mensaje en Entregas |
+| **Plan de pago** | Una tarjeta en el panel con la tasa de entrega y de confirmación de los últimos 7 días, alimentada por lo que ya se guarda en `ocurrencias/entregas`. Esfuerzo estimado: medio día |
+| **Disparador para pagarla** | Al abrir a toda la institución, o cuando coordinación pregunte por segunda vez «¿llegó?» sin poder responderse sola |
+
+**Las alertas que ya están puestas.** Las crea `scripts/configurar-alertas.py`, una vez por
+ambiente, y avisan a `eurizara1@miumg.edu.gt`:
+
+| Alerta | Salta cuando | Por qué ese umbral |
+|---|---|---|
+| El despachador está fallando | más de 5 ejecuciones con error en 10 minutos | Corre 60 veces por hora: un fallo suelto es ruido normal, y una alerta que salta con el primero enseña a ignorarla |
+| El despachador dejó de correr | ninguna ejecución en 15 minutos | Corre cada minuto, así que quince de silencio no admiten otra lectura |
+
+> **Hacen falta las dos, y la segunda es la que importa.** El despachador puede dejar de
+> funcionar de dos maneras que no se parecen: fallando —se ejecuta y revienta, deja errores
+> contables— o **callándose**: no se ejecuta, porque murió él o murió el reloj de Cloud
+> Scheduler que lo despierta. Callado no produce ningún error, así que una alerta por tasa
+> de error miraría un cero y lo daría por bueno. La avería más silenciosa es justo la que
+> DT-07 describe.
+
+Cada alerta lleva escrito en su propio cuerpo qué mirar y en qué orden, para que quien la
+reciba a las once de la noche no tenga que reconstruirlo. Costo: cero, dentro de la capa
+gratuita.
 
 ---
 
@@ -236,7 +256,7 @@ momento de tomarla**, no después.
 | DT-04 | Acceso a adjuntos sin verificar destinatario | Plataforma | Media | Abierta | 0 USD |
 | DT-05 | Precisión del planificador de 60 s | Costo | Baja | Aceptada | — |
 | DT-06 | Dominio duplicado Dart / TypeScript | Conocimiento | Media | Mitigada | 0 USD |
-| DT-07 | Sin observabilidad ni alertas | Alcance | Media | Abierta | 0 USD |
+| DT-07 | Sin observabilidad ni alertas | Alcance | Media | **Pagada a medias** | 0 USD |
 | DT-08 | Grupos limitados a 200 miembros | Alcance | Baja | Aceptada | 0 USD |
 | DT-09 | Sin multi-idioma | Alcance | Baja | Mitigada | 0 USD |
 | DT-10 | Sin cifrado de extremo a extremo | Alcance | Baja | Aceptada | — |
@@ -247,7 +267,10 @@ momento de tomarla**, no después.
 | DT-15 | Reparación temporal de la fuente de iconos en `index.html` | Plataforma | Baja | Abierta | 0 USD |
 | DT-16 | `Entorno.configuracionCompleta` promete un diagnóstico que nadie pinta | Conocimiento | Baja | Abierta | 0 USD |
 
-**Prioridad de pago recomendada, en orden:** DT-03 → DT-07 → DT-04 → DT-01.
+**Prioridad de pago recomendada, en orden:** DT-03 → DT-14 → DT-04 → DT-01.
+
+DT-07 sale de la lista: las alertas ya están puestas y lo que queda —el indicador de tasa
+de entrega— es comodidad, no ceguera.
 
 Las tres primeras cuestan cero y eliminan los riesgos operativos más serios. DT-02 es la
 única deuda que exige presupuesto real, y solo se paga si la institución decide que las
@@ -326,5 +349,5 @@ comentario promete —una tarjeta al arrancar cuando `configuracionCompleta` es 
 se borra la propiedad y con ella la promesa. Lo que no puede quedarse es la promesa sin
 la conducta.
 
-**Mientras tanto.** El documento 11, sección 4, lista las tres cosas que hay que hacer a
+**Mientras tanto.** El documento 11, sección 4, lista las cosas que hay que hacer a
 mano por ambiente y que ningún despliegue verifica. La clave VAPID es la primera.
