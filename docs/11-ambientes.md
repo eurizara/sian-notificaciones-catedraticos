@@ -112,6 +112,28 @@ están rotas cuando lo que falta es la clave.
 Ese clic crea el cliente OAuth; la API no lo crea sola. Sin él, el botón «Entrar con
 Google» aparece en pantalla y falla al pulsarlo.
 
+**Las APIs que el despliegue da por habilitadas.** La cuenta de servicio del pipeline
+tiene roles acotados y **no puede habilitar APIs**, a propósito: quien despliega no debería
+poder encender servicios nuevos en el proyecto. Pero `firebase deploy` sí intenta
+habilitar lo que le falta, y cuando no puede se detiene con
+«Permissions denied enabling …», sin desplegar nada.
+
+Pasó al publicar producción el 26 de agosto de 2026 con
+`firebaseextensions.googleapis.com`. El proyecto de producción se había creado desde la
+consola mucho antes que los otros dos, así que traía un juego de APIs distinto: cuatro
+menos que calidad, y una de ellas era justo la que el despliegue toca aunque el sistema no
+use ninguna extensión.
+
+Antes de estrenar un ambiente conviene comparar sus APIs contra uno que ya despliegue bien,
+en lugar de descubrirlas de una en una a base de despliegues fallidos:
+
+```bash
+npx firebase-tools projects:list   # para tener a mano los números de proyecto
+gcloud services list --enabled --project <ambiente-que-funciona> > /tmp/a.txt
+gcloud services list --enabled --project <ambiente-nuevo>        > /tmp/b.txt
+diff /tmp/a.txt /tmp/b.txt
+```
+
 **El CORS del bucket.** Se aplica con `scripts/aplicar-cors-storage.sh <proyecto>`. Vive
 en el bucket, no en `storage.rules`, así que `firebase deploy` no lo toca. Sin CORS las
 imágenes adjuntas no se pintan y las notas de voz sí: Flutter descarga los bytes de una
