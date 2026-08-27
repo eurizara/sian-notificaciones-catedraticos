@@ -85,6 +85,31 @@ jobs:
         env:
           GCP_SA_KEY: ${{ secrets.QA_SERVICE_ACCOUNT }}
 
+      # ─────────────────────────────────────────────────────────────────────
+      # `firebase deploy` puede terminar en 0 habiendo fallado casi todo.
+      # ─────────────────────────────────────────────────────────────────────
+      #
+      # Al estrenar producción, dieciocho de diecinueve funciones fallaron con
+      # un 409 —«Could not create bucket gcf-v2-sources-…»—, la carrera que
+      # ocurre la primera vez que se despliega en un proyecto nuevo: todas
+      # intentan crear a la vez el bucket donde se guarda el código. El
+      # despliegue las dio por avisadas con un ⚠, salió con código 0, el
+      # trabajo apareció EN VERDE y el pipeline siguió a desplegar el hosting.
+      # Producción quedó con la aplicación entera y un solo endpoint vivo.
+      #
+      # Un despliegue que se cae ruidosamente es un problema. Uno que se cae en
+      # silencio y se declara exitoso es peor, porque nadie va a mirar.
+      - name: Verificar que están TODAS las Functions
+        env:
+          CLAVE_SA: ${{ secrets.QA_SERVICE_ACCOUNT }}
+          PROYECTO: ${{ vars.QA_PROJECT_ID }}
+        run: |
+          printf '%s' "$CLAVE_SA" > "$RUNNER_TEMP/sa.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
+          npx --yes firebase-tools functions:list --project "$PROYECTO" --json \
+            > "$RUNNER_TEMP/desplegadas.json"
+          node scripts/verificar-functions.js "$RUNNER_TEMP/desplegadas.json"
+
       - name: Desplegar Hosting
         if: hashFiles('app/pubspec.yaml') != ''
         uses: FirebaseExtended/action-hosting-deploy@v0
@@ -150,6 +175,31 @@ jobs:
           args: deploy --only firestore:rules,firestore:indexes,storage,functions --project ${{ vars.PROD_PROJECT_ID }}
         env:
           GCP_SA_KEY: ${{ secrets.PROD_SERVICE_ACCOUNT }}
+
+      # ─────────────────────────────────────────────────────────────────────
+      # `firebase deploy` puede terminar en 0 habiendo fallado casi todo.
+      # ─────────────────────────────────────────────────────────────────────
+      #
+      # Al estrenar producción, dieciocho de diecinueve funciones fallaron con
+      # un 409 —«Could not create bucket gcf-v2-sources-…»—, la carrera que
+      # ocurre la primera vez que se despliega en un proyecto nuevo: todas
+      # intentan crear a la vez el bucket donde se guarda el código. El
+      # despliegue las dio por avisadas con un ⚠, salió con código 0, el
+      # trabajo apareció EN VERDE y el pipeline siguió a desplegar el hosting.
+      # Producción quedó con la aplicación entera y un solo endpoint vivo.
+      #
+      # Un despliegue que se cae ruidosamente es un problema. Uno que se cae en
+      # silencio y se declara exitoso es peor, porque nadie va a mirar.
+      - name: Verificar que están TODAS las Functions
+        env:
+          CLAVE_SA: ${{ secrets.PROD_SERVICE_ACCOUNT }}
+          PROYECTO: ${{ vars.PROD_PROJECT_ID }}
+        run: |
+          printf '%s' "$CLAVE_SA" > "$RUNNER_TEMP/sa.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
+          npx --yes firebase-tools functions:list --project "$PROYECTO" --json \
+            > "$RUNNER_TEMP/desplegadas.json"
+          node scripts/verificar-functions.js "$RUNNER_TEMP/desplegadas.json"
 
       - name: Desplegar Hosting
         if: hashFiles('app/pubspec.yaml') != ''
