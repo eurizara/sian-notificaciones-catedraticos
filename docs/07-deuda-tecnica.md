@@ -267,6 +267,8 @@ gratuita.
 | DT-15 | Reparación temporal de la fuente de iconos en `index.html` | Plataforma | Baja | Abierta | 0 USD |
 | DT-16 | `Entorno.configuracionCompleta` promete un diagnóstico que nadie pinta | Conocimiento | Baja | Abierta | 0 USD |
 | DT-17 | El service worker no tiene ninguna prueba automatizada | Alcance | **Media** | Abierta | 0 USD |
+| DT-18 | Se acumula un token de FCM por cada ingreso en iOS | Plataforma | **Media** | Abierta | 0 USD |
+| DT-19 | Entrar con Google falla en la PWA de iOS por aislamiento de almacenamiento | Plataforma | **Alta** | Abierta | 0 USD |
 
 **Prioridad de pago recomendada, en orden:** DT-03 → DT-14 → DT-04 → DT-01.
 
@@ -387,3 +389,72 @@ que hoy no existe.
 **Mientras tanto.** El guion de pruebas tiene las comprobaciones manuales, y hay que
 hacerlas **en un teléfono con la aplicación instalada**: en el escritorio, dos de los tres
 defectos de arriba no se reproducen.
+
+## DT-18 — Se acumula un token de FCM por cada ingreso en iOS
+
+**Qué pasa.** El documento del dispositivo se guarda con el token como identificador, y el
+comentario del código dice: «reabrir la aplicación cien veces no crea cien dispositivos,
+refresca el mismo». Eso es cierto donde el token es estable. **En iOS no lo es**: Safari lo
+rota, así que cada ingreso escribe un documento nuevo y el anterior se queda.
+
+Medido en producción el 27 de agosto de 2026: **cuatro tokens del mismo iPhone**, de una
+sola persona, en un par de horas.
+
+**Consecuencia.** Cada mensaje se envía tantas veces como tokens tenga esa persona. Con
+cuatro, un aviso a un catedrático son cuatro `push`. Se paga en cuota, y despierta el
+service worker cuatro veces casi al mismo instante, que es lo que destapó la falta de
+atomicidad en el contador de la insignia. La cifra crece con el uso: no se estabiliza sola.
+
+**Mitigación actual.** El worker deduplica por identificador de mensaje —ahora de forma
+atómica—, así que el número del icono es correcto aunque lleguen cuatro. Y la limpieza de
+tokens rechazados por el servicio de push retira los muertos, pero solo cuando el servicio
+los rechaza, que puede tardar.
+
+**Cómo se paga.** Guardar el documento con el **identificador de instalación** de Firebase
+—que sí es estable por aparato— en lugar del token, y dejar el token como un campo dentro.
+Un ingreso con token nuevo actualizaría el mismo documento en vez de crear otro. Esfuerzo
+estimado: medio día, más una migración que borre los duplicados existentes.
+
+**Disparador para pagarla.** Al abrir a toda la institución. Con veinte personas y varios
+ingresos cada una, el número de envíos por mensaje se multiplica sin que nadie lo note.
+
+---
+
+## DT-19 — Entrar con Google falla en la PWA de iOS
+
+**Qué pasa.** En un iPhone con la aplicación instalada, entrar con Google falla con
+«Unable to process request due to missing initial state».
+
+La aplicación pide `signInWithPopup`, pero una PWA en iOS no puede abrir ventanas
+emergentes, así que el SDK cae a redirección. El manejador de autenticación vive en
+`sian-umg-bdm.firebaseapp.com` y la aplicación en `sian-umg-bdm.web.app`: **dos orígenes
+distintos**. iOS aísla el almacenamiento entre ellos, el estado que se escribe antes de
+salir no se encuentra al volver, y el ingreso se rompe.
+
+Es intermitente, que es lo peor: falla, se reintenta, se queda pensando, y a la tercera
+entra. Quien lo sufre no sabe si hizo algo mal.
+
+**Consecuencia.** Es el camino de ingreso que el manual recomienda primero y el que la
+institución quiere por omisión. Entrar con correo y contraseña sigue funcionando, así que
+nadie queda fuera, pero la primera impresión de un catedrático con su iPhone es que el
+sistema no anda.
+
+**Cómo se paga.** Servir el manejador desde el mismo origen que la aplicación:
+`authDomain` pasa de `sian-umg-bdm.firebaseapp.com` a `sian-umg-bdm.web.app`. Comprobado
+que `https://sian-umg-bdm.web.app/__/auth/handler` ya responde.
+
+**Falta un paso que no tiene API.** Google rechaza hoy esa URL de retorno con
+`redirect_uri_mismatch`, porque el cliente OAuth solo tiene registrada la de
+`firebaseapp.com`. Hay que agregarla a mano en Google Cloud Console → APIs y servicios →
+Credenciales → el cliente «Web client (auto created by Google Service)» → URIs de
+redireccionamiento autorizados:
+
+    https://sian-umg-bdm.web.app/__/auth/handler
+
+Es **aditivo**: no rompe la que ya existe, de modo que se puede agregar sin prisa y cambiar
+el `authDomain` después.
+
+> **Este cambio ya salió mal una vez.** Cambiar el `authDomain` en desarrollo dejó el
+> ingreso con Google roto con `Error 400: redirect_uri_mismatch`. Por eso se hace en ese
+> orden —primero registrar la URL, después cambiar el dominio— y se prueba en desarrollo
+> antes de tocar producción.

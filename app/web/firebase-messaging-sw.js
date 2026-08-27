@@ -69,29 +69,76 @@ function _abrirBase() {
   });
 }
 
-function _enBase(modo, operacion) {
+/**
+ * Anota el mensaje y devuelve el número nuevo, TODO EN UNA TRANSACCIÓN.
+ *
+ * ────────────────────────────────────────────────────────────────────────────
+ * Leer, decidir y escribir en pasos separados no sobrevive a la concurrencia.
+ * ────────────────────────────────────────────────────────────────────────────
+ *
+ * Un mismo aviso llega aquí **varias veces a la vez**: la entrega se reintenta
+ * hasta tres veces (RF-ENT-10) y, sobre todo, una persona acumula varios tokens
+ * para el mismo teléfono porque iOS los rota (riesgo R-01). En producción se
+ * midieron **cuatro tokens del mismo iPhone**, así que cada mensaje despierta
+ * el worker cuatro veces casi al mismo instante.
+ *
+ * La versión anterior hacía `leerAvisados()`, decidía, y luego
+ * `guardarAvisados()` — tres transacciones distintas. Cuatro invocaciones
+ * simultáneas leen todas el mismo estado viejo antes de que ninguna escriba, y
+ * la comprobación «¿ya lo anoté?» responde que no en todas. El número acaba
+ * siendo cualquiera menos el correcto.
+ *
+ * IndexedDB serializa las transacciones de escritura sobre un mismo almacén, así
+ * que meter la lectura y la escritura en UNA sola las vuelve atómicas: la
+ * segunda invocación ve lo que escribió la primera y se calla.
+ *
+ * Devuelve `null` cuando el mensaje ya estaba anotado.
+ */
+function anotarMensaje(mensajeId) {
   return _abrirBase().then(
     (bd) =>
       new Promise((resolver, rechazar) => {
-        const transaccion = bd.transaction(ALMACEN, modo);
-        const peticion = operacion(transaccion.objectStore(ALMACEN));
-        peticion.onsuccess = () => resolver(peticion.result);
-        peticion.onerror = () => rechazar(peticion.error);
+        const transaccion = bd.transaction(ALMACEN, 'readwrite');
+        const almacen = transaccion.objectStore(ALMACEN);
+        let cuenta = null;
+
+        const pedirBase = almacen.get(LLAVE);
+        pedirBase.onsuccess = () => {
+          const base = pedirBase.result || 0;
+          const pedirAvisados = almacen.get(LLAVE_AVISADOS);
+          pedirAvisados.onsuccess = () => {
+            const avisados = pedirAvisados.result || [];
+            if (avisados.includes(mensajeId)) {
+              return; // `cuenta` se queda en null: no hay nada que pintar.
+            }
+            avisados.push(mensajeId);
+            almacen.put(avisados, LLAVE_AVISADOS);
+            cuenta = base + avisados.length;
+          };
+        };
+
+        transaccion.oncomplete = () => resolver(cuenta);
+        transaccion.onerror = () => rechazar(transaccion.error);
+        transaccion.onabort = () => rechazar(transaccion.error);
       }),
   );
 }
 
-const _leer = (llave, siFalta) =>
-  _enBase('readonly', (a) => a.get(llave)).then((v) => (v === undefined ? siFalta : v));
-const _guardar = (llave, valor) => _enBase('readwrite', (a) => a.put(valor, llave));
-
-/** Lo que la aplicación reportó la última vez que estuvo abierta. */
-const leerBase = () => _leer(LLAVE, 0);
-const guardarBase = (n) => _guardar(LLAVE, n);
-
-/** Identificadores de mensaje avisados desde entonces, sin repetir. */
-const leerAvisados = () => _leer(LLAVE_AVISADOS, []);
-const guardarAvisados = (lista) => _guardar(LLAVE_AVISADOS, lista);
+/** Fija el número exacto y olvida lo anotado. También en una sola transacción. */
+function fijarBase(n) {
+  return _abrirBase().then(
+    (bd) =>
+      new Promise((resolver, rechazar) => {
+        const transaccion = bd.transaction(ALMACEN, 'readwrite');
+        const almacen = transaccion.objectStore(ALMACEN);
+        almacen.put(n, LLAVE);
+        almacen.put([], LLAVE_AVISADOS);
+        transaccion.oncomplete = () => resolver();
+        transaccion.onerror = () => rechazar(transaccion.error);
+        transaccion.onabort = () => rechazar(transaccion.error);
+      }),
+  );
+}
 
 /** ¿Sabe este navegador pintar insignias? */
 function hayInsignia() {
@@ -162,15 +209,11 @@ async function sumarInsignia(mensajeId) {
   }
 
   try {
-    const avisados = await leerAvisados();
-    if (avisados.includes(mensajeId)) {
+    const cuenta = await anotarMensaje(mensajeId);
+    if (cuenta === null) {
       trazar('insignia:repetido-ignorado', { mensajeId });
       return;
     }
-    avisados.push(mensajeId);
-    await guardarAvisados(avisados);
-
-    const cuenta = (await leerBase()) + avisados.length;
     await pintarInsignia(cuenta);
   } catch (e) {
     trazar('insignia:sumar-fallo', String(e));
@@ -186,8 +229,7 @@ async function sumarInsignia(mensajeId) {
 async function fijarInsignia(cuenta) {
   try {
     const n = Math.max(0, Number(cuenta) || 0);
-    await guardarBase(n);
-    await guardarAvisados([]);
+    await fijarBase(n);
     await pintarInsignia(n);
   } catch (e) {
     trazar('insignia:fijar-fallo', String(e));
