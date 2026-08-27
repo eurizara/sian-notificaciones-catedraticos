@@ -121,13 +121,33 @@ momento de tomarla**, no después.
 |---|---|
 | **Origen** | Alcance |
 | **Severidad** | Media |
-| **Estado** | Abierta |
+| **Estado** | **Pagada a medias** desde el 26 de agosto de 2026 |
 | **Decisión** | La versión 1 no incluye monitoreo proactivo de fallos de entrega |
 | **Motivo** | Reducir el alcance del prototipo para validar más rápido |
 | **Consecuencia** | Si el despachador falla o si las entregas empiezan a fallar masivamente, nadie se entera hasta que alguien lo nota |
-| **Mitigación actual** | Los registros de Cloud Functions quedan disponibles en la consola de Google Cloud, aunque hay que ir a buscarlos |
-| **Plan de pago** | Alertas de Cloud Monitoring por tasa de error de la función despachadora, más un tablero de tasa de entrega en el panel. Costo: dentro de la capa gratuita. Esfuerzo estimado: 1 a 2 días |
-| **Disparador para pagarla** | Antes de producción, o al primer incidente no detectado a tiempo |
+| **Mitigación actual** | Dos alertas de Cloud Monitoring por ambiente avisan por correo cuando el despachador falla o deja de correr (ver abajo). Los registros de Cloud Functions siguen disponibles en la consola para el diagnóstico |
+| **Lo que falta** | El indicador de tasa de entrega en el panel: hoy, saber si los avisos de la semana llegaron sigue exigiendo abrir mensaje por mensaje en Entregas |
+| **Plan de pago** | Una tarjeta en el panel con la tasa de entrega y de confirmación de los últimos 7 días, alimentada por lo que ya se guarda en `ocurrencias/entregas`. Esfuerzo estimado: medio día |
+| **Disparador para pagarla** | Al abrir a toda la institución, o cuando coordinación pregunte por segunda vez «¿llegó?» sin poder responderse sola |
+
+**Las alertas que ya están puestas.** Las crea `scripts/configurar-alertas.py`, una vez por
+ambiente, y avisan a `eurizara1@miumg.edu.gt`:
+
+| Alerta | Salta cuando | Por qué ese umbral |
+|---|---|---|
+| El despachador está fallando | más de 5 ejecuciones con error en 10 minutos | Corre 60 veces por hora: un fallo suelto es ruido normal, y una alerta que salta con el primero enseña a ignorarla |
+| El despachador dejó de correr | ninguna ejecución en 15 minutos | Corre cada minuto, así que quince de silencio no admiten otra lectura |
+
+> **Hacen falta las dos, y la segunda es la que importa.** El despachador puede dejar de
+> funcionar de dos maneras que no se parecen: fallando —se ejecuta y revienta, deja errores
+> contables— o **callándose**: no se ejecuta, porque murió él o murió el reloj de Cloud
+> Scheduler que lo despierta. Callado no produce ningún error, así que una alerta por tasa
+> de error miraría un cero y lo daría por bueno. La avería más silenciosa es justo la que
+> DT-07 describe.
+
+Cada alerta lleva escrito en su propio cuerpo qué mirar y en qué orden, para que quien la
+reciba a las once de la noche no tenga que reconstruirlo. Costo: cero, dentro de la capa
+gratuita.
 
 ---
 
@@ -236,7 +256,7 @@ momento de tomarla**, no después.
 | DT-04 | Acceso a adjuntos sin verificar destinatario | Plataforma | Media | Abierta | 0 USD |
 | DT-05 | Precisión del planificador de 60 s | Costo | Baja | Aceptada | — |
 | DT-06 | Dominio duplicado Dart / TypeScript | Conocimiento | Media | Mitigada | 0 USD |
-| DT-07 | Sin observabilidad ni alertas | Alcance | Media | Abierta | 0 USD |
+| DT-07 | Sin observabilidad ni alertas | Alcance | Media | **Pagada a medias** | 0 USD |
 | DT-08 | Grupos limitados a 200 miembros | Alcance | Baja | Aceptada | 0 USD |
 | DT-09 | Sin multi-idioma | Alcance | Baja | Mitigada | 0 USD |
 | DT-10 | Sin cifrado de extremo a extremo | Alcance | Baja | Aceptada | — |
@@ -246,8 +266,12 @@ momento de tomarla**, no después.
 | DT-14 | Los correos salen del dominio de Firebase y caen en No deseado | Plataforma | **Media** | Abierta | 0 USD |
 | DT-15 | Reparación temporal de la fuente de iconos en `index.html` | Plataforma | Baja | Abierta | 0 USD |
 | DT-16 | `Entorno.configuracionCompleta` promete un diagnóstico que nadie pinta | Conocimiento | Baja | Abierta | 0 USD |
+| DT-17 | El service worker no tiene ninguna prueba automatizada | Alcance | **Media** | Abierta | 0 USD |
 
-**Prioridad de pago recomendada, en orden:** DT-03 → DT-07 → DT-04 → DT-01.
+**Prioridad de pago recomendada, en orden:** DT-03 → DT-14 → DT-04 → DT-01.
+
+DT-07 sale de la lista: las alertas ya están puestas y lo que queda —el indicador de tasa
+de entrega— es comodidad, no ceguera.
 
 Las tres primeras cuestan cero y eliminan los riesgos operativos más serios. DT-02 es la
 única deuda que exige presupuesto real, y solo se paga si la institución decide que las
@@ -326,5 +350,40 @@ comentario promete —una tarjeta al arrancar cuando `configuracionCompleta` es 
 se borra la propiedad y con ella la promesa. Lo que no puede quedarse es la promesa sin
 la conducta.
 
-**Mientras tanto.** El documento 11, sección 4, lista las tres cosas que hay que hacer a
+**Mientras tanto.** El documento 11, sección 4, lista las cosas que hay que hacer a
 mano por ambiente y que ningún despliegue verifica. La clave VAPID es la primera.
+
+## DT-17 — El service worker no tiene ninguna prueba automatizada
+
+**Qué pasa.** `app/web/firebase-messaging-sw.js` son 300 líneas de JavaScript sin una sola
+prueba. No hay dónde ponerlas: es un archivo que carga el navegador, fuera del paquete de
+Flutter y fuera del de Functions, y ninguno de los dos arneses lo alcanza. Se comprueba
+mirando un teléfono.
+
+**Por qué importa.** Es la pieza que decide qué se ve cuando llega un aviso con la
+aplicación cerrada — o sea, **la razón de ser del sistema**. Y la evidencia de que ahí se
+esconden defectos ya no es teórica: la insignia del icono se rompió **tres veces
+seguidas**, y las tres las encontró una persona mirando su pantalla, nunca una prueba.
+
+| Cuándo | Qué pasaba | Por qué ninguna prueba podía verlo |
+|---|---|---|
+| 25 ago 2026 | El número no aparecía nunca en iPhone | El worker llamaba a `clearAppBadge()` porque `getNotifications()` devuelve vacío en iOS. Es una suposición sobre el navegador, no una regla del dominio |
+| 25 ago 2026 | Decía «3» donde había 1 mensaje | Contaba `push` recibidos, y la entrega se reintenta hasta tres veces |
+| 26 ago 2026 | Decía «2» donde había 1 mensaje | Contaba la notificación de prueba del registro, que no es un mensaje |
+
+Los tres defectos vivían **enteros** dentro del worker. Las 307 pruebas de Flutter y las
+261 de Functions estaban en verde durante los tres.
+
+**El agravante.** El lado de Dart sí tiene pruebas —`insignia_bandeja_test.dart` ata la
+insignia al conteo del filtro «Sin leer»—, y eso da una falsa sensación de cobertura: lo
+probado es la mitad que casi nunca falla.
+
+**Cómo se paga.** Extraer del worker las decisiones que son lógica pura —qué cuenta para la
+insignia, cómo se compone una notificación, cuándo se muestra en primer plano— a un módulo
+que un runner de Node pueda importar, y dejar en el archivo del worker solo el pegamento
+con las APIs del navegador. Esfuerzo estimado: 1 día, más un runner de Node para `app/web`,
+que hoy no existe.
+
+**Mientras tanto.** El guion de pruebas tiene las comprobaciones manuales, y hay que
+hacerlas **en un teléfono con la aplicación instalada**: en el escritorio, dos de los tres
+defectos de arriba no se reproducen.
