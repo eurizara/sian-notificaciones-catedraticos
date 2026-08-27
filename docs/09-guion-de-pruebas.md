@@ -523,6 +523,35 @@ vista** en vez de a una hora.
 > notificaciones que la propia aplicación se denegaba. Ninguno habría salido de
 > una prueba de escritorio.
 
+## Comprobar que las alertas de operación funcionan
+
+Una alerta que nadie probó no es una alerta: es una suposición. Y su fallo es del peor
+tipo, porque se descubre el día que se necesitaba.
+
+Estas comprobaciones se hacen **una vez por ambiente**, después de correr
+`scripts/configurar-alertas.py`, y se repiten si cambia el correo de destino.
+
+| # | Acción | Resultado esperado |
+|---|---|---|
+| A-1 | Listar las políticas del proyecto | Dos: «está fallando» y «dejó de correr», ambas habilitadas y con un canal |
+| A-2 | Mirar el canal de notificación | Tipo correo, habilitado, con la dirección correcta |
+| A-3 | Crear una política desechable que **sí** vaya a saltar —por ejemplo, ejecuciones del despachador mayores que cero— y esperar | **Llega el correo.** Es la única forma de saber que el canal entrega, y no solo que está configurado |
+| A-4 | Borrar la política desechable | Deja de haber alertas de mentira que enseñen a ignorar las de verdad |
+| A-5 | Abrir el cuerpo de cada alerta | Dice qué mirar y en qué orden, sin dar por sabido el sistema |
+
+**A-3 es la que importa.** Una política puede estar impecable y el correo no salir nunca:
+la dirección mal escrita, el canal deshabilitado, el mensaje en No deseado. Comprobar la
+configuración solo demuestra que la configuración existe.
+
+Correr el script una segunda vez es además una comprobación en sí misma: tiene que decir
+«ya existía» y «actualizada», nunca crear una segunda copia. Una alerta duplicada manda
+dos correos por incidente, y dos correos idénticos se aprenden a borrar sin leer.
+
+Queda fuera de esto la tasa de entrega —si los avisos llegaron a los catedráticos—, que
+sigue viéndose mensaje por mensaje en Entregas. Es la mitad que queda de DT-07.
+
+---
+
 ## Hallazgos posteriores a las rondas
 
 Encontrados usando el sistema, no ejecutando el guion. Se anotan aquí porque

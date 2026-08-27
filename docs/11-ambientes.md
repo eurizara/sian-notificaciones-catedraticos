@@ -134,6 +134,10 @@ gcloud services list --enabled --project <ambiente-nuevo>        > /tmp/b.txt
 diff /tmp/a.txt /tmp/b.txt
 ```
 
+**Las alertas de operación.** Se crean con `scripts/configurar-alertas.py <proyecto>`, y
+sin ellas el ambiente funciona igual —hasta el día que deje de funcionar y nadie se
+entere—. Es la sección 5.
+
 **El CORS del bucket.** Se aplica con `scripts/aplicar-cors-storage.sh <proyecto>`. Vive
 en el bucket, no en `storage.rules`, así que `firebase deploy` no lo toca. Sin CORS las
 imágenes adjuntas no se pintan y las notas de voz sí: Flutter descarga los bytes de una
@@ -143,7 +147,42 @@ imágenes.
 
 ---
 
-## 5 · Costo
+## 5 · Qué avisa cuando algo se rompe
+
+Los tres ambientes tienen dos alertas sobre el **despachador**, la función que corre cada
+minuto y dispara los mensajes programados y recurrentes. Avisan por correo a
+`eurizara1@miumg.edu.gt`.
+
+| Alerta | Salta cuando | Qué significa |
+|---|---|---|
+| El despachador está fallando | más de 5 ejecuciones con error en 10 minutos | Se ejecuta y revienta. Los mensajes programados no salen |
+| El despachador dejó de correr | ninguna ejecución en 15 minutos | O murió la función, o murió el reloj de Cloud Scheduler que la despierta |
+
+Se crean con:
+
+```bash
+TOKEN=$(gcloud auth print-access-token) \
+  python3 scripts/configurar-alertas.py sian-umg-bdm-qa
+```
+
+El script es idempotente: se puede correr las veces que haga falta, y busca por nombre lo
+que ya exista para actualizarlo en lugar de duplicarlo. Se corre **una vez por ambiente**,
+y hay que volver a correrlo si cambian los umbrales o el correo de destino.
+
+> **Hacen falta las dos alertas, y la segunda es la que de verdad importa.** Una función
+> que falla deja errores contables. Una función que **no corre** no deja nada: no produce
+> errores porque no produce. Con solo la alerta de tasa de error, la avería más grave —que
+> el despachador esté muerto— se vería como un cero y se daría por buena.
+
+Cada alerta lleva escrito en su cuerpo qué mirar y en qué orden: los registros de la
+función, la colección `cola_despacho` y la pantalla de Programados. Quien la recibe a las
+once de la noche no debería tener que reconstruir por dónde empezar.
+
+Lo que **no** vigilan todavía es la tasa de entrega: si los avisos llegaron a los
+catedráticos sigue viéndose mensaje por mensaje en Entregas. Es la mitad que queda de
+DT-07 (documento 07).
+
+## 6 · Costo
 
 Cloud Functions exige plan Blaze. Blaze no significa que se cobre: significa que se
 cobra lo que pase de la cuota gratuita. Con los tres ambientes en volumen de pruebas, lo
@@ -172,7 +211,7 @@ distinto a lo previsto.
 
 ---
 
-## 6 · Cómo se promueve un cambio
+## 7 · Cómo se promueve un cambio
 
 ```
 rama de trabajo  ──PR──▶  develop  ──PR──▶  qa  ──automático──▶  calidad
@@ -208,7 +247,7 @@ lugar de fallar. Un repositorio en rojo permanente enseña a ignorar el rojo.
 > a `develop` no desplegó nada sin dar ni un error. Se arregla moviendo esa sola variable
 > al repositorio.
 
-## 7 · Ramas
+## 8 · Ramas
 
 Hay tres ramas permanentes, una por ambiente:
 

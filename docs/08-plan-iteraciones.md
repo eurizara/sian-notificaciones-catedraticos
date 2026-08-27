@@ -194,13 +194,16 @@ muy bien que se vea en las demás pruebas.
 - [x] Manuales publicados, con la dirección del sitio resuelta en tiempo de ejecución.
 - [ ] Cargar la lista blanca institucional definitiva. *La hace coordinación desde la
       aplicación, por carga masiva.*
-- [ ] Pagar la deuda **DT-07** (sin observabilidad ni alertas) antes de abrir a todos:
-      nadie debe operar producción a ciegas.
+- [x] Pagar la deuda **DT-07** (sin observabilidad ni alertas) antes de abrir a todos:
+      nadie debe operar producción a ciegas. *Alertas puestas el 26-08-2026; queda el
+      indicador de tasa de entrega, que es comodidad y no ceguera.*
 - [ ] Pagar la deuda **DT-14** (los correos de recuperación caen en No deseado) antes de
       que la gente empiece a olvidar contraseñas de verdad.
 
-> Las dos deudas abiertas no bloquean el arranque con coordinación, que es la semana 1
-> del despliegue escalonado. Sí bloquean la semana 3.
+> La deuda que queda abierta, DT-14, no bloquea el arranque con coordinación, que es la
+> semana 1 del despliegue escalonado. Sí bloquea la semana 3: el día que se abra a toda la
+> institución, alguien va a olvidar su contraseña y el correo de recuperación va a caer en
+> No deseado.
 
 ### Iteración 3.2 — Despliegue escalonado
 

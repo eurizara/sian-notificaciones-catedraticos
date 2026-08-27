@@ -578,7 +578,7 @@ explícita.
 > **`QA_PROJECT_ID` y `PROD_PROJECT_ID` van a nivel de repositorio**, no dentro del
 > *environment*: el `if:` del job se evalúa antes de que GitHub aplique el ambiente, y
 > ahí una variable de ambiente se lee vacía y el job se salta sin dar error. El detalle
-> está en el documento 11, sección 6.
+> está en el documento 11, sección 7.
 | `QA_SERVICE_ACCOUNT` / `PROD_SERVICE_ACCOUNT` | Consola de Firebase → Configuración → Cuentas de servicio → Generar nueva clave privada (contenido JSON completo) |
 
 Nunca los pegues en un archivo del repositorio, ni siquiera temporalmente: el historial de
@@ -599,6 +599,9 @@ git conserva todo.
       ejecución desde el sitio que los sirve. Estaba escrita a mano, apuntando a
       desarrollo, y publicada en producción habría mandado a instalar el ambiente de
       pruebas: la aplicación se ve idéntica, así que nadie lo habría notado
+- [x] **Las alertas de operación están puestas.** Sin ellas, el día que el despachador
+      muera nadie se entera hasta que alguien pregunte por un aviso que no llegó
+      (DT-07). Se crean con `scripts/configurar-alertas.py <proyecto>`
 - [x] **El CORS del bucket de producción está aplicado.** No lo hace `firebase deploy`
 - [ ] **La clave VAPID de producción está puesta.** Sin ella no llega ninguna notificación,
       y la aplicación funciona en todo lo demás sin decir palabra. Se genera a mano en la
