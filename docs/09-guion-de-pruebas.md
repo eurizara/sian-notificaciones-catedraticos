@@ -553,6 +553,10 @@ configuración solo demuestra que la configuración existe.
 > correo, y por un momento pareció que todo estaba comprobado. Lo que estaba comprobado
 > era un tercio.
 
+**Ejecutada el 26 de agosto de 2026 en los tres ambientes.** Los tres canales entregaron
+el correo, y las tres políticas de prueba se borraron después. Queda en cada proyecto
+exactamente lo que tiene que quedar: dos alertas, habilitadas, con un canal cada una.
+
 Correr el script una segunda vez es además una comprobación en sí misma: tiene que decir
 «ya existía» y «actualizada», nunca crear una segunda copia. Una alerta duplicada manda
 dos correos por incidente, y dos correos idénticos se aprenden a borrar sin leer.
