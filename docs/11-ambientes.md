@@ -108,6 +108,20 @@ aplicación funciona en todo lo demás: se entra, se leen y se envían mensajes,
 suena nada. El fallo no da error visible, así que es fácil creer que las notificaciones
 están rotas cuando lo que falta es la clave.
 
+**La URL de retorno de Google, y el `authDomain`.** Además de habilitar el proveedor, hay
+que registrar `https://<proyecto>.web.app/__/auth/handler` en el cliente OAuth del proyecto
+—Google Cloud Console → APIs y servicios → Credenciales → «Web client (auto created by
+Google Service)»— y poner el `authDomain` de ese ambiente en `<proyecto>.web.app`, **no** en
+`<proyecto>.firebaseapp.com`.
+
+Los dos tienen que ir juntos y en ese orden. Si el `authDomain` apunta a otro dominio que
+el de la aplicación, entrar con Google **falla en la PWA de iOS**: iOS no puede abrir
+ventanas emergentes, el SDK cae a redirección, y aísla el almacenamiento entre los dos
+orígenes, así que el estado que se escribe antes de salir no se encuentra al volver. Falla
+de forma intermitente, que es lo peor: se reintenta, se queda pensando, y a la tercera
+entra. El cliente OAuth es uno por proyecto, así que registrar la URL en uno no sirve para
+los otros (DT-19).
+
 **El proveedor de Google.** Se habilita en Authentication → Sign-in method → Google.
 Ese clic crea el cliente OAuth; la API no lo crea sola. Sin él, el botón «Entrar con
 Google» aparece en pantalla y falla al pulsarlo.
