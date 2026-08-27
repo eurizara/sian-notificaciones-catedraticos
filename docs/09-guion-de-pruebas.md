@@ -543,6 +543,20 @@ Estas comprobaciones se hacen **una vez por ambiente**, después de correr
 la dirección mal escrita, el canal deshabilitado, el mensaje en No deseado. Comprobar la
 configuración solo demuestra que la configuración existe.
 
+> **Y hay que hacerla en LOS TRES ambientes, no en uno.** Cada proyecto tiene su propio
+> canal de notificación: son objetos distintos, en proyectos distintos, aunque apunten al
+> mismo correo y se hayan creado con el mismo script. Probar el de desarrollo y dar por
+> buenos los otros dos es dar por probado justamente el de producción, que es el único que
+> va a sonar cuando importe.
+>
+> El día que se pusieron las alertas se hizo esa prueba solo en desarrollo. Llegó el
+> correo, y por un momento pareció que todo estaba comprobado. Lo que estaba comprobado
+> era un tercio.
+
+**Ejecutada el 26 de agosto de 2026 en los tres ambientes.** Los tres canales entregaron
+el correo, y las tres políticas de prueba se borraron después. Queda en cada proyecto
+exactamente lo que tiene que quedar: dos alertas, habilitadas, con un canal cada una.
+
 Correr el script una segunda vez es además una comprobación en sí misma: tiene que decir
 «ya existía» y «actualizada», nunca crear una segunda copia. Una alerta duplicada manda
 dos correos por incidente, y dos correos idénticos se aprenden a borrar sin leer.
