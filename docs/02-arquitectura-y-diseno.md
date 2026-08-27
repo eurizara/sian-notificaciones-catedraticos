@@ -839,6 +839,23 @@ bajarlo a cero.
 > Ahora se guarda el identificador del mensaje —el mismo que ya viajaba en la
 > carga para poder abrirlo desde la notificación— y se cuentan los distintos.
 
+> **Hay dos service workers, y el de la insignia no es el que controla la
+> página.** Flutter genera el suyo, con ámbito raíz, y es el que responde a
+> `navigator.serviceWorker.controller`. El SDK de Firebase registra
+> `firebase-messaging-sw.js` por su cuenta bajo
+> `/firebase-cloud-messaging-push-scope`, y **ese** es el que lleva la insignia.
+>
+> La aplicación mandaba su conteo al `controller`, o sea al de Flutter. El de
+> mensajería no se enteraba nunca del número real y, como solo limpia su lista
+> de mensajes ya avisados cuando la aplicación le manda el conteo exacto, esa
+> lista **no se limpiaba jamás**: acumulaba todos los avisos recibidos desde la
+> instalación y el número del icono crecía sin volver a bajar. Un teléfono con
+> tres mensajes recibidos y uno sin leer mostraba tres.
+>
+> Ahora se recorren los registros y se avisa a todos. Cuesta lo mismo y no
+> depende de qué worker controle la página ni de bajo qué ámbito se registró
+> cada uno; el que no entienda el mensaje lo ignora.
+
 Del lado de la aplicación, la insignia se sincroniza con lo que la bandeja tiene
 **ahora mismo**, no con lo que cambió. Escuchar los cambios del historial no
 basta: un escuchador solo se entera de lo que ocurre mientras está escuchando, y
