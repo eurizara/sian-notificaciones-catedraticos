@@ -156,11 +156,12 @@ El identificador del documento es el UID de Firebase Authentication.
 | `actualizadoEn` | timestamp | Sí | |
 | `ultimoAcceso` | timestamp | No | |
 
-### 2.2 `usuarios/{uid}/dispositivos/{tokenId}`
+### 2.2 `usuarios/{uid}/dispositivos/{instalacionId}`
 
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
-| `tokenFCM` | string | Identificador de registro de Firebase Cloud Messaging |
+| `instalacionId` | string | Identidad del aparato. **Es también el identificador del documento** |
+| `tokenFCM` | string | Identificador de registro de Firebase Cloud Messaging. Cambia solo |
 | `plataforma` | string | `WEB_ANDROID` · `WEB_IOS` · `WEB_ESCRITORIO` |
 | `esPWAInstalada` | boolean | Crítico en iOS: sin instalación no hay notificaciones (RES-05) |
 | `navegador` | string | Nombre y versión |
@@ -172,6 +173,21 @@ El identificador del documento es el UID de Firebase Authentication.
 > **Decisión.** Los dispositivos son subcolección y no un arreglo dentro del usuario, porque
 > un arreglo obligaría a reescribir el documento completo en cada refresco de token y
 > generaría contención de escritura.
+
+> **El identificador del documento NO es el token.** Lo fue hasta el 28 de agosto de 2026,
+> con este razonamiento: «reabrir la aplicación cien veces no crea cien dispositivos,
+> refresca el mismo». Es cierto donde el token es estable. **En iOS no lo es**: Safari lo
+> rota, así que cada apertura escribía un documento nuevo y el anterior se quedaba. Se
+> midieron nueve tokens de un mismo iPhone en dos días, y catorce en otro. Cada aviso se
+> enviaba a todos, y como los viejos estaban muertos, esas personas constaban como no
+> localizadas teniendo la aplicación instalada y el permiso concedido (DT-18).
+>
+> Ahora el identificador es el de **instalación**, que la aplicación genera una vez y
+> guarda en `localStorage`: sobrevive a cerrar sesión y a cerrar la aplicación. Un cliente
+> que no lo mande —uno que va un despliegue atrás— sigue cayendo al token, como antes.
+>
+> Los tokens que el servicio de push rechaza **se retiran en el propio envío**, así que lo
+> acumulado se limpia solo y no hizo falta migración.
 
 ### 2.3 `grupos/{grupoId}`
 

@@ -34,6 +34,7 @@ import {
   type GrupoResuelto,
 } from '../application/resolverDestinatarios';
 import { crearAsiento } from '../domain/bitacora';
+import { esTokenMuerto } from '../domain/dispositivo';
 import { exigirPermiso, type Sujeto } from '../domain/autorizacion';
 import { ErrorAutorizacion, ErrorDominio } from '../domain/errores';
 import { MensajeFactory, type Mensaje } from '../domain/mensaje';
@@ -426,6 +427,8 @@ async function despachar(
     // Un destinatario puede tener varios dispositivos: le basta con que uno
     // reciba. Se agrupa por persona antes de decidir si le llegó.
     const porUid = new Map<string, { ok: boolean; error?: string }>();
+    const muertos: { uid: string; token: string }[] = [];
+
     respuesta.responses.forEach((r, indice) => {
       const envio = envios[indice];
       /* istanbul ignore next — sendEach devuelve una respuesta por mensaje */
@@ -438,7 +441,13 @@ async function despachar(
         ok: (previo?.ok ?? false) || r.success,
         error: r.success ? previo?.error : (r.error?.code ?? 'desconocido'),
       });
+
+      if (!r.success && esTokenMuerto(r.error?.code)) {
+        muertos.push({ uid, token: envio.mensaje.token });
+      }
     });
+
+    await retirarTokensMuertos(muertos);
 
     const lote = db.batch();
     for (const [uid, resultado] of porUid) {
@@ -459,6 +468,59 @@ async function despachar(
   }
 
   return { entregados, fallidos };
+}
+
+/**
+ * Retira los tokens que el servicio de push declaró muertos (RF-USR-10).
+ *
+ * ────────────────────────────────────────────────────────────────────────────
+ * Sin esto, un token muerto se queda para siempre y sigue contando como fallo.
+ * ────────────────────────────────────────────────────────────────────────────
+ *
+ * El registro de dispositivos llevaba escrito «se limpia cualquier registro
+ * anterior que el servicio de push ya haya rechazado (RF-USR-10)» y **debajo no
+ * había ninguna limpieza**. El comentario describía la intención; nadie la
+ * implementó.
+ *
+ * El efecto se midió en producción el 28 de agosto de 2026: una persona con
+ * nueve tokens de un mismo iPhone, todos muertos, con la aplicación instalada y
+ * el permiso concedido. Sus avisos constaban como **no entregados** porque no
+ * quedaba un solo token vivo al que mandarlos, y los muertos no se iban a
+ * retirar solos jamás.
+ *
+ * Se borra por token y no por documento porque, mientras convivan el esquema
+ * viejo —documento identificado por el token— y el nuevo —por instalación—, el
+ * mismo token puede estar en cualquiera de los dos.
+ */
+async function retirarTokensMuertos(
+  muertos: readonly { uid: string; token: string }[],
+): Promise<void> {
+  if (muertos.length === 0) {
+    return;
+  }
+
+  await Promise.all(
+    muertos.map(async ({ uid, token }) => {
+      try {
+        const coleccion = db.collection(RUTAS.usuarios).doc(uid).collection('dispositivos');
+
+        // Esquema nuevo: el token es un campo.
+        const porCampo = await coleccion.where('tokenFCM', '==', token).get();
+        // Esquema viejo: el token era el identificador del documento.
+        const porId = coleccion.doc(token);
+
+        const lote = db.batch();
+        porCampo.docs.forEach((d) => lote.delete(d.ref));
+        lote.delete(porId);
+        await lote.commit();
+      } catch (e) {
+        // Que no se pueda limpiar no puede tumbar un envío en curso.
+        logger.warn('No se pudo retirar un token muerto', { uid, error: String(e) });
+      }
+    }),
+  );
+
+  logger.info('Tokens muertos retirados', { cuantos: muertos.length });
 }
 
 async function marcarSinDispositivo(
