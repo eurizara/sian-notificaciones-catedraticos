@@ -375,6 +375,7 @@ persona mirando su pantalla, nunca una prueba.
 | 27 ago 2026 | El número solo subía, nunca bajaba | El aviso de la aplicación se iba al service worker de Flutter, no al de mensajería |
 | 28 ago 2026 | Con la aplicación cerrada no notificaba nada | El manejador de `push` se salía justo en ese caso y delegaba en el SDK |
 | 28 ago 2026 | Notificaba dos veces | Dos sitios mostraban, confiando en que el `tag` los fundiría. En iOS no funde |
+| 28 ago 2026 | El arreglo funcionaba en desarrollo y no en producción | Nadie pedía comprobar si había un worker nuevo. La aplicación se renovaba, el worker no |
 
 Los seis defectos vivían **enteros** dentro del worker. Las 307 pruebas de Flutter y las
 261 de Functions estaban en verde durante los tres.
@@ -382,6 +383,19 @@ Los seis defectos vivían **enteros** dentro del worker. Las 307 pruebas de Flut
 **El agravante.** El lado de Dart sí tiene pruebas —`insignia_bandeja_test.dart` ata la
 insignia al conteo del filtro «Sin leer»—, y eso da una falsa sensación de cobertura: lo
 probado es la mitad que casi nunca falla.
+
+**Un agravante que se descubrió tarde.** Servir el archivo con `no-store` evita que el
+navegador se quede con una copia vieja **cuando va a buscarla**, pero no lo obliga a ir. Una
+PWA de iOS que se reabre puede seguir ejecutando el worker de hace días, y como la
+aplicación **sí** se renueva en cada arranque, se llega a tener el código nuevo con el
+worker viejo por debajo. Los arreglos parecen no haber llegado, y desinstalar los hace
+aparecer — lo que confunde aún más, porque parece un problema del aparato.
+
+Se vio el 28 de agosto de 2026: la misma versión desplegada notificaba en desarrollo,
+recién reinstalado, y no en producción. Ahora la aplicación pide `update()` sobre todos los
+registros en cada arranque, así que **cerrar y volver a abrir basta para que un arreglo
+llegue**. Esto no cierra DT-17: sigue sin haber pruebas del worker. Solo hace que lo que se
+arregle llegue de verdad.
 
 **Cómo se paga.** Extraer del worker las decisiones que son lógica pura —qué cuenta para la
 insignia, cómo se compone una notificación, cuándo se muestra en primer plano— a un módulo

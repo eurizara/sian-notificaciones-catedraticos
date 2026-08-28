@@ -11,6 +11,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'core/plataforma/actualizar_worker.dart';
 import 'infrastructure/firebase/inicializacion.dart';
 import 'presentation/shared/enrutador.dart';
 import 'presentation/shared/pantalla_estado.dart';
@@ -21,6 +22,18 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final ResultadoArranque arranque = await inicializarFirebase();
+
+  // Comprueba si hay un service worker nuevo, en cada arranque.
+  //
+  // Servir el archivo sin caché no basta: alguien tiene que preguntar, y una
+  // PWA de iOS que se reabre no siempre lo hace. Como la aplicación sí se
+  // renueva en cada arranque, se llegaba a la situación de tener el código
+  // nuevo con el worker viejo por debajo — y como es el worker quien muestra
+  // las notificaciones, los arreglos parecían no haber llegado.
+  //
+  // Va después de Firebase, que es quien registra el worker de mensajería, y
+  // sin esperarlo: comprobar es útil, pero arrancar es más importante.
+  actualizarWorkers();
 
   // ProviderScope es el contenedor de inyección de dependencias del cliente
   // (documento 02, sección 4). Se monta en la raíz para poder sustituir
