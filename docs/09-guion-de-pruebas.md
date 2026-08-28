@@ -237,6 +237,8 @@ notificación real.
 | 3.23 | Entra, cierra sesión y vuelve a entrar tres veces; después mándate un aviso | El icono dice **1**. Cada ingreso deja un token nuevo, y ninguno debe sumar |
 | 3.24 | Entra, cierra sesión y vuelve a entrar tres veces; después mira sus dispositivos en la base | Hay **uno solo**. Antes quedaba uno por cada ingreso (DT-18) |
 | 3.25 | Manda un aviso a alguien con tokens muertos acumulados | Los muertos **desaparecen** de su lista de dispositivos tras el envío |
+| 3.26 | **Cierra la aplicación del todo** —fuera del selector de apps— y mándate un aviso | Llega la notificación al teléfono. Es un camino distinto del de la aplicación abierta, y es el que importa |
+| 3.27 | Cuenta las notificaciones que aparecieron | **Una sola.** El mismo `tag` no las funde en iOS: si hay dos, hay dos sitios mostrándolas |
 
 ### Criterio de salida
 
@@ -579,6 +581,8 @@ cada uno señala un paso que al guion le falta.
 
 | Hallazgo | Qué lo destapó | Paso que hay que añadir |
 |---|---|---|
+| Con la aplicación **cerrada** no notificaba nada, aunque el aviso llegara | Mandar un aviso con la app cerrada del todo | Probar **con la aplicación cerrada**, no solo en segundo plano ni con ella abierta |
+| La notificación aparecía **dos veces** | El arreglo anterior, probado en dev | Contar las notificaciones, no solo comprobar que llega alguna |
 | Cuatro personas constaron como «no le llegó» teniendo todo bien | Mirar Entregas del primer aviso a la planta | Revisar Entregas **después de cada envío real**, no solo tras las pruebas de laboratorio |
 | El número del icono solo subía, nunca bajaba | Tres ingresos y un aviso: marcaba 3 con 1 sin leer | **Abrir la aplicación y mirar si el número se corrige solo.** Si no baja, el aviso no está llegando al worker |
 | Entrar con Google falla en la PWA de iOS | Cerrar sesión y volver a entrar desde el iPhone | Probar el ingreso **cerrando sesión y volviendo a entrar**, no solo la primera vez |
@@ -620,6 +624,15 @@ cada uno señala un paso que al guion le falta.
 > casi siempre da lo mismo — hasta que hay estado de por medio. Todo paso que
 > escriba algo merece hacerse **dos veces seguidas** y comprobar que la segunda
 > no deshace la primera.
+
+> **Las notificaciones en iOS llevan seis defectos, y los seis los encontró una
+> persona con el teléfono en la mano.** Cuatro de la insignia, uno de que no
+> notificaba con la aplicación cerrada, y uno de que notificaba dos veces. Los
+> seis vivían enteros en el service worker, que no tiene ni una prueba
+> automatizada (DT-17). Los dos últimos se aislaron comparando **caminos que
+> solo se diferencian en el estado de la aplicación**: abierta contra cerrada.
+> Ese contraste es la herramienta más útil que ha dado este guion, y por eso el
+> paso 3.26 exige cerrarla del todo en vez de dejarla en segundo plano.
 
 > **La insignia lleva cuatro defectos, y los cuatro los encontró una persona.**
 > No aparecía nunca; luego decía 3 donde había 1; luego 2 donde había 1; luego
