@@ -267,7 +267,7 @@ gratuita.
 | DT-15 | Reparación temporal de la fuente de iconos en `index.html` | Plataforma | Baja | Abierta | 0 USD |
 | DT-16 | `Entorno.configuracionCompleta` promete un diagnóstico que nadie pinta | Conocimiento | Baja | Abierta | 0 USD |
 | DT-17 | El service worker no tiene ninguna prueba automatizada | Alcance | **Media** | Abierta | 0 USD |
-| DT-18 | Se acumula un token de FCM por cada ingreso en iOS | Plataforma | **Media** | Abierta | 0 USD |
+| DT-18 | Se acumula un token de FCM por cada ingreso en iOS | Plataforma | **Alta** | **Pagada** | 0 USD |
 | DT-19 | Entrar con Google falla en la PWA de iOS por aislamiento de almacenamiento | Plataforma | Alta | **Pagada** | 0 USD |
 
 **Prioridad de pago recomendada, en orden:** DT-03 → DT-14 → DT-04 → DT-01.
@@ -417,6 +417,41 @@ estimado: medio día, más una migración que borre los duplicados existentes.
 
 **Disparador para pagarla.** Al abrir a toda la institución. Con veinte personas y varios
 ingresos cada una, el número de envíos por mensaje se multiplica sin que nadie lo note.
+
+---
+
+**Subida a severidad alta y pagada el 28 de agosto de 2026.** Dejó de ser desperdicio para
+convertirse en **fallos de entrega reales**. En los tres primeros avisos a la planta, cuatro
+personas constaron como no localizadas; dos de ellas —con la aplicación instalada y el
+permiso concedido— porque **todos** sus tokens estaban muertos. Una acumulaba nueve, otra
+catorce.
+
+El arreglo tiene tres partes, y hacían falta las tres:
+
+| | Qué resuelve |
+|---|---|
+| El documento se identifica por **instalación**, no por token | Deja de crearse un dispositivo por cada apertura |
+| El envío **retira** los tokens que el servicio de push rechaza | Limpia lo ya acumulado, sin migración |
+| El registro borra el documento viejo con ese mismo token | Evita que convivan los dos esquemas y llegue duplicado |
+
+> **La limpieza estaba escrita como comentario y no existía como código.** Encima del
+> lugar donde debía ir se leía «se limpia cualquier registro anterior de este mismo usuario
+> que el servicio de push ya haya rechazado (RF-USR-10)», y debajo no había nada. Es el
+> tercer caso en este proyecto de un comentario que describe una intención que nadie
+> implementó — como el `merge` que iba a proteger `consumida` (documento 05, 2.10) y el
+> diagnóstico de `Entorno.configuracionCompleta` (DT-16). Vale la pena desconfiar de un
+> comentario que afirma un comportamiento y no señala el código que lo hace.
+
+**El identificador de instalación** lo genera la aplicación y lo guarda en `localStorage`:
+sobrevive a cerrar sesión, a cerrar la aplicación y a reiniciar el teléfono. Solo se pierde
+si se borran los datos del sitio o se desinstala, y ahí empezar de cero es lo correcto.
+
+**Los clientes que no lo mandan siguen funcionando**: el servidor cae al token, como antes.
+Así la actualización no rompe a quien va un despliegue atrás. Basta con que cierre y vuelva
+a abrir la aplicación; **no hace falta reinstalar**.
+
+**Lo acumulado se limpia solo.** No hay migración: en el próximo envío, cada token muerto
+que el servicio rechace se retira. Las nueve y catorce entradas se van solas.
 
 ---
 

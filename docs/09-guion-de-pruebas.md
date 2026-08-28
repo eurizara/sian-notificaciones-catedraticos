@@ -235,6 +235,8 @@ notificación real.
 | 3.21 | Con dos dispositivos registrados para la misma persona, mándale un aviso | El icono dice **1**, no 2. Un mensaje cuenta una vez aunque llegue por varios caminos |
 | 3.22 | Con el icono marcando un número, **abre la aplicación** | El número se corrige solo al que diga «Sin leer». Si no baja, la aplicación no está alcanzando al worker de mensajería |
 | 3.23 | Entra, cierra sesión y vuelve a entrar tres veces; después mándate un aviso | El icono dice **1**. Cada ingreso deja un token nuevo, y ninguno debe sumar |
+| 3.24 | Entra, cierra sesión y vuelve a entrar tres veces; después mira sus dispositivos en la base | Hay **uno solo**. Antes quedaba uno por cada ingreso (DT-18) |
+| 3.25 | Manda un aviso a alguien con tokens muertos acumulados | Los muertos **desaparecen** de su lista de dispositivos tras el envío |
 
 ### Criterio de salida
 
@@ -577,6 +579,7 @@ cada uno señala un paso que al guion le falta.
 
 | Hallazgo | Qué lo destapó | Paso que hay que añadir |
 |---|---|---|
+| Cuatro personas constaron como «no le llegó» teniendo todo bien | Mirar Entregas del primer aviso a la planta | Revisar Entregas **después de cada envío real**, no solo tras las pruebas de laboratorio |
 | El número del icono solo subía, nunca bajaba | Tres ingresos y un aviso: marcaba 3 con 1 sin leer | **Abrir la aplicación y mirar si el número se corrige solo.** Si no baja, el aviso no está llegando al worker |
 | Entrar con Google falla en la PWA de iOS | Cerrar sesión y volver a entrar desde el iPhone | Probar el ingreso **cerrando sesión y volviendo a entrar**, no solo la primera vez |
 | La insignia decía 3 con un solo mensaje sin leer | Varios ingresos seguidos, luego un aviso | Entrar **varias veces** antes de mandar el aviso: cada ingreso deja un token más |
