@@ -839,6 +839,27 @@ bajarlo a cero.
 > Ahora se guarda el identificador del mensaje —el mismo que ya viajaba en la
 > carga para poder abrirlo desde la notificación— y se cuentan los distintos.
 
+> **El manejador de `push` muestra SIEMPRE, y es el único que muestra.** Antes
+> se callaba cuando no había ventana visible y dejaba ese caso a
+> `onBackgroundMessage`, el callback del SDK de Firebase, «para no mostrar
+> dos». Contradecía el principio escrito tres líneas más arriba en el propio
+> archivo —que en iOS la única vía admitida es este manejador— y en iOS ese
+> caso simplemente no notificaba: con la aplicación cerrada los avisos llegaban
+> a la bandeja y el teléfono no decía nada. Se aisló comparando dos caminos que
+> solo se distinguen en eso: la notificación de prueba del registro, que se
+> manda con la aplicación abierta, **sí** aparecía; los mensajes reales,
+> mandados con la aplicación cerrada, **no**.
+>
+> Y el reparto tiene que ser explícito. El primer arreglo dejó a los dos
+> mostrando, con el argumento de que llevan el mismo `tag` y el navegador
+> reemplazaría en lugar de apilar. **En iOS no reemplaza:** se vieron las dos
+> notificaciones, una debajo de la otra. El `tag` no garantiza unicidad ahí,
+> aunque la especificación diga que sí. Ahora `onBackgroundMessage` se registra
+> vacío —solo para que el SDK sepa que alguien atiende el mensaje y no invente
+> una notificación propia— y no toca la insignia: contarla dos veces es justo
+> lo que su deduplicación atómica existe para impedir, y que aguantara no es
+> motivo para pedírselo.
+
 > **Hay dos service workers, y el de la insignia no es el que controla la
 > página.** Flutter genera el suyo, con ámbito raíz, y es el que responde a
 > `navigator.serviceWorker.controller`. El SDK de Firebase registra

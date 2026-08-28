@@ -364,16 +364,19 @@ mirando un teléfono.
 
 **Por qué importa.** Es la pieza que decide qué se ve cuando llega un aviso con la
 aplicación cerrada — o sea, **la razón de ser del sistema**. Y la evidencia de que ahí se
-esconden defectos ya no es teórica: la insignia del icono se rompió **tres veces
-seguidas**, y las tres las encontró una persona mirando su pantalla, nunca una prueba.
+esconden defectos ya no es teórica: las notificaciones en iOS se rompieron **seis veces**, y las seis las encontró una
+persona mirando su pantalla, nunca una prueba.
 
 | Cuándo | Qué pasaba | Por qué ninguna prueba podía verlo |
 |---|---|---|
 | 25 ago 2026 | El número no aparecía nunca en iPhone | El worker llamaba a `clearAppBadge()` porque `getNotifications()` devuelve vacío en iOS. Es una suposición sobre el navegador, no una regla del dominio |
 | 25 ago 2026 | Decía «3» donde había 1 mensaje | Contaba `push` recibidos, y la entrega se reintenta hasta tres veces |
 | 26 ago 2026 | Decía «2» donde había 1 mensaje | Contaba la notificación de prueba del registro, que no es un mensaje |
+| 27 ago 2026 | El número solo subía, nunca bajaba | El aviso de la aplicación se iba al service worker de Flutter, no al de mensajería |
+| 28 ago 2026 | Con la aplicación cerrada no notificaba nada | El manejador de `push` se salía justo en ese caso y delegaba en el SDK |
+| 28 ago 2026 | Notificaba dos veces | Dos sitios mostraban, confiando en que el `tag` los fundiría. En iOS no funde |
 
-Los tres defectos vivían **enteros** dentro del worker. Las 307 pruebas de Flutter y las
+Los seis defectos vivían **enteros** dentro del worker. Las 307 pruebas de Flutter y las
 261 de Functions estaban en verde durante los tres.
 
 **El agravante.** El lado de Dart sí tiene pruebas —`insignia_bandeja_test.dart` ata la
