@@ -318,8 +318,26 @@ function componer(carga) {
  * notificaciones originadas en el manejador de `push`, y pedirlas desde la
  * página no basta.
  *
- * Solo actúa si hay ventana visible. Con la aplicación cerrada o en segundo
- * plano se calla y deja trabajar a `onBackgroundMessage`, para no mostrar dos.
+ * ────────────────────────────────────────────────────────────────────────────
+ * Actúa SIEMPRE, esté la aplicación abierta o cerrada.
+ * ────────────────────────────────────────────────────────────────────────────
+ *
+ * Antes se callaba cuando no había ventana visible y dejaba el caso a
+ * `onBackgroundMessage`, el callback del SDK de Firebase, «para no mostrar
+ * dos». Contradecía lo que dice el párrafo de arriba —que en iOS la única vía
+ * admitida es este manejador— y en iOS ese caso simplemente no notificaba: con
+ * la aplicación cerrada los avisos llegaban a la bandeja y el teléfono no
+ * avisaba de nada. Se comprobó el 28 de agosto de 2026 con dos caminos que
+ * solo se distinguen en eso: la notificación de prueba del registro, que se
+ * manda con la aplicación abierta, **sí** aparecía; los mensajes reales,
+ * mandados con la aplicación cerrada, **no**.
+ *
+ * **Y es el único que muestra.** La primera versión de este arreglo dejaba
+ * también a `onBackgroundMessage` mostrando, con el argumento de que las dos
+ * notificaciones llevan el mismo `tag` y el navegador reemplazaría en lugar de
+ * apilar. En iOS **no reemplaza**: se vieron las dos, una debajo de la otra.
+ * El `tag` no es una garantía de unicidad ahí, así que el reparto tiene que
+ * ser explícito — este manejador muestra, el otro no.
  */
 self.addEventListener('push', (evento) => {
   evento.waitUntil(
@@ -330,11 +348,6 @@ self.addEventListener('push', (evento) => {
       });
       const hayVisible = ventanas.some((v) => v.visibilityState === 'visible');
 
-      if (!hayVisible) {
-        trazar('push:segundo-plano', { ventanas: ventanas.length });
-        return;
-      }
-
       let carga = {};
       try {
         carga = evento.data ? evento.data.json() : {};
@@ -343,8 +356,13 @@ self.addEventListener('push', (evento) => {
       }
 
       const { titulo, opciones } = componer(carga);
-      trazar('push:primer-plano', { titulo });
+      trazar(hayVisible ? 'push:primer-plano' : 'push:segundo-plano', {
+        titulo,
+        ventanas: ventanas.length,
+      });
+
       await self.registration.showNotification(titulo, opciones);
+      await sumarInsignia(opciones.data && opciones.data.mensajeId);
     })(),
   );
 });
@@ -359,11 +377,27 @@ if (self.SIAN_FIREBASE_CONFIG && self.SIAN_FIREBASE_CONFIG.apiKey !== 'SIN-CONFI
    * Es lo que distingue un canal de avisos de una página web que hay que
    * recordar abrir.
    */
-  messaging.onBackgroundMessage(async (carga) => {
-    const { titulo, opciones } = componer(carga);
-    trazar('fondo', { titulo });
-    await self.registration.showNotification(titulo, opciones);
-    await sumarInsignia(opciones.data && opciones.data.mensajeId);
+  /**
+   * NO muestra nada. Se registra a propósito, y vacío.
+   *
+   * Quien muestra es el manejador de `push` de arriba, que atiende todos los
+   * casos. Este callback existe solo para que el SDK de Firebase sepa que
+   * alguien se hace cargo del mensaje en segundo plano y no invente una
+   * notificación propia.
+   *
+   * Dejarlo mostrando también producía **dos notificaciones idénticas** en
+   * iOS. El `tag` común no las funde ahí, aunque la especificación diga que
+   * reemplaza: se apilan. Se vio el 28 de agosto de 2026, con las dos
+   * «Pruba #4» una debajo de la otra en la pantalla de bloqueo.
+   *
+   * La insignia tampoco se toca aquí: ya la lleva el manejador de `push`, y
+   * contar dos veces el mismo mensaje es justo lo que su deduplicación
+   * atómica existe para impedir. Que funcionara no es motivo para pedírselo.
+   */
+  messaging.onBackgroundMessage((carga) => {
+    trazar('fondo:atendido-por-push', {
+      mensajeId: (carga && carga.data && carga.data.mensajeId) || '',
+    });
   });
 }
 
