@@ -118,3 +118,32 @@ export function motivoPorElQueNoRecibe(d: Dispositivo): string | null {
   }
   return null;
 }
+
+/**
+ * ¿Este error del servicio de push significa que el token ya no sirve?
+ *
+ * ────────────────────────────────────────────────────────────────────────────
+ * Solo dos códigos son definitivos. Todos los demás son tropiezos.
+ * ────────────────────────────────────────────────────────────────────────────
+ *
+ * Distinguirlos importa en las dos direcciones, y equivocarse duele distinto:
+ *
+ *   · Si se da por muerto un token que no lo está —por un fallo de red, una
+ *     cuota agotada, un servicio caído—, se borra el registro de alguien que
+ *     estaba perfectamente bien, y esa persona **deja de recibir avisos** hasta
+ *     que vuelva a abrir la aplicación. Puede no notarlo en semanas.
+ *
+ *   · Si se da por vivo un token muerto, se queda para siempre, se le sigue
+ *     enviando y cada aviso cuenta como fallo. Es lo que pasaba: una persona
+ *     con nueve tokens muertos aparecía como no localizable teniendo la
+ *     aplicación instalada y el permiso concedido.
+ *
+ * Ante la duda, no se borra: recuperar un token perdido exige que la persona
+ * abra la aplicación, y conservar uno muerto solo cuesta un intento fallido.
+ */
+export function esTokenMuerto(codigo: string | undefined): boolean {
+  return (
+    codigo === 'messaging/registration-token-not-registered' ||
+    codigo === 'messaging/invalid-registration-token'
+  );
+}

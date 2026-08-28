@@ -15,6 +15,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import '../../core/entorno.dart';
 import '../../core/navegador.dart';
 import '../../core/plataforma/consola.dart';
+import '../../core/plataforma/instalacion.dart';
 
 /// Estado del permiso, tal como lo entiende el sistema.
 enum EstadoPermiso { concedido, denegado, pendiente, noSoportado }
@@ -206,6 +207,10 @@ class RepositorioDispositivos {
         .httpsCallable('registrarDispositivo')
         .call<Object?>(<String, Object?>{
           'tokenFCM': token,
+          // Identidad del aparato, estable entre aperturas. El token no sirve
+          // para eso: en iOS se rota, y usarlo creaba un dispositivo nuevo en
+          // cada ingreso (DT-18).
+          'instalacionId': identificadorDeInstalacion(),
           'plataforma': _entorno.plataformaPersistida,
           'esPWAInstalada': _entorno.instalada,
           'navegador': _entorno.navegador,

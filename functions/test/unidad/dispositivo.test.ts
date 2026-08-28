@@ -9,6 +9,7 @@
 
 import {
   crearDispositivo,
+  esTokenMuerto,
   motivoPorElQueNoRecibe,
   puedeRecibirNotificaciones,
   type Dispositivo,
@@ -115,5 +116,50 @@ describe('motivo por el que no recibe', () => {
 
   it('devuelve null solo cuando de verdad puede recibir', () => {
     expect(motivoPorElQueNoRecibe(dispositivo())).toBeNull();
+  });
+});
+
+/**
+ * Retirar un token muerto — RF-USR-10.
+ *
+ * ────────────────────────────────────────────────────────────────────────────
+ * Equivocarse duele en las dos direcciones, y de formas distintas.
+ * ────────────────────────────────────────────────────────────────────────────
+ *
+ * Dar por muerto un token sano borra el registro de alguien que estaba bien, y
+ * esa persona deja de recibir avisos hasta que vuelva a abrir la aplicación:
+ * puede no notarlo en semanas. Dar por vivo uno muerto lo deja para siempre, y
+ * cada aviso cuenta como fallo — es lo que pasaba en producción, con una
+ * persona que tenía nueve tokens muertos y aparecía como no localizable
+ * teniendo la aplicación instalada y el permiso concedido.
+ */
+describe('esTokenMuerto', () => {
+  it('el token dado de baja por el servicio de push está muerto', () => {
+    expect(esTokenMuerto('messaging/registration-token-not-registered')).toBe(true);
+  });
+
+  it('un token con forma inválida está muerto', () => {
+    expect(esTokenMuerto('messaging/invalid-registration-token')).toBe(true);
+  });
+
+  it('un fallo pasajero NO mata el token', () => {
+    // Estos son los que costarían caro: borrar por un problema del momento
+    // deja sin avisos a alguien que estaba perfectamente bien.
+    for (const pasajero of [
+      'messaging/server-unavailable',
+      'messaging/internal-error',
+      'messaging/quota-exceeded',
+      'messaging/unknown-error',
+      'messaging/third-party-auth-error',
+    ]) {
+      expect(esTokenMuerto(pasajero)).toBe(false);
+    }
+  });
+
+  it('sin código de error no se borra nada', () => {
+    // Ante la duda no se borra: recuperar un token perdido exige que la
+    // persona abra la aplicación; conservar uno muerto cuesta un intento.
+    expect(esTokenMuerto(undefined)).toBe(false);
+    expect(esTokenMuerto('')).toBe(false);
   });
 });
