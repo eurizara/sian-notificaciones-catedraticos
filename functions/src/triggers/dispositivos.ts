@@ -41,6 +41,7 @@ export const registrarDispositivo = onCall(OPCIONES_FUNCION, async (peticion) =>
 
   const datos = peticion.data as {
     tokenFCM?: string;
+    instalacionId?: string;
     plataforma?: string;
     esPWAInstalada?: boolean;
     navegador?: string;
@@ -57,27 +58,54 @@ export const registrarDispositivo = onCall(OPCIONES_FUNCION, async (peticion) =>
       permisoNotificacion: datos.permisoNotificacion ?? 'pendiente',
     });
 
-    // El identificador del documento es el propio token: reabrir la
-    // aplicación cien veces no crea cien dispositivos, refresca el mismo.
-    const ref = db
-      .collection(RUTAS.usuarios)
-      .doc(uid)
-      .collection('dispositivos')
-      .doc(dispositivo.tokenFCM);
+    // ──────────────────────────────────────────────────────────────────────
+    // EL DOCUMENTO SE IDENTIFICA POR INSTALACIÓN, NO POR TOKEN.
+    // ──────────────────────────────────────────────────────────────────────
+    //
+    // Antes el identificador era el propio token, con este razonamiento al
+    // lado: «reabrir la aplicación cien veces no crea cien dispositivos,
+    // refresca el mismo». Es cierto donde el token es estable. En iOS no lo
+    // es: Safari lo rota, así que cada apertura escribía un documento nuevo y
+    // el anterior se quedaba.
+    //
+    // Medido en producción el 28 de agosto de 2026: nueve tokens de un mismo
+    // iPhone, de una sola persona, en dos días. Cada aviso se enviaba a los
+    // nueve y, como los viejos estaban muertos, sus avisos constaban como no
+    // entregados aunque tuviera la aplicación instalada y el permiso dado.
+    //
+    // El identificador de instalación lo genera la aplicación y lo guarda en
+    // `localStorage`: sobrevive a cerrar sesión y a cerrar la aplicación, que
+    // es exactamente lo que el token no hacía.
+    //
+    // Si no viene —un cliente que todavía no se actualizó— se cae al token,
+    // como antes. Así la actualización no rompe a quien va un despliegue
+    // atrás: sigue registrándose igual hasta que recargue.
+    const coleccion = db.collection(RUTAS.usuarios).doc(uid).collection('dispositivos');
+    const instalacionId = (datos.instalacionId ?? '').trim();
+    const ref = coleccion.doc(instalacionId || dispositivo.tokenFCM);
 
     const yaExistia = (await ref.get()).exists;
 
     await ref.set(
       {
         ...dispositivo,
+        ...(instalacionId ? { instalacionId } : {}),
         ultimaActividad: FieldValue.serverTimestamp(),
         ...(yaExistia ? {} : { registradoEn: FieldValue.serverTimestamp() }),
       },
       { merge: true },
     );
 
-    // Se limpia cualquier registro anterior de este mismo usuario que el
-    // servicio de push ya haya rechazado (RF-USR-10).
+    // Retira el registro que el esquema viejo había dejado con este mismo
+    // token como identificador. Sin esto convivirían los dos y la persona
+    // recibiría cada aviso dos veces.
+    if (instalacionId && instalacionId !== dispositivo.tokenFCM) {
+      await coleccion
+        .doc(dispositivo.tokenFCM)
+        .delete()
+        .catch(() => undefined);
+    }
+
     let pruebaEnviada = false;
     const motivo = motivoPorElQueNoRecibe(dispositivo);
 
