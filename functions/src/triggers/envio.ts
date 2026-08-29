@@ -34,7 +34,7 @@ import {
   type GrupoResuelto,
 } from '../application/resolverDestinatarios';
 import { crearAsiento } from '../domain/bitacora';
-import { esTokenMuerto } from '../domain/dispositivo';
+import { esIdentificadorDeInstalacion, esTokenMuerto } from '../domain/dispositivo';
 import { exigirPermiso, type Sujeto } from '../domain/autorizacion';
 import { ErrorAutorizacion, ErrorDominio } from '../domain/errores';
 import { MensajeFactory, type Mensaje } from '../domain/mensaje';
@@ -504,14 +504,24 @@ async function retirarTokensMuertos(
       try {
         const coleccion = db.collection(RUTAS.usuarios).doc(uid).collection('dispositivos');
 
+        const lote = db.batch();
+
         // Esquema nuevo: el token es un campo.
         const porCampo = await coleccion.where('tokenFCM', '==', token).get();
-        // Esquema viejo: el token era el identificador del documento.
-        const porId = coleccion.doc(token);
-
-        const lote = db.batch();
         porCampo.docs.forEach((d) => lote.delete(d.ref));
-        lote.delete(porId);
+
+        // Esquema viejo: el token ERA el identificador del documento. Se borra
+        // por identificador solo si lo que se recibió tiene forma de token y no
+        // de instalación.
+        //
+        // La guarda no es paranoia: mientras el envío mandó por error el
+        // identificador de instalación, esta línea borró dispositivos vivos en
+        // cada envío. Una limpieza que puede borrar lo bueno tiene que decir
+        // explícitamente qué está autorizada a tocar.
+        if (!esIdentificadorDeInstalacion(token)) {
+          lote.delete(coleccion.doc(token));
+        }
+
         await lote.commit();
       } catch (e) {
         // Que no se pueda limpiar no puede tumbar un envío en curso.
@@ -550,7 +560,28 @@ async function tokensDe(uid: string): Promise<string[]> {
     .where('activo', '==', true)
     .get();
 
-  return instantanea.docs.map((d) => d.id);
+  // ──────────────────────────────────────────────────────────────────────────
+  // EL TOKEN ES UN CAMPO. El identificador del documento YA NO lo es.
+  // ──────────────────────────────────────────────────────────────────────────
+  //
+  // Aquí se devolvía `d.id`, y era correcto mientras el documento se
+  // identificaba por el token. Al pasar a identificarlo por instalación
+  // (DT-18) se cambió el lado que ESCRIBE y se olvidó este, que LEE.
+  //
+  // El efecto fue peor que el problema que DT-18 venía a resolver: se enviaba
+  // a `ins_vg7tmesv…` como si fuera un token, Firebase lo rechazaba por
+  // inválido, y la limpieza de tokens muertos —que borra por identificador de
+  // documento para retirar los del esquema viejo— **borraba el dispositivo**.
+  // Reinstalar no servía de nada: al primer envío volvía a desaparecer. Y
+  // empeoraba solo, porque cada persona que reabría la aplicación migraba al
+  // esquema nuevo y dejaba de recibir.
+  //
+  // El respaldo a `d.id` cubre un documento del esquema viejo al que le
+  // faltara el campo. No debería haber ninguno —`crearDispositivo` siempre lo
+  // incluye— pero equivocarse aquí deja a alguien sin avisos sin decirlo.
+  return instantanea.docs
+    .map((d) => ((d.get('tokenFCM') as string | undefined) ?? d.id).trim())
+    .filter((t) => t.length > 0);
 }
 
 /** Traduce los errores del dominio a los que entiende el cliente. */
