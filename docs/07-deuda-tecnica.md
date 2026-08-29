@@ -470,6 +470,26 @@ a abrir la aplicación; **no hace falta reinstalar**.
 **Lo acumulado se limpia solo.** No hay migración: en el próximo envío, cada token muerto
 que el servicio rechace se retira. Las nueve y catorce entradas se van solas.
 
+> **Este arreglo se rompió a sí mismo, y hay que contarlo.** Se cambió el lado que
+> **escribe** el dispositivo —el identificador pasó a ser la instalación— y se olvidó el
+> que **lee**: `tokensDe` seguía devolviendo el identificador del documento como si fuera
+> el token. Así que a partir de ese despliegue el envío mandaba a `ins_vg7tmesv…` como si
+> fuera un token de FCM.
+>
+> El daño fue mayor que el problema original, por dos motivos que se sumaron. Firebase
+> rechazaba ese identificador como token inválido, **y la limpieza de tokens muertos
+> borraba el documento del dispositivo**. Reinstalar no servía de nada: al primer envío
+> volvía a desaparecer. Y empeoraba solo, porque cada persona que reabría la aplicación
+> migraba al esquema nuevo y dejaba de recibir.
+>
+> Dos lecciones, y la segunda vale más que la primera:
+>
+>   · **Cambiar el identificador de una colección obliga a revisar todo lo que la lee.**
+>     No basta con que compile: `d.id` seguía siendo una cadena válida.
+>   · **Una limpieza que puede borrar lo bueno tiene que decir qué está autorizada a
+>     tocar.** Ahora solo borra por identificador si lo recibido tiene forma de token y no
+>     de instalación, así que un error aguas arriba ya no se convierte en pérdida de datos.
+
 ---
 
 ## DT-19 — Entrar con Google falla en la PWA de iOS

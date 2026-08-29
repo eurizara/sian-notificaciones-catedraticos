@@ -147,3 +147,20 @@ export function esTokenMuerto(codigo: string | undefined): boolean {
     codigo === 'messaging/invalid-registration-token'
   );
 }
+
+/** Prefijo con el que la aplicación nombra sus identificadores de instalación. */
+export const PREFIJO_INSTALACION = 'ins_';
+
+/**
+ * ¿Esto es un identificador de instalación y no un token de notificaciones?
+ *
+ * Sirve para que la limpieza de tokens muertos no borre por identificador de
+ * documento algo que no es un token. Sin esta distinción, un fallo aguas
+ * arriba —mandar el identificador donde iba el token— convierte la limpieza en
+ * un borrador de dispositivos vivos, y eso fue exactamente lo que pasó el 28 de
+ * agosto de 2026: cada envío dejaba a la gente sin dispositivo, y reinstalar no
+ * servía porque al primer envío volvía a desaparecer.
+ */
+export function esIdentificadorDeInstalacion(valor: string): boolean {
+  return valor.startsWith(PREFIJO_INSTALACION);
+}
