@@ -229,6 +229,7 @@ directamente en producción: la semana pasada mostró lo que cuesta.
 
 | Orden | Qué | Por qué primero |
 |:---:|---|---|
+| 0 | **DT-24** · envío duplicado | **Está pasando ahora en producción**: el coordinador mandó dos avisos y salieron cuatro. Es una línea, y mientras no se toque cada envío con un fallo parcial puede duplicarse |
 | 1 | **DT-17** · pruebas del service worker | De los siete defectos, los siete vivían ahí y ninguno lo encontró una prueba. Es la pieza que decide si el teléfono suena en una emergencia |
 | 2 | **DT-18** · retirar los dispositivos arrastrados | La causa está resuelta —ya no se crea uno por ingreso— pero quedan 71 del esquema viejo que no se van solos |
 | 3 | **DT-14** · correos de recuperación | Van a No deseado. Duele el primer día que alguien de verdad olvide su contraseña |
