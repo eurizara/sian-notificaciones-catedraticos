@@ -36,7 +36,7 @@ import {
 import { crearAsiento } from '../domain/bitacora';
 import { esIdentificadorDeInstalacion, esTokenMuerto } from '../domain/dispositivo';
 import { exigirPermiso, type Sujeto } from '../domain/autorizacion';
-import { ErrorAutorizacion, ErrorDominio } from '../domain/errores';
+import { ErrorAutorizacion, ErrorDominio, esDocumentoYaExistente } from '../domain/errores';
 import { MensajeFactory, type Mensaje } from '../domain/mensaje';
 import { normalizarAdjuntos } from '../domain/tipos';
 import type { Adjuntos, Destinatarios, Rol, TipoMensaje } from '../domain/tipos';
@@ -594,6 +594,17 @@ function traducirError(e: unknown): HttpsError {
   }
   if (e instanceof ErrorDominio) {
     return new HttpsError('invalid-argument', e.message, { codigo: e.codigo });
+  }
+  // Firestore devuelve ALREADY_EXISTS —código 6— cuando el `create` del mensaje
+  // choca con uno que ya está. Solo puede ocurrir si llega dos veces el mismo
+  // identificador reservado, o sea un segundo envío del mismo formulario. Es
+  // exactamente lo que hay que impedir (DT-24), y merece decirse con esas
+  // palabras: dicho como «fallo interno» invita a volver a pulsar, que es
+  // justamente lo que no debe hacerse.
+  if (esDocumentoYaExistente(e)) {
+    return new HttpsError('already-exists', 'Este aviso ya se envió. No se mandó de nuevo.', {
+      codigo: 'MENSAJE_YA_ENVIADO',
+    });
   }
   logger.error('Fallo enviando el mensaje', { error: String(e) });
   return new HttpsError('internal', 'No se pudo enviar el mensaje.');

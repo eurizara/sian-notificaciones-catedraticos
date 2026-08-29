@@ -72,6 +72,23 @@ class SeccionMensajes extends ConsumerStatefulWidget {
   ConsumerState<SeccionMensajes> createState() => _SeccionMensajesState();
 }
 
+/// Con qué cara sale el aviso flotante del envío.
+///
+/// Nace de DT-24: antes solo había «normal» y «error», y un envío con fallos
+/// parciales caía en «error». Rojo, en esta aplicación, es lo urgente y lo que
+/// salió mal — así que el color decía «no se envió» mientras el texto decía
+/// «enviado a 19 de 20». Ganaba el color.
+enum TonoAviso {
+  /// Salió como se esperaba.
+  correcto,
+
+  /// Salió, pero hay algo que mirar. Ni celebración ni alarma.
+  atencion,
+
+  /// No salió.
+  error,
+}
+
 class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
   final GlobalKey<FormState> _formulario = GlobalKey<FormState>();
   final TextEditingController _titulo = TextEditingController();
@@ -85,6 +102,14 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
   EleccionEnvio _cuando = const EleccionEnvio(modo: ModoEnvio.ahora);
   bool _enviando = false;
   bool _subiendo = false;
+
+  /// Identificador del mensaje que se está redactando, reservado antes de
+  /// enviarlo y soltado al vaciar el formulario.
+  ///
+  /// Es la mitad cliente de la protección contra el envío duplicado (DT-24):
+  /// mientras no cambie, el `create` del servidor rechaza un segundo envío del
+  /// mismo formulario.
+  String? _idReservado;
 
   /// Hay un adjunto a medias: grabando, o leyendo la imagen recién elegida.
   ///
@@ -129,30 +154,30 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
     // Antes que nada, y aunque el botón ya esté deshabilitado: un envío que
     // sale mientras se graba pierde la nota de voz para siempre.
     if (_adjuntoAMedias) {
-      _avisar(Textos.adjuntoAMedias, error: true);
+      _avisar(Textos.adjuntoAMedias, tono: TonoAviso.error);
       return;
     }
     if (!(_formulario.currentState?.validate() ?? false)) {
       return;
     }
     if (!_aTodos && _gruposElegidos.isEmpty) {
-      _avisar(Textos.validacionElijeGrupo, error: true);
+      _avisar(Textos.validacionElijeGrupo, tono: TonoAviso.error);
       return;
     }
 
     // Programar exige fecha; repetir exige haber mirado las próximas. Sin lo
     // segundo, RF-PRG-09 sería un botón decorativo.
     if (_cuando.modo == ModoEnvio.programado && _cuando.fecha == null) {
-      _avisar(Textos.validacionFechaObligatoria, error: true);
+      _avisar(Textos.validacionFechaObligatoria, tono: TonoAviso.error);
       return;
     }
     if (_cuando.modo == ModoEnvio.recurrente) {
       if (_cuando.patron == null) {
-        _avisar(Textos.validacionRangoInvalido, error: true);
+        _avisar(Textos.validacionRangoInvalido, tono: TonoAviso.error);
         return;
       }
       if (!_cuando.vistaPreviaVista) {
-        _avisar(Textos.vistaPreviaObligatoria, error: true);
+        _avisar(Textos.vistaPreviaObligatoria, tono: TonoAviso.error);
         return;
       }
     }
@@ -172,7 +197,7 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
       }
 
       if (conteo.total == 0) {
-        _avisar(Textos.envioSinDestinatarios, error: true);
+        _avisar(Textos.envioSinDestinatarios, tono: TonoAviso.error);
         return;
       }
 
@@ -181,16 +206,31 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
         return;
       }
 
-      // Los adjuntos se suben ANTES de llamar al envío, contra un
-      // identificador reservado: las reglas de Storage dependen de la ruta
-      // `mensajes/{id}/…`, y el mensaje todavía no existe.
-      String? mensajeId;
+      // El identificador se reserva SIEMPRE, no solo cuando hay adjuntos.
+      //
+      // ────────────────────────────────────────────────────────────────────────
+      // Es lo que impide que el mismo aviso salga dos veces (DT-24).
+      // ────────────────────────────────────────────────────────────────────────
+      //
+      // El servidor crea el mensaje con `create`, que falla si el documento ya
+      // existe. Mientras el formulario no se vacíe, este identificador es el
+      // mismo, así que un segundo envío del mismo texto lo rechaza el servidor
+      // en vez de crear un mensaje nuevo. `_limpiar()` lo suelta, y por eso
+      // repetir un aviso a propósito —escribiéndolo de nuevo— sigue siendo
+      // posible.
+      //
+      // Antes solo se reservaba con adjuntos, y salía la paradoja de que un
+      // aviso con una nota de voz estaba protegido y uno de solo texto no.
+      _idReservado ??= ref.read(repositorioAdjuntosProvider).reservarIdMensaje();
+      final String mensajeId = _idReservado!;
       final List<AdjuntoSubido> subidos = <AdjuntoSubido>[];
 
       if (_adjuntos.hayAlgo) {
         setState(() => _subiendo = true);
+        // Las reglas de Storage dependen de la ruta `mensajes/{id}/…`, así que
+        // los adjuntos se suben contra este identificador antes de que el
+        // mensaje exista.
         final RepositorioAdjuntos adj = ref.read(repositorioAdjuntosProvider);
-        mensajeId = adj.reservarIdMensaje();
 
         // ────────────────────────────────────────────────────────────────────
         // SE SUBEN EN EL ORDEN EN QUE SE ADJUNTARON, Y SE MANDAN EN ESE ORDEN.
@@ -235,7 +275,7 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
                 pieza is VozEnCurso
                     ? Textos.falloSubidaVoz
                     : Textos.falloSubidaImagen,
-                error: true,
+                tono: TonoAviso.error,
               );
             }
             return;
@@ -293,25 +333,40 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
         return;
       }
 
+      // ────────────────────────────────────────────────────────────────────────
+      // SE VACÍA SIEMPRE QUE EL MENSAJE SE HAYA CREADO, CON FALLOS O SIN ELLOS.
+      // ────────────────────────────────────────────────────────────────────────
+      //
+      // Antes solo se vaciaba en el envío perfecto, y eso mandó avisos por
+      // duplicado a veinte catedráticos (DT-24). Con un destinatario fallido
+      // —alguien en pestaña, un token muerto— el formulario se quedaba con el
+      // texto escrito y el acuse era un aviso rojo de seis segundos: se leía
+      // como «no se envió», y quien enviaba volvía a pulsar.
+      //
+      // Un fallo parcial no es un envío fallido. El mensaje existe, quedó
+      // registrado y la mayoría lo recibió; reenviarlo no arregla nada, porque
+      // a quien le falló le volverá a fallar por el mismo motivo.
+      _limpiar();
+
       _avisar(
         r.huboFallos
             ? Textos.envioConFallos(r.entregados, r.total, r.fallidos)
             : Textos.envioCorrecto(r.entregados, r.total),
-        error: r.huboFallos,
+        // Rojo, no. En esta aplicación el rojo es lo urgente y lo que salió
+        // mal, y un envío con fallos parciales no es ninguna de las dos cosas:
+        // es información que hay que mirar. El texto ya lo dice bien —«Enviado
+        // a 19 de 20»—; era el color el que contradecía al texto.
+        tono: r.huboFallos ? TonoAviso.atencion : TonoAviso.correcto,
       );
-
-      if (!r.huboFallos) {
-        _limpiar();
-      }
     } on FirebaseFunctionsException catch (e) {
       // El mensaje del servidor es el bueno: explica en lenguaje llano por qué
       // no se envió, y lo escribió el dominio.
       if (mounted) {
-        _avisar(e.message ?? Textos.envioFallido, error: true);
+        _avisar(e.message ?? Textos.envioFallido, tono: TonoAviso.error);
       }
     } on Object catch (_) {
       if (mounted) {
-        _avisar(Textos.envioFallido, error: true);
+        _avisar(Textos.envioFallido, tono: TonoAviso.error);
       }
     } finally {
       if (mounted) {
@@ -326,6 +381,10 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
   void _limpiar() {
     _titulo.clear();
     _cuerpo.clear();
+    // Se suelta el identificador: lo que venga después es un mensaje nuevo y
+    // tiene derecho a su propio sitio, aunque el texto sea idéntico. Sin esto,
+    // repetir un aviso a propósito quedaría bloqueado para siempre (DT-24).
+    _idReservado = null;
     setState(() {
       _urgente = false;
       _requiereConfirmacion = false;
@@ -334,11 +393,17 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
     });
   }
 
-  void _avisar(String texto, {bool error = false}) {
+  void _avisar(String texto, {TonoAviso tono = TonoAviso.correcto}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(texto),
-        backgroundColor: error ? ColoresSian.urgente : ColoresSian.confirmado,
+        backgroundColor: switch (tono) {
+          TonoAviso.correcto => ColoresSian.confirmado,
+          // Dorado oscurecido: 5.03:1 con blanco encima, que cumple AA para
+          // texto normal (RNF-13). Y no se confunde con el rojo de urgente.
+          TonoAviso.atencion => ColoresSian.doradoTexto,
+          TonoAviso.error => ColoresSian.urgente,
+        },
         duration: const Duration(seconds: 6),
       ),
     );

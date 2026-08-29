@@ -273,6 +273,7 @@ gratuita.
 | DT-21 | El tema oscuro está construido pero apagado, y no se puede elegir | Alcance | Baja | Abierta | 0 USD |
 | DT-22 | Un token muerto solo se descubre cuando falla un aviso real | Alcance | **Media** | Abierta | 0 USD |
 | DT-23 | El service worker no atiende `pushsubscriptionchange` | Plataforma | **Media** | Abierta | 0 USD |
+| DT-24 | Un envío con algún fallo deja la pantalla igual y se manda dos veces | Conocimiento | **Alta** | **Pagada** | 0 USD |
 
 **Prioridad de pago recomendada, en orden:** DT-03 → DT-14 → DT-04 → DT-01.
 
@@ -851,3 +852,123 @@ No hay magia; es la misma escalera de cuatro peldaños, y SIAN tiene dos:
 
 Quien nunca abre la aplicación termina siendo inalcanzable en todas ellas. Es una propiedad
 de la plataforma, no de este proyecto.
+
+
+---
+
+## DT-24 — Un envío con algún fallo deja la pantalla igual y el aviso se manda dos veces
+
+**Origen:** conocimiento · **Severidad:** alta · **Estado:** abierta · **Costo:** 0 USD
+
+**Está pasando en producción.** El 29 de agosto de 2026 el coordinador mandó dos avisos y
+salieron cuatro:
+
+```
+  06:58:26  «lista de aaistencia»           ENVIADO_CON_FALLOS
+  06:58:46  «lista de aaistencia»           ENVIADO_CON_FALLOS   ← 20 segundos después
+  14:21:29  «sobres para Entrega de exá…»   ENVIADO_CON_FALLOS
+  14:24:22  «sobres para Entrega de exá…»   ENVIADO_CON_FALLOS   ← 2 min 53 s después
+```
+
+Mismo título, mismo cuerpo, mismos destinatarios. Veinte catedráticos recibieron dos veces
+el mismo aviso urgente.
+
+### La causa, y es una línea
+
+En `app/lib/presentation/admin/seccion_mensajes.dart`:
+
+```dart
+if (!r.huboFallos) {
+  _limpiar();
+}
+```
+
+**El formulario se vacía solo cuando el envío sale perfecto.** Basta que un destinatario
+falle —alguien en pestaña, un token muerto— para que el título y el cuerpo sigan escritos
+en pantalla exactamente como estaban antes de pulsar enviar.
+
+A eso se suma que el único acuse es un aviso flotante **de color rojo** durante seis
+segundos, porque se pinta con `error: r.huboFallos`. Y rojo, en esta aplicación, es el
+color de lo urgente y de lo que salió mal.
+
+Puesto junto, lo que ve quien envía es: un aviso rojo que se va solo, y el formulario
+intacto con su texto. La lectura natural es «no se envió». Vuelve a pulsar.
+
+### Por qué es alta y no media
+
+**Los datos lo confirman sin ambigüedad.** De los mensajes enviados en producción, se
+duplicaron **todos** los que terminaron en `ENVIADO_CON_FALLOS` y **ninguno** de los que
+terminaron en `ENVIADO`. Tres incidentes distintos, dos personas distintas, uno de ellos
+por triplicado.
+
+Y el fallo parcial no es raro: mientras haya alguien con la aplicación en una pestaña
+—hoy son seis— **casi todo envío a todos termina con fallos**. O sea que la trampa está
+armada permanentemente.
+
+### La ironía del identificador
+
+Un mensaje **con adjunto** no puede duplicarse, y uno de solo texto sí.
+
+Con adjunto, el cliente reserva un identificador antes de subir los archivos y el servidor
+crea el documento con `create`, que falla si ya existe. Sin adjunto, `mensajeId` viaja nulo
+y el servidor genera uno nuevo en cada llamada:
+
+```ts
+const refMensaje = datos.mensajeId
+  ? db.collection(RUTAS.mensajes).doc(datos.mensajeId)
+  : db.collection(RUTAS.mensajes).doc();   // ← identificador nuevo cada vez
+```
+
+La protección ya existe y está construida. Solo que el camino más usado no pasa por ella.
+
+### Cómo se paga
+
+Tres cosas, y la primera sola ya elimina el caso:
+
+1. **Vaciar el formulario siempre que el mensaje se haya creado**, con fallos o sin ellos.
+   Un fallo parcial no es un envío fallido: el mensaje existe, quedó registrado y la mayoría
+   lo recibió. Volver a mandarlo no arregla nada, porque a quien falló le volverá a fallar.
+2. **No pintarlo de rojo.** Un envío con fallos parciales no es un error; es información. El
+   texto ya lo dice bien —«Enviado a 19 de 20»—, es el color el que miente.
+3. **Reservar el identificador siempre**, no solo cuando hay adjuntos, y renovarlo al
+   vaciar el formulario. Así, si alguien vuelve a pulsar por lo que sea, el servidor
+   rechaza el duplicado con el `create` que ya está escrito.
+
+> **Sobre el punto 3.** Hay que renovar el identificador después de un envío correcto; si no,
+> quien quiera mandar el mismo aviso dos veces a propósito no podría. El objetivo es impedir
+> el segundo pulsar sobre **el mismo formulario sin tocar**, no impedir repetir un mensaje.
+
+### Cómo quedó pagada
+
+Las tres cosas, el 29 de agosto de 2026.
+
+**1 · El formulario se vacía siempre que el mensaje se haya creado.** Ya no depende de que
+el envío salga perfecto.
+
+**2 · Un envío con fallos parciales ya no se pinta de rojo.** Se añadió `TonoAviso` con tres
+estados —correcto, atención, error— en vez del booleano de antes, que solo sabía de
+celebración y de alarma. El fallo parcial sale en dorado oscurecido, 5.03:1 con blanco
+encima, que cumple AA (RNF-13).
+
+**3 · El identificador se reserva siempre**, no solo con adjuntos, y se suelta al vaciar.
+Un segundo envío del mismo formulario lo rechaza el servidor con el `create` que ya estaba
+escrito, y `traducirError` lo traduce a «Este aviso ya se envió. No se mandó de nuevo.» en
+lugar del «fallo interno» de antes, que invitaba a pulsar otra vez.
+
+> **Un efecto secundario que valía la pena.** Reservar siempre el identificador arrastraba
+> una dependencia de Firestore al camino sin adjuntos, y las pruebas lo detectaron: el envío
+> dejó de completarse. Se resolvió generando el identificador en local —mismo formato de
+> veinte caracteres, con `Random.secure()`— porque Firestore también lo genera en local y no
+> se pierde nada. De paso, `RepositorioAdjuntos` dejó de depender de Firestore.
+
+**Y la prueba que afirmaba lo contrario.** Existía una llamada «un envío con fallos NO
+limpia, para poder reintentar», con el argumento de que el emisor no quiere perder el texto
+recién escrito. Suena razonable y es falso: reintentar es exactamente lo que no debe
+hacerse. Ahora afirma lo correcto y conserva escrito el porqué del cambio, para que a nadie
+le parezca buena idea revertirlo.
+
+### Se relaciona con DT-22
+
+El aviso previo al envío que pide DT-22 —«5 de 19 no recibirán aviso en el aparato»— habría
+evitado además la confusión de fondo: quien envía sabría que ese fallo era esperado y no una
+avería, antes de pulsar.
