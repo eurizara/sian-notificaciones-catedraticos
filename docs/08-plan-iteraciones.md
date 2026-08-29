@@ -213,6 +213,20 @@ siete defectos de notificación encontrados a mano.*
 **Todo esto se trabaja en `develop` y se promueve por el flujo normal.** Nada se toca
 directamente en producción: la semana pasada mostró lo que cuesta.
 
+> **Estado al 29 de agosto de 2026: solo documentado.** Ninguno de estos puntos está
+> empezado. No hay código escrito, ni ramas abiertas, ni nada desplegado en ningún
+> ambiente. Producción quedó estable y así se deja.
+>
+> Lo que hay aquí es el análisis hecho mientras estaba fresco —qué falla, por qué, qué se
+> descartó y con qué argumento—, para que retomarlo la semana entrante no obligue a
+> reconstruirlo. **La decisión de arrancar cada punto es del usuario**, uno por uno o en
+> bloque; hasta entonces esto es una lista, no un compromiso.
+>
+> Cuando se retome: leer primero la ficha completa en el documento 07, porque varias
+> traen una advertencia sobre el camino que **no** hay que tomar —el push invisible que no
+> existe, el tema oscuro que no se enciende sin verificar contraste, la limpieza de
+> dispositivos que borra de más—, y esas advertencias son la parte cara del análisis.
+
 | Orden | Qué | Por qué primero |
 |:---:|---|---|
 | 1 | **DT-17** · pruebas del service worker | De los siete defectos, los siete vivían ahí y ninguno lo encontró una prueba. Es la pieza que decide si el teléfono suena en una emergencia |
