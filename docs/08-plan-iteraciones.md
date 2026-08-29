@@ -219,6 +219,8 @@ directamente en producción: la semana pasada mostró lo que cuesta.
 | 2 | **DT-18** · retirar los dispositivos arrastrados | La causa está resuelta —ya no se crea uno por ingreso— pero quedan 71 del esquema viejo que no se van solos |
 | 3 | **DT-14** · correos de recuperación | Van a No deseado. Duele el primer día que alguien de verdad olvide su contraseña |
 | 4 | **DT-07** · lo que falta | El indicador de tasa de entrega en el panel. Hoy saber si los avisos llegaron exige abrir mensaje por mensaje |
+| 5 | **DT-20** · saber en qué ambiente se está | Instalada como aplicación no hay barra de direcciones, y las tres se ven iguales. El error que previene es mandar un aviso de prueba a los 26 catedráticos reales |
+| 6 | **DT-21** · tema oscuro y preferencia del usuario | El tema ya está construido; lo que falta es verificar el contraste antes de encenderlo |
 
 **Sobre DT-18**, hay dos caminos y conviene elegir con cuidado:
 
@@ -229,6 +231,18 @@ directamente en producción: la semana pasada mostró lo que cuesta.
 
 El segundo es el recomendado. La semana pasada ya se aprendió lo que cuesta una limpieza
 que borra más de lo que debe.
+
+**Sobre DT-20 y DT-21**, los dos son más baratos de lo que parecen, pero por motivos
+distintos:
+
+  · El ambiente ya se puede saber en tiempo de ejecución sin configuración nueva:
+    `Firebase.app().options.projectId` termina en `-dev`, `-qa` o `-prd`. Lo que hay que
+    pensar es el diseño, y conviene al revés de lo habitual: **producción sin distintivo**
+    —es lo normal y lo que ven los catedráticos— y que griten desarrollo y QA.
+  · El tema oscuro **ya está escrito y conectado**; lo apaga una sola línea en `main.dart`.
+    Pero encenderlo sin más incumpliría RNF-13: la paleta oscura no está verificada contra
+    WCAG 2.1 AA y el escudo pierde definición sobre fondo oscuro. Primero se verifica el
+    contraste, después se enciende, y al final se agrega que el usuario pueda elegir.
 
 **Y algo que no es una deuda con número pero pesa igual:** cuando se cambie el
 identificador de una colección, revisar todo lo que la lee. Cambiar `dispositivos` de

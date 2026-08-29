@@ -269,6 +269,8 @@ gratuita.
 | DT-17 | El service worker no tiene ninguna prueba automatizada | Alcance | **Media** | Abierta | 0 USD |
 | DT-18 | Se acumula un token de FCM por cada ingreso en iOS | Plataforma | **Alta** | **Pagada** | 0 USD |
 | DT-19 | Entrar con Google falla en la PWA de iOS por aislamiento de almacenamiento | Plataforma | Alta | **Pagada** | 0 USD |
+| DT-20 | Instalada como aplicación, nada dice en qué ambiente se está | Conocimiento | **Media** | Abierta | 0 USD |
+| DT-21 | El tema oscuro está construido pero apagado, y no se puede elegir | Alcance | Baja | Abierta | 0 USD |
 
 **Prioridad de pago recomendada, en orden:** DT-03 → DT-14 → DT-04 → DT-01.
 
@@ -559,3 +561,84 @@ a los demás ambientes.
 registrar `https://<proyecto>.web.app/__/auth/handler` en cada uno antes de cambiarle el
 `authDomain`. Está en el documento 11, sección 4, entre las cosas que se hacen una vez por
 ambiente.
+
+
+---
+
+## DT-20 — Instalada como aplicación, nada dice en qué ambiente se está
+
+**Origen:** conocimiento · **Severidad:** media · **Estado:** abierta · **Costo:** 0 USD
+
+En el navegador el ambiente se lee en la barra de direcciones: `sian-umg-bdm-dev`,
+`-qa` o `-prd` están en el propio dominio. **Instalada como aplicación esa barra
+desaparece**, y las tres se ven exactamente iguales: mismo escudo, mismo azul, misma
+pantalla de ingreso.
+
+### Por qué importa más de lo que parece
+
+La consecuencia no es incomodidad, es un envío equivocado. Quien administra tiene las
+tres instaladas para poder probar, y desde dentro no hay nada que distinga la de
+producción —donde hay 26 catedráticos reales— de la de pruebas. Basta abrir la que no era
+y redactar un aviso.
+
+El riesgo es asimétrico: mandar un mensaje de prueba a QA no le pasa nada a nadie; mandar
+uno de prueba a producción lo reciben veintiséis personas en el teléfono.
+
+### Cómo se pagaría
+
+El dato ya está disponible en tiempo de ejecución —`Firebase.app().options.projectId`
+termina en `-dev`, `-qa` o `-prd`—, así que no hace falta un `--dart-define` nuevo ni tocar
+el flujo de compilación.
+
+Lo que falta es decidirlo bien, y conviene pensarlo al revés de como suele hacerse:
+
+> **Producción no debería llevar distintivo.** Es el estado normal y el que van a ver los
+> catedráticos; llenarles la pantalla de etiquetas técnicas no les aporta nada. Los que
+> deben gritar son desarrollo y QA.
+
+Una franja de color con el nombre del ambiente, visible en todas las pantallas y no solo
+al ingresar —porque el error se comete al redactar, no al entrar—, y ausente en
+producción. Verificar el contraste contra RNF-13 y comprobar que no tape nada en pantalla
+de teléfono.
+
+---
+
+## DT-21 — El tema oscuro está construido pero apagado, y no se puede elegir
+
+**Origen:** alcance · **Severidad:** baja · **Estado:** abierta · **Costo:** 0 USD
+
+`TemaSian.oscuro()` existe, está completo y está conectado como `darkTheme`. Lo que lo
+mantiene apagado es una sola línea en `app/lib/main.dart`:
+
+```dart
+themeMode: ThemeMode.light,
+```
+
+### Por qué se dejó así, y por qué no basta con quitar esa línea
+
+La razón está escrita junto a la línea y sigue siendo válida:
+
+  · El escudo institucional tiene fondo blanco y un anillo rojo que sobre superficies
+    oscuras pierde definición.
+  · El azul `#1C72A5` se aclara tanto en modo oscuro que deja de ser el color de la
+    universidad.
+
+Servir un tema oscuro sin comprobar el contraste sería incumplir RNF-13 (WCAG 2.1 AA) sin
+que nadie se dé cuenta, porque las pruebas actuales no lo miran.
+
+Así que **es más trabajo del que aparenta**: no es activar una bandera, es verificar una
+paleta.
+
+### Cómo se pagaría
+
+1. Revisar la paleta oscura contra WCAG 2.1 AA, par por par, y ajustar el azul
+   institucional a una variante que mantenga el contraste sin dejar de ser reconocible.
+2. Resolver el escudo sobre fondo oscuro — probablemente una variante con borde, que ya se
+   genera desde `scripts/generar-iconos.py`.
+3. Recién entonces, cambiar la línea a `ThemeMode.system` para que siga al sistema
+   operativo.
+4. Agregar la preferencia del usuario —claro, oscuro o el del sistema— guardada localmente,
+   con «el del sistema» como opción por omisión.
+
+El orden importa: los pasos 3 y 4 sin los pasos 1 y 2 producen una aplicación que se ve
+mal y que además incumple un requisito no funcional.
