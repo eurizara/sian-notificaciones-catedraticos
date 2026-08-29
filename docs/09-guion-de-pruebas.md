@@ -581,6 +581,7 @@ cada uno señala un paso que al guion le falta.
 
 | Hallazgo | Qué lo destapó | Paso que hay que añadir |
 |---|---|---|
+| Tras cambiar el identificador del dispositivo, NADIE recibía | Registrar un aparato nuevo y ver que da error | Después de cambiar el identificador de una colección, **mandar un aviso de verdad a un aparato recién registrado** |
 | El mismo arreglo funcionaba en dev y no en producción | Probar dev recién reinstalado y producción sin reinstalar | Comprobar un arreglo **sin reinstalar**, cerrando y reabriendo: es lo que va a hacer la gente |
 | Con la aplicación **cerrada** no notificaba nada, aunque el aviso llegara | Mandar un aviso con la app cerrada del todo | Probar **con la aplicación cerrada**, no solo en segundo plano ni con ella abierta |
 | La notificación aparecía **dos veces** | El arreglo anterior, probado en dev | Contar las notificaciones, no solo comprobar que llega alguna |

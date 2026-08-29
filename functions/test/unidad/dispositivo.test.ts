@@ -9,6 +9,7 @@
 
 import {
   crearDispositivo,
+  esIdentificadorDeInstalacion,
   esTokenMuerto,
   motivoPorElQueNoRecibe,
   puedeRecibirNotificaciones,
@@ -161,5 +162,40 @@ describe('esTokenMuerto', () => {
     // persona abra la aplicación; conservar uno muerto cuesta un intento.
     expect(esTokenMuerto(undefined)).toBe(false);
     expect(esTokenMuerto('')).toBe(false);
+  });
+});
+
+/**
+ * Qué puede borrar la limpieza de tokens muertos — RF-USR-10.
+ *
+ * ────────────────────────────────────────────────────────────────────────────
+ * Una limpieza que puede borrar lo bueno tiene que decir qué está autorizada
+ * a tocar.
+ * ────────────────────────────────────────────────────────────────────────────
+ *
+ * La limpieza borra el documento cuyo identificador sea el token, para retirar
+ * los que quedaron del esquema viejo. Mientras el envío mandó por error el
+ * identificador de instalación en lugar del token, esa misma línea borró
+ * dispositivos VIVOS en cada envío: la gente dejaba de recibir y reinstalar no
+ * servía, porque al primer aviso volvía a desaparecer.
+ *
+ * El fallo de origen estaba en otro sitio —el envío leía el identificador del
+ * documento como si fuera el token—, pero esta comprobación es la que impide
+ * que un error aguas arriba se convierta en pérdida de datos.
+ */
+describe('esIdentificadorDeInstalacion', () => {
+  it('reconoce un identificador de instalación', () => {
+    expect(esIdentificadorDeInstalacion('ins_vg7tmesv1wwyxije')).toBe(true);
+  });
+
+  it('un token de verdad no lo es', () => {
+    // Forma real de un token de FCM web: un registro, dos puntos, y la carga.
+    expect(
+      esIdentificadorDeInstalacion('cxsxPI_Fi0PdirmBlbInXW:APA91bFwl-rQ8sT'),
+    ).toBe(false);
+  });
+
+  it('una cadena vacía no lo es', () => {
+    expect(esIdentificadorDeInstalacion('')).toBe(false);
   });
 });
