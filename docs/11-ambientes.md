@@ -201,7 +201,44 @@ Lo que **no** vigilan todavía es la tasa de entrega: si los avisos llegaron a l
 catedráticos sigue viéndose mensaje por mensaje en Entregas. Es la mitad que queda de
 DT-07 (documento 07).
 
-## 6 · Costo
+## 6 · Mantenerlos iguales
+
+Los tres ambientes deben ser idénticos **en todo menos en los datos**. Los usuarios y los
+mensajes de cada uno son suyos; el código, la configuración y la infraestructura, no.
+
+```bash
+TOKEN=$(gcloud auth print-access-token) python3 scripts/comparar-ambientes.py
+```
+
+Compara código servido, Functions, planificador, alertas, autenticación, dominios, CORS,
+APIs habilitadas e índices. Sale con error si algo difiere, así que sirve igual a mano que
+dentro de un flujo automático.
+
+> **Por qué hace falta una herramienta y no basta con mirar el repositorio.** El 28 de
+> agosto de 2026 se perdió un día entero persiguiendo un fallo que en desarrollo no se
+> reproducía, y la causa fue que los ambientes no eran iguales en cosas que no viven en el
+> código:
+>
+>   · Desarrollo tenía el CORS con cuatro orígenes y los otros con ocho, porque el archivo
+>     se actualizó y solo se aplicó a dos ambientes.
+>   · Producción se creó desde la consola meses antes y traía APIs distintas. Una faltaba,
+>     y detuvo el primer despliegue con `Permissions denied enabling …`.
+>
+> Ninguna se ve en un `git diff`. Se ven preguntándole a cada proyecto qué tiene.
+
+### Lo que la herramienta NO puede igualar, y es la trampa peor
+
+**Los datos acumulados.** Ese mismo día, un defecto del envío no apareció en desarrollo
+porque ahí **todos** los dispositivos eran del esquema viejo, donde el defecto no podía
+manifestarse; en producción ya había del esquema nuevo, y ahí sí. El código era el mismo,
+la configuración era la misma, y el resultado era distinto.
+
+Antes de dar por buena una prueba, conviene preguntarse si los datos del ambiente donde se
+probó se parecen a los del ambiente donde va a correr de verdad. Cuando la respuesta sea
+que no, la prueba hay que rehacerla creando el caso a mano: un dispositivo recién
+registrado, un usuario que nunca ha entrado, una invitación ya consumida.
+
+## 7 · Costo
 
 Cloud Functions exige plan Blaze. Blaze no significa que se cobre: significa que se
 cobra lo que pase de la cuota gratuita. Con los tres ambientes en volumen de pruebas, lo
@@ -230,7 +267,7 @@ distinto a lo previsto.
 
 ---
 
-## 7 · Cómo se promueve un cambio
+## 8 · Cómo se promueve un cambio
 
 ```
 rama de trabajo  ──PR──▶  develop  ──PR──▶  qa  ──automático──▶  calidad
@@ -266,7 +303,7 @@ lugar de fallar. Un repositorio en rojo permanente enseña a ignorar el rojo.
 > a `develop` no desplegó nada sin dar ni un error. Se arregla moviendo esa sola variable
 > al repositorio.
 
-## 8 · Ramas
+## 9 · Ramas
 
 Hay tres ramas permanentes, una por ambiente:
 

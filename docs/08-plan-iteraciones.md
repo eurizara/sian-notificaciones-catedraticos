@@ -205,6 +205,39 @@ muy bien que se vea en las demás pruebas.
 > institución, alguien va a olvidar su contraseña y el correo de recuperación va a caer en
 > No deseado.
 
+### Pendientes para la próxima iteración en desarrollo
+
+*Anotados el 29 de agosto de 2026, después de una semana de puesta en producción con
+siete defectos de notificación encontrados a mano.*
+
+**Todo esto se trabaja en `develop` y se promueve por el flujo normal.** Nada se toca
+directamente en producción: la semana pasada mostró lo que cuesta.
+
+| Orden | Qué | Por qué primero |
+|:---:|---|---|
+| 1 | **DT-17** · pruebas del service worker | De los siete defectos, los siete vivían ahí y ninguno lo encontró una prueba. Es la pieza que decide si el teléfono suena en una emergencia |
+| 2 | **DT-18** · retirar los dispositivos arrastrados | La causa está resuelta —ya no se crea uno por ingreso— pero quedan 71 del esquema viejo que no se van solos |
+| 3 | **DT-14** · correos de recuperación | Van a No deseado. Duele el primer día que alguien de verdad olvide su contraseña |
+| 4 | **DT-07** · lo que falta | El indicador de tasa de entrega en el panel. Hoy saber si los avisos llegaron exige abrir mensaje por mensaje |
+
+**Sobre DT-18**, hay dos caminos y conviene elegir con cuidado:
+
+  · *Un script de limpieza de una vez*, que deje el dispositivo más reciente por persona.
+    Rápido, y arriesgado: borrar tokens a mano puede dejar a alguien sin avisos.
+  · *Retirar por antigüedad*, que la limpieza quite también lo que lleve sin actividad
+    unos sesenta días. Más lento, pero se mantiene solo y no depende de acertar hoy.
+
+El segundo es el recomendado. La semana pasada ya se aprendió lo que cuesta una limpieza
+que borra más de lo que debe.
+
+**Y algo que no es una deuda con número pero pesa igual:** cuando se cambie el
+identificador de una colección, revisar todo lo que la lee. Cambiar `dispositivos` de
+token a instalación dejó a todo el mundo sin notificaciones durante horas porque el lado
+que lee siguió usando el identificador del documento. El compilador no puede avisar de
+eso: `d.id` sigue siendo una cadena válida.
+
+---
+
 ### Iteración 3.2 — Despliegue escalonado
 
 | Semana | Alcance | Objetivo |
