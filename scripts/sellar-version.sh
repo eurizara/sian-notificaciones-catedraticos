@@ -43,10 +43,16 @@ CUANDO="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 # `limpio` distingue un despliegue reproducible de uno hecho desde una copia con
 # cambios sin confirmar. Un ambiente sellado con `limpio: false` no se puede
 # comparar con nada, y saberlo vale más que el propio identificador.
-if git diff --quiet 2>/dev/null && git diff --cached --quiet 2>/dev/null; then
+SUCIOS="$(git status --porcelain --untracked-files=no 2>/dev/null || true)"
+if [ -z "$SUCIOS" ]; then
   LIMPIO=true
 else
   LIMPIO=false
+  # Se listan. Un «limpio: false» sin decir de qué obliga a adivinar, y ya se
+  # perdió tiempo adivinando: la primera vez que salió en la integración
+  # continua no había forma de saber qué archivo lo causaba.
+  echo "Archivos rastreados con cambios sin confirmar:" >&2
+  echo "$SUCIOS" | sed 's/^/  /' >&2
 fi
 
 cat > "$DESTINO/version.json" <<JSON
