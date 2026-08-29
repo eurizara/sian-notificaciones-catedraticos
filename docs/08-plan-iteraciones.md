@@ -213,6 +213,20 @@ siete defectos de notificación encontrados a mano.*
 **Todo esto se trabaja en `develop` y se promueve por el flujo normal.** Nada se toca
 directamente en producción: la semana pasada mostró lo que cuesta.
 
+> **Estado al 29 de agosto de 2026: solo documentado.** Ninguno de estos puntos está
+> empezado. No hay código escrito, ni ramas abiertas, ni nada desplegado en ningún
+> ambiente. Producción quedó estable y así se deja.
+>
+> Lo que hay aquí es el análisis hecho mientras estaba fresco —qué falla, por qué, qué se
+> descartó y con qué argumento—, para que retomarlo la semana entrante no obligue a
+> reconstruirlo. **La decisión de arrancar cada punto es del usuario**, uno por uno o en
+> bloque; hasta entonces esto es una lista, no un compromiso.
+>
+> Cuando se retome: leer primero la ficha completa en el documento 07, porque varias
+> traen una advertencia sobre el camino que **no** hay que tomar —el push invisible que no
+> existe, el tema oscuro que no se enciende sin verificar contraste, la limpieza de
+> dispositivos que borra de más—, y esas advertencias son la parte cara del análisis.
+
 | Orden | Qué | Por qué primero |
 |:---:|---|---|
 | 1 | **DT-17** · pruebas del service worker | De los siete defectos, los siete vivían ahí y ninguno lo encontró una prueba. Es la pieza que decide si el teléfono suena en una emergencia |
@@ -221,6 +235,8 @@ directamente en producción: la semana pasada mostró lo que cuesta.
 | 4 | **DT-07** · lo que falta | El indicador de tasa de entrega en el panel. Hoy saber si los avisos llegaron exige abrir mensaje por mensaje |
 | 5 | **DT-20** · saber en qué ambiente se está | Instalada como aplicación no hay barra de direcciones, y las tres se ven iguales. El error que previene es mandar un aviso de prueba a los 26 catedráticos reales |
 | 6 | **DT-21** · tema oscuro y preferencia del usuario | El tema ya está construido; lo que falta es verificar el contraste antes de encenderlo |
+| 7 | **DT-23** · resuscripción automática | Va **antes** que DT-22: reduce el problema en vez de informar de él. El estándar ya lo ofrece y el service worker no lo escucha |
+| 8 | **DT-22** · sonda de canal y avisos al coordinador | Hoy un token muerto se descubre cuando falla un aviso real. En una prueba no cuesta nada; en una emergencia esa persona no se entera |
 
 **Sobre DT-18**, hay dos caminos y conviene elegir con cuidado:
 
@@ -236,13 +252,46 @@ que borra más de lo que debe.
 distintos:
 
   · El ambiente ya se puede saber en tiempo de ejecución sin configuración nueva:
-    `Firebase.app().options.projectId` termina en `-dev`, `-qa` o `-prd`. Lo que hay que
-    pensar es el diseño, y conviene al revés de lo habitual: **producción sin distintivo**
-    —es lo normal y lo que ven los catedráticos— y que griten desarrollo y QA.
+    `Firebase.app().options.projectId` devuelve `sian-umg-bdm-dev`, `sian-umg-bdm-qa` o
+    `sian-umg-bdm`. **Producción no lleva sufijo**, así que comparar por «termina en `-prd`»
+    la dejaría sin identificar. Lo que hay que pensar es el diseño, y conviene al revés de
+    lo habitual: **producción sin distintivo** —es lo normal y lo que ven los
+    catedráticos— y que griten desarrollo y QA.
   · El tema oscuro **ya está escrito y conectado**; lo apaga una sola línea en `main.dart`.
     Pero encenderlo sin más incumpliría RNF-13: la paleta oscura no está verificada contra
     WCAG 2.1 AA y el escudo pierde definición sobre fondo oscuro. Primero se verifica el
     contraste, después se enciende, y al final se agrega que el usuario pueda elegir.
+
+**Sobre DT-22**, la idea de mandar un aviso de canal cada cierto tiempo **no funciona**, y
+vale la pena saberlo antes de intentarlo: en web no existe la notificación invisible. El
+navegador exige que todo push termine en algo visible, y si el service worker no muestra
+nada lo muestra el navegador con un texto genérico. Repetirlo puede costar la suscripción,
+o sea que mataría justo lo que quiere conservar.
+
+Lo que sí es invisible es el **envío en seco** de FCM —`sendEach(mensajes, true)`—, que
+valida el token sin entregar nada. El teléfono no se entera y devuelve los mismos códigos
+de error que la limpieza ya sabe leer.
+
+Empezar **semanal**, que es el plazo más corto conocido —Safari borra los datos de un sitio
+sin instalar que no se toca en alrededor de una semana— y dejar que la sonda anote la
+antigüedad de cada token al morir. Con dos o tres meses de datos, la recurrencia se ajusta
+con hechos de esta población en vez de con cifras generales.
+
+**Sobre DT-23 y el orden.** Antes de construir el panel conviene preguntarse si el problema
+se puede reducir, y sí se puede. Desde el servidor **no hay forma de revivir un token
+muerto** —la suscripción vive en el navegador y solo él puede crear otra—, pero el estándar
+define `pushsubscriptionchange`: el navegador despierta al service worker cuando rota o
+invalida una suscripción, y ahí se puede volver a suscribir sin que la persona se entere.
+El service worker de SIAN no lo escucha hoy.
+
+Lo que hay que probar en desarrollo con un iPhone real es si iOS despierta al service
+worker con la aplicación cerrada, que es cuando suele morir una suscripción. No está
+documentado. **Periodic Background Sync** resolvería el caso completo pero no existe en
+Safari, así que dejaría fuera a la mayoría.
+
+Aun con todo funcionando queda un resto que ningún mecanismo web alcanza —desinstalar,
+retirar el permiso, un aparato apagado semanas—, y por eso DT-22 sigue haciendo falta como
+red. Escaparse del todo pide aplicación nativa, que es DT-01 y DT-02 y cuesta 99 USD/año.
 
 **Y algo que no es una deuda con número pero pesa igual:** cuando se cambie el
 identificador de una colección, revisar todo lo que la lee. Cambiar `dispositivos` de
