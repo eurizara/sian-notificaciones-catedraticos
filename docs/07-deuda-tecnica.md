@@ -274,6 +274,7 @@ gratuita.
 | DT-22 | Un token muerto solo se descubre cuando falla un aviso real | Alcance | **Media** | Abierta | 0 USD |
 | DT-23 | El service worker no atiende `pushsubscriptionchange` | Plataforma | **Media** | Abierta | 0 USD |
 | DT-24 | Un envío con algún fallo deja la pantalla igual y se manda dos veces | Conocimiento | **Alta** | **Pagada** | 0 USD |
+| DT-25 | El entorno local compila con un Flutter distinto del que despliega | Conocimiento | **Media** | Abierta | 0 USD |
 
 **Prioridad de pago recomendada, en orden:** DT-03 → DT-14 → DT-04 → DT-01.
 
@@ -972,3 +973,56 @@ le parezca buena idea revertirlo.
 El aviso previo al envío que pide DT-22 —«5 de 19 no recibirán aviso en el aparato»— habría
 evitado además la confusión de fondo: quien envía sabría que ese fallo era esperado y no una
 avería, antes de pulsar.
+
+
+---
+
+## DT-25 — El entorno local compila con un Flutter distinto del que despliega
+
+**Origen:** conocimiento · **Severidad:** media · **Estado:** abierta · **Costo:** 0 USD
+
+| | |
+|---|---|
+| Flutter en la máquina de trabajo | **3.47.0** · Dart 3.13.0 |
+| Flutter en la integración continua | **3.44.9** · el que compila todo lo desplegado |
+| Flutter documentado | 3.44.8 · Dart 3.12.2 |
+
+**Todo lo que se prueba en local corre sobre un compilador distinto del que produce lo
+que reciben los catedráticos.** Las 314 pruebas de Flutter, el analizador y cualquier
+despliegue hecho a mano usan 3.47; lo que sirve la nube lo compiló 3.44.9.
+
+### Cómo se descubrió
+
+Por un rastro pequeño. El primer despliegue automático selló `limpio: false`, y al hacer
+que el sello dijera **qué** estaba sin confirmar salió `app/pubspec.lock`: la integración
+continua lo reescribía porque su pub resolvía versiones distintas de las que resolvió el
+pub de la máquina de trabajo.
+
+Es la misma familia que la deriva entre ambientes, un piso más abajo: no diferían los
+ambientes, diferían los compiladores.
+
+### Lo que ya se hizo
+
+**Fijar la versión exacta en la integración continua.** Antes decía `3.44.x`, así que cada
+ejecución podía traer un parche distinto sin que nadie lo decidiera. Ahora dice `3.44.9`,
+que es lo que ya venía usando: **fijarlo no cambió nada de lo desplegado**, solo impide que
+cambie mañana.
+
+**Enseñar el cambio del bloqueo.** El despliegue avisa si `flutter pub get` reescribe
+`app/pubspec.lock` y muestra el cambio. No falla, informa: sin eso el único rastro era un
+`limpio: false` que no decía de qué hablaba.
+
+### Lo que falta, y por qué no se hizo
+
+Alinear la máquina de trabajo con 3.44.9. **No se toca sin decisión de quien la usa**, y
+hay dos caminos con consecuencias muy distintas:
+
+  · **Bajar el entorno local a 3.44.9.** Lo que se prueba pasa a ser lo que se despliega.
+    Es lo recomendado, y no toca nada de lo que ya funciona.
+  · **Subir la nube a 3.47.** Cambiaría el compilador de la aplicación que ya está en
+    producción, en una semana en que recién se estabilizó. Si algún día se hace, que sea
+    una tarea con su propia ronda de pruebas y no un efecto colateral.
+
+> **Mientras tanto, hay una regla que no cuesta nada:** ningún despliegue a mano. Todo por
+> la tubería, que es la que tiene el compilador correcto. Desde que `develop` despliega
+> solo, esa regla se cumple sin que nadie tenga que acordarse.

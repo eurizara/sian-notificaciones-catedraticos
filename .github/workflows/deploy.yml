@@ -67,7 +67,14 @@ jobs:
         if: hashFiles('app/pubspec.yaml') != ''
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.44.x'
+          # Versión EXACTA, no '3.44.x'.
+          #
+          # Con el comodín, cada ejecución podía traer un parche distinto sin que
+          # nadie lo decidiera, y el compilador de lo que reciben los catedráticos
+          # no es un detalle que deba moverse solo. 3.44.9 es lo que ya venía
+          # usando, así que fijarlo no cambia nada de lo desplegado: solo impide
+          # que cambie mañana.
+          flutter-version: '3.44.9'
 
       - name: Generar firebase_options.dart
         if: hashFiles('app/pubspec.yaml') != ''
@@ -120,6 +127,21 @@ jobs:
           npx --yes firebase-tools functions:list --project "$PROYECTO" --json \
             > "$RUNNER_TEMP/desplegadas.json"
           node scripts/verificar-functions.js "$RUNNER_TEMP/desplegadas.json"
+
+      - name: Enseñar si el archivo de bloqueo cambió al compilar
+        if: hashFiles('app/pubspec.yaml') != ''
+        # No falla el despliegue: informa. Si `flutter pub get` reescribe el
+        # bloqueo, significa que aquí se resolvieron versiones distintas de las
+        # que están confirmadas, y entonces lo que se prueba en una máquina no
+        # es exactamente lo que se compila aquí. Sin esta línea, el único rastro
+        # era un «limpio: false» en el sello que no decía de qué hablaba.
+        run: |
+          if git diff --quiet -- app/pubspec.lock; then
+            echo "El archivo de bloqueo no cambió: se compiló con las versiones confirmadas."
+          else
+            echo "::warning::flutter pub get reescribió app/pubspec.lock"
+            git diff -- app/pubspec.lock | head -40
+          fi
 
       - name: Sellar la versión en lo que se publica
         if: hashFiles('app/pubspec.yaml') != ''
@@ -191,7 +213,14 @@ jobs:
         if: hashFiles('app/pubspec.yaml') != ''
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.44.x'
+          # Versión EXACTA, no '3.44.x'.
+          #
+          # Con el comodín, cada ejecución podía traer un parche distinto sin que
+          # nadie lo decidiera, y el compilador de lo que reciben los catedráticos
+          # no es un detalle que deba moverse solo. 3.44.9 es lo que ya venía
+          # usando, así que fijarlo no cambia nada de lo desplegado: solo impide
+          # que cambie mañana.
+          flutter-version: '3.44.9'
 
       - name: Generar firebase_options.dart
         if: hashFiles('app/pubspec.yaml') != ''
@@ -244,6 +273,21 @@ jobs:
           npx --yes firebase-tools functions:list --project "$PROYECTO" --json \
             > "$RUNNER_TEMP/desplegadas.json"
           node scripts/verificar-functions.js "$RUNNER_TEMP/desplegadas.json"
+
+      - name: Enseñar si el archivo de bloqueo cambió al compilar
+        if: hashFiles('app/pubspec.yaml') != ''
+        # No falla el despliegue: informa. Si `flutter pub get` reescribe el
+        # bloqueo, significa que aquí se resolvieron versiones distintas de las
+        # que están confirmadas, y entonces lo que se prueba en una máquina no
+        # es exactamente lo que se compila aquí. Sin esta línea, el único rastro
+        # era un «limpio: false» en el sello que no decía de qué hablaba.
+        run: |
+          if git diff --quiet -- app/pubspec.lock; then
+            echo "El archivo de bloqueo no cambió: se compiló con las versiones confirmadas."
+          else
+            echo "::warning::flutter pub get reescribió app/pubspec.lock"
+            git diff -- app/pubspec.lock | head -40
+          fi
 
       - name: Sellar la versión en lo que se publica
         if: hashFiles('app/pubspec.yaml') != ''
@@ -310,7 +354,14 @@ jobs:
         if: hashFiles('app/pubspec.yaml') != ''
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.44.x'
+          # Versión EXACTA, no '3.44.x'.
+          #
+          # Con el comodín, cada ejecución podía traer un parche distinto sin que
+          # nadie lo decidiera, y el compilador de lo que reciben los catedráticos
+          # no es un detalle que deba moverse solo. 3.44.9 es lo que ya venía
+          # usando, así que fijarlo no cambia nada de lo desplegado: solo impide
+          # que cambie mañana.
+          flutter-version: '3.44.9'
 
       - name: Generar firebase_options.dart
         if: hashFiles('app/pubspec.yaml') != ''
@@ -363,6 +414,21 @@ jobs:
           npx --yes firebase-tools functions:list --project "$PROYECTO" --json \
             > "$RUNNER_TEMP/desplegadas.json"
           node scripts/verificar-functions.js "$RUNNER_TEMP/desplegadas.json"
+
+      - name: Enseñar si el archivo de bloqueo cambió al compilar
+        if: hashFiles('app/pubspec.yaml') != ''
+        # No falla el despliegue: informa. Si `flutter pub get` reescribe el
+        # bloqueo, significa que aquí se resolvieron versiones distintas de las
+        # que están confirmadas, y entonces lo que se prueba en una máquina no
+        # es exactamente lo que se compila aquí. Sin esta línea, el único rastro
+        # era un «limpio: false» en el sello que no decía de qué hablaba.
+        run: |
+          if git diff --quiet -- app/pubspec.lock; then
+            echo "El archivo de bloqueo no cambió: se compiló con las versiones confirmadas."
+          else
+            echo "::warning::flutter pub get reescribió app/pubspec.lock"
+            git diff -- app/pubspec.lock | head -40
+          fi
 
       - name: Sellar la versión en lo que se publica
         if: hashFiles('app/pubspec.yaml') != ''
