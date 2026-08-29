@@ -38,6 +38,21 @@ un catedrático y los servicios de Google.
 El navegador **lee** de Firestore directamente, pero **nunca escribe**: toda escritura
 pasa por una Cloud Function, y las reglas lo hacen literal con `allow write: if false`.
 
+### Por qué aparecen Python y Shell
+
+GitHub lista **Python** (1.8 %) y **Shell** (0.9 %) entre los lenguajes del repositorio.
+No son parte de la aplicación: **nada de eso se envía al navegador ni corre en producción**.
+Son herramientas para operar el proyecto, y están en otro lenguaje por una razón concreta —
+cada una resuelve algo en un momento donde el lenguaje principal todavía no existe:
+
+| | Para qué | Por qué no en Dart o TypeScript |
+|---|---|---|
+| **Shell** | Preparar el entorno, buscar secretos antes de un push, generar `firebase_options.dart`, aplicar el CORS | Corren **antes** de que haya dependencias instaladas o de que el proyecto compile. `generar-firebase-options.sh` genera justamente el archivo sin el cual Dart no compila |
+| **Python** | Crear las alertas de operación, comparar los tres ambientes, generar el juego de iconos | Llamadas REST a Google Cloud y tratamiento de imágenes. `urllib` y `json` son de la biblioteca estándar, así que corren sin instalar nada; la alternativa era exigir el SDK completo de `gcloud` |
+
+Un catedrático no necesita ninguna: abre una dirección web. Detalle de cada script, con la
+alternativa que se descartó, en [Arquitectura §2.9](docs/02-arquitectura-y-diseno.md).
+
 Detalle completo, con versiones y con lo que se decidió **no** usar, en
 [Arquitectura §2](docs/02-arquitectura-y-diseno.md). Dónde ver el código que Firebase
 ejecuta ahora mismo y cómo comprobar que coincide con esta rama, en
