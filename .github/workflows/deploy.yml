@@ -140,7 +140,7 @@ jobs:
             echo "El archivo de bloqueo no cambió: se compiló con las versiones confirmadas."
           else
             echo "::warning::flutter pub get reescribió app/pubspec.lock"
-            git diff -- app/pubspec.lock | head -40
+            git diff -- app/pubspec.lock | head -80
           fi
 
       - name: Sellar la versión en lo que se publica
@@ -286,7 +286,7 @@ jobs:
             echo "El archivo de bloqueo no cambió: se compiló con las versiones confirmadas."
           else
             echo "::warning::flutter pub get reescribió app/pubspec.lock"
-            git diff -- app/pubspec.lock | head -40
+            git diff -- app/pubspec.lock | head -80
           fi
 
       - name: Sellar la versión en lo que se publica
@@ -427,7 +427,7 @@ jobs:
             echo "El archivo de bloqueo no cambió: se compiló con las versiones confirmadas."
           else
             echo "::warning::flutter pub get reescribió app/pubspec.lock"
-            git diff -- app/pubspec.lock | head -40
+            git diff -- app/pubspec.lock | head -80
           fi
 
       - name: Sellar la versión en lo que se publica

@@ -43,7 +43,17 @@ CUANDO="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 # `limpio` distingue un despliegue reproducible de uno hecho desde una copia con
 # cambios sin confirmar. Un ambiente sellado con `limpio: false` no se puede
 # comparar con nada, y saberlo vale más que el propio identificador.
-SUCIOS="$(git status --porcelain --untracked-files=no 2>/dev/null || true)"
+# Se excluye app/pubspec.lock a propósito.
+#
+# Lo reescribe `flutter pub get` cuando el Flutter que compila no es el que
+# resolvió el bloqueo confirmado (DT-25), y eso no es «trabajo sin confirmar»:
+# es un artefacto de una cadena de herramientas desalineada. Mezclarlo aquí
+# hacía que `limpio` fuera false en todos los despliegues automáticos, y una
+# señal que siempre está encendida no señala nada.
+#
+# La deriva del bloqueo no se silencia: tiene su propio aviso en el despliegue,
+# que además dice qué paquetes cambiaron.
+SUCIOS="$(git status --porcelain --untracked-files=no 2>/dev/null | grep -v ' app/pubspec.lock$' || true)"
 if [ -z "$SUCIOS" ]; then
   LIMPIO=true
 else

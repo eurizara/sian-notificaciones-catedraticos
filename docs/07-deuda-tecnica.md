@@ -1026,3 +1026,28 @@ hay dos caminos con consecuencias muy distintas:
 > **Mientras tanto, hay una regla que no cuesta nada:** ningún despliegue a mano. Todo por
 > la tubería, que es la que tiene el compilador correcto. Desde que `develop` despliega
 > solo, esa regla se cumple sin que nadie tenga que acordarse.
+
+### Qué cambia exactamente el bloqueo
+
+Tres paquetes, todos de pruebas, que el SDK de Flutter fija:
+
+| Paquete | Confirmado (3.47) | Lo que resuelve la nube (3.44.9) |
+|---|---|---|
+| `matcher` | 0.12.20 | 0.12.19 |
+| `meta` | 1.19.0 | 1.18.0 |
+| `test` | 1.31.1 | 1.31.0 |
+
+**No se confirmó la versión de la nube a mano**, y conviene decir por qué: mientras el
+entorno local siga en 3.47, ese archivo va a oscilar sin importar cuál de las dos versiones
+esté confirmada. Escribirla a mano taparía el síntoma y dejaría la causa intacta —además de
+ensuciar el árbol en cada `flutter test` local.
+
+Lo que sí se hizo fue separar las dos señales, que antes se confundían:
+
+  · **`limpio` en el sello** dice si alguien desplegó trabajo sin confirmar. El bloqueo
+    queda fuera de esa cuenta: no es trabajo sin confirmar, es un artefacto de una cadena
+    de herramientas desalineada. Antes salía `false` en **todos** los despliegues
+    automáticos, y una señal que siempre está encendida no señala nada.
+  · **El aviso del despliegue** dice si el bloqueo se reescribió, y enseña qué paquetes
+    cambiaron. Ese sí debe estar encendido: es el síntoma visible de esta deuda, y se apaga
+    solo el día que se pague.
