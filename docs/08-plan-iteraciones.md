@@ -221,7 +221,8 @@ directamente en producción: la semana pasada mostró lo que cuesta.
 | 4 | **DT-07** · lo que falta | El indicador de tasa de entrega en el panel. Hoy saber si los avisos llegaron exige abrir mensaje por mensaje |
 | 5 | **DT-20** · saber en qué ambiente se está | Instalada como aplicación no hay barra de direcciones, y las tres se ven iguales. El error que previene es mandar un aviso de prueba a los 26 catedráticos reales |
 | 6 | **DT-21** · tema oscuro y preferencia del usuario | El tema ya está construido; lo que falta es verificar el contraste antes de encenderlo |
-| 7 | **DT-22** · sonda de canal invisible | Hoy un token muerto se descubre cuando falla un aviso real. En una prueba no cuesta nada; en una emergencia esa persona no se entera |
+| 7 | **DT-23** · resuscripción automática | Va **antes** que DT-22: reduce el problema en vez de informar de él. El estándar ya lo ofrece y el service worker no lo escucha |
+| 8 | **DT-22** · sonda de canal y avisos al coordinador | Hoy un token muerto se descubre cuando falla un aviso real. En una prueba no cuesta nada; en una emergencia esa persona no se entera |
 
 **Sobre DT-18**, hay dos caminos y conviene elegir con cuidado:
 
@@ -261,6 +262,22 @@ Empezar **semanal**, que es el plazo más corto conocido —Safari borra los dat
 sin instalar que no se toca en alrededor de una semana— y dejar que la sonda anote la
 antigüedad de cada token al morir. Con dos o tres meses de datos, la recurrencia se ajusta
 con hechos de esta población en vez de con cifras generales.
+
+**Sobre DT-23 y el orden.** Antes de construir el panel conviene preguntarse si el problema
+se puede reducir, y sí se puede. Desde el servidor **no hay forma de revivir un token
+muerto** —la suscripción vive en el navegador y solo él puede crear otra—, pero el estándar
+define `pushsubscriptionchange`: el navegador despierta al service worker cuando rota o
+invalida una suscripción, y ahí se puede volver a suscribir sin que la persona se entere.
+El service worker de SIAN no lo escucha hoy.
+
+Lo que hay que probar en desarrollo con un iPhone real es si iOS despierta al service
+worker con la aplicación cerrada, que es cuando suele morir una suscripción. No está
+documentado. **Periodic Background Sync** resolvería el caso completo pero no existe en
+Safari, así que dejaría fuera a la mayoría.
+
+Aun con todo funcionando queda un resto que ningún mecanismo web alcanza —desinstalar,
+retirar el permiso, un aparato apagado semanas—, y por eso DT-22 sigue haciendo falta como
+red. Escaparse del todo pide aplicación nativa, que es DT-01 y DT-02 y cuesta 99 USD/año.
 
 **Y algo que no es una deuda con número pero pesa igual:** cuando se cambie el
 identificador de una colección, revisar todo lo que la lee. Cambiar `dispositivos` de

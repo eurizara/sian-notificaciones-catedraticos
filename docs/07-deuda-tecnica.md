@@ -272,6 +272,7 @@ gratuita.
 | DT-20 | Instalada como aplicación, nada dice en qué ambiente se está | Conocimiento | **Media** | Abierta | 0 USD |
 | DT-21 | El tema oscuro está construido pero apagado, y no se puede elegir | Alcance | Baja | Abierta | 0 USD |
 | DT-22 | Un token muerto solo se descubre cuando falla un aviso real | Alcance | **Media** | Abierta | 0 USD |
+| DT-23 | El service worker no atiende `pushsubscriptionchange` | Plataforma | **Media** | Abierta | 0 USD |
 
 **Prioridad de pago recomendada, en orden:** DT-03 → DT-14 → DT-04 → DT-01.
 
@@ -709,6 +710,39 @@ resultado se le muestra al coordinador, que es quien puede hacer algo con él.
 > trabajo es avisarle al coordinador quién se quedó sin dispositivo, para que pueda
 > buscarle antes de necesitarlo.
 
+### Dónde se ve el resultado
+
+La sonda sin destinatario no sirve de nada: alguien tiene que enterarse. Dos sitios, y son
+distintos a propósito.
+
+**1 · Un apartado en la pantalla del coordinador — «Dispositivos que necesitan atención».**
+
+Una lista permanente de a quién hay que buscar, con lo que hace falta para decidir:
+
+| Columna | Para qué |
+|---|---|
+| Persona y rol | A quién buscar |
+| Estado | Sin dispositivo · solo en pestaña · sin actividad reciente · permiso denegado |
+| Desde cuándo | Distingue «se le murió ayer» de «lleva un mes» |
+| Plataforma y si está instalada | Cambia por completo lo que hay que pedirle |
+
+Debe ordenar por gravedad, no alfabéticamente: primero quien no puede recibir nada.
+
+**2 · Un aviso al emisor, al redactar y antes de enviar.**
+
+El apartado anterior sirve para mantener la casa en orden; este sirve en el momento que
+importa. Al elegir destinatarios, decir cuántos de ellos **no van a enterarse**, y
+repetirlo en la confirmación de envío:
+
+> De 19 destinatarios, **5 no recibirán aviso en el aparato**: 4 solo tienen la aplicación
+> en una pestaña y 1 no tiene dispositivo registrado. Verán el mensaje al abrir.
+
+Sin bloquear el envío. El emisor decide; lo que no puede es enterarse después.
+
+> **Conviene calcularlo al redactar y también al confirmar.** Entre una cosa y otra puede
+> pasar un rato, y en un mensaje programado pasan días: la cifra que se vio al escribir
+> puede no ser la del momento del envío.
+
 ### Cada cuánto
 
 El tiempo de vida no lo fija FCM, lo fija cada navegador, y no es uno solo:
@@ -733,3 +767,87 @@ recurrencia se ajusta con hechos de esta población en vez de con cifras general
 Ninguno relevante. El envío en seco no cuesta, hoy hay 36 dispositivos, y Cloud Scheduler
 regala tres trabajos por cuenta de facturación: el proyecto usa uno —el despachador, cada
 minuto—, así que el segundo sigue dentro de lo gratuito.
+
+
+---
+
+## DT-23 — El service worker no atiende `pushsubscriptionchange`
+
+**Origen:** plataforma · **Severidad:** media · **Estado:** abierta · **Costo:** 0 USD
+
+**Se trabaja antes que DT-22.** La sonda de DT-22 informa de un problema; esto lo reduce.
+Hacerlo al revés es construir un panel para vigilar algo que se podía haber evitado.
+
+### Lo primero, que no tiene vuelta de hoja
+
+**Desde el servidor no se puede revivir un token muerto.** No es una carencia del proyecto:
+es cómo está hecho Web Push. La suscripción vive en el navegador; el servidor guarda una
+cadena opaca que solo sirve para pedirle a FCM que entregue. Cuando el navegador la rota o
+la descarta, **solo el navegador puede crear otra**, y solo mientras algo suyo esté
+corriendo. No hay API, ni truco, ni permiso que lo cambie.
+
+Así que la pregunta útil no es cómo revivirlo, sino **quién crea el reemplazo y si hace
+falta molestar a alguien para conseguirlo**.
+
+### El mecanismo que el estándar sí ofrece
+
+El estándar de Push define el evento **`pushsubscriptionchange`**: cuando el navegador
+invalida o rota una suscripción, despierta al service worker y se lo dice. El service
+worker puede suscribirse de nuevo y mandar el identificador nuevo al servidor **sin que la
+persona haga nada y sin que se entere**.
+
+Hoy el service worker de SIAN no lo escucha. Atiende `install`, `activate`, `message`,
+`push` y `notificationclick`; `pushsubscriptionchange` no aparece en ninguna parte del
+proyecto.
+
+Es exactamente el caso que hoy obliga a que alguien abra la aplicación.
+
+### Lo que hay que verificar en desarrollo, y es el punto entero
+
+**En Chrome y Android está soportado desde hace años.** El caso dudoso es iOS, que es justo
+donde está la mayoría de los catedráticos:
+
+  · WebKit implementa el estándar de Push desde iOS 16.4, así que el evento debería existir.
+  · Lo que **no está documentado** es si iOS despierta al service worker de una aplicación
+    instalada para entregárselo mientras la aplicación está cerrada. Y una suscripción suele
+    morir precisamente estando cerrada.
+
+Eso no se resuelve leyendo: se resuelve probándolo en desarrollo con un iPhone real, que es
+como se encontraron los siete defectos de notificación.
+
+### Lo que se descartó
+
+**Periodic Background Sync** resolvería el caso de raíz —el navegador despierta a la
+aplicación cada cierto tiempo y ella refresca su identificador—, pero **no existe en Safari
+ni en iOS**. Serviría para Android y dejaría fuera a la mayoría, así que no puede ser la
+solución; a lo sumo una mejora añadida más adelante.
+
+### Hasta dónde llega, y por qué DT-22 sigue haciendo falta
+
+Con `pushsubscriptionchange` funcionando, la dependencia de que alguien abra la aplicación
+**se reduce mucho**, pero no desaparece. Queda fuera lo que ningún mecanismo web alcanza:
+
+  · Quien desinstala la aplicación.
+  · Quien retira el permiso de notificaciones.
+  · Quien tiene el aparato apagado o sin red durante mucho tiempo.
+  · iOS, si resulta que no despierta al service worker con la aplicación cerrada.
+
+Una aplicación nativa escaparía de esto con el push silencioso, que iOS concede a las
+nativas y no a la web. Ya está registrado como **DT-01** y **DT-02**, y cuesta 99 USD/año.
+
+El techo realista es **quitar casi toda la dependencia de una persona, no toda**. Por eso
+DT-22 sigue haciendo falta: como red, no como mecanismo principal.
+
+### Así lo resuelven otras aplicaciones instalables
+
+No hay magia; es la misma escalera de cuatro peldaños, y SIAN tiene dos:
+
+| Peldaño | En SIAN |
+|---|---|
+| Refrescar el identificador en cada apertura | **ya está** |
+| Atender `pushsubscriptionchange` en el service worker | **falta — es DT-23** |
+| Retirar del servidor lo que el servicio de push declare muerto | **ya está** |
+| Mostrar a quien opera quién quedó incomunicado | **falta — es DT-22** |
+
+Quien nunca abre la aplicación termina siendo inalcanzable en todas ellas. Es una propiedad
+de la plataforma, no de este proyecto.
