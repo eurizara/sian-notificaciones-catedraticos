@@ -273,7 +273,7 @@ gratuita.
 | DT-21 | El tema oscuro está construido pero apagado, y no se puede elegir | Alcance | Baja | Abierta | 0 USD |
 | DT-22 | Un token muerto solo se descubre cuando falla un aviso real | Alcance | **Media** | Abierta | 0 USD |
 | DT-23 | El service worker no atiende `pushsubscriptionchange` | Plataforma | **Media** | Abierta | 0 USD |
-| DT-24 | Un envío con algún fallo deja la pantalla igual y se manda dos veces | Conocimiento | **Alta** | Abierta | 0 USD |
+| DT-24 | Un envío con algún fallo deja la pantalla igual y se manda dos veces | Conocimiento | **Alta** | **Pagada** | 0 USD |
 
 **Prioridad de pago recomendada, en orden:** DT-03 → DT-14 → DT-04 → DT-01.
 
@@ -937,6 +937,35 @@ Tres cosas, y la primera sola ya elimina el caso:
 > **Sobre el punto 3.** Hay que renovar el identificador después de un envío correcto; si no,
 > quien quiera mandar el mismo aviso dos veces a propósito no podría. El objetivo es impedir
 > el segundo pulsar sobre **el mismo formulario sin tocar**, no impedir repetir un mensaje.
+
+### Cómo quedó pagada
+
+Las tres cosas, el 29 de agosto de 2026.
+
+**1 · El formulario se vacía siempre que el mensaje se haya creado.** Ya no depende de que
+el envío salga perfecto.
+
+**2 · Un envío con fallos parciales ya no se pinta de rojo.** Se añadió `TonoAviso` con tres
+estados —correcto, atención, error— en vez del booleano de antes, que solo sabía de
+celebración y de alarma. El fallo parcial sale en dorado oscurecido, 5.03:1 con blanco
+encima, que cumple AA (RNF-13).
+
+**3 · El identificador se reserva siempre**, no solo con adjuntos, y se suelta al vaciar.
+Un segundo envío del mismo formulario lo rechaza el servidor con el `create` que ya estaba
+escrito, y `traducirError` lo traduce a «Este aviso ya se envió. No se mandó de nuevo.» en
+lugar del «fallo interno» de antes, que invitaba a pulsar otra vez.
+
+> **Un efecto secundario que valía la pena.** Reservar siempre el identificador arrastraba
+> una dependencia de Firestore al camino sin adjuntos, y las pruebas lo detectaron: el envío
+> dejó de completarse. Se resolvió generando el identificador en local —mismo formato de
+> veinte caracteres, con `Random.secure()`— porque Firestore también lo genera en local y no
+> se pierde nada. De paso, `RepositorioAdjuntos` dejó de depender de Firestore.
+
+**Y la prueba que afirmaba lo contrario.** Existía una llamada «un envío con fallos NO
+limpia, para poder reintentar», con el argumento de que el emisor no quiere perder el texto
+recién escrito. Suena razonable y es falso: reintentar es exactamente lo que no debe
+hacerse. Ahora afirma lo correcto y conserva escrito el porqué del cambio, para que a nadie
+le parezca buena idea revertirlo.
 
 ### Se relaciona con DT-22
 
