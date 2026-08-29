@@ -288,6 +288,60 @@ Hoy devuelve un solo archivo, y es un comentario que prohíbe exactamente eso.
 
 ---
 
+### 2.9 Los lenguajes que GitHub muestra y no son de la aplicación
+
+En la portada del repositorio, GitHub reparte el código así:
+
+| | |
+|---|---|
+| **Dart** 61.9 % | La aplicación |
+| **TypeScript** 25.9 % | Las Cloud Functions |
+| **HTML** 7.5 % | La página que carga la aplicación y el manifiesto de instalación |
+| **JavaScript** 2.0 % | El *service worker* y una comprobación de despliegue |
+| **Python** 1.8 % | Herramientas de operación |
+| **Shell** 0.9 % | Preparación del entorno |
+
+Los tres últimos suman menos del 5 % y **nada de eso se envía al usuario ni corre en
+producción**, salvo el *service worker*. Son herramientas para operar el proyecto. Conviene
+decir por qué están en un lenguaje distinto, porque no es una inconsistencia: cada uno
+resuelve algo que ocurre en un momento donde el lenguaje principal todavía no existe.
+
+**Shell — lo que corre antes que todo lo demás.**
+
+| Script | Qué hace | Por qué shell |
+|---|---|---|
+| `bootstrap.sh` | Comprueba herramientas e instala dependencias | Corre **antes** de que haya dependencias instaladas. No puede depender de Node ni de Dart, porque justo eso es lo que va a preparar |
+| `check-secrets.sh` | Busca claves filtradas antes de cada push (RNF-10) | Es un `grep` con reglas sobre archivos y sobre el historial. Escribirlo en otro lenguaje sería envolver `git` y `grep` en algo más grande sin ganar nada |
+| `generar-firebase-options.sh` | Escribe `firebase_options.dart` sin interacción | Genera un archivo Dart. Si estuviera en Dart no podría correr en la integración continua, donde ese archivo aún no existe y sin él el proyecto no compila |
+| `aplicar-cors-storage.sh` | Aplica el CORS del depósito de archivos | Una llamada REST y nada más |
+
+**Python — hablar con Google Cloud sin instalar nada.**
+
+| Script | Qué hace | Por qué Python |
+|---|---|---|
+| `configurar-alertas.py` | Crea y actualiza las alertas de operación (DT-07) | Arma documentos JSON grandes y anidados contra la API de Monitoring. `urllib` y `json` vienen en la biblioteca estándar: corre en cualquier Mac sin instalar nada |
+| `comparar-ambientes.py` | Compara los tres ambientes y señala en qué se separaron | Consulta ocho APIs distintas y cruza las respuestas. Es tratamiento de datos, que es donde Python es más corto y más claro |
+| `generar-iconos.py` | Genera el juego de iconos desde el escudo | Recorte, redimensionado y relleno de imágenes. Pillow lo hace en veinte líneas; hacerlo en Dart sería escribir un programa para una tarea que se ejecuta cuando cambia el escudo |
+
+> La alternativa real para los dos primeros era `gcloud`, la herramienta oficial de línea de
+> comandos. Se descartó porque **no está instalada en la máquina de trabajo** y obligaría a
+> quien replique el proyecto a instalar el SDK completo de Google Cloud para tareas que se
+> resuelven con tres llamadas REST autenticadas. Los scripts piden solo un token, que se
+> obtiene con lo que ya hay.
+
+**JavaScript — donde no hay compilación de por medio.**
+
+`app/web/firebase-messaging-sw.js` lo carga el navegador directamente: un *service worker*
+no pasa por el compilador de Flutter ni por el de TypeScript, así que se escribe en el
+lenguaje que el navegador ejecuta. `scripts/verificar-functions.js` está en Node porque
+corre en el flujo de despliegue, donde Node ya está disponible y TypeScript aún no se ha
+compilado.
+
+**Ninguna de estas herramientas es necesaria para usar la aplicación.** Un catedrático abre
+una dirección web. Quien quiera replicar el proyecto necesita `bootstrap.sh` y
+`generar-firebase-options.sh`; las de Python solo hacen falta para operar ambientes propios,
+y cada una explica en su cabecera qué problema real la hizo existir.
+
 ## 3. Estilo arquitectónico
 
 **Clean Architecture con cuatro capas** y regla de dependencia estricta: las flechas de
