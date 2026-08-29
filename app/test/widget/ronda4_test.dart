@@ -406,11 +406,22 @@ void main() {
       expect(campo.controller!.text, isEmpty);
     });
 
-    testWidgets('un envío con fallos NO limpia, para poder reintentar', (
+    testWidgets('un envío con fallos TAMBIÉN limpia el formulario', (
       WidgetTester tester,
     ) async {
-      // Si a 5 de 40 no les llegó, lo último que quiere el emisor es haber
-      // perdido el texto que acaba de escribir.
+      // ────────────────────────────────────────────────────────────────────────
+      // Esta prueba afirmaba lo contrario, y por eso salieron avisos dobles.
+      // ────────────────────────────────────────────────────────────────────────
+      //
+      // Decía «NO limpia, para poder reintentar», con el argumento de que el
+      // emisor no quiere perder el texto recién escrito. Suena razonable y es
+      // falso: reintentar es justo lo que no debe hacerse, porque a quien le
+      // falló le va a fallar igual y el mensaje ya está enviado y registrado.
+      //
+      // Lo que producía era una pantalla idéntica a la de antes de pulsar. El 29
+      // de agosto de 2026 el coordinador la leyó como «no se envió», volvió a
+      // pulsar, y veinte catedráticos recibieron el mismo aviso urgente dos
+      // veces. Dos avisos suyos salieron cuatro (DT-24).
       envio.resultado = const ResultadoEnvio(
         mensajeId: 'm1',
         estado: 'ENVIADO_CON_FALLOS',
@@ -426,12 +437,70 @@ void main() {
       await tester.tap(find.text(Textos.botonConfirmarEnvio));
       await asentar(tester);
 
+      // Se dice lo que pasó, con el detalle de a cuántos no llegó.
       expect(find.text(Textos.envioConFallos(35, 40, 5)), findsOneWidget);
 
+      // Y el formulario queda vacío, porque el mensaje se envió.
       final TextFormField campo = tester.widget<TextFormField>(
         find.widgetWithText(TextFormField, Textos.etiquetaTituloMensaje),
       );
-      expect(campo.controller!.text, 'Aviso importante');
+      expect(campo.controller!.text, isEmpty);
+    });
+
+    testWidgets('un envío con fallos no se pinta de rojo', (
+      WidgetTester tester,
+    ) async {
+      // El rojo es el color de lo urgente y de lo que salió mal. Un envío que
+      // llegó a 35 de 40 no es ninguna de las dos cosas, y pintarlo de rojo
+      // contradecía al texto: ganaba el color (DT-24).
+      envio.resultado = const ResultadoEnvio(
+        mensajeId: 'm1',
+        estado: 'ENVIADO_CON_FALLOS',
+        total: 40,
+        entregados: 35,
+        fallidos: 5,
+      );
+
+      await tester.pumpWidget(montar());
+      await asentar(tester);
+      await escribir(tester, 'Aviso importante', 'Cuerpo');
+      await pulsarEnviar(tester);
+      await tester.tap(find.text(Textos.botonConfirmarEnvio));
+      await asentar(tester);
+
+      final SnackBar aviso = tester.widget<SnackBar>(find.byType(SnackBar));
+      expect(aviso.backgroundColor, isNot(ColoresSian.urgente));
+      expect(aviso.backgroundColor, ColoresSian.doradoTexto);
+    });
+
+    testWidgets('cada mensaje reserva su propio identificador', (
+      WidgetTester tester,
+    ) async {
+      // La otra mitad de DT-24. Mientras el formulario no se vacíe el
+      // identificador es el mismo, así que un segundo envío del mismo texto lo
+      // rechaza el servidor con `create`. Al vaciarse se suelta, y el mensaje
+      // siguiente —aunque dijera lo mismo— tiene derecho a su propio sitio.
+      await tester.pumpWidget(montar());
+      await asentar(tester);
+
+      await escribir(tester, 'Primero', 'Cuerpo');
+      await pulsarEnviar(tester);
+      await tester.tap(find.text(Textos.botonConfirmarEnvio));
+      await asentar(tester);
+
+      // El aviso flotante dura seis segundos y tapa el botón. Se deja pasar
+      // antes de volver a enviar, que es lo que haría una persona.
+      await tester.pump(const Duration(seconds: 7));
+
+      await escribir(tester, 'Segundo', 'Cuerpo');
+      await pulsarEnviar(tester);
+      await tester.tap(find.text(Textos.botonConfirmarEnvio));
+      await asentar(tester);
+
+      expect(envio.idsReservados, hasLength(2));
+      expect(envio.idsReservados[0], isNotNull);
+      expect(envio.idsReservados[1], isNotNull);
+      expect(envio.idsReservados[1], isNot(envio.idsReservados[0]));
     });
 
     testWidgets('sin destinatarios no llega a preguntar nada', (

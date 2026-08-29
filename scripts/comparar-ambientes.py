@@ -87,6 +87,14 @@ def retrato(proyecto: str, numero: str) -> dict:
     worker = publico(f"{sitio}/firebase-messaging-sw.js")
     config = publico(f"{sitio}/firebase-config.js")
 
+    # El sello lo escribe scripts/sellar-version.sh al compilar. Es lo único de
+    # todo este retrato que no se puede confundir: o los tres ambientes traen el
+    # mismo commit, o no lo traen.
+    try:
+        sello = json.loads(publico(f"{sitio}/version.json") or "{}")
+    except json.JSONDecodeError:
+        sello = {}
+
     funciones = api(
         f"https://cloudfunctions.googleapis.com/v2/projects/{proyecto}"
         "/locations/us-central1/functions?pageSize=60"
@@ -117,6 +125,17 @@ def retrato(proyecto: str, numero: str) -> dict:
     ).get("indexes", [])
 
     return {
+        # ────────────────────────────────────────────────────────────────────
+        # Esta fila vale por todas las demás. Va primero por eso.
+        # ────────────────────────────────────────────────────────────────────
+        #
+        # Las otras comprueban que cada ambiente TENGA lo que debe. Esta
+        # comprueba que los tres corran LO MISMO, que es otra pregunta y es la
+        # que importaba el 29 de agosto de 2026, cuando desarrollo llevaba cinco
+        # horas de retraso sobre QA y producción y esta herramienta dijo que los
+        # tres estaban iguales.
+        "Commit desplegado": (sello.get("commit") or "SIN SELLO")[:12],
+        "Sellado desde copia limpia": sello.get("limpio", "?"),
         "Functions activas": f"{sum(1 for f in funciones if f.get('state') == 'ACTIVE')}/{len(funciones)}",
         "Cloud Scheduler": f"{len(jobs)} {jobs[0].get('state') if jobs else '-'}",
         "Alertas de operación": len(alertas),
@@ -150,6 +169,20 @@ def main() -> None:
             diferencias += 1
         marca = "" if igual else "   <-- DIFIERE"
         print(f"  {clave:<26} {valores[0]:<12} {valores[1]:<12} {valores[2]:<12}{marca}")
+
+    sin_sello = [e for e in ("dev", "qa", "prd")
+                 if retratos[e]["Commit desplegado"] == "SIN SELLO"]
+    if sin_sello:
+        diferencias += 1
+        print(f"\n  Sin sello de versión: {', '.join(sin_sello)}")
+        print("  Ese ambiente se desplegó sin pasar por scripts/sellar-version.sh,")
+        print("  así que no hay forma de saber qué código corre. Vuelve a desplegarlo.")
+
+    sucios = [e for e in ("dev", "qa", "prd") if retratos[e]["Sellado desde copia limpia"] is False]
+    if sucios:
+        diferencias += 1
+        print(f"\n  Desplegado desde una copia con cambios sin confirmar: {', '.join(sucios)}")
+        print("  El commit del sello no describe lo que realmente se subió.")
 
     todas = set().union(*[retratos[e]["_apis"] for e in retratos])
     for e in ("dev", "qa", "prd"):

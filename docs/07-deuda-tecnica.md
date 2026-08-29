@@ -273,6 +273,8 @@ gratuita.
 | DT-21 | El tema oscuro está construido pero apagado, y no se puede elegir | Alcance | Baja | Abierta | 0 USD |
 | DT-22 | Un token muerto solo se descubre cuando falla un aviso real | Alcance | **Media** | Abierta | 0 USD |
 | DT-23 | El service worker no atiende `pushsubscriptionchange` | Plataforma | **Media** | Abierta | 0 USD |
+| DT-24 | Un envío con algún fallo deja la pantalla igual y se manda dos veces | Conocimiento | **Alta** | **Pagada** | 0 USD |
+| DT-25 | El entorno local compila con un Flutter distinto del que despliega | Conocimiento | **Media** | Abierta | 0 USD |
 
 **Prioridad de pago recomendada, en orden:** DT-03 → DT-14 → DT-04 → DT-01.
 
@@ -851,3 +853,201 @@ No hay magia; es la misma escalera de cuatro peldaños, y SIAN tiene dos:
 
 Quien nunca abre la aplicación termina siendo inalcanzable en todas ellas. Es una propiedad
 de la plataforma, no de este proyecto.
+
+
+---
+
+## DT-24 — Un envío con algún fallo deja la pantalla igual y el aviso se manda dos veces
+
+**Origen:** conocimiento · **Severidad:** alta · **Estado:** abierta · **Costo:** 0 USD
+
+**Está pasando en producción.** El 29 de agosto de 2026 el coordinador mandó dos avisos y
+salieron cuatro:
+
+```
+  06:58:26  «lista de aaistencia»           ENVIADO_CON_FALLOS
+  06:58:46  «lista de aaistencia»           ENVIADO_CON_FALLOS   ← 20 segundos después
+  14:21:29  «sobres para Entrega de exá…»   ENVIADO_CON_FALLOS
+  14:24:22  «sobres para Entrega de exá…»   ENVIADO_CON_FALLOS   ← 2 min 53 s después
+```
+
+Mismo título, mismo cuerpo, mismos destinatarios. Veinte catedráticos recibieron dos veces
+el mismo aviso urgente.
+
+### La causa, y es una línea
+
+En `app/lib/presentation/admin/seccion_mensajes.dart`:
+
+```dart
+if (!r.huboFallos) {
+  _limpiar();
+}
+```
+
+**El formulario se vacía solo cuando el envío sale perfecto.** Basta que un destinatario
+falle —alguien en pestaña, un token muerto— para que el título y el cuerpo sigan escritos
+en pantalla exactamente como estaban antes de pulsar enviar.
+
+A eso se suma que el único acuse es un aviso flotante **de color rojo** durante seis
+segundos, porque se pinta con `error: r.huboFallos`. Y rojo, en esta aplicación, es el
+color de lo urgente y de lo que salió mal.
+
+Puesto junto, lo que ve quien envía es: un aviso rojo que se va solo, y el formulario
+intacto con su texto. La lectura natural es «no se envió». Vuelve a pulsar.
+
+### Por qué es alta y no media
+
+**Los datos lo confirman sin ambigüedad.** De los mensajes enviados en producción, se
+duplicaron **todos** los que terminaron en `ENVIADO_CON_FALLOS` y **ninguno** de los que
+terminaron en `ENVIADO`. Tres incidentes distintos, dos personas distintas, uno de ellos
+por triplicado.
+
+Y el fallo parcial no es raro: mientras haya alguien con la aplicación en una pestaña
+—hoy son seis— **casi todo envío a todos termina con fallos**. O sea que la trampa está
+armada permanentemente.
+
+### La ironía del identificador
+
+Un mensaje **con adjunto** no puede duplicarse, y uno de solo texto sí.
+
+Con adjunto, el cliente reserva un identificador antes de subir los archivos y el servidor
+crea el documento con `create`, que falla si ya existe. Sin adjunto, `mensajeId` viaja nulo
+y el servidor genera uno nuevo en cada llamada:
+
+```ts
+const refMensaje = datos.mensajeId
+  ? db.collection(RUTAS.mensajes).doc(datos.mensajeId)
+  : db.collection(RUTAS.mensajes).doc();   // ← identificador nuevo cada vez
+```
+
+La protección ya existe y está construida. Solo que el camino más usado no pasa por ella.
+
+### Cómo se paga
+
+Tres cosas, y la primera sola ya elimina el caso:
+
+1. **Vaciar el formulario siempre que el mensaje se haya creado**, con fallos o sin ellos.
+   Un fallo parcial no es un envío fallido: el mensaje existe, quedó registrado y la mayoría
+   lo recibió. Volver a mandarlo no arregla nada, porque a quien falló le volverá a fallar.
+2. **No pintarlo de rojo.** Un envío con fallos parciales no es un error; es información. El
+   texto ya lo dice bien —«Enviado a 19 de 20»—, es el color el que miente.
+3. **Reservar el identificador siempre**, no solo cuando hay adjuntos, y renovarlo al
+   vaciar el formulario. Así, si alguien vuelve a pulsar por lo que sea, el servidor
+   rechaza el duplicado con el `create` que ya está escrito.
+
+> **Sobre el punto 3.** Hay que renovar el identificador después de un envío correcto; si no,
+> quien quiera mandar el mismo aviso dos veces a propósito no podría. El objetivo es impedir
+> el segundo pulsar sobre **el mismo formulario sin tocar**, no impedir repetir un mensaje.
+
+### Cómo quedó pagada
+
+Las tres cosas, el 29 de agosto de 2026.
+
+**1 · El formulario se vacía siempre que el mensaje se haya creado.** Ya no depende de que
+el envío salga perfecto.
+
+**2 · Un envío con fallos parciales ya no se pinta de rojo.** Se añadió `TonoAviso` con tres
+estados —correcto, atención, error— en vez del booleano de antes, que solo sabía de
+celebración y de alarma. El fallo parcial sale en dorado oscurecido, 5.03:1 con blanco
+encima, que cumple AA (RNF-13).
+
+**3 · El identificador se reserva siempre**, no solo con adjuntos, y se suelta al vaciar.
+Un segundo envío del mismo formulario lo rechaza el servidor con el `create` que ya estaba
+escrito, y `traducirError` lo traduce a «Este aviso ya se envió. No se mandó de nuevo.» en
+lugar del «fallo interno» de antes, que invitaba a pulsar otra vez.
+
+> **Un efecto secundario que valía la pena.** Reservar siempre el identificador arrastraba
+> una dependencia de Firestore al camino sin adjuntos, y las pruebas lo detectaron: el envío
+> dejó de completarse. Se resolvió generando el identificador en local —mismo formato de
+> veinte caracteres, con `Random.secure()`— porque Firestore también lo genera en local y no
+> se pierde nada. De paso, `RepositorioAdjuntos` dejó de depender de Firestore.
+
+**Y la prueba que afirmaba lo contrario.** Existía una llamada «un envío con fallos NO
+limpia, para poder reintentar», con el argumento de que el emisor no quiere perder el texto
+recién escrito. Suena razonable y es falso: reintentar es exactamente lo que no debe
+hacerse. Ahora afirma lo correcto y conserva escrito el porqué del cambio, para que a nadie
+le parezca buena idea revertirlo.
+
+### Se relaciona con DT-22
+
+El aviso previo al envío que pide DT-22 —«5 de 19 no recibirán aviso en el aparato»— habría
+evitado además la confusión de fondo: quien envía sabría que ese fallo era esperado y no una
+avería, antes de pulsar.
+
+
+---
+
+## DT-25 — El entorno local compila con un Flutter distinto del que despliega
+
+**Origen:** conocimiento · **Severidad:** media · **Estado:** abierta · **Costo:** 0 USD
+
+| | |
+|---|---|
+| Flutter en la máquina de trabajo | **3.47.0** · Dart 3.13.0 |
+| Flutter en la integración continua | **3.44.9** · el que compila todo lo desplegado |
+| Flutter documentado | 3.44.8 · Dart 3.12.2 |
+
+**Todo lo que se prueba en local corre sobre un compilador distinto del que produce lo
+que reciben los catedráticos.** Las 314 pruebas de Flutter, el analizador y cualquier
+despliegue hecho a mano usan 3.47; lo que sirve la nube lo compiló 3.44.9.
+
+### Cómo se descubrió
+
+Por un rastro pequeño. El primer despliegue automático selló `limpio: false`, y al hacer
+que el sello dijera **qué** estaba sin confirmar salió `app/pubspec.lock`: la integración
+continua lo reescribía porque su pub resolvía versiones distintas de las que resolvió el
+pub de la máquina de trabajo.
+
+Es la misma familia que la deriva entre ambientes, un piso más abajo: no diferían los
+ambientes, diferían los compiladores.
+
+### Lo que ya se hizo
+
+**Fijar la versión exacta en la integración continua.** Antes decía `3.44.x`, así que cada
+ejecución podía traer un parche distinto sin que nadie lo decidiera. Ahora dice `3.44.9`,
+que es lo que ya venía usando: **fijarlo no cambió nada de lo desplegado**, solo impide que
+cambie mañana.
+
+**Enseñar el cambio del bloqueo.** El despliegue avisa si `flutter pub get` reescribe
+`app/pubspec.lock` y muestra el cambio. No falla, informa: sin eso el único rastro era un
+`limpio: false` que no decía de qué hablaba.
+
+### Lo que falta, y por qué no se hizo
+
+Alinear la máquina de trabajo con 3.44.9. **No se toca sin decisión de quien la usa**, y
+hay dos caminos con consecuencias muy distintas:
+
+  · **Bajar el entorno local a 3.44.9.** Lo que se prueba pasa a ser lo que se despliega.
+    Es lo recomendado, y no toca nada de lo que ya funciona.
+  · **Subir la nube a 3.47.** Cambiaría el compilador de la aplicación que ya está en
+    producción, en una semana en que recién se estabilizó. Si algún día se hace, que sea
+    una tarea con su propia ronda de pruebas y no un efecto colateral.
+
+> **Mientras tanto, hay una regla que no cuesta nada:** ningún despliegue a mano. Todo por
+> la tubería, que es la que tiene el compilador correcto. Desde que `develop` despliega
+> solo, esa regla se cumple sin que nadie tenga que acordarse.
+
+### Qué cambia exactamente el bloqueo
+
+Tres paquetes, todos de pruebas, que el SDK de Flutter fija:
+
+| Paquete | Confirmado (3.47) | Lo que resuelve la nube (3.44.9) |
+|---|---|---|
+| `matcher` | 0.12.20 | 0.12.19 |
+| `meta` | 1.19.0 | 1.18.0 |
+| `test` | 1.31.1 | 1.31.0 |
+
+**No se confirmó la versión de la nube a mano**, y conviene decir por qué: mientras el
+entorno local siga en 3.47, ese archivo va a oscilar sin importar cuál de las dos versiones
+esté confirmada. Escribirla a mano taparía el síntoma y dejaría la causa intacta —además de
+ensuciar el árbol en cada `flutter test` local.
+
+Lo que sí se hizo fue separar las dos señales, que antes se confundían:
+
+  · **`limpio` en el sello** dice si alguien desplegó trabajo sin confirmar. El bloqueo
+    queda fuera de esa cuenta: no es trabajo sin confirmar, es un artefacto de una cadena
+    de herramientas desalineada. Antes salía `false` en **todos** los despliegues
+    automáticos, y una señal que siempre está encendida no señala nada.
+  · **El aviso del despliegue** dice si el bloqueo se reescribió, y enseña qué paquetes
+    cambiaron. Ese sí debe estar encendido: es el síntoma visible de esta deuda, y se apaga
+    solo el día que se pague.
