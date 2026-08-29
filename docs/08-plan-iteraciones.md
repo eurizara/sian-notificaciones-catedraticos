@@ -221,6 +221,7 @@ directamente en producción: la semana pasada mostró lo que cuesta.
 | 4 | **DT-07** · lo que falta | El indicador de tasa de entrega en el panel. Hoy saber si los avisos llegaron exige abrir mensaje por mensaje |
 | 5 | **DT-20** · saber en qué ambiente se está | Instalada como aplicación no hay barra de direcciones, y las tres se ven iguales. El error que previene es mandar un aviso de prueba a los 26 catedráticos reales |
 | 6 | **DT-21** · tema oscuro y preferencia del usuario | El tema ya está construido; lo que falta es verificar el contraste antes de encenderlo |
+| 7 | **DT-22** · sonda de canal invisible | Hoy un token muerto se descubre cuando falla un aviso real. En una prueba no cuesta nada; en una emergencia esa persona no se entera |
 
 **Sobre DT-18**, hay dos caminos y conviene elegir con cuidado:
 
@@ -245,6 +246,21 @@ distintos:
     Pero encenderlo sin más incumpliría RNF-13: la paleta oscura no está verificada contra
     WCAG 2.1 AA y el escudo pierde definición sobre fondo oscuro. Primero se verifica el
     contraste, después se enciende, y al final se agrega que el usuario pueda elegir.
+
+**Sobre DT-22**, la idea de mandar un aviso de canal cada cierto tiempo **no funciona**, y
+vale la pena saberlo antes de intentarlo: en web no existe la notificación invisible. El
+navegador exige que todo push termine en algo visible, y si el service worker no muestra
+nada lo muestra el navegador con un texto genérico. Repetirlo puede costar la suscripción,
+o sea que mataría justo lo que quiere conservar.
+
+Lo que sí es invisible es el **envío en seco** de FCM —`sendEach(mensajes, true)`—, que
+valida el token sin entregar nada. El teléfono no se entera y devuelve los mismos códigos
+de error que la limpieza ya sabe leer.
+
+Empezar **semanal**, que es el plazo más corto conocido —Safari borra los datos de un sitio
+sin instalar que no se toca en alrededor de una semana— y dejar que la sonda anote la
+antigüedad de cada token al morir. Con dos o tres meses de datos, la recurrencia se ajusta
+con hechos de esta población en vez de con cifras generales.
 
 **Y algo que no es una deuda con número pero pesa igual:** cuando se cambie el
 identificador de una colección, revisar todo lo que la lee. Cambiar `dispositivos` de

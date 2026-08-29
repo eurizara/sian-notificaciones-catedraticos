@@ -271,6 +271,7 @@ gratuita.
 | DT-19 | Entrar con Google falla en la PWA de iOS por aislamiento de almacenamiento | Plataforma | Alta | **Pagada** | 0 USD |
 | DT-20 | Instalada como aplicación, nada dice en qué ambiente se está | Conocimiento | **Media** | Abierta | 0 USD |
 | DT-21 | El tema oscuro está construido pero apagado, y no se puede elegir | Alcance | Baja | Abierta | 0 USD |
+| DT-22 | Un token muerto solo se descubre cuando falla un aviso real | Alcance | **Media** | Abierta | 0 USD |
 
 **Prioridad de pago recomendada, en orden:** DT-03 → DT-14 → DT-04 → DT-01.
 
@@ -648,3 +649,87 @@ paleta.
 
 El orden importa: los pasos 3 y 4 sin los pasos 1 y 2 producen una aplicación que se ve
 mal y que además incumple un requisito no funcional.
+
+
+---
+
+## DT-22 — Un token muerto solo se descubre cuando falla un aviso real
+
+**Origen:** alcance · **Severidad:** media · **Estado:** abierta · **Costo:** 0 USD
+
+Nada degrada el canal por dejar de enviar: un token de FCM no caduca porque nadie mande
+mensajes. Lo que lo degrada es lo que ocurre **en el aparato** —el navegador rota la
+suscripción, retira el permiso de un sitio sin uso, o borra los datos del sitio— y eso pasa
+sin que el servidor se entere.
+
+La aplicación mitiga la mayor parte: refresca el identificador **en cada apertura**, en
+silencio, cuando el permiso ya está concedido. Quien abra la aplicación de vez en cuando no
+pierde el canal nunca.
+
+Queda el caso de quien **no la abre durante semanas**. Su token puede morir, el servidor
+sigue creyéndolo bueno, y **la única cosa que lo descubre es un aviso real que falla**.
+
+### Por qué importa
+
+Ocurrió el 29 de agosto de 2026. Una persona arrastraba un token muerto; el primer mensaje
+del coordinador lo descubrió, la limpieza lo retiró, y el segundo mensaje —diecinueve
+segundos después— salió ya sin dispositivo. Se recuperó sola al volver a entrar.
+
+El sistema se cura, pero **el precio es el mensaje que hizo el descubrimiento**. En una
+prueba no cuesta nada. En una emergencia, esa persona no se entera.
+
+### La propuesta: una sonda, no un mensaje
+
+La primera idea fue mandar un aviso de canal cada cierto tiempo. **No sirve, y conviene
+dejar escrito por qué**, porque es la solución que parece obvia:
+
+> **En web no existe la notificación invisible.** El navegador exige que todo push termine
+> en algo visible —Chrome obliga a `userVisibleOnly`—, y si el service worker no muestra
+> nada, lo muestra el navegador con un texto genérico. Repetirlo puede costar la
+> suscripción. Un aviso silencioso periódico terminaría matando justo aquello que pretende
+> conservar.
+
+Lo que sí es invisible es el **envío en seco** de FCM, que ya está en el SDK que usa el
+proyecto:
+
+```ts
+getMessaging().sendEach(mensajes, /* dryRun */ true);
+```
+
+En este modo FCM **valida el token y no entrega nada**. No hay notificación, ni sonido, ni
+insignia: el teléfono no se entera. Y devuelve los mismos códigos que ya sabemos leer, así
+que `esTokenMuerto()` y `retirarTokensMuertos()` sirven sin tocarlos.
+
+Una función programada que recorra los dispositivos registrados, los valide en seco y
+retire los que FCM rechace. Es completamente invisible **para el catedrático**; el
+resultado se le muestra al coordinador, que es quien puede hacer algo con él.
+
+> **Lo que la sonda hace y lo que no.** Detecta, no revive. Un token muerto no se arregla
+> validándolo: hace falta que la persona abra la aplicación. Por eso la mitad visible del
+> trabajo es avisarle al coordinador quién se quedó sin dispositivo, para que pueda
+> buscarle antes de necesitarlo.
+
+### Cada cuánto
+
+El tiempo de vida no lo fija FCM, lo fija cada navegador, y no es uno solo:
+
+| Qué lo mata | Plazo aproximado |
+|---|---|
+| Safari borra los datos de un sitio **sin instalar** que no se toca | alrededor de una semana |
+| Chrome retira el permiso de sitios sin uso | meses |
+| iOS rota el token de una aplicación instalada | sin plazo fijo, puede ser cualquier apertura |
+| FCM da por obsoleto un token que nunca se usa | del orden de nueve meses |
+
+El plazo que manda es el más corto que aplique a la población real, y aquí la población es
+mayoritariamente iPhone con la aplicación instalada, donde el plazo **no está documentado**.
+
+Así que la recurrencia no debería fijarse de memoria. **Semanal para empezar** —se alinea
+con el plazo más corto conocido y ningún hueco supera una semana— y que la propia sonda
+anote la antigüedad de cada token al morir. Con dos o tres meses de esos datos, la
+recurrencia se ajusta con hechos de esta población en vez de con cifras generales.
+
+### Costo
+
+Ninguno relevante. El envío en seco no cuesta, hoy hay 36 dispositivos, y Cloud Scheduler
+regala tres trabajos por cuenta de facturación: el proyecto usa uno —el despachador, cada
+minuto—, así que el segundo sigue dentro de lo gratuito.
