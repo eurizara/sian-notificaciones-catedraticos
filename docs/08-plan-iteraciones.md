@@ -236,9 +236,11 @@ que borra más de lo que debe.
 distintos:
 
   · El ambiente ya se puede saber en tiempo de ejecución sin configuración nueva:
-    `Firebase.app().options.projectId` termina en `-dev`, `-qa` o `-prd`. Lo que hay que
-    pensar es el diseño, y conviene al revés de lo habitual: **producción sin distintivo**
-    —es lo normal y lo que ven los catedráticos— y que griten desarrollo y QA.
+    `Firebase.app().options.projectId` devuelve `sian-umg-bdm-dev`, `sian-umg-bdm-qa` o
+    `sian-umg-bdm`. **Producción no lleva sufijo**, así que comparar por «termina en `-prd`»
+    la dejaría sin identificar. Lo que hay que pensar es el diseño, y conviene al revés de
+    lo habitual: **producción sin distintivo** —es lo normal y lo que ven los
+    catedráticos— y que griten desarrollo y QA.
   · El tema oscuro **ya está escrito y conectado**; lo apaga una sola línea en `main.dart`.
     Pero encenderlo sin más incumpliría RNF-13: la paleta oscura no está verificada contra
     WCAG 2.1 AA y el escudo pierde definición sobre fondo oscuro. Primero se verifica el

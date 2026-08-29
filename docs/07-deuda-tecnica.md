@@ -586,9 +586,15 @@ uno de prueba a producción lo reciben veintiséis personas en el teléfono.
 
 ### Cómo se pagaría
 
-El dato ya está disponible en tiempo de ejecución —`Firebase.app().options.projectId`
-termina en `-dev`, `-qa` o `-prd`—, así que no hace falta un `--dart-define` nuevo ni tocar
-el flujo de compilación.
+El dato ya está disponible en tiempo de ejecución: `Firebase.app().options.projectId`
+devuelve `sian-umg-bdm-dev`, `sian-umg-bdm-qa` o `sian-umg-bdm`. No hace falta un
+`--dart-define` nuevo ni tocar el flujo de compilación.
+
+> **Ojo con el nombre de producción.** Los tres no siguen el mismo patrón: producción es
+> `sian-umg-bdm`, **sin sufijo**, porque se creó antes que los otros dos. Comparar por
+> «termina en `-prd`» no encuentra nada y deja producción sin identificar, que es
+> justamente el ambiente donde equivocarse cuesta. Conviene una tabla explícita de los tres
+> identificadores, o preguntar por `-dev` y `-qa` y tratar todo lo demás como producción.
 
 Lo que falta es decidirlo bien, y conviene pensarlo al revés de como suele hacerse:
 
