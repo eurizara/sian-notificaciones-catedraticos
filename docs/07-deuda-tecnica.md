@@ -490,6 +490,25 @@ que el servicio rechace se retira. Las nueve y catorce entradas se van solas.
 >     tocar.** Ahora solo borra por identificador si lo recibido tiene forma de token y no
 >     de instalación, así que un error aguas arriba ya no se convierte en pérdida de datos.
 
+**Lo que queda, y por qué DT-18 no está cerrada del todo.** La causa está resuelta: ya no
+se crea un dispositivo por cada ingreso, y se comprueba mirando los datos —la mayoría de
+las personas tiene un solo documento del esquema nuevo por más veces que hayan entrado.
+
+Lo que no se resolvió es **el arrastre**: quedan 71 documentos del esquema viejo, de antes
+del arreglo. Se retiran cuando el servicio de push declara muerto su token, y Apple no los
+mata al dejar de usarse: pueden seguir vivos semanas. Se dijo que bajarían en dos o tres
+envíos y fue optimista.
+
+No rompen nada —al enviar basta con que uno llegue— pero se paga en cuota y ensucian el
+diagnóstico cuando hay que averiguar por qué alguien no recibió. Las dos vías para pagarlo
+están en el documento 08, entre los pendientes de la próxima iteración; la recomendada es
+retirar por antigüedad, no un borrado a mano.
+
+> **Reinstalar sigue creando un documento nuevo**, porque borra `localStorage` y con él el
+> identificador de instalación. Es correcto —el navegador olvidó todo, empezar de cero es
+> lo apropiado— y para quien instala una vez no se nota. Solo se acumula en un aparato que
+> se usa para probar.
+
 ---
 
 ## DT-19 — Entrar con Google falla en la PWA de iOS
