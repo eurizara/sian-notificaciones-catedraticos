@@ -2,7 +2,7 @@ name: Despliegue
 
 # Una rama por ambiente (documento 11, sección 7):
 #
-#   develop → integración. No despliega solo; desarrollo se publica a mano.
+#   develop → sian-umg-bdm-dev  automático
 #   qa      → sian-umg-bdm-qa  automático
 #   main    → sian-umg-bdm     con aprobación manual obligatoria
 #
@@ -16,13 +16,148 @@ name: Despliegue
 
 on:
   push:
-    branches: [qa, main]
+    branches: [develop, qa, main]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
+  # ──────────────────────────────────────────────────────────────────────────
+  # Desarrollo se despliega solo, igual que los otros dos.
+  # ──────────────────────────────────────────────────────────────────────────
+  #
+  # Antes se publicaba a mano, y el 29 de agosto de 2026 eso costó media tarde:
+  # desarrollo llevaba desde el 28 a las 17:45 mientras QA y producción se
+  # habían actualizado esa noche a las 22:00. Las correcciones que se probaron
+  # en desarrollo no eran las que se promovieron, y nadie podía saberlo.
+  #
+  # Un paso manual en una cadena de tres ambientes no es un paso manual: es el
+  # ambiente que se queda atrás cuando alguien tiene prisa.
+  desarrollo:
+    name: Desplegar a desarrollo
+    # `vars.DEV_PROJECT_ID` actúa de interruptor: si está vacía, el trabajo se
+    # omite en vez de fallar. Un repositorio en rojo permanente enseña a
+    # ignorar el rojo.
+    #
+    # Esa variable vive a NIVEL DE REPOSITORIO, no en el environment `qa`. El
+    # `if:` de un trabajo se evalúa antes de que GitHub aplique el ambiente, así
+    # que una variable de ambiente se leería vacía aquí y el trabajo se saltaría
+    # en silencio. Las demás variables sí viven en el environment, porque se
+    # leen dentro de los pasos.
+    if: github.ref == 'refs/heads/develop' && vars.DEV_PROJECT_ID != ''
+    runs-on: ubuntu-latest
+    environment: desarrollo
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Compilar y probar las Functions
+        run: |
+          npm ci --prefix functions
+          npm run lint --prefix functions
+          npm run build --prefix functions
+          npm test --prefix functions
+
+      - name: Compilar la aplicación web
+        if: hashFiles('app/pubspec.yaml') != ''
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.x'
+
+      - name: Generar firebase_options.dart
+        if: hashFiles('app/pubspec.yaml') != ''
+        run: bash scripts/generar-firebase-options.sh
+        env:
+          FIREBASE_API_KEY: ${{ vars.DEV_API_KEY }}
+          FIREBASE_APP_ID: ${{ vars.DEV_APP_ID }}
+          FIREBASE_MESSAGING_SENDER_ID: ${{ vars.DEV_SENDER_ID }}
+          FIREBASE_PROJECT_ID: ${{ vars.DEV_PROJECT_ID }}
+          FIREBASE_AUTH_DOMAIN: ${{ vars.DEV_AUTH_DOMAIN }}
+          FIREBASE_STORAGE_BUCKET: ${{ vars.DEV_STORAGE_BUCKET }}
+
+      - name: Construir la PWA
+        if: hashFiles('app/pubspec.yaml') != ''
+        working-directory: app
+        run: |
+          flutter pub get
+          flutter build web --release \
+            --dart-define=FIREBASE_VAPID_KEY=${{ secrets.DEV_VAPID_KEY }} \
+            --dart-define=USE_EMULATOR=false
+
+      - name: Desplegar reglas, índices y Functions
+        uses: w9jds/firebase-action@v13.24.1
+        with:
+          args: deploy --only firestore:rules,firestore:indexes,storage,functions --project ${{ vars.DEV_PROJECT_ID }}
+        env:
+          GCP_SA_KEY: ${{ secrets.DEV_SERVICE_ACCOUNT }}
+
+      # ─────────────────────────────────────────────────────────────────────
+      # `firebase deploy` puede terminar en 0 habiendo fallado casi todo.
+      # ─────────────────────────────────────────────────────────────────────
+      #
+      # Al estrenar producción, dieciocho de diecinueve funciones fallaron con
+      # un 409 —«Could not create bucket gcf-v2-sources-…»—, la carrera que
+      # ocurre la primera vez que se despliega en un proyecto nuevo: todas
+      # intentan crear a la vez el bucket donde se guarda el código. El
+      # despliegue las dio por avisadas con un ⚠, salió con código 0, el
+      # trabajo apareció EN VERDE y el pipeline siguió a desplegar el hosting.
+      # Producción quedó con la aplicación entera y un solo endpoint vivo.
+      #
+      # Un despliegue que se cae ruidosamente es un problema. Uno que se cae en
+      # silencio y se declara exitoso es peor, porque nadie va a mirar.
+      - name: Verificar que están TODAS las Functions
+        env:
+          CLAVE_SA: ${{ secrets.DEV_SERVICE_ACCOUNT }}
+          PROYECTO: ${{ vars.DEV_PROJECT_ID }}
+        run: |
+          printf '%s' "$CLAVE_SA" > "$RUNNER_TEMP/sa.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
+          npx --yes firebase-tools functions:list --project "$PROYECTO" --json \
+            > "$RUNNER_TEMP/desplegadas.json"
+          node scripts/verificar-functions.js "$RUNNER_TEMP/desplegadas.json"
+
+      - name: Sellar la versión en lo que se publica
+        if: hashFiles('app/pubspec.yaml') != ''
+        run: bash scripts/sellar-version.sh app/build/web
+
+      - name: Desplegar Hosting
+        if: hashFiles('app/pubspec.yaml') != ''
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.DEV_SERVICE_ACCOUNT }}
+          projectId: ${{ vars.DEV_PROJECT_ID }}
+          channelId: live
+
+      - name: Comprobar que lo publicado es este commit
+        if: hashFiles('app/pubspec.yaml') != ''
+        # ────────────────────────────────────────────────────────────────────
+        # Un despliegue que termina en verde no prueba que el sitio cambiara.
+        # ────────────────────────────────────────────────────────────────────
+        #
+        # Ya pasó dos veces: dieciocho de diecinueve Functions fallaron con un
+        # 409 y el trabajo salió en 0, y desarrollo se quedó cinco horas atrás
+        # de QA sin que nada lo dijera. Preguntarle al sitio qué versión sirve
+        # cuesta un segundo y convierte «desplegado» en un hecho comprobado.
+        run: |
+          for intento in 1 2 3 4 5; do
+            SERVIDO=$(curl -fsS "https://${{ vars.DEV_PROJECT_ID }}.web.app/version.json" \
+              | python3 -c "import json,sys; print(json.load(sys.stdin)['commit'])" || echo "")
+            [ "$SERVIDO" = "${GITHUB_SHA}" ] && break
+            echo "intento $intento: sirve «${SERVIDO:-nada}», se esperaba ${GITHUB_SHA}"
+            sleep 10
+          done
+          if [ "$SERVIDO" != "${GITHUB_SHA}" ]; then
+            echo "::error::El sitio sirve «${SERVIDO:-nada}» y no ${GITHUB_SHA}."
+            exit 1
+          fi
+          echo "El sitio sirve ${GITHUB_SHA}."
+
   qa:
     name: Desplegar a QA
     # `vars.QA_PROJECT_ID` actúa de interruptor: si está vacía, el trabajo se
@@ -110,6 +245,10 @@ jobs:
             > "$RUNNER_TEMP/desplegadas.json"
           node scripts/verificar-functions.js "$RUNNER_TEMP/desplegadas.json"
 
+      - name: Sellar la versión en lo que se publica
+        if: hashFiles('app/pubspec.yaml') != ''
+        run: bash scripts/sellar-version.sh app/build/web
+
       - name: Desplegar Hosting
         if: hashFiles('app/pubspec.yaml') != ''
         uses: FirebaseExtended/action-hosting-deploy@v0
@@ -118,6 +257,30 @@ jobs:
           firebaseServiceAccount: ${{ secrets.QA_SERVICE_ACCOUNT }}
           projectId: ${{ vars.QA_PROJECT_ID }}
           channelId: live
+
+      - name: Comprobar que lo publicado es este commit
+        if: hashFiles('app/pubspec.yaml') != ''
+        # ────────────────────────────────────────────────────────────────────
+        # Un despliegue que termina en verde no prueba que el sitio cambiara.
+        # ────────────────────────────────────────────────────────────────────
+        #
+        # Ya pasó dos veces: dieciocho de diecinueve Functions fallaron con un
+        # 409 y el trabajo salió en 0, y desarrollo se quedó cinco horas atrás
+        # de QA sin que nada lo dijera. Preguntarle al sitio qué versión sirve
+        # cuesta un segundo y convierte «desplegado» en un hecho comprobado.
+        run: |
+          for intento in 1 2 3 4 5; do
+            SERVIDO=$(curl -fsS "https://${{ vars.QA_PROJECT_ID }}.web.app/version.json" \
+              | python3 -c "import json,sys; print(json.load(sys.stdin)['commit'])" || echo "")
+            [ "$SERVIDO" = "${GITHUB_SHA}" ] && break
+            echo "intento $intento: sirve «${SERVIDO:-nada}», se esperaba ${GITHUB_SHA}"
+            sleep 10
+          done
+          if [ "$SERVIDO" != "${GITHUB_SHA}" ]; then
+            echo "::error::El sitio sirve «${SERVIDO:-nada}» y no ${GITHUB_SHA}."
+            exit 1
+          fi
+          echo "El sitio sirve ${GITHUB_SHA}."
 
   produccion:
     name: Desplegar a producción
@@ -201,6 +364,10 @@ jobs:
             > "$RUNNER_TEMP/desplegadas.json"
           node scripts/verificar-functions.js "$RUNNER_TEMP/desplegadas.json"
 
+      - name: Sellar la versión en lo que se publica
+        if: hashFiles('app/pubspec.yaml') != ''
+        run: bash scripts/sellar-version.sh app/build/web
+
       - name: Desplegar Hosting
         if: hashFiles('app/pubspec.yaml') != ''
         uses: FirebaseExtended/action-hosting-deploy@v0
@@ -209,3 +376,27 @@ jobs:
           firebaseServiceAccount: ${{ secrets.PROD_SERVICE_ACCOUNT }}
           projectId: ${{ vars.PROD_PROJECT_ID }}
           channelId: live
+
+      - name: Comprobar que lo publicado es este commit
+        if: hashFiles('app/pubspec.yaml') != ''
+        # ────────────────────────────────────────────────────────────────────
+        # Un despliegue que termina en verde no prueba que el sitio cambiara.
+        # ────────────────────────────────────────────────────────────────────
+        #
+        # Ya pasó dos veces: dieciocho de diecinueve Functions fallaron con un
+        # 409 y el trabajo salió en 0, y desarrollo se quedó cinco horas atrás
+        # de QA sin que nada lo dijera. Preguntarle al sitio qué versión sirve
+        # cuesta un segundo y convierte «desplegado» en un hecho comprobado.
+        run: |
+          for intento in 1 2 3 4 5; do
+            SERVIDO=$(curl -fsS "https://${{ vars.PROD_PROJECT_ID }}.web.app/version.json" \
+              | python3 -c "import json,sys; print(json.load(sys.stdin)['commit'])" || echo "")
+            [ "$SERVIDO" = "${GITHUB_SHA}" ] && break
+            echo "intento $intento: sirve «${SERVIDO:-nada}», se esperaba ${GITHUB_SHA}"
+            sleep 10
+          done
+          if [ "$SERVIDO" != "${GITHUB_SHA}" ]; then
+            echo "::error::El sitio sirve «${SERVIDO:-nada}» y no ${GITHUB_SHA}."
+            exit 1
+          fi
+          echo "El sitio sirve ${GITHUB_SHA}."
