@@ -46,3 +46,30 @@ export class ErrorRecurrencia extends ErrorDominio {}
 
 /** El sujeto no tiene el permiso requerido según la matriz RBAC (RN-01). */
 export class ErrorAutorizacion extends ErrorDominio {}
+
+/** Código gRPC `ALREADY_EXISTS`, que es como Firestore rechaza un `create` repetido. */
+export const CODIGO_YA_EXISTE = 6;
+
+/**
+ * ¿El error es «ese documento ya está creado»?
+ *
+ * ───────────────────────────────────────────────────────────────────────────
+ * Es la señal de que alguien pulsó enviar dos veces sobre el mismo mensaje.
+ * ───────────────────────────────────────────────────────────────────────────
+ *
+ * El envío reserva un identificador y el servidor crea el documento con
+ * `create`, que falla si ya existe. Mientras el formulario no se vacíe ese
+ * identificador no cambia, así que este error significa exactamente una cosa:
+ * el mismo aviso vuelve a llegar. Hay que rechazarlo y decirlo con esas
+ * palabras (DT-24) — presentarlo como fallo interno invita a pulsar otra vez,
+ * que es justo lo que no debe pasar.
+ *
+ * Se mira el código numérico y no el texto: el mensaje de Firestore está en
+ * inglés y cambia entre versiones, mientras que el código es parte del contrato
+ * de gRPC y no se mueve.
+ */
+export function esDocumentoYaExistente(e: unknown): boolean {
+  return (
+    typeof e === 'object' && e !== null && (e as { code?: unknown }).code === CODIGO_YA_EXISTE
+  );
+}

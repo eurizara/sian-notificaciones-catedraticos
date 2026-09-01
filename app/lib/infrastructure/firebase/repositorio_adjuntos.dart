@@ -16,9 +16,9 @@
 /// dos megas de datos móviles en una subida que iba a ser rechazada.
 library;
 
+import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 /// Límites de RF-MSG-08.
@@ -59,25 +59,47 @@ class AdjuntoSubido {
   };
 }
 
+/// Alfabeto y largo de los identificadores automáticos de Firestore.
+const String _alfabetoId =
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+const int _largoIdFirestore = 20;
+
 class RepositorioAdjuntos {
-  RepositorioAdjuntos({FirebaseStorage? storage, FirebaseFirestore? firestore})
-    : _storageDado = storage,
-      _firestoreDado = firestore;
+  RepositorioAdjuntos({FirebaseStorage? storage}) : _storageDado = storage;
 
   final FirebaseStorage? _storageDado;
-  final FirebaseFirestore? _firestoreDado;
 
   late final FirebaseStorage _storage =
       _storageDado ?? FirebaseStorage.instance;
-  late final FirebaseFirestore _db =
-      _firestoreDado ?? FirebaseFirestore.instance;
 
   /// Reserva el identificador del mensaje antes de subir.
   ///
-  /// Lo genera Firestore y no el cliente a mano: son identificadores con
-  /// suficiente aleatoriedad como para que la ruta de un adjunto no sea
-  /// adivinable, que es la mitigación parcial de DT-04.
-  String reservarIdMensaje() => _db.collection('mensajes').doc().id;
+  /// Mismo formato que los que genera Firestore —veinte caracteres del alfabeto
+  /// alfanumérico— porque de eso depende que la ruta de un adjunto no sea
+  /// adivinable, que es la mitigación parcial de DT-04. La diferencia es que
+  /// aquí se generan **sin pasar por Firestore**.
+  ///
+  /// ──────────────────────────────────────────────────────────────────────────
+  /// Por qué se dejó de pedírselo a Firestore.
+  /// ──────────────────────────────────────────────────────────────────────────
+  ///
+  /// Firestore también lo genera en local, sin ida y vuelta a la red, así que
+  /// no se pierde nada. Lo que se gana es que reservar un identificador deje de
+  /// exigir que Firebase esté inicializado: desde DT-24 el envío lo reserva
+  /// **siempre**, también sin adjuntos, y con la versión anterior ese camino
+  /// arrastraba una dependencia de Firebase que no necesitaba.
+  ///
+  /// `Random.secure()` y no `Random()`: el segundo es predecible conociendo la
+  /// semilla, y aquí lo impredecible es justo lo que protege el adjunto.
+  String reservarIdMensaje() {
+    final Random azar = Random.secure();
+    return String.fromCharCodes(
+      List<int>.generate(
+        _largoIdFirestore,
+        (_) => _alfabetoId.codeUnitAt(azar.nextInt(_alfabetoId.length)),
+      ),
+    );
+  }
 
   /// Sube la nota de voz.
   ///

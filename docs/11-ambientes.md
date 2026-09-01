@@ -210,9 +210,13 @@ mensajes de cada uno son suyos; el código, la configuración y la infraestructu
 TOKEN=$(gcloud auth print-access-token) python3 scripts/comparar-ambientes.py
 ```
 
-Compara código servido, Functions, planificador, alertas, autenticación, dominios, CORS,
-APIs habilitadas e índices. Sale con error si algo difiere, así que sirve igual a mano que
-dentro de un flujo automático.
+Lo primero que compara es **el commit desplegado en cada ambiente**, y lo demás después:
+Functions, planificador, alertas, autenticación, dominios, CORS, APIs habilitadas e
+índices. Sale con error si algo difiere.
+
+La primera fila vale por todas las demás. Las otras comprueban que cada ambiente **tenga**
+lo que debe; esa comprueba que los tres corran **lo mismo**, que es otra pregunta — y es la
+que faltaba.
 
 > **Por qué hace falta una herramienta y no basta con mirar el repositorio.** El 28 de
 > agosto de 2026 se perdió un día entero persiguiendo un fallo que en desarrollo no se
@@ -225,6 +229,40 @@ dentro de un flujo automático.
 >     y detuvo el primer despliegue con `Permissions denied enabling …`.
 >
 > Ninguna se ve en un `git diff`. Se ven preguntándole a cada proyecto qué tiene.
+
+### Lo que la herramienta dejaba pasar, y costó media tarde
+
+El 28 de agosto de 2026 esta comprobación dijo que los tres ambientes estaban iguales. Al
+día siguiente, desarrollo no notificaba: llevaba desde el 28 a las **17:45** mientras QA y
+producción se habían actualizado esa noche a las **22:00**. Las correcciones que se
+probaron en desarrollo **no eran** las que se promovieron a producción.
+
+La herramienta no mintió; contestaba otra pregunta. Miraba la configuración a fondo
+—Functions activas, CORS, APIs, índices, alertas— y del código solo miraba si ciertas
+frases estaban presentes en el paquete servido. Esas frases llevaban ahí desde antes, así
+que pasaban en los tres.
+
+> **«¿Tienen la funcionalidad?» no es «¿corren el mismo código?».** La primera pregunta la
+> aprueba cualquier versión desde que la funcionalidad existe. La segunda solo la aprueba
+> la versión exacta.
+
+Se corrigió con dos cosas:
+
+**Un sello de versión.** `scripts/sellar-version.sh` escribe `version.json` en lo que se
+publica, con el commit, la rama y si se compiló desde una copia limpia. La comparación lo
+lee de cada ambiente y lo pone en la primera fila. Un identificador de commit no se puede
+confundir: o es el mismo, o no lo es.
+
+**Desarrollo dejó de desplegarse a mano.** Era el único de los tres que dependía de que
+alguien se acordara, y por eso fue el que se quedó atrás. Ahora `develop` despliega solo,
+igual que `qa` y `main`.
+
+> Un paso manual en una cadena de tres ambientes no es un paso manual: es el ambiente que
+> se queda atrás cuando alguien tiene prisa.
+
+Y cada despliegue, al terminar, le pregunta al sitio qué versión está sirviendo y falla si
+no es la que acaba de subir. Un trabajo en verde ya había significado antes «casi nada se
+desplegó»: dieciocho de diecinueve Functions fallaron con un 409 y el trabajo salió en 0.
 
 ### Lo que la herramienta NO puede igualar, y es la trampa peor
 

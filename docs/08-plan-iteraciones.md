@@ -229,6 +229,8 @@ directamente en producción: la semana pasada mostró lo que cuesta.
 
 | Orden | Qué | Por qué primero |
 |:---:|---|---|
+| — | ~~**DT-24** · envío duplicado~~ | **Pagada el 29/08.** Se corrigió aparte del resto por estar ocurriendo en producción. Probar en desarrollo antes de promoverla |
+| 0 | **DT-25** · alinear el Flutter local con el de la nube | Lo que se prueba no es lo que se compila. La nube ya quedó fijada en 3.44.9; falta bajar el entorno local, y eso lo decide quien usa la máquina |
 | 1 | **DT-17** · pruebas del service worker | De los siete defectos, los siete vivían ahí y ninguno lo encontró una prueba. Es la pieza que decide si el teléfono suena en una emergencia |
 | 2 | **DT-18** · retirar los dispositivos arrastrados | La causa está resuelta —ya no se crea uno por ingreso— pero quedan 71 del esquema viejo que no se van solos |
 | 3 | **DT-14** · correos de recuperación | Van a No deseado. Duele el primer día que alguien de verdad olvide su contraseña |

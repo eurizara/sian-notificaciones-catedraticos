@@ -442,6 +442,15 @@ class RepositorioEnvioFalso extends RepositorioEnvio {
   bool? ultimaUrgente;
   bool? ultimaConfirmacionUrgente;
   String? ultimoTitulo;
+
+  /// Identificadores reservados en cada envío, en orden.
+  ///
+  /// Es lo que permite comprobar la mitad cliente de DT-24: que el mismo
+  /// formulario reserve uno solo, y que al vaciarse el siguiente sea otro.
+  List<String?> idsReservados = <String?>[];
+
+  String? get ultimoMensajeId => idsReservados.lastOrNull;
+
   /// Lo que se mandó, en el orden en que se mandó.
   List<AdjuntoSubido> ultimosAdjuntos = const <AdjuntoSubido>[];
 
@@ -475,6 +484,7 @@ class RepositorioEnvioFalso extends RepositorioEnvio {
     List<AdjuntoSubido> adjuntos = const <AdjuntoSubido>[],
   }) async {
     vecesQueEnvio += 1;
+    idsReservados.add(mensajeId);
     ultimosAdjuntos = adjuntos;
     ultimaUrgente = urgente;
     ultimaConfirmacionUrgente = confirmacionUrgente;
