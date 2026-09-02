@@ -274,7 +274,7 @@ gratuita.
 | DT-22 | Un token muerto solo se descubre cuando falla un aviso real | Alcance | **Media** | Abierta | 0 USD |
 | DT-23 | El service worker no atiende `pushsubscriptionchange` | Plataforma | **Media** | Abierta | 0 USD |
 | DT-24 | Un envío con algún fallo deja la pantalla igual y se manda dos veces | Conocimiento | **Alta** | **Pagada** | 0 USD |
-| DT-25 | El entorno local compila con un Flutter distinto del que despliega | Conocimiento | **Media** | Abierta | 0 USD |
+| DT-25 | El entorno local compila con un Flutter distinto del que despliega | Conocimiento | **Media** | **Pagada** | 0 USD |
 
 **Prioridad de pago recomendada, en orden:** DT-03 → DT-14 → DT-04 → DT-01.
 
@@ -1012,10 +1012,9 @@ cambie mañana.
 `app/pubspec.lock` y muestra el cambio. No falla, informa: sin eso el único rastro era un
 `limpio: false` que no decía de qué hablaba.
 
-### Lo que falta, y por qué no se hizo
+### Los dos caminos que había, y cuál se tomó
 
-Alinear la máquina de trabajo con 3.44.9. **No se toca sin decisión de quien la usa**, y
-hay dos caminos con consecuencias muy distintas:
+Alinear la máquina de trabajo con 3.44.9. Se tomó el primero:
 
   · **Bajar el entorno local a 3.44.9.** Lo que se prueba pasa a ser lo que se despliega.
     Es lo recomendado, y no toca nada de lo que ya funciona.
@@ -1026,6 +1025,27 @@ hay dos caminos con consecuencias muy distintas:
 > **Mientras tanto, hay una regla que no cuesta nada:** ningún despliegue a mano. Todo por
 > la tubería, que es la que tiene el compilador correcto. Desde que `develop` despliega
 > solo, esa regla se cumple sin que nadie tenga que acordarse.
+
+### Cómo quedó pagada
+
+El 29 de agosto de 2026, bajando el entorno local a **3.44.9 · Dart 3.12.2**, la misma
+versión que compila lo desplegado. Con las dos puntas alineadas, `flutter pub get` resolvió
+las versiones que resuelve la nube y **el bloqueo se confirmó con esas**:
+
+| Paquete | Antes (3.47) | Confirmado ahora (3.44.9) |
+|---|---|---|
+| `matcher` | 0.12.20 | **0.12.19** |
+| `meta` | 1.19.0 | **1.18.0** |
+| `test` | 1.31.1 | **1.31.0** |
+
+Verificado con el SDK correcto: 314 pruebas de Flutter, 273 de Functions, analizador sin
+hallazgos. El aviso del despliegue sobre el bloqueo debe quedar en silencio a partir de
+aquí; si vuelve a sonar, es que alguna de las dos puntas se movió.
+
+> **Homebrew puede deshacerlo.** El clon vive en `/opt/homebrew/share/flutter` y un
+> `brew upgrade` lo devuelve a la última versión sin avisar. La señal de que pasó es que el
+> despliegue vuelva a avisar del bloqueo; se corrige con
+> `cd /opt/homebrew/share/flutter && git checkout 3.44.9`.
 
 ### Qué cambia exactamente el bloqueo
 

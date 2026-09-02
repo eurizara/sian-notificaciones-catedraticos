@@ -40,6 +40,21 @@ COMMIT="${GITHUB_SHA:-$(git rev-parse HEAD 2>/dev/null || echo desconocido)}"
 RAMA="${GITHUB_REF_NAME:-$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo desconocida)}"
 CUANDO="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
+# El ÁRBOL, no el commit, es lo que dice si dos ambientes corren el mismo código.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# Comparar commits daba «DIFIERE» con el código idéntico en los tres.
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# En un flujo de tres ramas, promover crea un commit de fusión distinto en cada
+# una aunque el contenido sea el mismo. El identificador de árbol de git es un
+# resumen del contenido: si es igual, los archivos son los mismos, venga de la
+# fusión que venga.
+#
+# El commit se conserva porque dice DE DÓNDE salió y sirve para rastrear; el
+# árbol dice QUÉ es, y es lo que hay que comparar entre ambientes.
+ARBOL="$(git rev-parse HEAD^{tree} 2>/dev/null || echo desconocido)"
+
 # `limpio` distingue un despliegue reproducible de uno hecho desde una copia con
 # cambios sin confirmar. Un ambiente sellado con `limpio: false` no se puede
 # comparar con nada, y saberlo vale más que el propio identificador.
@@ -68,10 +83,11 @@ fi
 cat > "$DESTINO/version.json" <<JSON
 {
   "commit": "$COMMIT",
+  "arbol": "$ARBOL",
   "rama": "$RAMA",
   "desplegadoEn": "$CUANDO",
   "limpio": $LIMPIO
 }
 JSON
 
-echo "Sellado: $DESTINO/version.json  (${COMMIT:0:12}, rama $RAMA, limpio=$LIMPIO)"
+echo "Sellado: $DESTINO/version.json  (árbol ${ARBOL:0:12}, commit ${COMMIT:0:12}, rama $RAMA, limpio=$LIMPIO)"
