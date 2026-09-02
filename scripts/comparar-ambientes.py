@@ -134,7 +134,13 @@ def retrato(proyecto: str, numero: str) -> dict:
         # que importaba el 29 de agosto de 2026, cuando desarrollo llevaba cinco
         # horas de retraso sobre QA y producción y esta herramienta dijo que los
         # tres estaban iguales.
-        "Commit desplegado": (sello.get("commit") or "SIN SELLO")[:12],
+        # Se compara el ÁRBOL y no el commit. Promover por develop → qa → main
+        # crea un commit de fusión distinto en cada rama aunque el contenido sea
+        # idéntico, así que comparar commits daba «DIFIERE» con los tres
+        # ambientes corriendo exactamente el mismo código. El árbol es un
+        # resumen del contenido: si coincide, los archivos son los mismos.
+        "Código desplegado (árbol)": (sello.get("arbol") or "SIN SELLO")[:12],
+        "Commit de origen": (sello.get("commit") or "-")[:12],
         "Sellado desde copia limpia": sello.get("limpio", "?"),
         "Functions activas": f"{sum(1 for f in funciones if f.get('state') == 'ACTIVE')}/{len(funciones)}",
         "Cloud Scheduler": f"{len(jobs)} {jobs[0].get('state') if jobs else '-'}",
@@ -162,16 +168,21 @@ def main() -> None:
     print("  " + "-" * 62)
 
     diferencias = 0
+    # «Commit de origen» se enseña pero no se cuenta: difiere por diseño, porque
+    # cada rama tiene su propia fusión. Lo que debe coincidir es el árbol.
+    informativas = {"Commit de origen"}
+
     for clave in claves:
         valores = [str(retratos[e][clave]) for e in ("dev", "qa", "prd")]
         igual = valores[0] == valores[1] == valores[2]
-        if not igual:
+        if not igual and clave not in informativas:
             diferencias += 1
-        marca = "" if igual else "   <-- DIFIERE"
+        marca = "" if igual else ("   (informativo)" if clave in informativas
+                                  else "   <-- DIFIERE")
         print(f"  {clave:<26} {valores[0]:<12} {valores[1]:<12} {valores[2]:<12}{marca}")
 
     sin_sello = [e for e in ("dev", "qa", "prd")
-                 if retratos[e]["Commit desplegado"] == "SIN SELLO"]
+                 if retratos[e]["Código desplegado (árbol)"] == "SIN SELLO"]
     if sin_sello:
         diferencias += 1
         print(f"\n  Sin sello de versión: {', '.join(sin_sello)}")
