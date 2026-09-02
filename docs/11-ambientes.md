@@ -249,9 +249,18 @@ que pasaban en los tres.
 Se corrigió con dos cosas:
 
 **Un sello de versión.** `scripts/sellar-version.sh` escribe `version.json` en lo que se
-publica, con el commit, la rama y si se compiló desde una copia limpia. La comparación lo
-lee de cada ambiente y lo pone en la primera fila. Un identificador de commit no se puede
-confundir: o es el mismo, o no lo es.
+publica, con el árbol, el commit, la rama y si se compiló desde una copia limpia. La
+comparación lo lee de cada ambiente y lo pone en la primera fila.
+
+> **Se compara el árbol, no el commit.** La primera versión comparaba commits y daba
+> «DIFIERE» con los tres ambientes corriendo exactamente el mismo código: promover por
+> `develop → qa → main` crea un commit de fusión distinto en cada rama aunque el contenido
+> sea idéntico. El identificador de árbol de git es un resumen del contenido; si coincide,
+> los archivos son los mismos venga de la fusión que venga.
+>
+> El commit se sigue enseñando porque dice **de dónde** salió y sirve para rastrear, pero
+> no cuenta como diferencia. Una herramienta que grita cuando todo está bien enseña a
+> ignorarla igual que una que calla cuando algo está mal.
 
 **Desarrollo dejó de desplegarse a mano.** Era el único de los tres que dependía de que
 alguien se acordara, y por eso fue el que se quedó atrás. Ahora `develop` despliega solo,
