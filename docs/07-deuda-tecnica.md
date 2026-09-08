@@ -271,11 +271,13 @@ gratuita.
 | DT-19 | Entrar con Google falla en la PWA de iOS por aislamiento de almacenamiento | Plataforma | Alta | **Pagada** | 0 USD |
 | DT-20 | Instalada como aplicación, nada dice en qué ambiente se está | Conocimiento | **Media** | Abierta | 0 USD |
 | DT-21 | El tema oscuro está construido pero apagado, y no se puede elegir | Alcance | Baja | Abierta | 0 USD |
-| DT-22 | Un token muerto solo se descubre cuando falla un aviso real | Alcance | **Media** | Abierta | 0 USD |
+| DT-22 | Un token muerto solo se descubre cuando falla un aviso real | Alcance | **Alta** | Abierta | 0 USD |
 | DT-23 | El service worker no atiende `pushsubscriptionchange` | Plataforma | **Media** | Abierta | 0 USD |
 | DT-24 | Un envío con algún fallo deja la pantalla igual y se manda dos veces | Conocimiento | **Alta** | **Pagada** | 0 USD |
 | DT-25 | El entorno local compila con un Flutter distinto del que despliega | Conocimiento | **Media** | **Pagada** | 0 USD |
 | DT-26 | En Android el contador del icono se queda encendido con todo leído | Plataforma | **Media** | Abierta | 0 USD |
+| DT-27 | No hay forma de responder a un aviso | Alcance | Media | Abierta | 0 USD |
+| DT-28 | El manual no se alcanza desde dentro de la aplicación | Alcance | Baja | Abierta | 0 USD |
 
 **Prioridad de pago recomendada, en orden:** DT-03 → DT-14 → DT-04 → DT-01.
 
@@ -681,6 +683,43 @@ segundos después— salió ya sin dispositivo. Se recuperó sola al volver a en
 
 El sistema se cura, pero **el precio es el mensaje que hizo el descubrimiento**. En una
 prueba no cuesta nada. En una emergencia, esa persona no se entera.
+
+### Ocurrió otra vez, y ahora con números
+
+**7 de septiembre de 2026.** El coordinador mandó «compartir información con estudiantes» a
+los 22 catedráticos. Llegó a 15. **El mensaje anterior era del 29 de agosto: ocho días de
+silencio.**
+
+Comparando las dos entregas, persona por persona:
+
+| | 29/08 | 07/09 |
+|---|---|---|
+| `ftorresa` | CONFIRMADO | **FALLIDO** |
+| `jzabaletar` | CONFIRMADO | **FALLIDO** |
+| `mcalic1` | CONFIRMADO | **FALLIDO** |
+| `mhernandezb28` | CONFIRMADO | **FALLIDO** |
+| `msalguerob` | CONFIRMADO | **FALLIDO** |
+
+**Cinco personas que habían recibido y confirmado el aviso anterior perdieron el canal
+durante el silencio.** Sus tokens murieron mientras nadie miraba, y el sistema se enteró
+cuando falló un aviso real — que es exactamente lo que esta deuda describe.
+
+Los otros dos fallos son de otra naturaleza y conviene no mezclarlos: `aurizard` y
+`jgomezo20` **nunca han registrado un dispositivo**. Entraron después del 29 de agosto y no
+completaron el paso, así que no perdieron nada: nunca lo tuvieron.
+
+Reparto exacto de causas, tal como quedó escrito en las entregas:
+
+```
+  messaging/registration-token-not-registered   4   token muerto, retirado al fallar
+  SIN_DISPOSITIVO_REGISTRADO                    3   sin dispositivo al momento de enviar
+```
+
+> **Por eso sube a severidad alta.** Ya no es un riesgo descrito: es una pérdida medida del
+> 23 % de la audiencia en un solo envío. Y la variable que lo dispara —el tiempo sin mandar
+> nada— es la normal en un sistema de emergencias, que por definición calla hasta que hace
+> falta. Cuanto más tiempo lleva callado, menos gente le queda escuchando, y nadie se
+> entera hasta el día que importa.
 
 ### La propuesta: una sonda, no un mensaje
 
@@ -1135,3 +1174,151 @@ hay que comprobarlo antes de tocar nada:
 > agosto, este no lo va a encontrar una prueba automática mientras el service worker no
 > tenga ninguna (DT-17). Vale la pena atender DT-17 antes o a la vez, para que la
 > corrección quede protegida y no vuelva por tercera vez.
+
+
+---
+
+## DT-27 — No hay forma de responder a un aviso
+
+**Origen:** alcance · **Severidad:** media · **Estado:** abierta · **Costo:** 0 USD
+
+Pedido el 7 de septiembre de 2026. Hoy la comunicación va en un solo sentido: coordinación
+manda, catedráticos reciben. Quien necesita contestar algo —«no puedo asistir», «¿a qué
+hora?», «ya lo entregué»— tiene que salirse de SIAN y usar otro canal, con lo cual la
+respuesta se pierde del registro del aviso que la provocó.
+
+### Lo que se pide
+
+Que un catedrático pueda responder a un aviso concreto, que **esa respuesta le llegue solo
+a quien lo emitió**, y que el emisor vea con claridad quién le respondió y sobre qué
+mensaje. Conversación directa entre esas dos personas, atada a un aviso.
+
+### Dónde ponerlo: la recomendación, y por qué no una pestaña de conversaciones
+
+La pregunta era si conviene una pestaña nueva. **Para el catedrático, no.** Para el emisor,
+algo parecido, pero no lo mismo. Son dos necesidades distintas y merecen dos sitios
+distintos:
+
+**El catedrático responde dentro del mensaje.** Un botón «Responder» en el detalle del
+aviso, y el hilo debajo. No necesita una bandeja aparte: solo tendrá una conversación por
+aviso, y siempre con quien se lo mandó.
+
+> Sacar la respuesta a otra pestaña rompería justo lo que se quiere conservar. Lo que da
+> sentido a «no puedo asistir» es el aviso que lo provocó; en una bandeja suelta, ese
+> vínculo hay que reconstruirlo leyendo.
+
+**El emisor sí necesita agregación**, porque un aviso a 22 personas puede volver con 22
+respuestas. Pero conviene que siga anclada al mensaje:
+
+  · En «Mis mensajes», cada aviso muestra cuántas respuestas tiene: «3 respuestas».
+  · Al abrirlo, la lista de hilos de ese aviso, con quién y cuándo.
+  · Y un indicador global —un número junto a la sección— para enterarse sin abrir uno por
+    uno.
+
+Así el emisor tiene la vista de conjunto sin que la respuesta se despegue de su origen.
+
+> **Lo que conviene NO construir:** una bandeja de mensajería general donde cualquiera
+> escriba a cualquiera. Convertiría un sistema de avisos institucionales en un chat, con
+> todo lo que eso arrastra —moderación, expectativa de respuesta inmediata, conversaciones
+> sin relación con ningún aviso— y chocaría con RN-03, que dice que un aviso enviado no se
+> edita ni se borra. Una respuesta es una entidad nueva atada a un aviso, no una edición
+> de él.
+
+### Lo que hay que resolver antes de escribir código
+
+**Modelo de datos.** Un hilo por pareja (aviso, catedrático) — algo como
+`mensajes/{id}/hilos/{uid}/turnos/{n}`. Identificar el hilo por el uid hace imposible por
+construcción que existan dos hilos de la misma persona sobre el mismo aviso, que es el
+mismo recurso que ya se usa en `entregas`.
+
+**Reglas de Firestore.** Es lo más delicado. Un hilo debe poder leerlo **solo** su autor y
+quien emitió el aviso, y nadie más — hoy las reglas dejan a un destinatario leer el mensaje
+porque su uid está en `destinatariosUids`, y esa misma lista NO debe abrir las respuestas
+ajenas. Merece su propia ronda de pruebas de reglas, que el proyecto ya sabe escribir.
+
+**Escritura por Function, como todo.** El navegador nunca escribe en Firestore. La
+respuesta entra por una Cloud Function que valida que quien responde sea destinatario del
+aviso.
+
+**Notificar al emisor, con cuidado.** Veintidós respuestas no pueden ser veintidós
+notificaciones. Conviene agrupar —«tienes 5 respuestas nuevas»— o al menos limitar el
+ritmo.
+
+> **Un detalle que hoy lo rompería:** el emisor tiene que poder recibir notificaciones, y
+> hoy coordinación **no** está entre los destinatarios del modo TODOS ni tiene por qué
+> tener dispositivo registrado. `aochoar`, que es quien más avisos manda, no tiene ninguno.
+> Sin resolver eso, las respuestas llegarían a un buzón que nadie mira.
+
+**Qué se guarda del aviso en la respuesta.** Al menos título y fecha, copiados en el hilo:
+el emisor tiene que ver de qué le hablan sin abrir otra cosa, igual que hoy el nombre de
+quien envía viaja con el mensaje porque el receptor no puede leer `usuarios`.
+
+### Qué queda fuera de esta deuda
+
+Adjuntos en las respuestas, respuestas entre catedráticos, y reenviar una respuesta a
+terceros. Si hacen falta, que sea otra decisión con su propio análisis.
+
+---
+
+## DT-28 — El manual no se alcanza desde dentro de la aplicación
+
+**Origen:** alcance · **Severidad:** baja · **Estado:** abierta · **Costo:** 0 USD
+
+Pedido el 7 de septiembre de 2026.
+
+El manual **ya está publicado y servido** por la propia aplicación:
+
+```
+  https://<ambiente>.web.app/manuales/            general
+  https://<ambiente>.web.app/manuales/catedratico/  del catedrático
+```
+
+Lo que falta es poder llegar a él **sin salirse**. Hoy hay que conocer la dirección o
+buscarla en un correo viejo, que es tanto como no tenerlo.
+
+### Dónde va
+
+En la barra superior, **a la izquierda de recargar**. La barra tiene hoy dos acciones, y su
+orden está razonado en `barra_sesion.dart`: salir se queda en el borde porque quien lo
+busca sin mirar no debe pulsar otra cosa, y entre recargar y salir hay separación porque
+uno se deshace pulsándolo otra vez y el otro obliga a volver a entrar.
+
+El manual sigue esa lógica: es la acción **más inocua de las tres**, así que va más lejos
+del borde peligroso. Orden resultante: `[ manual ] [ recargar ]  ·  [ salir ]`.
+
+### Lo que hay que hacer bien, y no es el icono
+
+**Nielsen 10 — ayuda y documentación.** La ayuda tiene que ser alcanzable desde donde surge
+la duda. Es la heurística que este cambio paga directamente.
+
+**Nielsen 4 — consistencia.** Un `IconButton` con `tooltip`, igual que los otros dos. No
+un widget distinto porque sea nuevo.
+
+**WCAG 1.1.1 y 4.1.2 — un icono no es un nombre.** El botón necesita nombre accesible; el
+`tooltip` de Flutter lo aporta, y hay que verificarlo con lector de pantalla, no darlo por
+hecho. Los otros dos botones ya lo tienen: el mismo patrón, y el texto al archivo de
+textos, no incrustado.
+
+**WCAG 3.2.5 — abrir en pestaña nueva se avisa.** El manual se lee mientras se usa la
+aplicación, así que abrirlo aparte tiene sentido, pero entonces el nombre accesible debe
+decirlo: «Manual de usuario (se abre en una pestaña nueva)». Un cambio de contexto sin
+anunciar es de las cosas que más desorientan a quien navega sin ver la pantalla.
+
+**WCAG 2.5.5 / 2.5.8 — tamaño del objetivo.** `IconButton` cumple por omisión, pero hay que
+comprobarlo en la barra estrecha del teléfono, que es donde se aprieta.
+
+**Contraste (RNF-13).** El icono va sobre la barra institucional; el par tiene que estar
+verificado como el resto, no supuesto.
+
+### Un detalle que evita un error tonto
+
+**La dirección se resuelve desde `location.origin`**, no se escribe fija. Ya se cometió ese
+error en los manuales, donde la dirección de desarrollo quedó incrustada en 18 sitios y
+habría mandado a los catedráticos al ambiente equivocado. El manual que se abre debe ser
+**el del mismo ambiente desde el que se pulsa**.
+
+### Qué manual abrir
+
+Hay dos, y la aplicación sabe el rol de quien está dentro. Lo natural es que un catedrático
+abra el suyo y coordinación el general. Es una decisión de una línea, pero conviene tomarla
+a propósito y no dejar a todos en el índice.
