@@ -248,6 +248,15 @@ gratuita.
 
 ## Resumen
 
+> **Corrección o mejora.** La tabla dice severidad, no naturaleza, y son cosas distintas.
+> Una **corrección** arregla algo que hoy falla; una **mejora** añade lo que falta. El orden
+> de trabajo separa las dos y liberará todas las correcciones antes de empezar con las
+> mejoras — el reparto vigente está en el documento 08, en «Pendientes para la próxima
+> iteración».
+>
+> El motivo no es método por método: construir encima de un canal que pierde gente solo
+> multiplica el problema.
+
 | ID | Deuda | Origen | Severidad | Estado | Costo de pagarla |
 |----|-------|--------|:---:|--------|:---:|
 | DT-01 | Sin aplicación nativa ni tiendas | Alcance / Costo | Alta | Abierta | 0 USD (Android) |

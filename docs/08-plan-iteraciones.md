@@ -227,26 +227,44 @@ directamente en producción: la semana pasada mostró lo que cuesta.
 > existe, el tema oscuro que no se enciende sin verificar contraste, la limpieza de
 > dispositivos que borra de más—, y esas advertencias son la parte cara del análisis.
 
-| Orden | Qué | Por qué primero |
-|:---:|---|---|
-| — | ~~**DT-24** · envío duplicado~~ | **Pagada el 29/08.** Se corrigió aparte del resto por estar ocurriendo en producción. Probar en desarrollo antes de promoverla |
-| — | ~~**DT-25** · alinear el Flutter local con el de la nube~~ | **Pagada el 29/08.** Entorno local bajado a 3.44.9; lo que se prueba vuelve a ser lo que se compila |
-| 1 | **DT-26** · el contador se queda encendido en Android | **Está ocurriendo ahora**, visto en uso real: el número sobre el icono dice que hay mensajes sin leer cuando dentro está todo leído. En iOS no pasa, y esa asimetría es la pista |
-| 2 | **DT-17** · pruebas del service worker | De los siete defectos, los siete vivían ahí y ninguno lo encontró una prueba. Es la pieza que decide si el teléfono suena en una emergencia. **Conviene hacerlo junto a DT-26**, que vive en el mismo archivo |
-| 3 | **DT-23 → DT-22** · resuscripción automática y sonda de canal | **Subió de prioridad el 07/09.** Cinco personas que habían confirmado el aviso del 29/08 perdieron el canal en ocho días de silencio, y nadie lo supo hasta que falló un aviso real. DT-23 primero: reduce el problema en vez de informar de él |
-| 4 | **DT-18** · retirar los dispositivos arrastrados | La causa está resuelta —ya no se crea uno por ingreso— pero quedan 71 del esquema viejo que no se van solos |
-| 5 | **DT-14** · correos de recuperación | Van a No deseado. Duele el primer día que alguien de verdad olvide su contraseña |
-| 6 | **DT-07** · lo que falta | El indicador de tasa de entrega en el panel. Hoy saber si los avisos llegaron exige abrir mensaje por mensaje |
-| 7 | **DT-20** · saber en qué ambiente se está | Instalada como aplicación no hay barra de direcciones, y las tres se ven iguales. El error que previene es mandar un aviso de prueba a los 26 catedráticos reales |
-| 8 | **DT-21** · tema oscuro y preferencia del usuario | El tema ya está construido; lo que falta es verificar el contraste antes de encenderlo |
-| 9 | **DT-28** · manual accesible desde la barra | El más pequeño de todos y el que menos puede romper. Sirve de descanso entre dos tareas grandes |
-| 10 | **DT-27** · responder a un aviso | Funcionalidad nueva, no corrección. Va al final a propósito: primero que lo que ya existe funcione |
+### Correcciones — primero, y se liberan antes de tocar nada más
 
-**Sobre el orden, que cambió el 7 de septiembre.** Los cuatro primeros son correcciones de
-cosas que ya fallan; los dos últimos son funcionalidad nueva. Esa separación es deliberada
-y conviene respetarla: **construir encima de un canal que pierde gente sola multiplica el
-problema en vez de resolverlo**. Una respuesta a un aviso que nunca llegó no le sirve a
-nadie.
+Algo falla hoy. Se arranca por aquí, se prueba en desarrollo, se promueve y **se libera**.
+Hasta que las cuatro estén en producción no se empieza con las mejoras.
+
+| # | Corrección | Qué está fallando |
+|:---:|---|---|
+| C-1 | **DT-26** · el contador se queda encendido en Android | El número sobre el icono dice que hay mensajes sin leer cuando dentro está todo leído. En iOS no pasa, y esa asimetría es la pista. **No se libera sin DT-17** (abajo) |
+| C-2 | **DT-23 → DT-22** · el canal se pierde solo | Cinco personas que confirmaron el aviso del 29/08 dejaron de recibir en ocho días de silencio, y nadie lo supo hasta que falló un aviso real. DT-23 antes que DT-22: uno reduce el problema, el otro informa de él |
+| C-3 | **DT-18** · dispositivos arrastrados | Quedan 71 del esquema viejo. No rompen el envío, pero ensucian el diagnóstico justo cuando hay que averiguar por qué alguien no recibió |
+| C-4 | **DT-14** · correos de recuperación | Van a No deseado. Duele el primer día que alguien de verdad olvide su contraseña |
+
+> **DT-17 — pruebas del service worker — no es una corrección con vida propia: es la
+> condición para liberar C-1.** De los siete defectos de notificación, los siete vivían en
+> ese archivo y ninguno lo encontró una prueba. El contador ya falló una vez y volvió; sin
+> pruebas, la tercera es cuestión de tiempo. Viaja con C-1 y se prueba con ella.
+
+**Cómo se liberan.** Una por una por el flujo normal —`develop` → `qa` → `main`— y no todas
+juntas al final. Cada una que llega a producción es gente que vuelve a recibir avisos, y
+juntarlas solo aumenta lo que hay que revisar si algo sale mal. DT-24 ya se liberó así, sola
+y de urgencia, y funcionó.
+
+### Mejoras — después, y sobre un canal que ya sea confiable
+
+Nada de esto falla: falta. Se empieza cuando las cuatro correcciones estén liberadas.
+
+| # | Mejora | Qué aporta |
+|:---:|---|---|
+| M-1 | **DT-07** · tasa de entrega en el panel | Hoy, saber por qué siete personas no recibieron el aviso del 7 de septiembre exigió consultar la base de datos a mano. El coordinador debería verlo solo |
+| M-2 | **DT-20** · saber en qué ambiente se está | Instalada como aplicación, los tres ambientes se ven iguales. Previene mandar un aviso de prueba a los 22 catedráticos reales |
+| M-3 | **DT-28** · manual accesible desde la barra | El manual ya está publicado; falta el botón. Es la más pequeña de todas y la que menos puede romper |
+| M-4 | **DT-21** · tema oscuro y preferencia del usuario | El tema ya está construido; falta verificar el contraste antes de encenderlo |
+| M-5 | **DT-27** · responder a un aviso | Funcionalidad nueva. Va al final a propósito: primero que lo que ya existe funcione |
+
+> **Por qué las mejoras van después y no en paralelo.** Construir encima de un canal que
+> pierde gente solo multiplica el problema. Una respuesta a un aviso que nunca llegó no le
+> sirve a nadie, y un panel que informa muy bien sobre un canal roto informa muy bien de
+> algo roto.
 
 **Sobre DT-27**, la pregunta era si conviene una pestaña de conversaciones. La
 recomendación: para el catedrático **no** —responde dentro del aviso, porque el vínculo con
