@@ -275,6 +275,7 @@ gratuita.
 | DT-23 | El service worker no atiende `pushsubscriptionchange` | Plataforma | **Media** | Abierta | 0 USD |
 | DT-24 | Un envío con algún fallo deja la pantalla igual y se manda dos veces | Conocimiento | **Alta** | **Pagada** | 0 USD |
 | DT-25 | El entorno local compila con un Flutter distinto del que despliega | Conocimiento | **Media** | **Pagada** | 0 USD |
+| DT-26 | En Android el contador del icono se queda encendido con todo leído | Plataforma | **Media** | Abierta | 0 USD |
 
 **Prioridad de pago recomendada, en orden:** DT-03 → DT-14 → DT-04 → DT-01.
 
@@ -1071,3 +1072,66 @@ Lo que sí se hizo fue separar las dos señales, que antes se confundían:
   · **El aviso del despliegue** dice si el bloqueo se reescribió, y enseña qué paquetes
     cambiaron. Ese sí debe estar encendido: es el síntoma visible de esta deuda, y se apaga
     solo el día que se pague.
+
+
+---
+
+## DT-26 — En Android el contador del icono se queda encendido con todo leído
+
+**Origen:** plataforma · **Severidad:** media · **Estado:** abierta · **Costo:** 0 USD
+
+Reportado el 5 de septiembre de 2026, en uso real.
+
+### El síntoma, tal como se observó
+
+En **Android**, el número que aparece sobre el icono de la aplicación instalada sigue
+mostrando mensajes pendientes cuando **dentro ya está todo leído**. Se entra, no hay nada
+por leer, se sale, y el número sigue ahí.
+
+**En iOS no se ha observado.** Esa asimetría es el dato más informativo del reporte y
+conviene no perderla: apunta a que el problema no está en la cuenta de mensajes —que es
+común a las dos plataformas— sino en **cómo se apaga el contador**, que sí difiere.
+
+### Por qué importa
+
+Un contador que miente en la dirección «hay algo pendiente» es el peor de los dos errores
+posibles. El otro —quedarse corto— hace perder un aviso; este hace que el número deje de
+significar nada. Quien lo ve encendido tres veces seguidas sin nada dentro, la cuarta ya no
+abre.
+
+Y el número sobre el icono es, en esta aplicación, **la única señal disponible con la
+aplicación cerrada** en las plataformas donde no se puede definir sonido ni vibración
+propios (DT-02).
+
+### Qué se sabe ya, sin haber investigado
+
+Se documenta lo que hay en la cabeza del proyecto, **no una causa confirmada**. Todo esto
+hay que comprobarlo antes de tocar nada:
+
+  · El contador lo maneja el service worker con la API de insignias
+    (`navigator.setAppBadge` / `clearAppBadge`), y la cuenta vive en IndexedDB para
+    sobrevivir a que el service worker se duerma.
+  · La suma ocurre al recibir un push; el apagado ocurre al abrir y leer.
+  · Ya hubo un defecto de contador antes —marcaba 2 donde debía marcar 1— y se corrigió
+    contando **mensajes** en lugar de pushes, con la lectura y la escritura en una sola
+    transacción de IndexedDB. Que el contador tenga historial no significa que esto sea lo
+    mismo.
+  · Hay una diferencia conocida entre plataformas en el apagado: en iOS `clearAppBadge`
+    dio problemas y el camino que funcionó fue otro. **Si el apagado se resolvió pensando
+    en iOS, es razonable sospechar que Android quedó por un camino distinto** — pero es una
+    sospecha, no un diagnóstico.
+
+### Preguntas que conviene contestar antes de escribir código
+
+1. ¿El contador se queda encendido **siempre** en Android, o solo cuando se lee desde
+   cierto sitio —la lista, el detalle, una notificación tocada—?
+2. ¿Se apaga si se cierra y se vuelve a abrir la aplicación, o resiste incluso a eso?
+3. ¿El valor guardado en IndexedDB es correcto y solo falla el pintado, o el valor
+   almacenado también está mal? Son dos defectos distintos con arreglos distintos.
+4. ¿Ocurre en la aplicación instalada, en pestaña, o en las dos?
+5. ¿Depende de la versión de Android o del navegador?
+
+> **Se reproduce con un aparato en la mano.** Como los siete defectos de notificación de
+> agosto, este no lo va a encontrar una prueba automática mientras el service worker no
+> tenga ninguna (DT-17). Vale la pena atender DT-17 antes o a la vez, para que la
+> corrección quede protegida y no vuelva por tercera vez.

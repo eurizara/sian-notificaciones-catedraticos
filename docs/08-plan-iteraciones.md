@@ -231,14 +231,30 @@ directamente en producción: la semana pasada mostró lo que cuesta.
 |:---:|---|---|
 | — | ~~**DT-24** · envío duplicado~~ | **Pagada el 29/08.** Se corrigió aparte del resto por estar ocurriendo en producción. Probar en desarrollo antes de promoverla |
 | — | ~~**DT-25** · alinear el Flutter local con el de la nube~~ | **Pagada el 29/08.** Entorno local bajado a 3.44.9; lo que se prueba vuelve a ser lo que se compila |
-| 1 | **DT-17** · pruebas del service worker | De los siete defectos, los siete vivían ahí y ninguno lo encontró una prueba. Es la pieza que decide si el teléfono suena en una emergencia |
-| 2 | **DT-18** · retirar los dispositivos arrastrados | La causa está resuelta —ya no se crea uno por ingreso— pero quedan 71 del esquema viejo que no se van solos |
-| 3 | **DT-14** · correos de recuperación | Van a No deseado. Duele el primer día que alguien de verdad olvide su contraseña |
-| 4 | **DT-07** · lo que falta | El indicador de tasa de entrega en el panel. Hoy saber si los avisos llegaron exige abrir mensaje por mensaje |
-| 5 | **DT-20** · saber en qué ambiente se está | Instalada como aplicación no hay barra de direcciones, y las tres se ven iguales. El error que previene es mandar un aviso de prueba a los 26 catedráticos reales |
-| 6 | **DT-21** · tema oscuro y preferencia del usuario | El tema ya está construido; lo que falta es verificar el contraste antes de encenderlo |
-| 7 | **DT-23** · resuscripción automática | Va **antes** que DT-22: reduce el problema en vez de informar de él. El estándar ya lo ofrece y el service worker no lo escucha |
-| 8 | **DT-22** · sonda de canal y avisos al coordinador | Hoy un token muerto se descubre cuando falla un aviso real. En una prueba no cuesta nada; en una emergencia esa persona no se entera |
+| 1 | **DT-26** · el contador se queda encendido en Android | **Está ocurriendo ahora**, visto en uso real: el número sobre el icono dice que hay mensajes sin leer cuando dentro está todo leído. En iOS no pasa, y esa asimetría es la pista |
+| 2 | **DT-17** · pruebas del service worker | De los siete defectos, los siete vivían ahí y ninguno lo encontró una prueba. Es la pieza que decide si el teléfono suena en una emergencia. **Conviene hacerlo junto a DT-26**, que vive en el mismo archivo |
+| 3 | **DT-18** · retirar los dispositivos arrastrados | La causa está resuelta —ya no se crea uno por ingreso— pero quedan 71 del esquema viejo que no se van solos |
+| 4 | **DT-14** · correos de recuperación | Van a No deseado. Duele el primer día que alguien de verdad olvide su contraseña |
+| 5 | **DT-07** · lo que falta | El indicador de tasa de entrega en el panel. Hoy saber si los avisos llegaron exige abrir mensaje por mensaje |
+| 6 | **DT-20** · saber en qué ambiente se está | Instalada como aplicación no hay barra de direcciones, y las tres se ven iguales. El error que previene es mandar un aviso de prueba a los 26 catedráticos reales |
+| 7 | **DT-21** · tema oscuro y preferencia del usuario | El tema ya está construido; lo que falta es verificar el contraste antes de encenderlo |
+| 8 | **DT-23** · resuscripción automática | Va **antes** que DT-22: reduce el problema en vez de informar de él. El estándar ya lo ofrece y el service worker no lo escucha |
+| 9 | **DT-22** · sonda de canal y avisos al coordinador | Hoy un token muerto se descubre cuando falla un aviso real. En una prueba no cuesta nada; en una emergencia esa persona no se entera |
+
+**Sobre DT-26**, lo único que hay por ahora es el síntoma, y así queda anotado a
+propósito: el contador del icono se queda encendido en Android con todo leído, y en iOS no.
+No se ha investigado ni tocado nada.
+
+Esa asimetría entre plataformas es lo que más orienta. Si la cuenta de mensajes estuviera
+mal, fallaría en las dos; que solo falle en una apunta al **apagado** del contador, que sí
+se resolvió de forma distinta en cada plataforma. Es una sospecha razonable y hay que
+comprobarla antes de escribir una línea — la ficha del documento 07 deja las cinco
+preguntas que conviene contestar primero.
+
+**Y es un contador que ya falló antes**, cuando marcaba dos donde debía marcar uno. Que
+vuelva por segunda vez es el argumento más concreto a favor de DT-17: mientras el service
+worker no tenga pruebas, cada corrección ahí se sostiene solo en que alguien se acuerde de
+probarla a mano en los dos sistemas.
 
 **Sobre DT-18**, hay dos caminos y conviene elegir con cuidado:
 
