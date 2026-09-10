@@ -23,6 +23,58 @@
 importScripts('https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js');
 importScripts('/firebase-config.js');
+// Las decisiones que sí se pueden probar sin un navegador (DT-17). Se cargan
+// después de la configuración porque no dependen de ella y así el orden de este
+// bloque sigue siendo «primero lo que hace falta para arrancar».
+importScripts('/sw-decisiones.js');
+
+/**
+ * La suscripción de push cambió: el token que guarda el servidor ya no sirve
+ * (DT-23).
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * El SDK de Firebase YA escucha este evento y acuña un token nuevo por su
+ * cuenta. Lo que no hace —y es todo el problema— es avisarle a nuestro servidor.
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * Comprobado leyendo `firebase-messaging-compat.js` 10.14.1: registra su propio
+ * `pushsubscriptionchange`, borra el token viejo y pide uno nuevo. Su estado
+ * interno queda al día; nuestra colección `dispositivos` se queda con el token
+ * muerto, y el envío siguiente falla.
+ *
+ * Aquí NO se puede acuñar ni leer el token nuevo: el SDK no expone `getToken`
+ * en contexto de service worker, solo en el de ventana. Así que se hace lo único
+ * que sí se puede desde aquí, que además cubre la mayor parte de los casos:
+ *
+ *   1. Se anota que la suscripción rotó. La aplicación lo lee al arrancar y
+ *      vuelve a registrarse aunque ya lo hubiera hecho en esa sesión.
+ *   2. Si hay alguna ventana abierta, se le avisa en el momento, sin esperar a
+ *      que alguien la cierre y la vuelva a abrir.
+ *
+ * Lo que queda fuera es quien no abre la aplicación en semanas. Ese caso no lo
+ * alcanza ningún mecanismo web y se atiende por el otro lado: la sonda
+ * programada lo detecta y se lo dice a coordinación (DT-22).
+ */
+self.addEventListener('pushsubscriptionchange', (evento) => {
+  trazar('suscripcion:rotada');
+  evento.waitUntil(
+    (async () => {
+      try {
+        await marcarSuscripcionRotada();
+        const ventanas = await self.clients.matchAll({
+          type: 'window',
+          includeUncontrolled: true,
+        });
+        for (const ventana of ventanas) {
+          ventana.postMessage({ tipo: 'sian:reregistrar' });
+        }
+        trazar('suscripcion:avisadas', { ventanas: ventanas.length });
+      } catch (e) {
+        trazar('suscripcion:aviso-fallo', String(e));
+      }
+    })(),
+  );
+});
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (evento) => evento.waitUntil(self.clients.claim()));
@@ -59,6 +111,7 @@ const BD_INSIGNIA = 'sian-insignia';
 const ALMACEN = 'estado';
 const LLAVE = 'sinLeer';
 const LLAVE_AVISADOS = 'avisados';
+const LLAVE_ROTADA = 'suscripcionRotada';
 
 function _abrirBase() {
   return new Promise((resolver, rechazar) => {
@@ -118,6 +171,20 @@ function anotarMensaje(mensajeId) {
         };
 
         transaccion.oncomplete = () => resolver(cuenta);
+        transaccion.onerror = () => rechazar(transaccion.error);
+        transaccion.onabort = () => rechazar(transaccion.error);
+      }),
+  );
+}
+
+/** Anota que la suscripción rotó, para que la aplicación se entere al arrancar. */
+function marcarSuscripcionRotada() {
+  return _abrirBase().then(
+    (bd) =>
+      new Promise((resolver, rechazar) => {
+        const transaccion = bd.transaction(ALMACEN, 'readwrite');
+        transaccion.objectStore(ALMACEN).put(Date.now(), LLAVE_ROTADA);
+        transaccion.oncomplete = () => resolver();
         transaccion.onerror = () => rechazar(transaccion.error);
         transaccion.onabort = () => rechazar(transaccion.error);
       }),
@@ -203,7 +270,7 @@ async function pintarInsignia(cuenta) {
  * toca el número.
  */
 async function sumarInsignia(mensajeId) {
-  if (!mensajeId) {
+  if (!self.SianDecisiones.esMensajeContable(mensajeId)) {
     trazar('insignia:no-es-un-mensaje');
     return;
   }
@@ -226,13 +293,58 @@ async function sumarInsignia(mensajeId) {
  * Al fijarlo se olvida la lista de avisados: lo que la bandeja acaba de contar
  * ya incluye todo lo que había llegado.
  */
-async function fijarInsignia(cuenta) {
+async function fijarInsignia(cuenta, idsSinLeer) {
   try {
-    const n = Math.max(0, Number(cuenta) || 0);
+    const n = self.SianDecisiones.normalizarCuenta(cuenta);
     await fijarBase(n);
     await pintarInsignia(n);
+    await cerrarLasQueYaSeLeyeron(idsSinLeer, n);
   } catch (e) {
     trazar('insignia:fijar-fallo', String(e));
+  }
+}
+
+/**
+ * Retira de la bandeja del sistema las notificaciones de mensajes ya leídos.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Es la corrección de DT-26, y el motivo de que fallara solo en Android.
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * Una notificación se cerraba únicamente al tocarla. Quien abría la aplicación
+ * desde el icono —lo normal cuando ya se sabe que hay algo— dejaba las
+ * notificaciones puestas para siempre.
+ *
+ * En iOS no se notaba: allí el número del icono lo pinta solo la Badging API, y
+ * la aplicación ya lo bajaba a cero al leer. **En Android el lanzador también
+ * mira las notificaciones pendientes**, así que el icono seguía marcado aunque
+ * `clearAppBadge()` hubiera hecho lo suyo. Dos fuentes decidiendo el mismo
+ * número y solo una apagándose.
+ *
+ * `getNotifications()` devuelve una lista vacía en iOS para las que muestra el
+ * propio worker. Eso aquí no estorba: sin nada que cerrar, esto no hace nada, y
+ * iOS se queda exactamente como estaba — que es como debe quedarse, porque allí
+ * ya funcionaba.
+ */
+async function cerrarLasQueYaSeLeyeron(idsSinLeer, cuenta) {
+  try {
+    const mostradas = await self.registration.getNotifications();
+    const aCerrar = self.SianDecisiones.notificacionesACerrar(
+      mostradas,
+      idsSinLeer,
+      cuenta,
+    );
+    for (const notificacion of aCerrar) {
+      notificacion.close();
+    }
+    trazar('insignia:notificaciones-cerradas', {
+      mostradas: mostradas.length,
+      cerradas: aCerrar.length,
+    });
+  } catch (e) {
+    // Que no se puedan cerrar no puede tumbar el pintado del número, que es lo
+    // que de verdad importa aquí.
+    trazar('insignia:cerrar-fallo', String(e));
   }
 }
 
@@ -245,7 +357,10 @@ async function fijarInsignia(cuenta) {
 self.addEventListener('message', (evento) => {
   const dato = evento.data || {};
   if (dato.tipo === 'sian:insignia') {
-    evento.waitUntil(fijarInsignia(dato.cuenta));
+    // `idsSinLeer` llega desde la versión que corrige DT-26. Puede faltar si la
+    // pestaña abierta es de un despliegue anterior: `fijarInsignia` sabe
+    // arreglárselas sin ella.
+    evento.waitUntil(fijarInsignia(dato.cuenta, dato.idsSinLeer));
   }
 });
 

@@ -275,16 +275,16 @@ gratuita.
 | DT-14 | Los correos salen del dominio de Firebase y caen en No deseado | Plataforma | **Media** | Abierta | 0 USD |
 | DT-15 | Reparación temporal de la fuente de iconos en `index.html` | Plataforma | Baja | Abierta | 0 USD |
 | DT-16 | `Entorno.configuracionCompleta` promete un diagnóstico que nadie pinta | Conocimiento | Baja | Abierta | 0 USD |
-| DT-17 | El service worker no tiene ninguna prueba automatizada | Alcance | **Media** | Abierta | 0 USD |
+| DT-17 | El service worker no tiene ninguna prueba automatizada | Alcance | **Media** | **Pagada** | 0 USD |
 | DT-18 | Se acumula un token de FCM por cada ingreso en iOS | Plataforma | **Alta** | **Pagada** | 0 USD |
 | DT-19 | Entrar con Google falla en la PWA de iOS por aislamiento de almacenamiento | Plataforma | Alta | **Pagada** | 0 USD |
 | DT-20 | Instalada como aplicación, nada dice en qué ambiente se está | Conocimiento | **Media** | Abierta | 0 USD |
 | DT-21 | El tema oscuro está construido pero apagado, y no se puede elegir | Alcance | Baja | Abierta | 0 USD |
-| DT-22 | Un token muerto solo se descubre cuando falla un aviso real | Alcance | **Alta** | Abierta | 0 USD |
-| DT-23 | El service worker no atiende `pushsubscriptionchange` | Plataforma | **Media** | Abierta | 0 USD |
+| DT-22 | Un token muerto solo se descubre cuando falla un aviso real | Alcance | **Alta** | **Pagada** | 0 USD |
+| DT-23 | El service worker no atiende `pushsubscriptionchange` | Plataforma | **Media** | **Pagada a medias** | 0 USD |
 | DT-24 | Un envío con algún fallo deja la pantalla igual y se manda dos veces | Conocimiento | **Alta** | **Pagada** | 0 USD |
 | DT-25 | El entorno local compila con un Flutter distinto del que despliega | Conocimiento | **Media** | **Pagada** | 0 USD |
-| DT-26 | En Android el contador del icono se queda encendido con todo leído | Plataforma | **Media** | Abierta | 0 USD |
+| DT-26 | En Android el contador del icono se queda encendido con todo leído | Plataforma | **Media** | **Pagada** | 0 USD |
 | DT-27 | No hay forma de responder a un aviso | Alcance | Media | Abierta | 0 USD |
 | DT-28 | El manual no se alcanza desde dentro de la aplicación | Alcance | Baja | Abierta | 0 USD |
 
@@ -1121,6 +1121,73 @@ Lo que sí se hizo fue separar las dos señales, que antes se confundían:
     cambiaron. Ese sí debe estar encendido: es el síntoma visible de esta deuda, y se apaga
     solo el día que se pague.
 
+
+---
+
+## DT-12 — Alcance de la auditoría de dependencias
+
+**Ajustada el 9 de septiembre de 2026.** No es una deuda nueva; es corregir dónde apuntaba
+una puerta que ya existía.
+
+La integración continua corría `npm audit --audit-level=high` sobre **todas** las
+dependencias, incluidas las de desarrollo. Ese día bloqueó un despliegue por un aviso de
+consumo de CPU en `js-yaml`, que llega por `eslint` y `ts-jest`: herramientas que corren en
+la tubería y en la máquina de quien programa, y que **nunca se despliegan**.
+
+Mientras tanto, las dependencias que sí llegan a la nube estaban limpias:
+
+```
+  vulnerabilidades en lo que se despliega
+  altas: 0   críticas: 0   moderadas: 12
+```
+
+Ahora la puerta que **bloquea** mira solo lo que se despliega (`--omit=dev`), y hay un paso
+aparte que audita las herramientas de desarrollo **sin bloquear**.
+
+> **No es rebajar la puerta, es apuntarla.** Una que se cierra por algo que no puede afectar
+> a nadie enseña a abrirla por costumbre, y entonces deja de servir el día que se cierra por
+> algo real. Es el mismo criterio que se aplicó al sello de versión, que marcaba «sucio» en
+> todos los despliegues por un archivo de bloqueo.
+>
+> Las herramientas de desarrollo siguen vigiladas a propósito: una vulnerabilidad en la
+> cadena de compilación es justo la vía por la que se cuela código en lo que sí se
+> despliega. Lo que cambia es que eso se ve, no que detiene el trabajo.
+
+---
+
+## DT-23 — Lo que se pudo pagar, y lo que resultó ser otra cosa
+
+**Pagada a medias el 9 de septiembre de 2026**, y el hallazgo cambia el enunciado.
+
+**El SDK de Firebase YA atiende `pushsubscriptionchange`.** Leyendo
+`firebase-messaging-compat.js` 10.14.1 se ve que registra su propio escuchador dentro del
+worker: cuando llega `newSubscription`, borra el token viejo y acuña uno nuevo.
+
+Así que el problema nunca fue que nadie escuchara el evento. Es que **el SDK arregla su
+estado interno y no le dice nada a nuestro servidor**, que se queda con el token muerto.
+
+Y no se puede resolver del todo desde el worker: **el SDK no expone `getToken` en contexto
+de service worker**, solo en el de ventana. No hay forma de leer ahí el token nuevo para
+mandárselo al servidor.
+
+Lo que sí se hizo, que cubre la mayor parte de los casos:
+
+  · El worker anota que la suscripción rotó y **avisa en el momento a las ventanas
+    abiertas**. La tarjeta de notificaciones lo escucha, olvida que ya se había registrado
+    en esa sesión y vuelve a registrarse. Si la aplicación está abierta, el arreglo es
+    inmediato.
+  · Si no hay ninguna abierta, el registro se rehace en la siguiente apertura, como antes.
+
+Lo que queda fuera es quien no abre la aplicación en semanas, y ese caso se atiende por el
+otro lado: la sonda de DT-22 lo detecta sin que nadie toque nada y se lo dice a
+coordinación.
+
+> **Por qué no se forzó más.** La vía que quedaba era un endpoint sin autenticar que
+> permitiera cambiar el token de un dispositivo presentando el anterior. Es la práctica
+> habitual, pero abre una escritura pública en un sistema donde hoy **el navegador nunca
+> escribe en Firestore**, y el peor caso —alguien con un token ajeno redirigiendo los
+> avisos de otra persona a su aparato— es exactamente el tipo de fallo que este proyecto
+> evita por diseño. No se descarta; se deja como decisión aparte, con su propio análisis.
 
 ---
 

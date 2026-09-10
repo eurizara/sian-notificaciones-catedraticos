@@ -39,9 +39,79 @@ abstract final class Textos {
   /// versión desplegada más reciente, que en una aplicación instalada puede
   /// llevar días sin renovarse.
   static const String botonRecargar = 'Recargar la aplicación';
+
+  // --- Distintivo de ambiente (DT-20) ----------------------------------------
+
+  /// Etiqueta de la banda que avisa en qué ambiente se está.
+  ///
+  /// Dice «no es producción» antes que el nombre del ambiente, porque eso es lo
+  /// que hay que saber en el segundo que se mira. Cuál de los dos es, después.
+  static const String ambienteDesarrollo = 'NO ES PRODUCCIÓN · Desarrollo';
+  static const String ambienteCalidad = 'NO ES PRODUCCIÓN · Calidad (QA)';
+  static const String ambienteDesconocido = 'NO ES PRODUCCIÓN · ambiente sin identificar';
+
+  // --- Dispositivos que necesitan atención (DT-22) ----------------------------
+
+  static const String seccionCanal = 'Alcance';
+  static const String seccionCanalTitulo = 'Dispositivos que necesitan atención';
+  static const String seccionCanalDescripcion =
+      'Quién no recibiría un aviso si se enviara ahora mismo, y qué le hace '
+      'falta a cada uno. Ordenado por gravedad: primero quien no puede recibir '
+      'nada.';
+
+  static String canalResumen(int cuantos, int total) => cuantos == 0
+      ? 'Los $total catedráticos pueden recibir avisos.'
+      : '$cuantos de $total catedráticos no recibirían un aviso enviado ahora.';
+
+  static const String canalTodoEnOrden = 'No hay nada que atender.';
+
+  /// Qué le pasa a la persona, en una frase que se pueda leer de un vistazo.
+  static const String canalSinDispositivo = 'Sin dispositivo registrado';
+  static const String canalPermisoDenegado = 'Rechazó el permiso de notificaciones';
+  static const String canalSoloEnPestana = 'Solo en pestaña, sin instalar';
+  static const String canalSinActividad = 'Sin abrir la aplicación hace tiempo';
+
+  /// Y qué hay que pedirle, que es distinto en cada caso.
+  static const String canalPedirRegistrar =
+      'Que entre y active las notificaciones.';
+  static const String canalPedirPermiso =
+      'Que vuelva a conceder el permiso desde los ajustes del navegador.';
+  static const String canalPedirInstalar =
+      'Que instale la aplicación en la pantalla de inicio. En iPhone, sin '
+      'instalar no llega ninguna notificación.';
+  static const String canalPedirAbrir =
+      'Que abra la aplicación una vez. Con eso se renueva su registro.';
+
+  static String canalDesdeCuando(int dias) => dias <= 0
+      ? 'Actividad hoy'
+      : dias == 1
+      ? 'Última actividad ayer'
+      : 'Última actividad hace $dias días';
+
+  static const String canalSinActividadNunca = 'Nunca ha entrado';
+  static const String canalReintentar = 'Volver a revisar';
+  static const String canalFallo =
+      'No se pudo revisar el alcance. Vuelve a intentarlo.';
   static const String verificandoSesion = 'Verificando sesión…';
+  /// Lo que se ve tras pedir el enlace de recuperación.
+  ///
+  /// ──────────────────────────────────────────────────────────────────────────
+  /// Menciona «No deseado» a propósito, y no es un detalle de redacción.
+  /// ──────────────────────────────────────────────────────────────────────────
+  ///
+  /// El correo sale del dominio de Firebase y **llega a No deseado en
+  /// `miumg.edu.gt`**, que es Google Workspace: comprobado en pruebas reales
+  /// (DT-14). El arreglo de fondo exige un servidor SMTP propio y control del
+  /// DNS institucional, que no depende de programación sino de que Sistemas de
+  /// la UMG ceda un buzón y una entrada de DNS.
+  ///
+  /// Mientras tanto, decirlo aquí es lo único que evita la conclusión de que «la
+  /// recuperación no funciona» y la llamada a coordinación que viene después.
+  /// La frase se mantiene ambigua sobre si la cuenta existe (RF-AUT-05): decir
+  /// que no existiría revelaría quién está registrado.
   static const String recuperacionEnviada =
-      'Si ese correo tiene cuenta, recibirás un enlace para restablecerla.';
+      'Si ese correo tiene cuenta, recibirás un enlace para restablecerla. '
+      'Revisa también la carpeta de correo no deseado: ahí suele caer.';
 
   static const String validacionCorreoObligatorio = 'Escribe tu correo.';
   static const String validacionCorreoInvalido =

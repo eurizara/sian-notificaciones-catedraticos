@@ -98,6 +98,15 @@ class RepositorioDispositivos {
 
   bool get yaRefrescado => _yaRefrescado;
 
+  /// Olvida que ya se refrescó en esta sesión (DT-23).
+  ///
+  /// Lo llama la tarjeta cuando el service worker avisa de que la suscripción
+  /// rotó: el registro de hace un rato quedó obsoleto en ese instante, y el
+  /// recuerdo de haberlo hecho es justo lo que impediría rehacerlo.
+  void olvidarRefresco() {
+    _yaRefrescado = false;
+  }
+
   /// Estado actual del permiso, sin pedir nada.
   Future<EstadoPermiso> consultarPermiso() async {
     if (!_entorno.soportaNotificaciones) {

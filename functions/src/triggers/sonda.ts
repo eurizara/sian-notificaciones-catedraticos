@@ -1,0 +1,350 @@
+/**
+ * SIAN — Sonda de canal: comprueba que la gente siga alcanzable (DT-22, DT-18).
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Un token muerto solo se descubría cuando fallaba un aviso real.
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * El 7 de septiembre de 2026 el coordinador mandó un aviso a los 22
+ * catedráticos y llegó a 15. Comparando persona por persona con el envío del 29
+ * de agosto, **cinco que habían recibido Y CONFIRMADO aquel habían perdido el
+ * canal durante los ocho días de silencio**. Nadie podía saberlo: el sistema se
+ * entera de que un token murió en el momento en que lo usa.
+ *
+ * La variable que lo dispara es el tiempo sin mandar nada, que es la condición
+ * normal de un sistema de emergencias: por definición calla hasta que hace
+ * falta. Cuanto más lleva callado, menos gente le queda escuchando.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Es un envío EN SECO. No le llega nada a nadie.
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * `sendEach(mensajes, true)` es el modo de validación de FCM: comprueba el token
+ * y no entrega. Sin notificación, sin sonido, sin insignia — el teléfono no se
+ * entera. Y devuelve los mismos códigos de error que `esTokenMuerto` ya sabe
+ * leer, así que la limpieza es la de siempre.
+ *
+ * La alternativa evidente —mandar un aviso de canal cada cierto tiempo— **no
+ * sirve**, y conviene dejarlo escrito porque es lo primero que uno intenta: en
+ * web no existe la notificación invisible. El navegador exige que todo push
+ * termine en algo visible, y si el worker no muestra nada lo muestra él con un
+ * texto genérico. Repetirlo puede costar la suscripción: mataría justo lo que
+ * pretende conservar.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * La sonda DETECTA. No revive.
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * Un token muerto no se arregla validándolo: hace falta que la persona abra la
+ * aplicación. Por eso la mitad visible del trabajo es `dispositivosQueNecesitanAtencion`,
+ * que le dice a coordinación a quién buscar antes de necesitarlo.
+ */
+
+import { onSchedule } from 'firebase-functions/v2/scheduler';
+import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { logger } from 'firebase-functions/v2';
+import { getMessaging, type TokenMessage } from 'firebase-admin/messaging';
+
+import { exigirPermiso, type Sujeto } from '../domain/autorizacion';
+import {
+  decidirSobreDispositivo,
+  esTokenMuerto,
+  estadoDeCanal,
+  GRAVEDAD_DE_CANAL,
+  type DecisionDeSonda,
+  type DispositivoAEvaluar,
+  type EstadoDeCanal,
+} from '../domain/dispositivo';
+import { crearAsiento } from '../domain/bitacora';
+import type { Rol } from '../domain/tipos';
+import { OPCIONES_FUNCION, RUTAS, db } from '../infrastructure/firebase';
+import { escribirAsiento } from '../infrastructure/repositorios';
+
+const ZONA_INSTITUCIONAL = 'America/Guatemala';
+
+/**
+ * FCM admite 500 mensajes por lote. Con 36 dispositivos en producción sobra,
+ * pero el límite se respeta igual: crecer no debe romper esto en silencio.
+ */
+const TAMANO_LOTE = 400;
+
+/** Un dispositivo tal como lo lee la sonda, con su ubicación en Firestore. */
+interface DispositivoLeido extends DispositivoAEvaluar {
+  readonly esPWAInstalada: boolean;
+  readonly permisoNotificacion: string;
+  readonly plataforma: string;
+}
+
+function aFecha(valor: unknown): Date | null {
+  if (valor && typeof (valor as { toDate?: unknown }).toDate === 'function') {
+    return (valor as { toDate: () => Date }).toDate();
+  }
+  return null;
+}
+
+/** Lee todos los dispositivos registrados, de todas las personas. */
+async function leerDispositivos(): Promise<DispositivoLeido[]> {
+  const instantanea = await db.collectionGroup('dispositivos').get();
+
+  return instantanea.docs.map((d) => ({
+    // La ruta es `usuarios/{uid}/dispositivos/{id}`.
+    uid: d.ref.parent.parent?.id ?? '',
+    id: d.id,
+    tokenFCM: ((d.get('tokenFCM') as string | undefined) ?? d.id).trim(),
+    ultimaActividad: aFecha(d.get('ultimaActividad')),
+    esPWAInstalada: d.get('esPWAInstalada') === true,
+    permisoNotificacion: (d.get('permisoNotificacion') as string | undefined) ?? 'pendiente',
+    plataforma: (d.get('plataforma') as string | undefined) ?? '',
+  }));
+}
+
+/**
+ * Pregunta a FCM cuáles de estos tokens siguen vivos, sin entregar nada.
+ *
+ * Devuelve el conjunto de los que FCM rechazó **por estar muertos**. Un fallo de
+ * otra clase —la red, una cuota— no cuenta como muerte: retirar por eso sería
+ * dejar sin avisos a alguien por un problema nuestro.
+ */
+async function tokensMuertos(dispositivos: readonly DispositivoLeido[]): Promise<Set<string>> {
+  const muertos = new Set<string>();
+
+  for (let i = 0; i < dispositivos.length; i += TAMANO_LOTE) {
+    const lote = dispositivos.slice(i, i + TAMANO_LOTE);
+    const mensajes: TokenMessage[] = lote.map((d) => ({
+      token: d.tokenFCM,
+      data: { sonda: '1' },
+    }));
+
+    // El `true` es todo el asunto: modo de validación, no se entrega nada.
+    const respuesta = await getMessaging().sendEach(mensajes, true);
+
+    respuesta.responses.forEach((r, indice) => {
+      const dispositivo = lote[indice];
+      if (dispositivo && !r.success && esTokenMuerto(r.error?.code)) {
+        muertos.add(dispositivo.tokenFCM);
+      }
+    });
+  }
+
+  return muertos;
+}
+
+/** Retira un dispositivo, con el motivo anotado en la bitácora. */
+async function retirar(
+  dispositivo: DispositivoLeido,
+  decision: Exclude<DecisionDeSonda, 'conservar'>,
+): Promise<void> {
+  await db
+    .collection(RUTAS.usuarios)
+    .doc(dispositivo.uid)
+    .collection('dispositivos')
+    .doc(dispositivo.id)
+    .delete();
+
+  await escribirAsiento(
+    crearAsiento({
+      tipo: 'DISPOSITIVO_RETIRADO',
+      // Quien retira no es una persona: es la sonda. El rol SISTEMA existe
+      // justamente para que la bitácora no tenga que inventar un responsable
+      // humano en las acciones automáticas.
+      actor: { uid: 'sistema', correo: 'sonda@sian', rol: 'SISTEMA' },
+      entidad: 'DISPOSITIVO',
+      entidadId: dispositivo.id,
+      resumen:
+        decision === 'retirar-por-muerto'
+          ? `Retirado por token muerto (${dispositivo.plataforma})`
+          : `Retirado por inactividad (${dispositivo.plataforma})`,
+      datos: {
+        uid: dispositivo.uid,
+        motivo: decision,
+        ultimaActividad: dispositivo.ultimaActividad?.toISOString() ?? null,
+      },
+    }),
+  );
+}
+
+/**
+ * Corre una vez por semana y deja el padrón de dispositivos limpio.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Semanal para empezar, y la propia sonda dirá si es la cadencia correcta.
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * El tiempo de vida de un token no lo fija FCM, lo fija cada navegador, y no es
+ * uno solo: Safari borra los datos de un sitio sin instalar que no se toca en
+ * torno a una semana; Chrome retira permisos de sitios sin uso en meses; iOS
+ * rota el token sin plazo fijo. Para iPhone con la aplicación instalada —que es
+ * esta población— **no está documentado**.
+ *
+ * Así que se empieza por el plazo más corto conocido, y cada retiro queda
+ * anotado en la bitácora con la antigüedad que tenía. Con dos o tres meses de
+ * esos datos, la cadencia se ajusta con hechos de esta población en vez de con
+ * cifras generales.
+ */
+export const sondaDeCanal = onSchedule(
+  {
+    schedule: 'every monday 06:00',
+    timeZone: ZONA_INSTITUCIONAL,
+    region: 'us-central1',
+    memory: '512MiB',
+    timeoutSeconds: 300,
+    retryCount: 0,
+  },
+  async () => {
+    const ahora = new Date();
+    const dispositivos = await leerDispositivos();
+
+    if (dispositivos.length === 0) {
+      logger.info('Sonda de canal: no hay dispositivos registrados');
+      return;
+    }
+
+    const muertos = await tokensMuertos(dispositivos);
+
+    let porMuerto = 0;
+    let porInactivo = 0;
+
+    for (const dispositivo of dispositivos) {
+      const decision = decidirSobreDispositivo(
+        dispositivo,
+        !muertos.has(dispositivo.tokenFCM),
+        ahora,
+      );
+      if (decision === 'conservar') {
+        continue;
+      }
+
+      try {
+        await retirar(dispositivo, decision);
+        if (decision === 'retirar-por-muerto') {
+          porMuerto += 1;
+        } else {
+          porInactivo += 1;
+        }
+      } catch (e) {
+        // Que no se pueda retirar uno no puede impedir revisar los demás.
+        logger.error('Sonda de canal: no se pudo retirar', {
+          uid: dispositivo.uid,
+          id: dispositivo.id,
+          error: String(e),
+        });
+      }
+    }
+
+    logger.info('Sonda de canal completada', {
+      revisados: dispositivos.length,
+      retiradosPorMuerto: porMuerto,
+      retiradosPorInactividad: porInactivo,
+      quedan: dispositivos.length - porMuerto - porInactivo,
+    });
+  },
+);
+
+/** Lo que la pantalla de coordinación necesita saber de cada persona. */
+interface FilaDeAtencion {
+  readonly uid: string;
+  readonly nombre: string;
+  readonly correo: string;
+  readonly rol: string;
+  readonly estado: EstadoDeCanal;
+  readonly plataformas: string[];
+  readonly ultimaActividad: string | null;
+}
+
+function sujetoDe(peticion: {
+  auth?: { uid: string; token: Record<string, unknown> };
+}): Sujeto {
+  if (!peticion.auth) {
+    throw new HttpsError('unauthenticated', 'Hay que iniciar sesión.');
+  }
+  return {
+    uid: peticion.auth.uid,
+    rol: (peticion.auth.token.rol as Rol | undefined) ?? 'CATEDRATICO',
+    activo: peticion.auth.token.activo === true,
+    puedeEmitirUrgentes: peticion.auth.token.puedeEmitirUrgentes === true,
+    puedeCrearRecurrentes: peticion.auth.token.puedeCrearRecurrentes === true,
+  };
+}
+
+/**
+ * A quién hay que buscar para que vuelva a estar alcanzable (DT-22).
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * La sonda sin destinatario no sirve de nada: alguien tiene que enterarse.
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * Devuelve solo a quien tiene algo que corregir, ordenado **por gravedad y no
+ * alfabéticamente**: primero quien no puede recibir nada. Una lista alfabética
+ * obliga a leerla entera para encontrar lo urgente.
+ *
+ * Se excluye a quien está al día: una lista que incluye a todos es una lista que
+ * nadie repasa.
+ */
+export const dispositivosQueNecesitanAtencion = onCall(OPCIONES_FUNCION, async (peticion) => {
+  const sujeto = sujetoDe(peticion);
+  // Quien puede ver esto es quien puede hacer algo con ello: los mismos que
+  // emiten avisos. Es información sobre terceros y no se reparte de más.
+  exigirPermiso(sujeto, 'CREAR_AVISO_INFORMATIVO');
+
+  const ahora = new Date();
+  const [usuarios, dispositivos] = await Promise.all([
+    db.collection(RUTAS.usuarios).get(),
+    leerDispositivos(),
+  ]);
+
+  const porUid = new Map<string, DispositivoLeido[]>();
+  for (const d of dispositivos) {
+    const lista = porUid.get(d.uid) ?? [];
+    lista.push(d);
+    porUid.set(d.uid, lista);
+  }
+
+  const filas: FilaDeAtencion[] = [];
+
+  for (const doc of usuarios.docs) {
+    if (doc.get('activo') !== true) {
+      continue;
+    }
+    // Coordinación y auditoría trabajan SOBRE el sistema de avisos en vez de ser
+    // su destino, así que no tener dispositivo no es un problema suyo.
+    if ((doc.get('rol') as string | undefined) !== 'CATEDRATICO') {
+      continue;
+    }
+
+    const suyos = porUid.get(doc.id) ?? [];
+    const estado = estadoDeCanal(suyos, ahora);
+    if (estado === 'al-dia') {
+      continue;
+    }
+
+    const actividades = suyos
+      .map((d) => d.ultimaActividad)
+      .filter((f): f is Date => f !== null)
+      .sort((a, b) => b.getTime() - a.getTime());
+
+    filas.push({
+      uid: doc.id,
+      nombre: (doc.get('nombre') as string | undefined) ?? '',
+      correo: (doc.get('correo') as string | undefined) ?? '',
+      rol: (doc.get('rol') as string | undefined) ?? '',
+      estado,
+      plataformas: [...new Set(suyos.map((d) => d.plataforma).filter((p) => p.length > 0))],
+      ultimaActividad: actividades[0]?.toISOString() ?? null,
+    });
+  }
+
+  filas.sort((a, b) => {
+    const porGravedad = GRAVEDAD_DE_CANAL[a.estado] - GRAVEDAD_DE_CANAL[b.estado];
+    return porGravedad !== 0 ? porGravedad : a.nombre.localeCompare(b.nombre, 'es');
+  });
+
+  return {
+    total: filas.length,
+    // El total de catedráticos activos da la proporción: «5 de 22» dice mucho
+    // más que «5».
+    catedraticos: usuarios.docs.filter(
+      (d) => d.get('activo') === true && d.get('rol') === 'CATEDRATICO',
+    ).length,
+    filas,
+  };
+});

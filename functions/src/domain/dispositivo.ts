@@ -164,3 +164,136 @@ export const PREFIJO_INSTALACION = 'ins_';
 export function esIdentificadorDeInstalacion(valor: string): boolean {
   return valor.startsWith(PREFIJO_INSTALACION);
 }
+
+// --- Sonda de canal y retiro por antigüedad (DT-22, DT-18) -------------------
+
+/**
+ * Días sin actividad tras los cuales un dispositivo se considera abandonado.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Sesenta, y el número está elegido, no redondeado por gusto.
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * Por debajo se retiraría gente que simplemente estuvo de vacaciones: la
+ * aplicación se refresca sola al abrirla, y quien la abre una vez al mes nunca
+ * llega a este umbral. Por encima, los registros arrastrados —71 medidos en
+ * producción, algunos de agosto— seguirían ahí ensuciando el diagnóstico justo
+ * cuando hay que averiguar por qué alguien no recibió.
+ *
+ * Retirar de más cuesta poco: la persona vuelve a registrarse sola la próxima
+ * vez que abra. Es la misma asimetría que ya rige `esTokenMuerto`, pero al
+ * revés, porque aquí no hay ninguna duda de que el dispositivo está en desuso.
+ */
+export const DIAS_PARA_RETIRO_POR_INACTIVIDAD = 60;
+
+/** Un dispositivo, reducido a lo que la sonda necesita para decidir. */
+export interface DispositivoAEvaluar {
+  readonly uid: string;
+  readonly id: string;
+  readonly tokenFCM: string;
+  readonly ultimaActividad: Date | null;
+}
+
+/** Qué hacer con un dispositivo después de mirarlo. */
+export type DecisionDeSonda = 'conservar' | 'retirar-por-muerto' | 'retirar-por-inactivo';
+
+/**
+ * ¿Qué se hace con este dispositivo?
+ *
+ * `vivoSegunFcm` es lo que contestó el envío en seco. Se decide primero por ahí
+ * porque un token que FCM rechaza no sirve por muy reciente que sea; la
+ * antigüedad solo manda sobre los que siguen siendo válidos.
+ */
+export function decidirSobreDispositivo(
+  dispositivo: DispositivoAEvaluar,
+  vivoSegunFcm: boolean,
+  ahora: Date,
+): DecisionDeSonda {
+  if (!vivoSegunFcm) {
+    return 'retirar-por-muerto';
+  }
+
+  const actividad = dispositivo.ultimaActividad;
+  if (actividad === null) {
+    // Sin fecha de actividad no se retira nada. Un campo que falta es una
+    // incógnita, no una prueba de abandono, y borrar por una incógnita es
+    // exactamente lo que dejó a gente sin avisos en agosto.
+    return 'conservar';
+  }
+
+  const dias = (ahora.getTime() - actividad.getTime()) / 86_400_000;
+  return dias > DIAS_PARA_RETIRO_POR_INACTIVIDAD ? 'retirar-por-inactivo' : 'conservar';
+}
+
+/** Cómo está una persona respecto de poder recibir avisos. */
+export type EstadoDeCanal =
+  | 'al-dia'
+  | 'sin-dispositivo'
+  | 'solo-en-pestana'
+  | 'permiso-denegado'
+  | 'sin-actividad-reciente';
+
+/** Lo mínimo de un dispositivo para juzgar el canal de su dueño. */
+export interface DispositivoDeCanal {
+  readonly esPWAInstalada: boolean;
+  readonly permisoNotificacion: string;
+  readonly ultimaActividad: Date | null;
+}
+
+/**
+ * En qué estado está el canal de una persona.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Devuelve el estado MÁS GRAVE, no el primero que encuentra.
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * Quien tiene un aparato instalado y otro en pestaña está al día: le va a
+ * llegar. Lo que importa no es que algo esté mal en algún sitio, sino si la
+ * persona puede recibir un aviso o no, y para eso basta con que uno de sus
+ * dispositivos sirva.
+ *
+ * El orden de gravedad es el orden en que hay que buscar a la gente: primero
+ * quien no puede recibir nada.
+ */
+export function estadoDeCanal(
+  dispositivos: readonly DispositivoDeCanal[],
+  ahora: Date,
+  diasParaAvisar = 30,
+): EstadoDeCanal {
+  if (dispositivos.length === 0) {
+    return 'sin-dispositivo';
+  }
+
+  const utiles = dispositivos.filter(
+    (d) => d.esPWAInstalada && d.permisoNotificacion === 'concedido',
+  );
+
+  if (utiles.length === 0) {
+    // Se distingue el motivo porque lo que hay que pedirle a la persona es
+    // distinto: instalar la aplicación, o volver a conceder el permiso.
+    return dispositivos.some((d) => d.permisoNotificacion === 'denegado')
+      ? 'permiso-denegado'
+      : 'solo-en-pestana';
+  }
+
+  const masReciente = utiles
+    .map((d) => d.ultimaActividad)
+    .filter((f): f is Date => f !== null)
+    .sort((a, b) => b.getTime() - a.getTime())[0];
+
+  if (masReciente === undefined) {
+    return 'al-dia';
+  }
+
+  const dias = (ahora.getTime() - masReciente.getTime()) / 86_400_000;
+  return dias > diasParaAvisar ? 'sin-actividad-reciente' : 'al-dia';
+}
+
+/** Orden en que conviene buscar a la gente: primero quien no recibe nada. */
+export const GRAVEDAD_DE_CANAL: Record<EstadoDeCanal, number> = {
+  'sin-dispositivo': 0,
+  'permiso-denegado': 1,
+  'solo-en-pestana': 2,
+  'sin-actividad-reciente': 3,
+  'al-dia': 4,
+};

@@ -11,8 +11,11 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'core/ambiente.dart';
 import 'core/plataforma/actualizar_worker.dart';
+import 'firebase_options.dart';
 import 'infrastructure/firebase/inicializacion.dart';
+import 'presentation/shared/banda_ambiente.dart';
 import 'presentation/shared/enrutador.dart';
 import 'presentation/shared/pantalla_estado.dart';
 import 'presentation/shared/tema.dart';
@@ -69,6 +72,13 @@ class AplicacionSian extends ConsumerWidget {
       // línea por `ThemeMode.system`.
       themeMode: ThemeMode.light,
       debugShowCheckedModeBanner: false,
+      // La banda de ambiente envuelve TODO, incluida la pantalla de ingreso y la
+      // de diagnóstico, que no tienen barra donde ponerla (DT-20). En producción
+      // `BandaAmbiente` devuelve el hijo tal cual: ni un widget de más.
+      builder: (BuildContext context, Widget? hijo) => BandaAmbiente(
+        ambiente: ambienteDe(DefaultFirebaseOptions.currentPlatform.projectId),
+        hijo: hijo ?? const SizedBox.shrink(),
+      ),
       // Si Firebase no arrancó no hay sesión que resolver, así que se muestra
       // el diagnóstico en vez de un formulario que no podría funcionar.
       home: arranque.correcto ? const Enrutador() : const PantallaEstado(),
