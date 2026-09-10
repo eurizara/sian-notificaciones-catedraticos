@@ -66,6 +66,12 @@ abstract final class Textos {
   static const String canalTodoEnOrden = 'No hay nada que atender.';
 
   /// Qué le pasa a la persona, en una frase que se pueda leer de un vistazo.
+  /// La única señal que mira un hecho y no una condición.
+  ///
+  /// Se mandó un aviso de verdad y no llegó. Cualquier otra fila describe algo
+  /// que **podría** impedir la entrega; esta describe una que ya no ocurrió.
+  static const String canalUltimoEnvioFallo = 'El último aviso NO le llegó';
+
   static const String canalSinDispositivo = 'Sin dispositivo registrado';
 
   /// El caso que más engaña: el documento se ve perfecto y el token está muerto.
@@ -81,6 +87,10 @@ abstract final class Textos {
   /// Y qué hay que pedirle, que es distinto en cada caso.
   static const String canalPedirRegistrar =
       'Que entre y active las notificaciones.';
+
+  static const String canalPedirReenganchar =
+      'Que cierre sesión, abra la aplicación y vuelva a entrar. Si sigue sin '
+      'llegarle, que la desinstale y la instale otra vez.';
 
   static const String canalPedirReabrir =
       'Que abra la aplicación una vez. Con eso se renueva solo, sin reinstalar '

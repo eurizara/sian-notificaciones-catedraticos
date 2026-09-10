@@ -17,6 +17,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 /// servidor: primero quien no puede recibir nada.
 enum EstadoCanal {
   sinDispositivo,
+  ultimoEnvioFallo,
   tokenMuerto,
   permisoDenegado,
   soloEnPestana,
@@ -25,6 +26,7 @@ enum EstadoCanal {
 
   static EstadoCanal desdeServidor(String valor) => switch (valor) {
     'sin-dispositivo' => EstadoCanal.sinDispositivo,
+    'ultimo-envio-fallo' => EstadoCanal.ultimoEnvioFallo,
     'token-muerto' => EstadoCanal.tokenMuerto,
     'permiso-denegado' => EstadoCanal.permisoDenegado,
     'solo-en-pestana' => EstadoCanal.soloEnPestana,

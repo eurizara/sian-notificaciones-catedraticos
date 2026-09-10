@@ -229,6 +229,7 @@ export function decidirSobreDispositivo(
 export type EstadoDeCanal =
   | 'al-dia'
   | 'sin-dispositivo'
+  | 'ultimo-envio-fallo'
   | 'token-muerto'
   | 'solo-en-pestana'
   | 'permiso-denegado'
@@ -283,9 +284,30 @@ export function estadoDeCanal(
   dispositivos: readonly DispositivoDeCanal[],
   ahora: Date,
   diasParaAvisar = 30,
+  fallóElUltimoEnvio = false,
 ): EstadoDeCanal {
   if (dispositivos.length === 0) {
     return 'sin-dispositivo';
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // El último envío real manda sobre cualquier otra señal.
+  // ──────────────────────────────────────────────────────────────────────────
+  //
+  // Las demás comprueban CONDICIONES —instalada, permiso, token aceptado— y
+  // cada una puede pasar mientras el aviso no llega. Esta es la única que mira
+  // el HECHO: se mandó algo de verdad y no llegó.
+  //
+  // Hizo falta porque la validación en seco tiene un punto ciego. FCM acepta el
+  // token, pero `validate_only` **nunca toca el servicio de push de Apple**, que
+  // es donde muere de verdad un registro de Safari. El 10 de septiembre de 2026
+  // la sonda daba «vivo» a un iPhone al que ningún aviso llegaba, y esta
+  // pantalla lo repetía.
+  //
+  // Una condición que se cumple no demuestra que el aviso llegue. Que haya
+  // llegado, sí.
+  if (fallóElUltimoEnvio) {
+    return 'ultimo-envio-fallo';
   }
 
   // Un token que FCM rechaza no sirve por muy bien que se vea el resto del
@@ -328,9 +350,12 @@ export const GRAVEDAD_DE_CANAL: Record<EstadoDeCanal, number> = {
   // juntos arriba. Lo que cambia entre ellos es qué hay que pedirle a la
   // persona, no la urgencia.
   'sin-dispositivo': 0,
-  'token-muerto': 1,
-  'permiso-denegado': 2,
-  'solo-en-pestana': 3,
-  'sin-actividad-reciente': 4,
-  'al-dia': 5,
+  // Va segundo porque es la única certeza medida: se mandó algo y no llegó. Lo
+  // demás son condiciones que podrían fallar.
+  'ultimo-envio-fallo': 1,
+  'token-muerto': 2,
+  'permiso-denegado': 3,
+  'solo-en-pestana': 4,
+  'sin-actividad-reciente': 5,
+  'al-dia': 6,
 };

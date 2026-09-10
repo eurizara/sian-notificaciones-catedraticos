@@ -68,6 +68,15 @@ const ZONA_INSTITUCIONAL = 'America/Guatemala';
  */
 const TAMANO_LOTE = 400;
 
+/**
+ * Cuántas entregas se leen para saber cómo le fue a cada uno la última vez.
+ *
+ * Con 22 destinatarios, doscientas cubren de sobra los últimos envíos. El
+ * límite existe para que esto no crezca sin techo cuando el historial tenga
+ * años: lo que importa es lo reciente.
+ */
+const LIMITE_ENTREGAS_REVISADAS = 200;
+
 /** Un dispositivo tal como lo lee la sonda, con su ubicación en Firestore. */
 interface DispositivoLeido extends DispositivoAEvaluar {
   readonly esPWAInstalada: boolean;
@@ -240,6 +249,54 @@ export const sondaDeCanal = onSchedule(
   },
 );
 
+/**
+ * A quién le falló el ÚLTIMO aviso que se le mandó de verdad.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Es la única señal que mira un hecho en vez de una condición.
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * La validación en seco tiene un punto ciego que se descubrió probando: FCM
+ * acepta el token, pero `validate_only` **nunca toca el servicio de push de
+ * Apple**, que es donde muere de verdad un registro de Safari. El 10 de
+ * septiembre de 2026 la sonda daba «vivo» a un iPhone al que ningún aviso
+ * llegaba.
+ *
+ * El historial de entregas no tiene ese punto ciego, porque registra lo que
+ * pasó al mandar de verdad. Y es gratis: ya está escrito.
+ *
+ * Se mira **el último** y no «alguna vez falló»: alguien que falló en agosto y
+ * recibe desde entonces está bien, y sacarlo en la lista sería mandar a
+ * coordinación a buscar a quien no hace falta.
+ */
+async function personasConElUltimoEnvioFallido(): Promise<Set<string>> {
+  const fallidos = new Set<string>();
+
+  const instantanea = await db
+    .collectionGroup('entregas')
+    .orderBy('creadaEn', 'desc')
+    .limit(LIMITE_ENTREGAS_REVISADAS)
+    .get();
+
+  // Se recorre de más reciente a más antigua y se conserva solo la primera de
+  // cada persona: esa es «la última».
+  const vistos = new Set<string>();
+  for (const doc of instantanea.docs) {
+    const uid = (doc.get('uid') as string | undefined) ?? doc.id;
+    if (vistos.has(uid)) {
+      continue;
+    }
+    vistos.add(uid);
+
+    const estado = doc.get('estado') as string | undefined;
+    if (estado === 'FALLIDO' || estado === 'DESCARTADO') {
+      fallidos.add(uid);
+    }
+  }
+
+  return fallidos;
+}
+
 /** Lo que la pantalla de coordinación necesita saber de cada persona. */
 interface FilaDeAtencion {
   readonly uid: string;
@@ -311,6 +368,7 @@ export const dispositivosQueNecesitanAtencion = onCall(OPCIONES_FUNCION, async (
   // teléfono no se entera, y es la diferencia entre una pantalla que informa y
   // una que tranquiliza sin motivo.
   const muertos = await tokensMuertos(dispositivos);
+  const falloElUltimo = await personasConElUltimoEnvioFallido();
 
   const porUid = new Map<string, DispositivoLeido[]>();
   for (const d of dispositivos) {
@@ -349,6 +407,8 @@ export const dispositivosQueNecesitanAtencion = onCall(OPCIONES_FUNCION, async (
     const estado = estadoDeCanal(
       suyos.map((d) => ({ ...d, tokenVivo: !muertos.has(d.tokenFCM) })),
       ahora,
+      30,
+      falloElUltimo.has(doc.id),
     );
     if (estado === 'al-dia') {
       continue;
