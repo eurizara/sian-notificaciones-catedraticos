@@ -1229,6 +1229,31 @@ no se le ha mandado nada. Las dos juntas tapan los huecos de la otra.
 
 ---
 
+## DT-22 — Una señal nueva tumbó la pantalla entera
+
+**10 de septiembre de 2026.** Al añadir la lectura del historial de entregas, el Alcance
+dejó de funcionar por completo: «No se pudo revisar el alcance».
+
+La causa inmediata es sencilla: la consulta por grupo de colección con `orderBy` necesita un
+índice que no existía. Está declarado ahora en `firestore.indexes.json`, con los tres
+alcances del campo — un `fieldOverride` **reemplaza** la configuración automática, no la
+complementa, así que omitir los dos normales habría roto consultas que ya funcionaban.
+
+Pero el fallo interesante es el otro:
+
+> **Una señal que se añade para informar mejor dejó a coordinación sin ver nada.** Los casos
+> que sí sabíamos detectar por otras vías —sin dispositivo, solo en pestaña— desaparecieron
+> de la pantalla porque una consulta accesoria lanzó.
+
+Ahora esa lectura va dentro de un `try`: si falla, se anota en el registro y **la pantalla
+sigue mostrando el resto**. Falta una fila, no la pantalla.
+
+Es la misma forma que ya se aplicó en otros sitios de este proyecto y que conviene repetir:
+el cierre de notificaciones no puede tumbar el pintado de la insignia, y la limpieza de
+tokens muertos no puede tumbar un envío en curso. Lo accesorio falla solo.
+
+---
+
 ## DT-20 — Android hornea el icono al instalar
 
 **Segunda corrección, el 10 de septiembre de 2026.** La primera puso la marca dentro de la
