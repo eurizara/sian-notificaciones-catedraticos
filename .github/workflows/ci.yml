@@ -55,7 +55,27 @@ jobs:
       # propósito: las moderadas abiertas están heredadas de firebase-admin y
       # registradas como DT-12; hacer fallar la CI por ellas solo entrenaría al
       # equipo a ignorar el reporte.
-      - name: Auditoría de dependencias
+      - name: Auditoría de lo que se despliega
+        # ────────────────────────────────────────────────────────────────────
+        # `--omit=dev` no es rebajar la puerta: es apuntarla a lo que importa.
+        # ────────────────────────────────────────────────────────────────────
+        #
+        # Sin esa bandera, la auditoría mira también eslint, jest y ts-jest, que
+        # corren en esta máquina y en la de quien programa pero **nunca llegan a
+        # la nube**. El 9 de septiembre de 2026 esta puerta bloqueó un despliegue
+        # por un aviso de consumo de CPU en el analizador de YAML que usa el
+        # linter, mientras las dependencias que sí se despliegan estaban limpias.
+        #
+        # Una puerta que se cierra por algo que no puede afectar a nadie enseña a
+        # abrirla por costumbre, y entonces deja de servir el día que se cierra
+        # por algo real.
+        run: npm audit --audit-level=high --omit=dev
+
+      - name: Aviso sobre las herramientas de desarrollo
+        # No bloquea. Lo que se rompe aquí no llega al catedrático, pero conviene
+        # verlo: una vulnerabilidad en la cadena de compilación es la vía por la
+        # que se cuela código en lo que sí se despliega.
+        continue-on-error: true
         run: npm audit --audit-level=high
 
       - name: Publicar reporte de cobertura

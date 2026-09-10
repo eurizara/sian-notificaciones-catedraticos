@@ -1124,6 +1124,37 @@ Lo que sí se hizo fue separar las dos señales, que antes se confundían:
 
 ---
 
+## DT-12 — Alcance de la auditoría de dependencias
+
+**Ajustada el 9 de septiembre de 2026.** No es una deuda nueva; es corregir dónde apuntaba
+una puerta que ya existía.
+
+La integración continua corría `npm audit --audit-level=high` sobre **todas** las
+dependencias, incluidas las de desarrollo. Ese día bloqueó un despliegue por un aviso de
+consumo de CPU en `js-yaml`, que llega por `eslint` y `ts-jest`: herramientas que corren en
+la tubería y en la máquina de quien programa, y que **nunca se despliegan**.
+
+Mientras tanto, las dependencias que sí llegan a la nube estaban limpias:
+
+```
+  vulnerabilidades en lo que se despliega
+  altas: 0   críticas: 0   moderadas: 12
+```
+
+Ahora la puerta que **bloquea** mira solo lo que se despliega (`--omit=dev`), y hay un paso
+aparte que audita las herramientas de desarrollo **sin bloquear**.
+
+> **No es rebajar la puerta, es apuntarla.** Una que se cierra por algo que no puede afectar
+> a nadie enseña a abrirla por costumbre, y entonces deja de servir el día que se cierra por
+> algo real. Es el mismo criterio que se aplicó al sello de versión, que marcaba «sucio» en
+> todos los despliegues por un archivo de bloqueo.
+>
+> Las herramientas de desarrollo siguen vigiladas a propósito: una vulnerabilidad en la
+> cadena de compilación es justo la vía por la que se cuela código en lo que sí se
+> despliega. Lo que cambia es que eso se ve, no que detiene el trabajo.
+
+---
+
 ## DT-23 — Lo que se pudo pagar, y lo que resultó ser otra cosa
 
 **Pagada a medias el 9 de septiembre de 2026**, y el hallazgo cambia el enunciado.
