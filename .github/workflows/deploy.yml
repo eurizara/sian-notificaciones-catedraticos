@@ -143,6 +143,20 @@ jobs:
             git diff -- app/pubspec.lock | head -80
           fi
 
+      - name: Marcar los iconos con el ambiente
+        if: hashFiles('app/pubspec.yaml') != ''
+        # Solo desarrollo y calidad. Producción llega aquí y el script no hace
+        # nada a propósito: en la pantalla de inicio, quien tiene los tres
+        # instalados ve tres iconos idénticos y elige uno antes de que ninguna
+        # banda pueda avisarle (DT-20).
+        #
+        # Actúa sobre la carpeta compilada, no sobre las fuentes: el escudo
+        # institucional del repositorio no se toca, y si este paso desapareciera
+        # producción seguiría exactamente igual.
+        run: |
+          python3 -m pip install --quiet --disable-pip-version-check Pillow
+          python3 scripts/tenir-iconos-ambiente.py app/build/web dev
+
       - name: Sellar la versión en lo que se publica
         if: hashFiles('app/pubspec.yaml') != ''
         run: bash scripts/sellar-version.sh app/build/web
@@ -289,6 +303,20 @@ jobs:
             git diff -- app/pubspec.lock | head -80
           fi
 
+      - name: Marcar los iconos con el ambiente
+        if: hashFiles('app/pubspec.yaml') != ''
+        # Solo desarrollo y calidad. Producción llega aquí y el script no hace
+        # nada a propósito: en la pantalla de inicio, quien tiene los tres
+        # instalados ve tres iconos idénticos y elige uno antes de que ninguna
+        # banda pueda avisarle (DT-20).
+        #
+        # Actúa sobre la carpeta compilada, no sobre las fuentes: el escudo
+        # institucional del repositorio no se toca, y si este paso desapareciera
+        # producción seguiría exactamente igual.
+        run: |
+          python3 -m pip install --quiet --disable-pip-version-check Pillow
+          python3 scripts/tenir-iconos-ambiente.py app/build/web qa
+
       - name: Sellar la versión en lo que se publica
         if: hashFiles('app/pubspec.yaml') != ''
         run: bash scripts/sellar-version.sh app/build/web
@@ -429,6 +457,20 @@ jobs:
             echo "::warning::flutter pub get reescribió app/pubspec.lock"
             git diff -- app/pubspec.lock | head -80
           fi
+
+      - name: Marcar los iconos con el ambiente
+        if: hashFiles('app/pubspec.yaml') != ''
+        # Solo desarrollo y calidad. Producción llega aquí y el script no hace
+        # nada a propósito: en la pantalla de inicio, quien tiene los tres
+        # instalados ve tres iconos idénticos y elige uno antes de que ninguna
+        # banda pueda avisarle (DT-20).
+        #
+        # Actúa sobre la carpeta compilada, no sobre las fuentes: el escudo
+        # institucional del repositorio no se toca, y si este paso desapareciera
+        # producción seguiría exactamente igual.
+        run: |
+          python3 -m pip install --quiet --disable-pip-version-check Pillow
+          python3 scripts/tenir-iconos-ambiente.py app/build/web prd
 
       - name: Sellar la versión en lo que se publica
         if: hashFiles('app/pubspec.yaml') != ''

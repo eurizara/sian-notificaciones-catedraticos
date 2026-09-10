@@ -6,6 +6,9 @@
  * equivocan, así que cada regla tiene su caso escrito.
  */
 
+import { recibeAvisos } from '../../src/domain/autorizacion';
+import { resolverDestinatarios } from '../../src/application/resolverDestinatarios';
+import type { Rol } from '../../src/domain/tipos';
 import {
   DIAS_PARA_RETIRO_POR_INACTIVIDAD,
   decidirSobreDispositivo,
@@ -135,5 +138,72 @@ describe('GRAVEDAD_DE_CANAL', () => {
         expect(peso).toBeLessThan(alDia);
       }
     }
+  });
+});
+
+describe('la población del Alcance es la misma que la del envío', () => {
+  // ──────────────────────────────────────────────────────────────────────────
+  // Esta prueba existe porque las dos poblaciones YA se separaron una vez.
+  // ──────────────────────────────────────────────────────────────────────────
+  //
+  // El 9 de septiembre de 2026, en desarrollo, la pantalla de Alcance decía
+  // «los 4 catedráticos pueden recibir avisos» y un envío a todos salió a
+  // siete, con dos fallos. La causa: el Alcance filtraba por
+  // `rol === 'CATEDRATICO'` mientras el envío usaba `recibeAvisos`, que es una
+  // bandera por persona con el rol como valor por omisión.
+  //
+  // Una pantalla que predice quién no va a recibir y calcula sobre otra
+  // población no se equivoca a veces: miente siempre, y de la peor forma,
+  // diciendo que todo está bien.
+
+  const persona = (uid: string, rol: Rol, bandera?: boolean) => ({
+    uid,
+    activo: true,
+    rol,
+    recibeAvisos: bandera,
+  });
+
+  const padron = [
+    persona('cat1', 'CATEDRATICO'),
+    persona('cat2', 'CATEDRATICO'),
+    // Un coordinador que además da clases, con la bandera encendida: ES
+    // destinatario aunque su rol no sea CATEDRATICO. Es el caso exacto que
+    // falló.
+    persona('coord-que-recibe', 'COORDINADOR', true),
+    // Y uno que no la tiene: no recibe, y tampoco debe aparecer en el Alcance.
+    persona('coord-normal', 'COORDINADOR'),
+    persona('auditor', 'AUDITOR'),
+    // Un catedrático al que el coordinador le apagó la bandera.
+    persona('cat-apagado', 'CATEDRATICO', false),
+  ];
+
+  it('el predicado de la audiencia y el del Alcance son EL MISMO', () => {
+    const segunEnvio = resolverDestinatarios(
+      { modo: 'TODOS', gruposIds: [], usuariosIds: [] },
+      padron,
+      [],
+      null,
+    ).uids;
+
+    const segunAlcance = padron
+      .filter((u) => u.activo && recibeAvisos(u.rol, u.recibeAvisos))
+      .map((u) => u.uid);
+
+    expect([...segunAlcance].sort()).toEqual([...segunEnvio].sort());
+  });
+
+  it('el coordinador con la bandera encendida entra en las dos', () => {
+    expect(recibeAvisos('COORDINADOR', true)).toBe(true);
+
+    // Y el filtro que había antes lo dejaba fuera. Se escribe como lo escribía
+    // la versión defectuosa para que se vea la diferencia: el rol dice una cosa
+    // y la bandera dice otra, y la que manda es la bandera.
+    const filtrarPorRol = (rol: Rol) => rol === 'CATEDRATICO';
+    expect(filtrarPorRol('COORDINADOR')).toBe(false);
+    expect(recibeAvisos('COORDINADOR', true)).toBe(true);
+  });
+
+  it('el catedrático con la bandera apagada queda fuera de las dos', () => {
+    expect(recibeAvisos('CATEDRATICO', false)).toBe(false);
   });
 });

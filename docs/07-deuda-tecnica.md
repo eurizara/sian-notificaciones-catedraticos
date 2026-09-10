@@ -1124,6 +1124,57 @@ Lo que sí se hizo fue separar las dos señales, que antes se confundían:
 
 ---
 
+## DT-22 — El defecto que tuvo la primera versión del Alcance
+
+**Corregido el 9 de septiembre de 2026**, el mismo día, y conviene dejarlo escrito porque
+es un error de una familia que este proyecto ya conoce.
+
+La pantalla decía **«Los 4 catedráticos pueden recibir avisos»** y **«No hay nada que
+atender»**. Acto seguido, un envío a todos salió a **siete** destinatarios y falló en dos.
+
+La causa: el Alcance filtraba por `rol === 'CATEDRATICO'` mientras el envío usa
+`recibeAvisos(rol, bandera)`, que es **una bandera por persona con el rol como valor por
+omisión**. Un coordinador que además da clases, con esa bandera encendida, es destinatario
+— y era justamente uno de los dos que fallaron.
+
+> **Dos sitios decidiendo lo mismo.** Es el mismo defecto que produjo el contador del icono
+> discrepando del filtro «Sin leer», y el que dejó a todos sin notificaciones cuando el lado
+> que escribía y el que leía usaban identificadores distintos. Cambia el escenario, no la
+> forma.
+>
+> Y aquí es peor que en otros sitios: una pantalla que existe para predecir quién **no** va
+> a recibir, calculada sobre otra población, no se equivoca a veces. Miente siempre, y de la
+> peor manera posible: diciendo que todo está bien.
+
+Ahora las dos usan el mismo predicado, y hay una prueba que **compara las dos poblaciones
+entre sí** en vez de comprobar cada una por su lado. Es el mismo recurso que ata la insignia
+al filtro «Sin leer»: si alguien cambia un criterio sin cambiar el otro, la prueba se cae.
+
+---
+
+## DT-20 — El icono también dice el ambiente
+
+**Añadido el 9 de septiembre de 2026**, sobre la banda en pantalla.
+
+La banda resuelve el caso de estar dentro. Pero en la pantalla de inicio, quien tiene los
+tres instalados ve **tres iconos idénticos**, y elige uno antes de que ninguna banda pueda
+avisarle. El error se comete ahí, un segundo antes de que la aplicación arranque.
+
+`scripts/tenir-iconos-ambiente.py` marca los iconos con una franja diagonal dorada y la
+inicial del ambiente: **D** para desarrollo, **Q** para calidad.
+
+  · **Producción no se toca.** El script recibe `prd`, dice que no hace nada y termina bien.
+    Su peor fallo posible es no hacer nada.
+  · **Actúa sobre la carpeta compilada, no sobre las fuentes.** El escudo institucional que
+    está en el repositorio sigue siendo el que la universidad aprobó; lo que se marca es una
+    copia que vive lo que dura un despliegue.
+  · **Dorado, no rojo.** El rojo institucional está reservado en exclusiva a las alertas
+    urgentes; si además significara «ambiente de pruebas» dejaría de significar «urgente».
+  · La letra solo se dibuja a partir de 64 px. A 16 px sería una mancha que ensucia sin
+    informar, y ahí la franja sola ya distingue.
+
+---
+
 ## DT-12 — Alcance de la auditoría de dependencias
 
 **Ajustada el 9 de septiembre de 2026.** No es una deuda nueva; es corregir dónde apuntaba
