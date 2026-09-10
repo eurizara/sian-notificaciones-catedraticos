@@ -31,12 +31,29 @@ void main() {
       expect(etiquetasPara(Rol.coordinador), <String>[
         Textos.seccionMisMensajes,
         Textos.seccionMensajes,
+        // Va junto a los envíos y no entre las secciones de consulta: lo que
+        // dice es «esto le pasaría al aviso que estás por mandar» (DT-22).
+        Textos.seccionCanal,
         Textos.seccionProgramacion,
         Textos.seccionGrupos,
         Textos.seccionUsuarios,
         Textos.seccionEntregas,
         Textos.seccionBitacora,
       ]);
+    });
+
+    test('quien emite ve el alcance; quien no emite, no (DT-22)', () {
+      // Es información sobre terceros —quién no está alcanzable y desde
+      // cuándo— y solo le sirve a quien puede hacer algo con ella: los mismos
+      // que mandan avisos. El servidor exige el mismo permiso, así que esto no
+      // es la única barrera, pero sí la que evita enseñar un botón inútil.
+      expect(etiquetasPara(Rol.coordinador), contains(Textos.seccionCanal));
+      expect(etiquetasPara(Rol.administradora), contains(Textos.seccionCanal));
+      expect(etiquetasPara(Rol.auditor), isNot(contains(Textos.seccionCanal)));
+      expect(
+        etiquetasPara(Rol.catedratico),
+        isNot(contains(Textos.seccionCanal)),
+      );
     });
 
     test(

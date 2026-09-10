@@ -28,6 +28,54 @@ importScripts('/firebase-config.js');
 // bloque sigue siendo «primero lo que hace falta para arrancar».
 importScripts('/sw-decisiones.js');
 
+/**
+ * La suscripción de push cambió: el token que guarda el servidor ya no sirve
+ * (DT-23).
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * El SDK de Firebase YA escucha este evento y acuña un token nuevo por su
+ * cuenta. Lo que no hace —y es todo el problema— es avisarle a nuestro servidor.
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * Comprobado leyendo `firebase-messaging-compat.js` 10.14.1: registra su propio
+ * `pushsubscriptionchange`, borra el token viejo y pide uno nuevo. Su estado
+ * interno queda al día; nuestra colección `dispositivos` se queda con el token
+ * muerto, y el envío siguiente falla.
+ *
+ * Aquí NO se puede acuñar ni leer el token nuevo: el SDK no expone `getToken`
+ * en contexto de service worker, solo en el de ventana. Así que se hace lo único
+ * que sí se puede desde aquí, que además cubre la mayor parte de los casos:
+ *
+ *   1. Se anota que la suscripción rotó. La aplicación lo lee al arrancar y
+ *      vuelve a registrarse aunque ya lo hubiera hecho en esa sesión.
+ *   2. Si hay alguna ventana abierta, se le avisa en el momento, sin esperar a
+ *      que alguien la cierre y la vuelva a abrir.
+ *
+ * Lo que queda fuera es quien no abre la aplicación en semanas. Ese caso no lo
+ * alcanza ningún mecanismo web y se atiende por el otro lado: la sonda
+ * programada lo detecta y se lo dice a coordinación (DT-22).
+ */
+self.addEventListener('pushsubscriptionchange', (evento) => {
+  trazar('suscripcion:rotada');
+  evento.waitUntil(
+    (async () => {
+      try {
+        await marcarSuscripcionRotada();
+        const ventanas = await self.clients.matchAll({
+          type: 'window',
+          includeUncontrolled: true,
+        });
+        for (const ventana of ventanas) {
+          ventana.postMessage({ tipo: 'sian:reregistrar' });
+        }
+        trazar('suscripcion:avisadas', { ventanas: ventanas.length });
+      } catch (e) {
+        trazar('suscripcion:aviso-fallo', String(e));
+      }
+    })(),
+  );
+});
+
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (evento) => evento.waitUntil(self.clients.claim()));
 
@@ -63,6 +111,7 @@ const BD_INSIGNIA = 'sian-insignia';
 const ALMACEN = 'estado';
 const LLAVE = 'sinLeer';
 const LLAVE_AVISADOS = 'avisados';
+const LLAVE_ROTADA = 'suscripcionRotada';
 
 function _abrirBase() {
   return new Promise((resolver, rechazar) => {
@@ -122,6 +171,20 @@ function anotarMensaje(mensajeId) {
         };
 
         transaccion.oncomplete = () => resolver(cuenta);
+        transaccion.onerror = () => rechazar(transaccion.error);
+        transaccion.onabort = () => rechazar(transaccion.error);
+      }),
+  );
+}
+
+/** Anota que la suscripción rotó, para que la aplicación se entere al arrancar. */
+function marcarSuscripcionRotada() {
+  return _abrirBase().then(
+    (bd) =>
+      new Promise((resolver, rechazar) => {
+        const transaccion = bd.transaction(ALMACEN, 'readwrite');
+        transaccion.objectStore(ALMACEN).put(Date.now(), LLAVE_ROTADA);
+        transaccion.oncomplete = () => resolver();
         transaccion.onerror = () => rechazar(transaccion.error);
         transaccion.onabort = () => rechazar(transaccion.error);
       }),
