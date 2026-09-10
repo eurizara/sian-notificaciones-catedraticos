@@ -164,3 +164,238 @@ export const PREFIJO_INSTALACION = 'ins_';
 export function esIdentificadorDeInstalacion(valor: string): boolean {
   return valor.startsWith(PREFIJO_INSTALACION);
 }
+
+// --- Sonda de canal y retiro por antigüedad (DT-22, DT-18) -------------------
+
+/**
+ * Días sin actividad tras los cuales un dispositivo se considera abandonado.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Sesenta, y el número está elegido, no redondeado por gusto.
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * Por debajo se retiraría gente que simplemente estuvo de vacaciones: la
+ * aplicación se refresca sola al abrirla, y quien la abre una vez al mes nunca
+ * llega a este umbral. Por encima, los registros arrastrados —71 medidos en
+ * producción, algunos de agosto— seguirían ahí ensuciando el diagnóstico justo
+ * cuando hay que averiguar por qué alguien no recibió.
+ *
+ * Retirar de más cuesta poco: la persona vuelve a registrarse sola la próxima
+ * vez que abra. Es la misma asimetría que ya rige `esTokenMuerto`, pero al
+ * revés, porque aquí no hay ninguna duda de que el dispositivo está en desuso.
+ */
+export const DIAS_PARA_RETIRO_POR_INACTIVIDAD = 60;
+
+/** Un dispositivo, reducido a lo que la sonda necesita para decidir. */
+export interface DispositivoAEvaluar {
+  readonly uid: string;
+  readonly id: string;
+  readonly tokenFCM: string;
+  readonly ultimaActividad: Date | null;
+}
+
+/** Qué hacer con un dispositivo después de mirarlo. */
+export type DecisionDeSonda = 'conservar' | 'retirar-por-muerto' | 'retirar-por-inactivo';
+
+/**
+ * ¿Qué se hace con este dispositivo?
+ *
+ * `vivoSegunFcm` es lo que contestó el envío en seco. Se decide primero por ahí
+ * porque un token que FCM rechaza no sirve por muy reciente que sea; la
+ * antigüedad solo manda sobre los que siguen siendo válidos.
+ */
+export function decidirSobreDispositivo(
+  dispositivo: DispositivoAEvaluar,
+  vivoSegunFcm: boolean,
+  ahora: Date,
+): DecisionDeSonda {
+  if (!vivoSegunFcm) {
+    return 'retirar-por-muerto';
+  }
+
+  const actividad = dispositivo.ultimaActividad;
+  if (actividad === null) {
+    // Sin fecha de actividad no se retira nada. Un campo que falta es una
+    // incógnita, no una prueba de abandono, y borrar por una incógnita es
+    // exactamente lo que dejó a gente sin avisos en agosto.
+    return 'conservar';
+  }
+
+  const dias = (ahora.getTime() - actividad.getTime()) / 86_400_000;
+  return dias > DIAS_PARA_RETIRO_POR_INACTIVIDAD ? 'retirar-por-inactivo' : 'conservar';
+}
+
+/** Cómo está una persona respecto de poder recibir avisos. */
+export type EstadoDeCanal =
+  | 'al-dia'
+  | 'sin-dispositivo'
+  | 'ultimo-envio-fallo'
+  | 'token-muerto'
+  | 'solo-en-pestana'
+  | 'permiso-denegado'
+  | 'sin-actividad-reciente'
+  | 'reenganchado-sin-comprobar';
+
+/** Lo mínimo de un dispositivo para juzgar el canal de su dueño. */
+export interface DispositivoDeCanal {
+  readonly esPWAInstalada: boolean;
+  readonly permisoNotificacion: string;
+  readonly ultimaActividad: Date | null;
+
+  /**
+   * ¿FCM acepta todavía este token?
+   *
+   * ───────────────────────────────────────────────────────────────────────────
+   * Sin este dato la evaluación se equivoca justo con quien peor está.
+   * ───────────────────────────────────────────────────────────────────────────
+   *
+   * Un documento puede verse impecable —aplicación instalada, permiso
+   * concedido, actividad reciente— y llevar dentro un token que FCM ya rechaza.
+   * Desde Firestore es indistinguible de uno sano: la única forma de saberlo es
+   * preguntárselo a FCM.
+   *
+   * Se vio en desarrollo el 10 de septiembre de 2026. Un coordinador con un
+   * iPhone instalado y permiso concedido no recibió el aviso, y la pantalla de
+   * Alcance lo daba por bien: su token estaba muerto y nada en el documento lo
+   * decía.
+   *
+   * `undefined` significa «no se preguntó», y entonces no se penaliza: suponer
+   * que está muerto sin haberlo comprobado mandaría a coordinación a buscar a
+   * gente que está bien.
+   */
+  readonly tokenVivo?: boolean;
+}
+
+/**
+ * En qué estado está el canal de una persona.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Devuelve el estado MÁS GRAVE, no el primero que encuentra.
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * Quien tiene un aparato instalado y otro en pestaña está al día: le va a
+ * llegar. Lo que importa no es que algo esté mal en algún sitio, sino si la
+ * persona puede recibir un aviso o no, y para eso basta con que uno de sus
+ * dispositivos sirva.
+ *
+ * El orden de gravedad es el orden en que hay que buscar a la gente: primero
+ * quien no puede recibir nada.
+ */
+export function estadoDeCanal(
+  dispositivos: readonly DispositivoDeCanal[],
+  ahora: Date,
+  diasParaAvisar = 30,
+  cuandoFallóElUltimoEnvio: Date | null = null,
+): EstadoDeCanal {
+  if (dispositivos.length === 0) {
+    return 'sin-dispositivo';
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // El último envío real manda sobre cualquier otra señal.
+  // ──────────────────────────────────────────────────────────────────────────
+  //
+  // Las demás comprueban CONDICIONES —instalada, permiso, token aceptado— y
+  // cada una puede pasar mientras el aviso no llega. Esta es la única que mira
+  // el HECHO: se mandó algo de verdad y no llegó.
+  //
+  // Hizo falta porque la validación en seco tiene un punto ciego. FCM acepta el
+  // token, pero `validate_only` **nunca toca el servicio de push de Apple**, que
+  // es donde muere de verdad un registro de Safari. El 10 de septiembre de 2026
+  // la sonda daba «vivo» a un iPhone al que ningún aviso llegaba, y esta
+  // pantalla lo repetía.
+  //
+  // Una condición que se cumple no demuestra que el aviso llegue. Que haya
+  // llegado, sí.
+  // ──────────────────────────────────────────────────────────────────────────
+  // Un fallo de ayer deja de valer si la persona hizo algo DESPUÉS.
+  // ──────────────────────────────────────────────────────────────────────────
+  //
+  // El fallo es evidencia **del momento en que ocurrió**. Si desde entonces la
+  // persona volvió a entrar y su aparato se registró de nuevo, esa evidencia ya
+  // no describe la situación de ahora.
+  //
+  // Sin esta comprobación pasaba algo que arruina la pantalla: coordinación le
+  // pide a alguien que se reenganche, la persona lo hace, y el panel lo sigue
+  // señalando **hasta el próximo envío**. Un aviso que no se apaga cuando se
+  // resuelve el problema enseña a ignorar la pantalla.
+  const actividadMasReciente = dispositivos
+    .map((d) => d.ultimaActividad)
+    .filter((f): f is Date => f !== null)
+    .sort((a, b) => b.getTime() - a.getTime())[0];
+
+  const seReenganchoDespues =
+    cuandoFallóElUltimoEnvio !== null &&
+    actividadMasReciente !== undefined &&
+    actividadMasReciente.getTime() > cuandoFallóElUltimoEnvio.getTime();
+
+  if (cuandoFallóElUltimoEnvio !== null && !seReenganchoDespues) {
+    return 'ultimo-envio-fallo';
+  }
+
+  // Un token que FCM rechaza no sirve por muy bien que se vea el resto del
+  // documento. Se descarta ANTES de mirar nada más, porque lo demás describe
+  // condiciones necesarias y esto describe el hecho.
+  const conCanal = dispositivos.filter((d) => d.tokenVivo !== false);
+
+  if (conCanal.length === 0) {
+    return 'token-muerto';
+  }
+
+  const utiles = conCanal.filter(
+    (d) => d.esPWAInstalada && d.permisoNotificacion === 'concedido',
+  );
+
+  if (utiles.length === 0) {
+    // Se distingue el motivo porque lo que hay que pedirle a la persona es
+    // distinto: instalar la aplicación, o volver a conceder el permiso.
+    return conCanal.some((d) => d.permisoNotificacion === 'denegado')
+      ? 'permiso-denegado'
+      : 'solo-en-pestana';
+  }
+
+  const masReciente = utiles
+    .map((d) => d.ultimaActividad)
+    .filter((f): f is Date => f !== null)
+    .sort((a, b) => b.getTime() - a.getTime())[0];
+
+  if (masReciente === undefined) {
+    return 'al-dia';
+  }
+
+  const dias = (ahora.getTime() - masReciente.getTime()) / 86_400_000;
+  if (dias > diasParaAvisar) {
+    return 'sin-actividad-reciente';
+  }
+
+  // Todo lo que se puede comprobar dice que está bien, pero el último aviso que
+  // se le mandó falló y desde entonces solo sabemos que se reenganchó.
+  //
+  // No se le llama «al día» porque eso ya se dijo una vez de este mismo caso y
+  // era mentira: su documento se veía impecable y ningún aviso le llegaba. Y
+  // tampoco se le sigue llamando fallo, porque hizo lo que se le pidió.
+  //
+  // Lo honesto es decir las dos cosas: se reenganchó, y no hay forma de saber
+  // si funcionó hasta el próximo envío real.
+  return seReenganchoDespues ? 'reenganchado-sin-comprobar' : 'al-dia';
+}
+
+/** Orden en que conviene buscar a la gente: primero quien no recibe nada. */
+export const GRAVEDAD_DE_CANAL: Record<EstadoDeCanal, number> = {
+  // Los dos primeros comparten consecuencia —no reciben nada— y por eso van
+  // juntos arriba. Lo que cambia entre ellos es qué hay que pedirle a la
+  // persona, no la urgencia.
+  'sin-dispositivo': 0,
+  // Va segundo porque es la única certeza medida: se mandó algo y no llegó. Lo
+  // demás son condiciones que podrían fallar.
+  'ultimo-envio-fallo': 1,
+  'token-muerto': 2,
+  'permiso-denegado': 3,
+  'solo-en-pestana': 4,
+  'sin-actividad-reciente': 5,
+  // Va justo antes de «al día»: no es un problema que atender, es una respuesta
+  // pendiente de confirmar. Se enseña para que quien avisó sepa que su gestión
+  // llegó, no para que vuelva a llamar.
+  'reenganchado-sin-comprobar': 6,
+  'al-dia': 7,
+};

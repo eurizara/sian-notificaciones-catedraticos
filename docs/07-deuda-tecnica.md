@@ -275,16 +275,18 @@ gratuita.
 | DT-14 | Los correos salen del dominio de Firebase y caen en No deseado | Plataforma | **Media** | Abierta | 0 USD |
 | DT-15 | Reparación temporal de la fuente de iconos en `index.html` | Plataforma | Baja | Abierta | 0 USD |
 | DT-16 | `Entorno.configuracionCompleta` promete un diagnóstico que nadie pinta | Conocimiento | Baja | Abierta | 0 USD |
-| DT-17 | El service worker no tiene ninguna prueba automatizada | Alcance | **Media** | Abierta | 0 USD |
+| DT-17 | El service worker no tiene ninguna prueba automatizada | Alcance | **Media** | **Pagada** | 0 USD |
 | DT-18 | Se acumula un token de FCM por cada ingreso en iOS | Plataforma | **Alta** | **Pagada** | 0 USD |
 | DT-19 | Entrar con Google falla en la PWA de iOS por aislamiento de almacenamiento | Plataforma | Alta | **Pagada** | 0 USD |
-| DT-20 | Instalada como aplicación, nada dice en qué ambiente se está | Conocimiento | **Media** | Abierta | 0 USD |
+| DT-20 | Instalada como aplicación, nada dice en qué ambiente se está | Conocimiento | **Media** | **Pagada** | 0 USD |
 | DT-21 | El tema oscuro está construido pero apagado, y no se puede elegir | Alcance | Baja | Abierta | 0 USD |
-| DT-22 | Un token muerto solo se descubre cuando falla un aviso real | Alcance | **Alta** | Abierta | 0 USD |
-| DT-23 | El service worker no atiende `pushsubscriptionchange` | Plataforma | **Media** | Abierta | 0 USD |
+| DT-22 | Un token muerto solo se descubre cuando falla un aviso real | Alcance | **Alta** | **Pagada** | 0 USD |
+| DT-23 | El service worker no atiende `pushsubscriptionchange` | Plataforma | **Media** | **Pagada a medias** | 0 USD |
 | DT-24 | Un envío con algún fallo deja la pantalla igual y se manda dos veces | Conocimiento | **Alta** | **Pagada** | 0 USD |
 | DT-25 | El entorno local compila con un Flutter distinto del que despliega | Conocimiento | **Media** | **Pagada** | 0 USD |
-| DT-26 | En Android el contador del icono se queda encendido con todo leído | Plataforma | **Media** | Abierta | 0 USD |
+| DT-26 | En Android el contador del icono se queda encendido con todo leído | Plataforma | **Media** | **Pagada** | 0 USD |
+| DT-29 | Cambiar el manifiesto deja Android degradado hasta que Chrome regenera la aplicación | Plataforma | Baja | **Aceptada** | 0 USD |
+| DT-30 | Chrome puede marcar los avisos como «posible spam» y ofrecer anular la suscripción | Plataforma | **Media** | Abierta | 0 USD |
 | DT-27 | No hay forma de responder a un aviso | Alcance | Media | Abierta | 0 USD |
 | DT-28 | El manual no se alcanza desde dentro de la aplicación | Alcance | Baja | Abierta | 0 USD |
 
@@ -1124,6 +1126,310 @@ Lo que sí se hizo fue separar las dos señales, que antes se confundían:
 
 ---
 
+## DT-22 — El defecto que tuvo la primera versión del Alcance
+
+**Corregido el 9 de septiembre de 2026**, el mismo día, y conviene dejarlo escrito porque
+es un error de una familia que este proyecto ya conoce.
+
+La pantalla decía **«Los 4 catedráticos pueden recibir avisos»** y **«No hay nada que
+atender»**. Acto seguido, un envío a todos salió a **siete** destinatarios y falló en dos.
+
+La causa: el Alcance filtraba por `rol === 'CATEDRATICO'` mientras el envío usa
+`recibeAvisos(rol, bandera)`, que es **una bandera por persona con el rol como valor por
+omisión**. Un coordinador que además da clases, con esa bandera encendida, es destinatario
+— y era justamente uno de los dos que fallaron.
+
+> **Dos sitios decidiendo lo mismo.** Es el mismo defecto que produjo el contador del icono
+> discrepando del filtro «Sin leer», y el que dejó a todos sin notificaciones cuando el lado
+> que escribía y el que leía usaban identificadores distintos. Cambia el escenario, no la
+> forma.
+>
+> Y aquí es peor que en otros sitios: una pantalla que existe para predecir quién **no** va
+> a recibir, calculada sobre otra población, no se equivoca a veces. Miente siempre, y de la
+> peor manera posible: diciendo que todo está bien.
+
+Ahora las dos usan el mismo predicado, y hay una prueba que **compara las dos poblaciones
+entre sí** en vez de comprobar cada una por su lado. Es el mismo recurso que ata la insignia
+al filtro «Sin leer»: si alguien cambia un criterio sin cambiar el otro, la prueba se cae.
+
+---
+
+## DT-22 — El segundo defecto del Alcance: un documento sano con un token muerto
+
+**Corregido el 10 de septiembre de 2026.** El primero fue calcular sobre otra población.
+Este es distinto y más sutil.
+
+La pantalla ya contaba bien —«2 de 7»— pero **Alfredo Ochoa no aparecía**, y era uno de los
+que no habían recibido el aviso. Su documento en Firestore:
+
+```
+  COORDINADOR · recibeAvisos true · activo
+  1 dispositivo IOS · instalada=true · permiso=concedido · actividad hace 12 días
+```
+
+Impecable. Y sin embargo no le llegaba nada, porque **el token que lleva dentro está
+muerto**, y desde Firestore un token muerto es indistinguible de uno sano.
+
+`estadoDeCanal` juzgaba por los datos del documento —instalada, permiso, actividad— que son
+**condiciones necesarias**, no el hecho. El hecho solo lo sabe FCM.
+
+### Por qué no bastaba con la sonda semanal
+
+La sonda sí lo detecta, pero corre los lunes. Y una pantalla que contesta «¿llegaría un
+aviso si lo mando ahora mismo?» no puede responder con lo que se supo el lunes: sería el
+mismo engaño, más lento.
+
+Así que **el panel pregunta a FCM en el momento**, con la misma validación en seco que usa
+la sonda. No se entrega nada, el teléfono no se entera, y cuesta una llamada por
+dispositivo — treinta y seis en producción.
+
+> Es la diferencia entre una pantalla que informa y una que tranquiliza sin motivo. La
+> segunda es peor que no tener pantalla.
+
+El estado nuevo se llama **«Su registro caducó: no le llegaría nada»**, y no «token muerto»,
+porque quien lo lee no tiene por qué saber qué es un token. Lo que se le pide es que **abra
+la aplicación una vez**: se renueva solo, sin reinstalar ni volver a configurar nada.
+
+---
+
+## DT-22 — El punto ciego de la validación en seco
+
+**Descubierto probando el 10 de septiembre de 2026**, y es un límite del enfoque que se
+propuso, no un descuido de la implementación. Conviene que quede escrito.
+
+La pantalla seguía dando por bien a un coordinador al que **tres envíos seguidos no le
+llegaron**. Se comprobó token por token:
+
+```
+  validate_only con carga mínima          VIVO
+  validate_only con la carga real         VIVO
+  envío real                              messaging/invalid-argument
+```
+
+**`validate_only` le pregunta a FCM, y FCM acepta el token. Pero nunca toca el servicio de
+push de Apple**, que es donde muere de verdad un registro de Safari. La validación no puede
+saber lo que solo se descubre intentando entregar.
+
+### Lo que sí lo sabe
+
+El historial de entregas, que ya estaba escrito y no costaba nada leer. Ahora la pantalla
+mira también **cómo le fue a cada persona en el último aviso real**, y esa señal manda sobre
+las demás.
+
+> Las otras comprueban **condiciones** —aplicación instalada, permiso concedido, token
+> aceptado— y todas pueden cumplirse mientras el aviso no llega. Esta mira el **hecho**: se
+> mandó algo de verdad y no llegó.
+>
+> Una condición que se cumple no demuestra que el aviso llegue. Que haya llegado, sí.
+
+Se mira **el último** envío y no «alguna vez falló»: quien falló en agosto y recibe desde
+entonces está bien, y sacarlo en la lista sería mandar a coordinación a buscar a quien no
+hace falta.
+
+La validación en seco se conserva porque cubre lo que el historial no puede: a quien todavía
+no se le ha mandado nada. Las dos juntas tapan los huecos de la otra.
+
+---
+
+## DT-22 — El aviso que no se apagaba cuando el problema se resolvía
+
+**10 de septiembre de 2026**, y salió de una pregunta, no de un fallo observado:
+
+> «Suponiendo que le avisamos a Alfredo y él hace el proceso, ¿nos desaparecerá de la
+> pantalla de Alcance? ¿O hasta que mandemos un nuevo mensaje y ya le llegue?»
+
+La respuesta era la mala. **Hasta el próximo envío.** Las entregas solo se escriben al mandar
+un aviso, así que reengancharse no producía ningún dato nuevo y el último envío de esa
+persona seguía siendo el fallido, indefinidamente.
+
+O sea: coordinación le pide algo a alguien, la persona lo hace, y el panel no cambia.
+
+> **Un aviso que no se apaga cuando se resuelve el problema enseña a ignorar la pantalla.**
+> Es el mismo mecanismo por el que un `limpio: false` permanente dejó de significar nada, y
+> por el que una auditoría que se cierra por lo que no puede afectar a nadie termina
+> abriéndose por costumbre.
+
+### Cómo se resolvió, y por qué no basta con quitarlo de la lista
+
+El fallo es evidencia **del momento en que ocurrió**. Si desde entonces la persona volvió a
+entrar y su aparato se registró de nuevo, esa evidencia ya no describe el presente y deja de
+contar.
+
+Pero **tampoco se le puede llamar «al día»**, y aquí está el matiz que importa: eso ya se
+dijo una vez de este mismo caso y era mentira. El documento de Alfredo se veía impecable
+—instalado, con permiso, con actividad reciente— y ningún aviso le llegaba.
+
+Así que hay un estado propio: **«Se reenganchó: falta confirmarlo con un envío»**, justo por
+encima de «al día» en el orden. Dice las dos cosas que son ciertas:
+
+  · La persona hizo lo que se le pidió, así que quien avisó sabe que su gestión llegó y no
+    tiene que volver a llamar.
+  · No hay forma de saber si funcionó hasta el próximo envío real, así que no se promete lo
+    que no se puede comprobar.
+
+Y si al reengancharse sigue habiendo algo comprobable mal —quedó solo en pestaña, por
+ejemplo— manda ese problema real: volver a entrar no arregla no tener la aplicación
+instalada.
+
+---
+
+## DT-22 — Una señal nueva tumbó la pantalla entera
+
+**10 de septiembre de 2026.** Al añadir la lectura del historial de entregas, el Alcance
+dejó de funcionar por completo: «No se pudo revisar el alcance».
+
+La causa inmediata es sencilla: la consulta por grupo de colección con `orderBy` necesita un
+índice que no existía. Está declarado ahora en `firestore.indexes.json`, con los tres
+alcances del campo — un `fieldOverride` **reemplaza** la configuración automática, no la
+complementa, así que omitir los dos normales habría roto consultas que ya funcionaban.
+
+Pero el fallo interesante es el otro:
+
+> **Una señal que se añade para informar mejor dejó a coordinación sin ver nada.** Los casos
+> que sí sabíamos detectar por otras vías —sin dispositivo, solo en pestaña— desaparecieron
+> de la pantalla porque una consulta accesoria lanzó.
+
+Ahora esa lectura va dentro de un `try`: si falla, se anota en el registro y **la pantalla
+sigue mostrando el resto**. Falta una fila, no la pantalla.
+
+Es la misma forma que ya se aplicó en otros sitios de este proyecto y que conviene repetir:
+el cierre de notificaciones no puede tumbar el pintado de la insignia, y la limpieza de
+tokens muertos no puede tumbar un envío en curso. Lo accesorio falla solo.
+
+---
+
+## DT-20 — Android hornea el icono al instalar
+
+**Segunda corrección, el 10 de septiembre de 2026.** La primera puso la marca dentro de la
+zona segura, y aun así el icono seguía igual en Android tras desinstalar y volver a instalar
+varias veces.
+
+El archivo servido **sí** tenía la marca; se verificó descargándolo. Lo que pasa es otra
+cosa: al instalar una aplicación web, Android genera un **WebAPK con el icono horneado
+dentro**. Cambiar los bytes detrás de la misma dirección no le llega, porque el icono se
+sirve desde una caché que la dirección no invalida.
+
+Ahora los iconos marcados van a **rutas propias** —`Icon-192-dev.png`— y el script reescribe
+el manifiesto y el HTML para apuntar ahí. Con un nombre distinto no hay nada que reutilizar:
+es otra dirección, y el WebAPK se genera con lo que encuentre en ella.
+
+Los originales se dejan donde estaban: si algo quedó apuntando a ellos, encuentra un icono
+válido en vez de un hueco.
+
+---
+
+## DT-20 — El icono no cambiaba en Android
+
+**Corregido el 10 de septiembre de 2026.** En iOS la marca apareció; en Android no.
+
+La causa es una regla de la plataforma. Android usa los iconos declarados
+`purpose: maskable` para el lanzador y **los recorta a la forma que el sistema elija** —
+círculo, cuadrado redondeado, gota. Lo único que sobrevive con seguridad es el **80 %
+central**; las esquinas se descartan.
+
+La marca era una franja en la esquina. Es exactamente lo que se recorta.
+
+iOS no usa maskable: toma `Icon-180.png` tal cual, y por eso ahí sí se veía.
+
+Ahora los iconos maskable llevan la marca **dentro del círculo seguro** —una banda
+horizontal recortada contra ese círculo— y los demás conservan la franja diagonal, que se ve
+mejor donde no hay recorte.
+
+> Queda comprobado en el propio script: se recorta el resultado a un círculo, como hace
+> Android, y se verifica que la banda sigue ahí y que el centro del escudo no se tocó.
+
+---
+
+## DT-20 — El icono también dice el ambiente
+
+**Añadido el 9 de septiembre de 2026**, sobre la banda en pantalla.
+
+La banda resuelve el caso de estar dentro. Pero en la pantalla de inicio, quien tiene los
+tres instalados ve **tres iconos idénticos**, y elige uno antes de que ninguna banda pueda
+avisarle. El error se comete ahí, un segundo antes de que la aplicación arranque.
+
+`scripts/tenir-iconos-ambiente.py` marca los iconos con una franja diagonal dorada y la
+inicial del ambiente: **D** para desarrollo, **Q** para calidad.
+
+  · **Producción no se toca.** El script recibe `prd`, dice que no hace nada y termina bien.
+    Su peor fallo posible es no hacer nada.
+  · **Actúa sobre la carpeta compilada, no sobre las fuentes.** El escudo institucional que
+    está en el repositorio sigue siendo el que la universidad aprobó; lo que se marca es una
+    copia que vive lo que dura un despliegue.
+  · **Dorado, no rojo.** El rojo institucional está reservado en exclusiva a las alertas
+    urgentes; si además significara «ambiente de pruebas» dejaría de significar «urgente».
+  · La letra solo se dibuja a partir de 64 px. A 16 px sería una mancha que ensucia sin
+    informar, y ahí la franja sola ya distingue.
+
+---
+
+## DT-12 — Alcance de la auditoría de dependencias
+
+**Ajustada el 9 de septiembre de 2026.** No es una deuda nueva; es corregir dónde apuntaba
+una puerta que ya existía.
+
+La integración continua corría `npm audit --audit-level=high` sobre **todas** las
+dependencias, incluidas las de desarrollo. Ese día bloqueó un despliegue por un aviso de
+consumo de CPU en `js-yaml`, que llega por `eslint` y `ts-jest`: herramientas que corren en
+la tubería y en la máquina de quien programa, y que **nunca se despliegan**.
+
+Mientras tanto, las dependencias que sí llegan a la nube estaban limpias:
+
+```
+  vulnerabilidades en lo que se despliega
+  altas: 0   críticas: 0   moderadas: 12
+```
+
+Ahora la puerta que **bloquea** mira solo lo que se despliega (`--omit=dev`), y hay un paso
+aparte que audita las herramientas de desarrollo **sin bloquear**.
+
+> **No es rebajar la puerta, es apuntarla.** Una que se cierra por algo que no puede afectar
+> a nadie enseña a abrirla por costumbre, y entonces deja de servir el día que se cierra por
+> algo real. Es el mismo criterio que se aplicó al sello de versión, que marcaba «sucio» en
+> todos los despliegues por un archivo de bloqueo.
+>
+> Las herramientas de desarrollo siguen vigiladas a propósito: una vulnerabilidad en la
+> cadena de compilación es justo la vía por la que se cuela código en lo que sí se
+> despliega. Lo que cambia es que eso se ve, no que detiene el trabajo.
+
+---
+
+## DT-23 — Lo que se pudo pagar, y lo que resultó ser otra cosa
+
+**Pagada a medias el 9 de septiembre de 2026**, y el hallazgo cambia el enunciado.
+
+**El SDK de Firebase YA atiende `pushsubscriptionchange`.** Leyendo
+`firebase-messaging-compat.js` 10.14.1 se ve que registra su propio escuchador dentro del
+worker: cuando llega `newSubscription`, borra el token viejo y acuña uno nuevo.
+
+Así que el problema nunca fue que nadie escuchara el evento. Es que **el SDK arregla su
+estado interno y no le dice nada a nuestro servidor**, que se queda con el token muerto.
+
+Y no se puede resolver del todo desde el worker: **el SDK no expone `getToken` en contexto
+de service worker**, solo en el de ventana. No hay forma de leer ahí el token nuevo para
+mandárselo al servidor.
+
+Lo que sí se hizo, que cubre la mayor parte de los casos:
+
+  · El worker anota que la suscripción rotó y **avisa en el momento a las ventanas
+    abiertas**. La tarjeta de notificaciones lo escucha, olvida que ya se había registrado
+    en esa sesión y vuelve a registrarse. Si la aplicación está abierta, el arreglo es
+    inmediato.
+  · Si no hay ninguna abierta, el registro se rehace en la siguiente apertura, como antes.
+
+Lo que queda fuera es quien no abre la aplicación en semanas, y ese caso se atiende por el
+otro lado: la sonda de DT-22 lo detecta sin que nadie toque nada y se lo dice a
+coordinación.
+
+> **Por qué no se forzó más.** La vía que quedaba era un endpoint sin autenticar que
+> permitiera cambiar el token de un dispositivo presentando el anterior. Es la práctica
+> habitual, pero abre una escritura pública en un sistema donde hoy **el navegador nunca
+> escribe en Firestore**, y el peor caso —alguien con un token ajeno redirigiendo los
+> avisos de otra persona a su aparato— es exactamente el tipo de fallo que este proyecto
+> evita por diseño. No se descarta; se deja como decisión aparte, con su propio análisis.
+
+---
+
 ## DT-26 — En Android el contador del icono se queda encendido con todo leído
 
 **Origen:** plataforma · **Severidad:** media · **Estado:** abierta · **Costo:** 0 USD
@@ -1331,3 +1637,84 @@ habría mandado a los catedráticos al ambiente equivocado. El manual que se abr
 Hay dos, y la aplicación sabe el rol de quien está dentro. Lo natural es que un catedrático
 abra el suyo y coordinación el general. Es una decisión de una línea, pero conviene tomarla
 a propósito y no dejar a todos en el índice.
+
+
+---
+
+## DT-29 — Cambiar el manifiesto deja Android degradado un rato
+
+**Observado el 10 de septiembre de 2026, y aceptado.** No hay nada que arreglar en el
+código; conviene saberlo para no volver a perseguirlo.
+
+Al renombrar los iconos por ambiente cambió el manifiesto. Chrome lo detecta y **programa
+una regeneración del WebAPK** —la aplicación real que Android instala—, que no es
+instantánea: va al servidor de Google, se genera un paquete nuevo y se instala.
+
+Durante esa ventana el aparato queda en un estado intermedio, y se ve así en
+`chrome://webapks`:
+
+```
+  Update Status:               Pending
+  Last Update Completion Time: Wed Dec 31 1969    ← nunca completó
+```
+
+Lo que se observa mientras tanto:
+
+  · Las notificaciones se atribuyen a **«Chrome · <sitio>»**, con botón «Anular
+    suscripción», en vez de a la aplicación.
+  · **La insignia no funciona**, porque pertenece a la aplicación instalada y no al sitio.
+
+Se resolvió solo al cerrar la aplicación y el navegador y volver a abrir: la regeneración
+completó y las notificaciones pasaron a atribuirse a «SIAN UMG-BDM», con el punto en el
+icono.
+
+> **Producción no pasa por esto.** El manifiesto de producción no cambia: los iconos
+> marcados existen solo en desarrollo y calidad, y sus nombres ya son estables. Es un costo
+> de una sola vez por ambiente, y está pagado.
+
+Si vuelve a aparecer tras un cambio de iconos o de manifiesto: cerrar la aplicación y el
+navegador, esperar, y comprobar en `chrome://webapks` que «Update Status» ya no diga
+`Pending`.
+
+---
+
+## DT-30 — Chrome puede marcar los avisos como «posible spam»
+
+**Observado el 10 de septiembre de 2026.** Durante las pruebas, Chrome mostró:
+
+> **Posible spam** — Chrome detectó posible spam de `sian-umg-bdm-dev.web.app`
+> *Anular suscripción · Mostrar notificación*
+
+No es un fallo del sistema: es la detección de notificaciones abusivas de Chrome. Se disparó
+por un motivo entendible — se mandaron varios avisos titulados «Nuevo mensaje no 11, 12,
+13, 15» en pocos minutos y no se abrió ninguno. Repetitivo, en ráfaga y sin interacción es
+exactamente el patrón que esa heurística busca.
+
+### Por qué importa fuera de las pruebas
+
+Dos vías, y la segunda es la seria:
+
+  · Chrome puede **atenuar** las notificaciones de un sitio que marca como sospechoso. No
+    está en nuestra mano.
+  · El botón que ofrece es **«Anular suscripción»**. Un catedrático que lo toque por error
+    deja de recibir avisos **sin saberlo**, y sin ningún rastro en el sistema.
+
+Lo segundo sí lo cubre parcialmente la pantalla de Alcance: la próxima vez que se le mande
+algo aparecerá como «El último aviso NO le llegó». Pero se entera **después**, no antes.
+
+### Qué reduce el riesgo
+
+  · **No mandar avisos de prueba en ráfaga a la población real.** Las pruebas van en
+    desarrollo, que para eso está.
+  · **Títulos que digan algo.** «Nuevo mensaje no 13» repetido es indistinguible de spam
+    para una heurística y para una persona. Un aviso institucional real —«Suspensión de
+    labores», «Entrega de exámenes»— no se parece a eso.
+  · Los avisos urgentes ya llevan `requireInteraction`, que obliga a atenderlos y por lo
+    tanto genera interacción, que es justo lo que la heurística premia.
+
+### Lo que NO conviene hacer
+
+Perseguirlo con más notificaciones, ni intentar detectar si Chrome nos marcó. No hay API
+para preguntarlo, y el remedio no es técnico: es que los avisos sean pocos, distintos entre
+sí y realmente útiles. Un sistema de emergencias que manda poco es, además, el que se
+quiere.

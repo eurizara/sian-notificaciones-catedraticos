@@ -31,10 +31,13 @@ int? _ultimoEnviado;
 /// Olvida lo último enviado. Solo para las pruebas, que comparten proceso.
 void olvidarUltimaInsignia() => _ultimoEnviado = null;
 
-/// Deja la insignia igual al número de mensajes sin leer.
+/// Deja la insignia igual al número de mensajes sin leer, y le pasa al worker
+/// **cuáles** son.
 ///
 /// Con cero, la retira: un icono con un «0» pegado se lee como si algo
-/// estuviera pendiente.
+/// estuviera pendiente. Ya no hace falta ramificar para eso —`fijarInsignia(0)`
+/// hace exactamente lo mismo que `retirarInsignia()`— y con una sola vía es
+/// imposible que un camino mande la lista y el otro se la olvide.
 ///
 /// Es idempotente y se puede llamar en cada dibujado. Se hace así, y no
 /// escuchando solo los cambios del historial, porque un escuchador únicamente
@@ -42,15 +45,23 @@ void olvidarUltimaInsignia() => _ultimoEnviado = null;
 /// vuelve a montar con los datos ya resueltos —volver de otra pantalla, girar
 /// el aparato— no llega ningún cambio y la insignia se queda como estaba.
 void sincronizarInsignia(List<MensajeRecibido> mensajes) {
-  final int sinLeer = contarEn(FiltroBandeja.sinLeer, mensajes);
+  final List<String> idsSinLeer = mensajes
+      .where((MensajeRecibido m) => entraEn(FiltroBandeja.sinLeer, m))
+      .map((MensajeRecibido m) => m.mensajeId)
+      .toList(growable: false);
+  final int sinLeer = idsSinLeer.length;
+
   if (sinLeer == _ultimoEnviado) {
     return;
   }
   _ultimoEnviado = sinLeer;
 
-  if (sinLeer > 0) {
-    fijarInsignia(sinLeer);
-  } else {
-    retirarInsignia();
-  }
+  // Va también la LISTA, no solo el número (DT-26).
+  //
+  // El worker necesita saber cuáles siguen sin leer para poder retirar de la
+  // bandeja del sistema la notificación de los que ya se leyeron. Con solo el
+  // número podía decidir únicamente el caso extremo —cero, cerrar todo—, y en
+  // Android eso dejaba el icono marcado con dos mensajes leídos y uno
+  // pendiente, porque el lanzador cuenta las notificaciones puestas.
+  fijarInsignia(sinLeer, idsSinLeer: idsSinLeer);
 }

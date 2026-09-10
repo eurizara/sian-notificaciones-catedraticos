@@ -232,12 +232,12 @@ directamente en producción: la semana pasada mostró lo que cuesta.
 Algo falla hoy. Se arranca por aquí, se prueba en desarrollo, se promueve y **se libera**.
 Hasta que las cuatro estén en producción no se empieza con las mejoras.
 
-| # | Corrección | Qué está fallando |
+| # | Corrección | Estado |
 |:---:|---|---|
-| C-1 | **DT-26** · el contador se queda encendido en Android | El número sobre el icono dice que hay mensajes sin leer cuando dentro está todo leído. En iOS no pasa, y esa asimetría es la pista. **No se libera sin DT-17** (abajo) |
-| C-2 | **DT-23 → DT-22** · el canal se pierde solo | Cinco personas que confirmaron el aviso del 29/08 dejaron de recibir en ocho días de silencio, y nadie lo supo hasta que falló un aviso real. DT-23 antes que DT-22: uno reduce el problema, el otro informa de él |
-| C-3 | **DT-18** · dispositivos arrastrados | Quedan 71 del esquema viejo. No rompen el envío, pero ensucian el diagnóstico justo cuando hay que averiguar por qué alguien no recibió |
-| C-4 | **DT-14** · correos de recuperación | Van a No deseado. Duele el primer día que alguien de verdad olvide su contraseña |
+| C-1 | **DT-26** · el contador se queda encendido en Android | **Corregida el 09/09.** Una notificación solo se cerraba al tocarla; quien abría desde el icono las dejaba puestas, y el lanzador de Android las cuenta. Ahora la aplicación manda al worker cuáles siguen sin leer y el worker retira las demás. **DT-17 pagada con ella**: 14 pruebas donde no había ninguna |
+| C-2 | **DT-23 → DT-22** · el canal se pierde solo | **Corregida el 09/09.** Sonda semanal en seco que valida los tokens sin entregar nada, y apartado en la pantalla de coordinación con quién no recibiría un aviso ahora mismo. DT-23 quedó pagada a medias por un límite del SDK, explicado en su ficha |
+| C-3 | **DT-18** · dispositivos arrastrados | **Corregida el 09/09.** La misma sonda retira lo que lleva más de sesenta días sin actividad, con el motivo anotado en la bitácora |
+| C-4 | **DT-14** · correos de recuperación | **Bloqueada, y no por programación.** Exige un buzón institucional y entradas SPF/DKIM en el DNS de la UMG. Lo que sí se hizo: el aviso en pantalla ahora dice que revise la carpeta de no deseado, que es donde caen |
 
 > **DT-17 — pruebas del service worker — no es una corrección con vida propia: es la
 > condición para liberar C-1.** De los siete defectos de notificación, los siete vivían en
@@ -256,7 +256,7 @@ Nada de esto falla: falta. Se empieza cuando las cuatro correcciones estén libe
 | # | Mejora | Qué aporta |
 |:---:|---|---|
 | M-1 | **DT-07** · tasa de entrega en el panel | Hoy, saber por qué siete personas no recibieron el aviso del 7 de septiembre exigió consultar la base de datos a mano. El coordinador debería verlo solo |
-| M-2 | **DT-20** · saber en qué ambiente se está | Instalada como aplicación, los tres ambientes se ven iguales. Previene mandar un aviso de prueba a los 22 catedráticos reales |
+| — | ~~**DT-20** · saber en qué ambiente se está~~ | **Pagada el 09/09.** Se adelantó al resto de mejoras porque hace más segura la prueba de todo lo demás. Banda en pantalla e icono marcado; producción no lleva ninguna de las dos |
 | M-3 | **DT-28** · manual accesible desde la barra | El manual ya está publicado; falta el botón. Es la más pequeña de todas y la que menos puede romper |
 | M-4 | **DT-21** · tema oscuro y preferencia del usuario | El tema ya está construido; falta verificar el contraste antes de encenderlo |
 | M-5 | **DT-27** · responder a un aviso | Funcionalidad nueva. Va al final a propósito: primero que lo que ya existe funcione |

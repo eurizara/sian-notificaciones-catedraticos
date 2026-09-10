@@ -17,6 +17,7 @@ import '../shared/barra_sesion.dart';
 import 'seccion_bitacora.dart';
 import 'seccion_entregas.dart';
 import 'seccion_mis_mensajes.dart';
+import 'seccion_canal.dart';
 import 'seccion_grupos.dart';
 import 'seccion_programacion.dart';
 import 'seccion_mensajes.dart';
@@ -84,6 +85,18 @@ final List<SeccionAdmin> _secciones = <SeccionAdmin>[
     requisitos: const <String>['RF-MSG-01', 'RF-MSG-02', 'RF-MSG-13'],
     iteracion: Textos.iteracion13,
     construir: SeccionMensajes.new,
+    visiblePara: (Rol rol) => rol.esEmisor,
+  ),
+  // Va junto a los envíos, no escondida entre las secciones de consulta: lo que
+  // dice es «esto le pasaría al aviso que estás por mandar» (DT-22).
+  SeccionAdmin(
+    icono: Icons.wifi_tethering_off_outlined,
+    etiqueta: Textos.seccionCanal,
+    titulo: Textos.seccionCanalTitulo,
+    descripcion: Textos.seccionCanalDescripcion,
+    requisitos: const <String>['RF-USR-09', 'RES-05'],
+    iteracion: Textos.iteracion14,
+    construir: SeccionCanal.new,
     visiblePara: (Rol rol) => rol.esEmisor,
   ),
   SeccionAdmin(
