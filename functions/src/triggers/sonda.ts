@@ -269,8 +269,8 @@ export const sondaDeCanal = onSchedule(
  * recibe desde entonces está bien, y sacarlo en la lista sería mandar a
  * coordinación a buscar a quien no hace falta.
  */
-async function personasConElUltimoEnvioFallido(): Promise<Set<string>> {
-  const fallidos = new Set<string>();
+async function personasConElUltimoEnvioFallido(): Promise<Map<string, Date>> {
+  const fallidos = new Map<string, Date>();
 
   let instantanea;
   try {
@@ -307,7 +307,12 @@ async function personasConElUltimoEnvioFallido(): Promise<Set<string>> {
 
     const estado = doc.get('estado') as string | undefined;
     if (estado === 'FALLIDO' || estado === 'DESCARTADO') {
-      fallidos.add(uid);
+      // Se guarda CUÁNDO falló, no solo que falló: hace falta para saber si la
+      // persona hizo algo después y la evidencia ya no describe el presente.
+      const cuando = aFecha(doc.get('creadaEn'));
+      if (cuando !== null) {
+        fallidos.set(uid, cuando);
+      }
     }
   }
 
@@ -425,7 +430,7 @@ export const dispositivosQueNecesitanAtencion = onCall(OPCIONES_FUNCION, async (
       suyos.map((d) => ({ ...d, tokenVivo: !muertos.has(d.tokenFCM) })),
       ahora,
       30,
-      falloElUltimo.has(doc.id),
+      falloElUltimo.get(doc.id) ?? null,
     );
     if (estado === 'al-dia') {
       continue;

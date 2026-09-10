@@ -84,6 +84,14 @@ abstract final class Textos {
   static const String canalSoloEnPestana = 'Solo en pestaña, sin instalar';
   static const String canalSinActividad = 'Sin abrir la aplicación hace tiempo';
 
+  /// Ni «al día» ni «falló». Las dos cosas serían falsas.
+  ///
+  /// Su último aviso no llegó, pero desde entonces volvió a entrar y su aparato
+  /// se registró de nuevo. Todo lo comprobable dice que está bien — y eso ya se
+  /// dijo una vez de este mismo caso y era mentira. Lo honesto es decir que
+  /// respondió y que la comprobación de verdad es el próximo envío.
+  static const String canalReenganchado = 'Se reenganchó: falta confirmarlo con un envío';
+
   /// Y qué hay que pedirle, que es distinto en cada caso.
   static const String canalPedirRegistrar =
       'Que entre y active las notificaciones.';
@@ -100,6 +108,10 @@ abstract final class Textos {
   static const String canalPedirInstalar =
       'Que instale la aplicación en la pantalla de inicio. En iPhone, sin '
       'instalar no llega ninguna notificación.';
+  static const String canalPedirEsperar =
+      'Ya hizo lo que se le pidió. Se confirma solo con el próximo aviso que '
+      'se mande: si le llega, desaparece de esta lista.';
+
   static const String canalPedirAbrir =
       'Que abra la aplicación una vez. Con eso se renueva su registro.';
 

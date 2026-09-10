@@ -233,7 +233,8 @@ export type EstadoDeCanal =
   | 'token-muerto'
   | 'solo-en-pestana'
   | 'permiso-denegado'
-  | 'sin-actividad-reciente';
+  | 'sin-actividad-reciente'
+  | 'reenganchado-sin-comprobar';
 
 /** Lo mínimo de un dispositivo para juzgar el canal de su dueño. */
 export interface DispositivoDeCanal {
@@ -284,7 +285,7 @@ export function estadoDeCanal(
   dispositivos: readonly DispositivoDeCanal[],
   ahora: Date,
   diasParaAvisar = 30,
-  fallóElUltimoEnvio = false,
+  cuandoFallóElUltimoEnvio: Date | null = null,
 ): EstadoDeCanal {
   if (dispositivos.length === 0) {
     return 'sin-dispositivo';
@@ -306,7 +307,29 @@ export function estadoDeCanal(
   //
   // Una condición que se cumple no demuestra que el aviso llegue. Que haya
   // llegado, sí.
-  if (fallóElUltimoEnvio) {
+  // ──────────────────────────────────────────────────────────────────────────
+  // Un fallo de ayer deja de valer si la persona hizo algo DESPUÉS.
+  // ──────────────────────────────────────────────────────────────────────────
+  //
+  // El fallo es evidencia **del momento en que ocurrió**. Si desde entonces la
+  // persona volvió a entrar y su aparato se registró de nuevo, esa evidencia ya
+  // no describe la situación de ahora.
+  //
+  // Sin esta comprobación pasaba algo que arruina la pantalla: coordinación le
+  // pide a alguien que se reenganche, la persona lo hace, y el panel lo sigue
+  // señalando **hasta el próximo envío**. Un aviso que no se apaga cuando se
+  // resuelve el problema enseña a ignorar la pantalla.
+  const actividadMasReciente = dispositivos
+    .map((d) => d.ultimaActividad)
+    .filter((f): f is Date => f !== null)
+    .sort((a, b) => b.getTime() - a.getTime())[0];
+
+  const seReenganchoDespues =
+    cuandoFallóElUltimoEnvio !== null &&
+    actividadMasReciente !== undefined &&
+    actividadMasReciente.getTime() > cuandoFallóElUltimoEnvio.getTime();
+
+  if (cuandoFallóElUltimoEnvio !== null && !seReenganchoDespues) {
     return 'ultimo-envio-fallo';
   }
 
@@ -341,7 +364,20 @@ export function estadoDeCanal(
   }
 
   const dias = (ahora.getTime() - masReciente.getTime()) / 86_400_000;
-  return dias > diasParaAvisar ? 'sin-actividad-reciente' : 'al-dia';
+  if (dias > diasParaAvisar) {
+    return 'sin-actividad-reciente';
+  }
+
+  // Todo lo que se puede comprobar dice que está bien, pero el último aviso que
+  // se le mandó falló y desde entonces solo sabemos que se reenganchó.
+  //
+  // No se le llama «al día» porque eso ya se dijo una vez de este mismo caso y
+  // era mentira: su documento se veía impecable y ningún aviso le llegaba. Y
+  // tampoco se le sigue llamando fallo, porque hizo lo que se le pidió.
+  //
+  // Lo honesto es decir las dos cosas: se reenganchó, y no hay forma de saber
+  // si funcionó hasta el próximo envío real.
+  return seReenganchoDespues ? 'reenganchado-sin-comprobar' : 'al-dia';
 }
 
 /** Orden en que conviene buscar a la gente: primero quien no recibe nada. */
@@ -357,5 +393,9 @@ export const GRAVEDAD_DE_CANAL: Record<EstadoDeCanal, number> = {
   'permiso-denegado': 3,
   'solo-en-pestana': 4,
   'sin-actividad-reciente': 5,
-  'al-dia': 6,
+  // Va justo antes de «al día»: no es un problema que atender, es una respuesta
+  // pendiente de confirmar. Se enseña para que quien avisó sepa que su gestión
+  // llegó, no para que vuelva a llamar.
+  'reenganchado-sin-comprobar': 6,
+  'al-dia': 7,
 };

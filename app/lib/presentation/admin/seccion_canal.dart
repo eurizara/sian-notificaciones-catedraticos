@@ -186,6 +186,7 @@ IconData _icono(EstadoCanal estado) => switch (estado) {
   EstadoCanal.permisoDenegado => Icons.notifications_off_outlined,
   EstadoCanal.soloEnPestana => Icons.tab_outlined,
   EstadoCanal.sinActividadReciente => Icons.hourglass_bottom_outlined,
+  EstadoCanal.reenganchadoSinComprobar => Icons.pending_outlined,
   EstadoCanal.alDia => Icons.check_circle_outline,
 };
 
@@ -201,6 +202,9 @@ Color _color(EstadoCanal estado) => switch (estado) {
   EstadoCanal.permisoDenegado => ColoresSian.doradoTexto,
   EstadoCanal.soloEnPestana ||
   EstadoCanal.sinActividadReciente => ColoresSian.primarioOscuro,
+  // Verde apagado: respondió. No es un problema que atender, pero tampoco una
+  // confirmación — por eso no es el verde pleno de «confirmado».
+  EstadoCanal.reenganchadoSinComprobar => ColoresSian.confirmado,
   EstadoCanal.alDia => ColoresSian.confirmado,
 };
 
@@ -211,6 +215,7 @@ String _queLePasa(EstadoCanal estado) => switch (estado) {
   EstadoCanal.permisoDenegado => Textos.canalPermisoDenegado,
   EstadoCanal.soloEnPestana => Textos.canalSoloEnPestana,
   EstadoCanal.sinActividadReciente => Textos.canalSinActividad,
+  EstadoCanal.reenganchadoSinComprobar => Textos.canalReenganchado,
   EstadoCanal.alDia => '',
 };
 
@@ -221,6 +226,7 @@ String _quePedirle(EstadoCanal estado) => switch (estado) {
   EstadoCanal.permisoDenegado => Textos.canalPedirPermiso,
   EstadoCanal.soloEnPestana => Textos.canalPedirInstalar,
   EstadoCanal.sinActividadReciente => Textos.canalPedirAbrir,
+  EstadoCanal.reenganchadoSinComprobar => Textos.canalPedirEsperar,
   EstadoCanal.alDia => '',
 };
 
