@@ -278,7 +278,7 @@ gratuita.
 | DT-17 | El service worker no tiene ninguna prueba automatizada | Alcance | **Media** | **Pagada** | 0 USD |
 | DT-18 | Se acumula un token de FCM por cada ingreso en iOS | Plataforma | **Alta** | **Pagada** | 0 USD |
 | DT-19 | Entrar con Google falla en la PWA de iOS por aislamiento de almacenamiento | Plataforma | Alta | **Pagada** | 0 USD |
-| DT-20 | Instalada como aplicación, nada dice en qué ambiente se está | Conocimiento | **Media** | Abierta | 0 USD |
+| DT-20 | Instalada como aplicación, nada dice en qué ambiente se está | Conocimiento | **Media** | **Pagada** | 0 USD |
 | DT-21 | El tema oscuro está construido pero apagado, y no se puede elegir | Alcance | Baja | Abierta | 0 USD |
 | DT-22 | Un token muerto solo se descubre cuando falla un aviso real | Alcance | **Alta** | **Pagada** | 0 USD |
 | DT-23 | El service worker no atiende `pushsubscriptionchange` | Plataforma | **Media** | **Pagada a medias** | 0 USD |
