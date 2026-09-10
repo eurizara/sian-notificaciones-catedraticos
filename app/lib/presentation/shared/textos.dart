@@ -67,6 +67,13 @@ abstract final class Textos {
 
   /// Qué le pasa a la persona, en una frase que se pueda leer de un vistazo.
   static const String canalSinDispositivo = 'Sin dispositivo registrado';
+
+  /// El caso que más engaña: el documento se ve perfecto y el token está muerto.
+  ///
+  /// Se dice «su registro caducó» y no «token muerto» porque quien lee esto no
+  /// tiene por qué saber qué es un token, y lo que necesita es entender que no
+  /// es culpa suya ni algo que la persona hizo mal.
+  static const String canalTokenMuerto = 'Su registro caducó: no le llegaría nada';
   static const String canalPermisoDenegado = 'Rechazó el permiso de notificaciones';
   static const String canalSoloEnPestana = 'Solo en pestaña, sin instalar';
   static const String canalSinActividad = 'Sin abrir la aplicación hace tiempo';
@@ -74,6 +81,10 @@ abstract final class Textos {
   /// Y qué hay que pedirle, que es distinto en cada caso.
   static const String canalPedirRegistrar =
       'Que entre y active las notificaciones.';
+
+  static const String canalPedirReabrir =
+      'Que abra la aplicación una vez. Con eso se renueva solo, sin reinstalar '
+      'ni volver a configurar nada.';
   static const String canalPedirPermiso =
       'Que vuelva a conceder el permiso desde los ajustes del navegador.';
   static const String canalPedirInstalar =
