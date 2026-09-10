@@ -57,11 +57,41 @@ abstract final class Textos {
   static const String seccionCanalDescripcion =
       'Quién no recibiría un aviso si se enviara ahora mismo, y qué le hace '
       'falta a cada uno. Ordenado por gravedad: primero quien no puede recibir '
-      'nada.';
+      'nada. Solo aparece quien tiene algo que corregir.';
 
-  static String canalResumen(int cuantos, int total) => cuantos == 0
-      ? 'Los $total catedráticos pueden recibir avisos.'
-      : '$cuantos de $total catedráticos no recibirían un aviso enviado ahora.';
+  /// El resumen que encabeza la pantalla de Alcance.
+  ///
+  /// ──────────────────────────────────────────────────────────────────────────
+  /// Se leyó al revés, y por eso está escrito con este cuidado.
+  /// ──────────────────────────────────────────────────────────────────────────
+  ///
+  /// La primera versión decía «Los 1 catedráticos pueden recibir avisos» cuando
+  /// había un solo destinatario y todo estaba bien. El coordinador lo entendió
+  /// como «1 catedrático no puede recibir» — exactamente lo contrario.
+  ///
+  /// La concordancia rota es lo que lo provocó: «Los 1» obliga a releer, y al
+  /// releer se busca sentido en las palabras sueltas —«1», «catedráticos»— antes
+  /// que en la frase. Un resumen que se puede entender del revés no informa: da
+  /// una impresión, y la impresión puede ser la contraria del dato.
+  ///
+  /// Dice «personas» y no «catedráticos» porque no todos lo son: quien recibe
+  /// avisos lo decide una bandera por persona, y un coordinador que además da
+  /// clases entra en la cuenta. Llamarlos a todos catedráticos era la misma
+  /// inexactitud que ya había hecho que esta pantalla contara sobre la población
+  /// equivocada.
+  static String canalResumen(int cuantos, int total) {
+    if (total == 0) {
+      return 'Todavía no hay nadie configurado para recibir avisos.';
+    }
+    if (cuantos == 0) {
+      return total == 1
+          ? 'La única persona que recibe avisos está al día.'
+          : 'Las $total personas que reciben avisos están al día.';
+    }
+    return cuantos == 1
+        ? '1 de $total no recibiría un aviso enviado ahora.'
+        : '$cuantos de $total no recibirían un aviso enviado ahora.';
+  }
 
   static const String canalTodoEnOrden = 'No hay nada que atender.';
 
