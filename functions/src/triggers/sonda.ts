@@ -45,7 +45,7 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { logger } from 'firebase-functions/v2';
 import { getMessaging, type TokenMessage } from 'firebase-admin/messaging';
 
-import { exigirPermiso, type Sujeto } from '../domain/autorizacion';
+import { exigirPermiso, recibeAvisos, type Sujeto } from '../domain/autorizacion';
 import {
   decidirSobreDispositivo,
   esTokenMuerto,
@@ -305,9 +305,23 @@ export const dispositivosQueNecesitanAtencion = onCall(OPCIONES_FUNCION, async (
     if (doc.get('activo') !== true) {
       continue;
     }
-    // Coordinación y auditoría trabajan SOBRE el sistema de avisos en vez de ser
-    // su destino, así que no tener dispositivo no es un problema suyo.
-    if ((doc.get('rol') as string | undefined) !== 'CATEDRATICO') {
+    // ────────────────────────────────────────────────────────────────────────
+    // La población es EXACTAMENTE la del modo TODOS. Se usa el mismo predicado.
+    // ────────────────────────────────────────────────────────────────────────
+    //
+    // La primera versión filtraba por `rol === 'CATEDRATICO'`, y estaba mal.
+    // Quién recibe un aviso no lo decide el rol sino `recibeAvisos`, que es una
+    // bandera por persona con el rol como valor por omisión: un coordinador con
+    // la bandera encendida ES destinatario.
+    //
+    // Se vio en desarrollo el 9 de septiembre de 2026. El Alcance decía «los 4
+    // catedráticos pueden recibir avisos» y un envío a todos salió a siete, con
+    // dos fallos — uno de ellos justo un coordinador que la lista no miraba.
+    //
+    // Una pantalla que predice quién no va a recibir y calcula sobre otra
+    // población no se equivoca a veces: miente siempre, y de la peor forma,
+    // diciendo que todo está bien.
+    if (!recibeAvisos(doc.get('rol') as Rol, doc.get('recibeAvisos') as boolean | undefined)) {
       continue;
     }
 
@@ -340,10 +354,14 @@ export const dispositivosQueNecesitanAtencion = onCall(OPCIONES_FUNCION, async (
 
   return {
     total: filas.length,
-    // El total de catedráticos activos da la proporción: «5 de 22» dice mucho
-    // más que «5».
+    // El total de destinatarios da la proporción: «5 de 22» dice mucho más que
+    // «5». Sale del MISMO criterio que la lista de arriba, no de un filtro
+    // parecido: si los dos números se calcularan por separado volverían a
+    // discrepar en cuanto alguien cambiara uno.
     catedraticos: usuarios.docs.filter(
-      (d) => d.get('activo') === true && d.get('rol') === 'CATEDRATICO',
+      (d) =>
+        d.get('activo') === true &&
+        recibeAvisos(d.get('rol') as Rol, d.get('recibeAvisos') as boolean | undefined),
     ).length,
     filas,
   };
