@@ -47,6 +47,23 @@ todo su peso en una emergencia.
 La franja va en diagonal y ocupa una esquina porque a 48 px, que es como se ve en
 la pantalla de inicio, un detalle centrado se pierde contra el escudo y un borde
 completo se confunde con el marco que dibuja el propio sistema.
+
+─────────────────────────────────────────────────────────────────────────────
+Los iconos `maskable` llevan la marca en otro sitio, y no es un capricho
+─────────────────────────────────────────────────────────────────────────────
+
+Android usa los iconos declarados `purpose: maskable` para el icono del
+lanzador, y **los recorta a la forma que el sistema elija** —círculo, cuadrado
+redondeado, gota—. La zona que sobrevive con seguridad es el 80 % central; todo
+lo de fuera puede desaparecer.
+
+Una marca en la esquina cae exactamente en lo que se recorta. Comprobado el 10
+de septiembre de 2026: en iOS el icono cambió y en Android no, porque iOS usa
+`Icon-180.png`, que no es maskable, y Android usa el que sí lo es.
+
+Así que en los maskable la marca es una **banda horizontal dentro del círculo
+seguro**, no una esquina. Se ve peor, y da igual: un icono que no se distingue
+no cumple ninguna función.
 """
 
 import sys
@@ -88,41 +105,88 @@ def fuente(tamano: int):
     return ImageFont.load_default()
 
 
+def _centrar_letra(dibujo, inicial, tipo, centro_x, centro_y) -> None:
+    """Dibuja la inicial centrada de verdad en el punto dado.
+
+    `textbbox` incluye el desplazamiento de la fuente, así que hay que restarlo:
+    sin eso la letra queda visiblemente alta o baja según el tipo instalado.
+    """
+    caja = dibujo.textbbox((0, 0), inicial, font=tipo)
+    dibujo.text(
+        (
+            centro_x - (caja[2] - caja[0]) / 2 - caja[0],
+            centro_y - (caja[3] - caja[1]) / 2 - caja[1],
+        ),
+        inicial,
+        font=tipo,
+        fill=BLANCO,
+    )
+
+
+def _marcar_esquina(icono, dibujo, inicial: str, lado: int) -> None:
+    """Franja diagonal en la esquina. Para los iconos que NO se recortan."""
+    alto = max(6, round(lado * 0.34))
+    dibujo.polygon(
+        [(lado, lado - alto), (lado, lado), (lado - alto, lado)],
+        fill=DORADO,
+    )
+    # La letra solo cabe a partir de cierto tamaño. En 16 px la franja sola ya
+    # distingue, y una letra ahí sería una mancha que ensucia sin informar.
+    if lado >= 64:
+        _centrar_letra(
+            dibujo,
+            inicial,
+            fuente(max(8, round(lado * 0.17))),
+            lado - alto * 0.42,
+            lado - alto * 0.36,
+        )
+
+
+def _marcar_maskable(icono, dibujo, inicial: str, lado: int) -> None:
+    """Banda horizontal DENTRO del círculo seguro. Para los que sí se recortan.
+
+    La zona segura de un icono maskable es el 80 % central, o sea un círculo de
+    radio 0.4·lado. La banda se recorta contra ese círculo para que sobreviva a
+    cualquier forma que elija el lanzador de Android.
+    """
+    radio = lado * 0.40
+    centro = lado / 2
+    alto = max(8, round(lado * 0.22))
+    arriba = centro + radio - alto
+
+    banda = Image.new('RGBA', (lado, lado), (0, 0, 0, 0))
+    ImageDraw.Draw(banda).rectangle([(0, arriba), (lado, centro + radio)], fill=DORADO)
+
+    # La máscara es el círculo seguro: lo que caiga fuera se descarta.
+    seguro = Image.new('L', (lado, lado), 0)
+    ImageDraw.Draw(seguro).ellipse(
+        [(centro - radio, centro - radio), (centro + radio, centro + radio)],
+        fill=255,
+    )
+    banda.putalpha(Image.composite(banda.getchannel('A'), Image.new('L', (lado, lado), 0), seguro))
+    icono.alpha_composite(banda)
+
+    if lado >= 64:
+        _centrar_letra(
+            ImageDraw.Draw(icono),
+            inicial,
+            fuente(max(9, round(alto * 0.72))),
+            centro,
+            arriba + alto / 2,
+        )
+
+
 def marcar(ruta: Path, inicial: str) -> None:
     icono = Image.open(ruta).convert('RGBA')
     lado = icono.size[0]
 
-    # La franja ocupa la esquina inferior derecha, en diagonal. Las medidas van
-    # en proporción al lado para que el resultado se vea igual a 48 y a 512.
-    alto = max(6, round(lado * 0.34))
+    if 'maskable' in ruta.name:
+        _marcar_maskable(icono, None, inicial, lado)
+        icono.save(ruta)
+        return
+
     capa = Image.new('RGBA', icono.size, (0, 0, 0, 0))
-    dibujo = ImageDraw.Draw(capa)
-    dibujo.polygon(
-        [
-            (lado, lado - alto),
-            (lado, lado),
-            (lado - alto, lado),
-        ],
-        fill=DORADO,
-    )
-
-    # La letra solo cabe a partir de cierto tamaño. En 16 px la franja sola ya
-    # distingue, y una letra ahí sería una mancha que ensucia sin informar.
-    if lado >= 64:
-        tipo = fuente(max(8, round(lado * 0.17)))
-        caja = dibujo.textbbox((0, 0), inicial, font=tipo)
-        ancho_texto = caja[2] - caja[0]
-        alto_texto = caja[3] - caja[1]
-        dibujo.text(
-            (
-                lado - alto * 0.42 - ancho_texto / 2 - caja[0],
-                lado - alto * 0.36 - alto_texto / 2 - caja[1],
-            ),
-            inicial,
-            font=tipo,
-            fill=BLANCO,
-        )
-
+    _marcar_esquina(icono, ImageDraw.Draw(capa), inicial, lado)
     Image.alpha_composite(icono, capa).save(ruta)
 
 

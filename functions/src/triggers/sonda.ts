@@ -292,6 +292,26 @@ export const dispositivosQueNecesitanAtencion = onCall(OPCIONES_FUNCION, async (
     leerDispositivos(),
   ]);
 
+  // ──────────────────────────────────────────────────────────────────────────
+  // Se le pregunta a FCM AHORA, no se confía en lo que diga el documento.
+  // ──────────────────────────────────────────────────────────────────────────
+  //
+  // Un dispositivo puede verse impecable en Firestore —instalado, con permiso,
+  // con actividad reciente— y llevar dentro un token que FCM ya rechaza. Desde
+  // la base de datos son indistinguibles.
+  //
+  // Pasó en desarrollo el 10 de septiembre de 2026: un coordinador con un
+  // iPhone instalado no recibió el aviso y esta pantalla lo daba por bien.
+  //
+  // La sonda semanal lo detecta, pero una pantalla que contesta «¿llegaría un
+  // aviso si lo mando ahora?» no puede responder con lo que se supo el lunes.
+  // Sería el mismo engaño, más lento.
+  //
+  // Cuesta una validación en seco por dispositivo: no se entrega nada, el
+  // teléfono no se entera, y es la diferencia entre una pantalla que informa y
+  // una que tranquiliza sin motivo.
+  const muertos = await tokensMuertos(dispositivos);
+
   const porUid = new Map<string, DispositivoLeido[]>();
   for (const d of dispositivos) {
     const lista = porUid.get(d.uid) ?? [];
@@ -326,7 +346,10 @@ export const dispositivosQueNecesitanAtencion = onCall(OPCIONES_FUNCION, async (
     }
 
     const suyos = porUid.get(doc.id) ?? [];
-    const estado = estadoDeCanal(suyos, ahora);
+    const estado = estadoDeCanal(
+      suyos.map((d) => ({ ...d, tokenVivo: !muertos.has(d.tokenFCM) })),
+      ahora,
+    );
     if (estado === 'al-dia') {
       continue;
     }

@@ -70,7 +70,13 @@ describe('estadoDeCanal', () => {
     esPWAInstalada: boolean,
     permisoNotificacion: string,
     ultimaActividad: Date | null = AHORA,
-  ): DispositivoDeCanal => ({ esPWAInstalada, permisoNotificacion, ultimaActividad });
+    tokenVivo?: boolean,
+  ): DispositivoDeCanal => ({
+    esPWAInstalada,
+    permisoNotificacion,
+    ultimaActividad,
+    tokenVivo,
+  });
 
   it('sin dispositivos, no puede recibir nada', () => {
     expect(estadoDeCanal([], AHORA)).toBe('sin-dispositivo');
@@ -89,6 +95,40 @@ describe('estadoDeCanal', () => {
     // o volver a conceder el permiso. Un solo estado para las dos cosas haría
     // que coordinación pidiera lo que no era.
     expect(estadoDeCanal([disp(false, 'denegado')], AHORA)).toBe('permiso-denegado');
+  });
+
+  it('un token muerto no se salva por verse bien el documento', () => {
+    // ────────────────────────────────────────────────────────────────────────
+    // El caso que engañó a la pantalla el 10 de septiembre de 2026.
+    // ────────────────────────────────────────────────────────────────────────
+    //
+    // Un coordinador con un iPhone instalado, permiso concedido y actividad de
+    // hace doce días no recibió el aviso. Su documento era impecable; el token
+    // que llevaba dentro estaba muerto, y desde Firestore eso es invisible.
+    expect(
+      estadoDeCanal([disp(true, 'concedido', haceDias(12), false)], AHORA),
+    ).toBe('token-muerto');
+  });
+
+  it('si NO se preguntó a FCM, no se penaliza', () => {
+    // `undefined` es «no se comprobó», no «está muerto». Suponer lo segundo
+    // mandaría a coordinación a buscar a gente que está perfectamente bien.
+    expect(estadoDeCanal([disp(true, 'concedido', AHORA, undefined)], AHORA)).toBe('al-dia');
+  });
+
+  it('con dos aparatos, basta que UNO tenga el token vivo', () => {
+    expect(
+      estadoDeCanal(
+        [disp(true, 'concedido', AHORA, false), disp(true, 'concedido', AHORA, true)],
+        AHORA,
+      ),
+    ).toBe('al-dia');
+  });
+
+  it('el token muerto pesa más que la pestaña', () => {
+    // Quien solo tiene un aparato y encima con el token muerto no recibe nada.
+    // Decir «solo en pestaña» sería pedirle que instale algo que ya tiene.
+    expect(estadoDeCanal([disp(false, 'concedido', AHORA, false)], AHORA)).toBe('token-muerto');
   });
 
   it('un aparato bueno basta, aunque haya otros malos', () => {
@@ -123,7 +163,7 @@ describe('estadoDeCanal', () => {
 
 describe('GRAVEDAD_DE_CANAL', () => {
   it('ordena primero a quien no puede recibir nada', () => {
-    const orden = (['al-dia', 'solo-en-pestana', 'sin-dispositivo'] as const)
+    const orden = (['al-dia', 'solo-en-pestana', 'token-muerto', 'sin-dispositivo'] as const)
       .slice()
       .sort((a, b) => GRAVEDAD_DE_CANAL[a] - GRAVEDAD_DE_CANAL[b]);
     expect(orden[0]).toBe('sin-dispositivo');

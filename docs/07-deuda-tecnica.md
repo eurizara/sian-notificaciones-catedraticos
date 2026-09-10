@@ -1152,6 +1152,66 @@ al filtro «Sin leer»: si alguien cambia un criterio sin cambiar el otro, la pr
 
 ---
 
+## DT-22 — El segundo defecto del Alcance: un documento sano con un token muerto
+
+**Corregido el 10 de septiembre de 2026.** El primero fue calcular sobre otra población.
+Este es distinto y más sutil.
+
+La pantalla ya contaba bien —«2 de 7»— pero **Alfredo Ochoa no aparecía**, y era uno de los
+que no habían recibido el aviso. Su documento en Firestore:
+
+```
+  COORDINADOR · recibeAvisos true · activo
+  1 dispositivo IOS · instalada=true · permiso=concedido · actividad hace 12 días
+```
+
+Impecable. Y sin embargo no le llegaba nada, porque **el token que lleva dentro está
+muerto**, y desde Firestore un token muerto es indistinguible de uno sano.
+
+`estadoDeCanal` juzgaba por los datos del documento —instalada, permiso, actividad— que son
+**condiciones necesarias**, no el hecho. El hecho solo lo sabe FCM.
+
+### Por qué no bastaba con la sonda semanal
+
+La sonda sí lo detecta, pero corre los lunes. Y una pantalla que contesta «¿llegaría un
+aviso si lo mando ahora mismo?» no puede responder con lo que se supo el lunes: sería el
+mismo engaño, más lento.
+
+Así que **el panel pregunta a FCM en el momento**, con la misma validación en seco que usa
+la sonda. No se entrega nada, el teléfono no se entera, y cuesta una llamada por
+dispositivo — treinta y seis en producción.
+
+> Es la diferencia entre una pantalla que informa y una que tranquiliza sin motivo. La
+> segunda es peor que no tener pantalla.
+
+El estado nuevo se llama **«Su registro caducó: no le llegaría nada»**, y no «token muerto»,
+porque quien lo lee no tiene por qué saber qué es un token. Lo que se le pide es que **abra
+la aplicación una vez**: se renueva solo, sin reinstalar ni volver a configurar nada.
+
+---
+
+## DT-20 — El icono no cambiaba en Android
+
+**Corregido el 10 de septiembre de 2026.** En iOS la marca apareció; en Android no.
+
+La causa es una regla de la plataforma. Android usa los iconos declarados
+`purpose: maskable` para el lanzador y **los recorta a la forma que el sistema elija** —
+círculo, cuadrado redondeado, gota. Lo único que sobrevive con seguridad es el **80 %
+central**; las esquinas se descartan.
+
+La marca era una franja en la esquina. Es exactamente lo que se recorta.
+
+iOS no usa maskable: toma `Icon-180.png` tal cual, y por eso ahí sí se veía.
+
+Ahora los iconos maskable llevan la marca **dentro del círculo seguro** —una banda
+horizontal recortada contra ese círculo— y los demás conservan la franja diagonal, que se ve
+mejor donde no hay recorte.
+
+> Queda comprobado en el propio script: se recorta el resultado a un círculo, como hace
+> Android, y se verifica que la banda sigue ahí y que el centro del escudo no se tocó.
+
+---
+
 ## DT-20 — El icono también dice el ambiente
 
 **Añadido el 9 de septiembre de 2026**, sobre la banda en pantalla.

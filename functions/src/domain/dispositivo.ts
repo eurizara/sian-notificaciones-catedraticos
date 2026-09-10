@@ -229,6 +229,7 @@ export function decidirSobreDispositivo(
 export type EstadoDeCanal =
   | 'al-dia'
   | 'sin-dispositivo'
+  | 'token-muerto'
   | 'solo-en-pestana'
   | 'permiso-denegado'
   | 'sin-actividad-reciente';
@@ -238,6 +239,29 @@ export interface DispositivoDeCanal {
   readonly esPWAInstalada: boolean;
   readonly permisoNotificacion: string;
   readonly ultimaActividad: Date | null;
+
+  /**
+   * ¿FCM acepta todavía este token?
+   *
+   * ───────────────────────────────────────────────────────────────────────────
+   * Sin este dato la evaluación se equivoca justo con quien peor está.
+   * ───────────────────────────────────────────────────────────────────────────
+   *
+   * Un documento puede verse impecable —aplicación instalada, permiso
+   * concedido, actividad reciente— y llevar dentro un token que FCM ya rechaza.
+   * Desde Firestore es indistinguible de uno sano: la única forma de saberlo es
+   * preguntárselo a FCM.
+   *
+   * Se vio en desarrollo el 10 de septiembre de 2026. Un coordinador con un
+   * iPhone instalado y permiso concedido no recibió el aviso, y la pantalla de
+   * Alcance lo daba por bien: su token estaba muerto y nada en el documento lo
+   * decía.
+   *
+   * `undefined` significa «no se preguntó», y entonces no se penaliza: suponer
+   * que está muerto sin haberlo comprobado mandaría a coordinación a buscar a
+   * gente que está bien.
+   */
+  readonly tokenVivo?: boolean;
 }
 
 /**
@@ -264,14 +288,23 @@ export function estadoDeCanal(
     return 'sin-dispositivo';
   }
 
-  const utiles = dispositivos.filter(
+  // Un token que FCM rechaza no sirve por muy bien que se vea el resto del
+  // documento. Se descarta ANTES de mirar nada más, porque lo demás describe
+  // condiciones necesarias y esto describe el hecho.
+  const conCanal = dispositivos.filter((d) => d.tokenVivo !== false);
+
+  if (conCanal.length === 0) {
+    return 'token-muerto';
+  }
+
+  const utiles = conCanal.filter(
     (d) => d.esPWAInstalada && d.permisoNotificacion === 'concedido',
   );
 
   if (utiles.length === 0) {
     // Se distingue el motivo porque lo que hay que pedirle a la persona es
     // distinto: instalar la aplicación, o volver a conceder el permiso.
-    return dispositivos.some((d) => d.permisoNotificacion === 'denegado')
+    return conCanal.some((d) => d.permisoNotificacion === 'denegado')
       ? 'permiso-denegado'
       : 'solo-en-pestana';
   }
@@ -291,9 +324,13 @@ export function estadoDeCanal(
 
 /** Orden en que conviene buscar a la gente: primero quien no recibe nada. */
 export const GRAVEDAD_DE_CANAL: Record<EstadoDeCanal, number> = {
+  // Los dos primeros comparten consecuencia —no reciben nada— y por eso van
+  // juntos arriba. Lo que cambia entre ellos es qué hay que pedirle a la
+  // persona, no la urgencia.
   'sin-dispositivo': 0,
-  'permiso-denegado': 1,
-  'solo-en-pestana': 2,
-  'sin-actividad-reciente': 3,
-  'al-dia': 4,
+  'token-muerto': 1,
+  'permiso-denegado': 2,
+  'solo-en-pestana': 3,
+  'sin-actividad-reciente': 4,
+  'al-dia': 5,
 };

@@ -181,6 +181,7 @@ class _Fila extends StatelessWidget {
 
 IconData _icono(EstadoCanal estado) => switch (estado) {
   EstadoCanal.sinDispositivo => Icons.phonelink_erase_outlined,
+  EstadoCanal.tokenMuerto => Icons.link_off_outlined,
   EstadoCanal.permisoDenegado => Icons.notifications_off_outlined,
   EstadoCanal.soloEnPestana => Icons.tab_outlined,
   EstadoCanal.sinActividadReciente => Icons.hourglass_bottom_outlined,
@@ -193,8 +194,9 @@ IconData _icono(EstadoCanal estado) => switch (estado) {
 /// urgentes, y si aquí también significara «problema» dejaría de significar
 /// «urgente» donde importa.
 Color _color(EstadoCanal estado) => switch (estado) {
-  EstadoCanal.sinDispositivo || EstadoCanal.permisoDenegado =>
-    ColoresSian.doradoTexto,
+  EstadoCanal.sinDispositivo ||
+  EstadoCanal.tokenMuerto ||
+  EstadoCanal.permisoDenegado => ColoresSian.doradoTexto,
   EstadoCanal.soloEnPestana ||
   EstadoCanal.sinActividadReciente => ColoresSian.primarioOscuro,
   EstadoCanal.alDia => ColoresSian.confirmado,
@@ -202,6 +204,7 @@ Color _color(EstadoCanal estado) => switch (estado) {
 
 String _queLePasa(EstadoCanal estado) => switch (estado) {
   EstadoCanal.sinDispositivo => Textos.canalSinDispositivo,
+  EstadoCanal.tokenMuerto => Textos.canalTokenMuerto,
   EstadoCanal.permisoDenegado => Textos.canalPermisoDenegado,
   EstadoCanal.soloEnPestana => Textos.canalSoloEnPestana,
   EstadoCanal.sinActividadReciente => Textos.canalSinActividad,
@@ -210,6 +213,7 @@ String _queLePasa(EstadoCanal estado) => switch (estado) {
 
 String _quePedirle(EstadoCanal estado) => switch (estado) {
   EstadoCanal.sinDispositivo => Textos.canalPedirRegistrar,
+  EstadoCanal.tokenMuerto => Textos.canalPedirReabrir,
   EstadoCanal.permisoDenegado => Textos.canalPedirPermiso,
   EstadoCanal.soloEnPestana => Textos.canalPedirInstalar,
   EstadoCanal.sinActividadReciente => Textos.canalPedirAbrir,
