@@ -261,7 +261,7 @@ servidor propio delante, y con él, alguien que lo administre.
 | **Hosting** | Sirve el sitio y el manual. Aquí viven también las reglas de caché | `firebase.json` |
 | **Cloud Storage** | Notas de voz e imágenes. Se sube contra un identificador reservado *antes* de que el mensaje exista | `app/lib/infrastructure/firebase/repositorio_adjuntos.dart` |
 | **Cloud Messaging** | La notificación que suena con la aplicación cerrada. Se envían mensajes **solo de datos** para que el Service Worker decida cómo mostrarlos | `app/web/firebase-messaging-sw.js` |
-| **Cloud Scheduler** | Despierta al planificador cada minuto. Un solo trabajo para todo el sistema, no uno por mensaje | `functions/src/triggers/despachador.ts` |
+| **Cloud Scheduler** | Despierta al planificador cada minuto, y a la sonda de canal los lunes. Dos trabajos por ambiente: uno reparte lo programado, el otro comprueba que la gente siga alcanzable (DT-22) |
 
 ### 2.8 Cómo encajan las capas con la tecnología
 
@@ -447,7 +447,7 @@ flowchart TB
     B --> C["Calcula la PRIMERA ocurrencia"]
     C --> D[("cola_despacho<br/>{mensajeId, ejecutarEn, estado: PENDIENTE}")]
 
-    E["Cloud Scheduler<br/>1 job · cada minuto"] -->|"invoca"| F["Function: despachador"]
+    E["Cloud Scheduler<br/>despachador · cada minuto"] -->|"invoca"| F["Function: despachador"]
     F --> G{"¿Hay documentos con<br/>ejecutarEn ≤ ahora<br/>y estado = PENDIENTE?"}
     G -->|No| H["Termina sin hacer nada"]
     G -->|Sí| I["Transacción: marca TOMADO<br/>y fija bloqueo por 5 min"]
@@ -494,7 +494,7 @@ El código fuente vive en un solo sitio, y es GitHub.
 | Lo que ve el usuario | Qué se ejecuta | Compilado desde | Fuente en el repositorio |
 |---|---|---|---|
 | El sitio web | Archivos estáticos servidos por Hosting | `flutter build web --release` | `app/lib/` y `app/web/` |
-| Las 19 Functions | JavaScript de Node 20 | `npm run build` (TypeScript → JavaScript) | `functions/src/` |
+| Las 21 Functions | JavaScript de Node 20 | `npm run build` (TypeScript → JavaScript) | `functions/src/` |
 | Las reglas de seguridad | Se ejecutan tal cual, sin compilar | — | `firestore.rules`, `storage.rules` |
 | El manual | HTML estático | Se copia sin tocar | `app/web/manuales/` |
 

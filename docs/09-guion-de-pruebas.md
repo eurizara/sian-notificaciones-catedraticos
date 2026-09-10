@@ -672,7 +672,7 @@ Ejecutadas contra `sian-umg-bdm-qa` el 24 de agosto de 2026:
 | # | Qué se comprueba | Cómo | Resultado |
 |---|---|---|---|
 | C-1 | Las reglas de seguridad están puestas | Leer `mensajes` sin autenticar por REST | `PERMISSION_DENIED` |
-| C-2 | Las 19 Functions existen y arrancaron | Listar funciones de `us-central1` | 19 de 19 en estado `ACTIVE` |
+| C-2 | Las 21 Functions existen y arrancaron | Listar funciones de `us-central1` | 19 de 19 en estado `ACTIVE` |
 | C-3 | Las Functions rechazan a quien no se identificó | `POST` a `activarSesion` sin token | HTTP 401, `UNAUTHENTICATED` |
 | C-4 | El navegador puede llamarlas | `OPTIONS` con `Origin` de QA | HTTP 204 |
 | C-5 | El despachador quedó programado | Listar jobs de Cloud Scheduler | 1 job, cada minuto, `ENABLED` |
