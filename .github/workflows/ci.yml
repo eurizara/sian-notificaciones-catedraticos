@@ -89,6 +89,12 @@ jobs:
       - name: Instalar dependencias de functions
         run: npm ci --prefix functions
 
+      - name: Pruebas del service worker (DT-17)
+        # No necesitan emulador ni navegador: son las decisiones puras del
+        # worker, separadas de sus efectos para poder probarlas. Corren aquí
+        # porque este trabajo ya tiene las dependencias de la raíz instaladas.
+        run: npm run test:sw
+
       - name: Ejecutar pruebas de reglas contra el emulador
         run: npm run test:reglas
 

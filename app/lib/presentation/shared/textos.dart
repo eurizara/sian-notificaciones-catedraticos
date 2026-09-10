@@ -39,6 +39,16 @@ abstract final class Textos {
   /// versión desplegada más reciente, que en una aplicación instalada puede
   /// llevar días sin renovarse.
   static const String botonRecargar = 'Recargar la aplicación';
+
+  // --- Distintivo de ambiente (DT-20) ----------------------------------------
+
+  /// Etiqueta de la banda que avisa en qué ambiente se está.
+  ///
+  /// Dice «no es producción» antes que el nombre del ambiente, porque eso es lo
+  /// que hay que saber en el segundo que se mira. Cuál de los dos es, después.
+  static const String ambienteDesarrollo = 'NO ES PRODUCCIÓN · Desarrollo';
+  static const String ambienteCalidad = 'NO ES PRODUCCIÓN · Calidad (QA)';
+  static const String ambienteDesconocido = 'NO ES PRODUCCIÓN · ambiente sin identificar';
   static const String verificandoSesion = 'Verificando sesión…';
   static const String recuperacionEnviada =
       'Si ese correo tiene cuenta, recibirás un enlace para restablecerla.';
