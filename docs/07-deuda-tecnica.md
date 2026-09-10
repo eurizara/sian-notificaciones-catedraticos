@@ -285,6 +285,8 @@ gratuita.
 | DT-24 | Un envío con algún fallo deja la pantalla igual y se manda dos veces | Conocimiento | **Alta** | **Pagada** | 0 USD |
 | DT-25 | El entorno local compila con un Flutter distinto del que despliega | Conocimiento | **Media** | **Pagada** | 0 USD |
 | DT-26 | En Android el contador del icono se queda encendido con todo leído | Plataforma | **Media** | **Pagada** | 0 USD |
+| DT-29 | Cambiar el manifiesto deja Android degradado hasta que Chrome regenera la aplicación | Plataforma | Baja | **Aceptada** | 0 USD |
+| DT-30 | Chrome puede marcar los avisos como «posible spam» y ofrecer anular la suscripción | Plataforma | **Media** | Abierta | 0 USD |
 | DT-27 | No hay forma de responder a un aviso | Alcance | Media | Abierta | 0 USD |
 | DT-28 | El manual no se alcanza desde dentro de la aplicación | Alcance | Baja | Abierta | 0 USD |
 
@@ -1635,3 +1637,84 @@ habría mandado a los catedráticos al ambiente equivocado. El manual que se abr
 Hay dos, y la aplicación sabe el rol de quien está dentro. Lo natural es que un catedrático
 abra el suyo y coordinación el general. Es una decisión de una línea, pero conviene tomarla
 a propósito y no dejar a todos en el índice.
+
+
+---
+
+## DT-29 — Cambiar el manifiesto deja Android degradado un rato
+
+**Observado el 10 de septiembre de 2026, y aceptado.** No hay nada que arreglar en el
+código; conviene saberlo para no volver a perseguirlo.
+
+Al renombrar los iconos por ambiente cambió el manifiesto. Chrome lo detecta y **programa
+una regeneración del WebAPK** —la aplicación real que Android instala—, que no es
+instantánea: va al servidor de Google, se genera un paquete nuevo y se instala.
+
+Durante esa ventana el aparato queda en un estado intermedio, y se ve así en
+`chrome://webapks`:
+
+```
+  Update Status:               Pending
+  Last Update Completion Time: Wed Dec 31 1969    ← nunca completó
+```
+
+Lo que se observa mientras tanto:
+
+  · Las notificaciones se atribuyen a **«Chrome · <sitio>»**, con botón «Anular
+    suscripción», en vez de a la aplicación.
+  · **La insignia no funciona**, porque pertenece a la aplicación instalada y no al sitio.
+
+Se resolvió solo al cerrar la aplicación y el navegador y volver a abrir: la regeneración
+completó y las notificaciones pasaron a atribuirse a «SIAN UMG-BDM», con el punto en el
+icono.
+
+> **Producción no pasa por esto.** El manifiesto de producción no cambia: los iconos
+> marcados existen solo en desarrollo y calidad, y sus nombres ya son estables. Es un costo
+> de una sola vez por ambiente, y está pagado.
+
+Si vuelve a aparecer tras un cambio de iconos o de manifiesto: cerrar la aplicación y el
+navegador, esperar, y comprobar en `chrome://webapks` que «Update Status» ya no diga
+`Pending`.
+
+---
+
+## DT-30 — Chrome puede marcar los avisos como «posible spam»
+
+**Observado el 10 de septiembre de 2026.** Durante las pruebas, Chrome mostró:
+
+> **Posible spam** — Chrome detectó posible spam de `sian-umg-bdm-dev.web.app`
+> *Anular suscripción · Mostrar notificación*
+
+No es un fallo del sistema: es la detección de notificaciones abusivas de Chrome. Se disparó
+por un motivo entendible — se mandaron varios avisos titulados «Nuevo mensaje no 11, 12,
+13, 15» en pocos minutos y no se abrió ninguno. Repetitivo, en ráfaga y sin interacción es
+exactamente el patrón que esa heurística busca.
+
+### Por qué importa fuera de las pruebas
+
+Dos vías, y la segunda es la seria:
+
+  · Chrome puede **atenuar** las notificaciones de un sitio que marca como sospechoso. No
+    está en nuestra mano.
+  · El botón que ofrece es **«Anular suscripción»**. Un catedrático que lo toque por error
+    deja de recibir avisos **sin saberlo**, y sin ningún rastro en el sistema.
+
+Lo segundo sí lo cubre parcialmente la pantalla de Alcance: la próxima vez que se le mande
+algo aparecerá como «El último aviso NO le llegó». Pero se entera **después**, no antes.
+
+### Qué reduce el riesgo
+
+  · **No mandar avisos de prueba en ráfaga a la población real.** Las pruebas van en
+    desarrollo, que para eso está.
+  · **Títulos que digan algo.** «Nuevo mensaje no 13» repetido es indistinguible de spam
+    para una heurística y para una persona. Un aviso institucional real —«Suspensión de
+    labores», «Entrega de exámenes»— no se parece a eso.
+  · Los avisos urgentes ya llevan `requireInteraction`, que obliga a atenderlos y por lo
+    tanto genera interacción, que es justo lo que la heurística premia.
+
+### Lo que NO conviene hacer
+
+Perseguirlo con más notificaciones, ni intentar detectar si Chrome nos marcó. No hay API
+para preguntarlo, y el remedio no es técnico: es que los avisos sean pocos, distintos entre
+sí y realmente útiles. Un sistema de emergencias que manda poco es, además, el que se
+quiere.
