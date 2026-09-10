@@ -1231,6 +1231,39 @@ no se le ha mandado nada. Las dos juntas tapan los huecos de la otra.
 
 ---
 
+## DT-22 — El resumen se leyó al revés
+
+**10 de septiembre de 2026, en QA.** La pantalla decía:
+
+> Los 1 catedráticos pueden recibir avisos.
+> ✓ No hay nada que atender.
+
+Y el coordinador lo entendió como **«1 catedrático no puede recibir»** — exactamente lo
+contrario de lo que dice.
+
+No es descuido de quien lee. **«Los 1» rompe la concordancia y obliga a releer**, y al releer
+uno busca sentido en las palabras sueltas —«1», «catedráticos»— antes que en la frase. La
+impresión que queda es la de un número y un sustantivo en una pantalla que existe para
+señalar problemas.
+
+> Un resumen que se puede entender del revés no informa: **da una impresión, y la impresión
+> puede ser la contraria del dato.** En una pantalla cuyo único trabajo es avisar de quién no
+> va a recibir, eso es peor que no tenerla.
+
+Ahora cada combinación de singular y plural tiene su frase, y las dos versiones —«todo bien»
+y «hay problemas»— empiezan distinto a propósito, para que se distingan de un vistazo sin
+leerlas enteras.
+
+**Y dice «personas», no «catedráticos».** Quien recibe avisos lo decide una bandera por
+persona con el rol como valor por omisión: un coordinador que además da clases entra en la
+cuenta. Llamarlos a todos catedráticos era la misma inexactitud que ya había hecho que esta
+pantalla contara sobre la población equivocada.
+
+Las pruebas incluyen una que habría atrapado el defecto original: **el texto de «todo bien»
+no puede contener ninguna negación.**
+
+---
+
 ## DT-22 — El aviso que no se apagaba cuando el problema se resolvía
 
 **10 de septiembre de 2026**, y salió de una pregunta, no de un fallo observado:
