@@ -97,6 +97,34 @@ describe('estadoDeCanal', () => {
     expect(estadoDeCanal([disp(false, 'denegado')], AHORA)).toBe('permiso-denegado');
   });
 
+  it('el último envío fallido manda sobre todo lo demás', () => {
+    // ────────────────────────────────────────────────────────────────────────
+    // La validación en seco tiene un punto ciego, y este es el remedio.
+    // ────────────────────────────────────────────────────────────────────────
+    //
+    // FCM acepta el token y `validate_only` dice «vivo», pero nunca toca el
+    // servicio de push de Apple, que es donde muere de verdad un registro de
+    // Safari. El 10 de septiembre de 2026 la pantalla daba por bien a un iPhone
+    // al que ningún aviso llegaba, tres envíos seguidos.
+    //
+    // Las demás señales comprueban CONDICIONES; esta mira el HECHO.
+    expect(
+      estadoDeCanal([disp(true, 'concedido', AHORA, true)], AHORA, 30, true),
+    ).toBe('ultimo-envio-fallo');
+  });
+
+  it('sin envíos fallidos recientes, el resto de señales decide', () => {
+    expect(
+      estadoDeCanal([disp(true, 'concedido', AHORA, true)], AHORA, 30, false),
+    ).toBe('al-dia');
+  });
+
+  it('sin dispositivos, eso pesa más que el envío fallido', () => {
+    // Quien no tiene dónde recibir necesita registrar un aparato, no
+    // reengancharlo. Decirle lo segundo sería pedirle algo imposible.
+    expect(estadoDeCanal([], AHORA, 30, true)).toBe('sin-dispositivo');
+  });
+
   it('un token muerto no se salva por verse bien el documento', () => {
     // ────────────────────────────────────────────────────────────────────────
     // El caso que engañó a la pantalla el 10 de septiembre de 2026.
@@ -163,7 +191,13 @@ describe('estadoDeCanal', () => {
 
 describe('GRAVEDAD_DE_CANAL', () => {
   it('ordena primero a quien no puede recibir nada', () => {
-    const orden = (['al-dia', 'solo-en-pestana', 'token-muerto', 'sin-dispositivo'] as const)
+    const orden = ([
+      'al-dia',
+      'solo-en-pestana',
+      'token-muerto',
+      'ultimo-envio-fallo',
+      'sin-dispositivo',
+    ] as const)
       .slice()
       .sort((a, b) => GRAVEDAD_DE_CANAL[a] - GRAVEDAD_DE_CANAL[b]);
     expect(orden[0]).toBe('sin-dispositivo');

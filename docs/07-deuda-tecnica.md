@@ -1190,6 +1190,65 @@ la aplicación una vez**: se renueva solo, sin reinstalar ni volver a configurar
 
 ---
 
+## DT-22 — El punto ciego de la validación en seco
+
+**Descubierto probando el 10 de septiembre de 2026**, y es un límite del enfoque que se
+propuso, no un descuido de la implementación. Conviene que quede escrito.
+
+La pantalla seguía dando por bien a un coordinador al que **tres envíos seguidos no le
+llegaron**. Se comprobó token por token:
+
+```
+  validate_only con carga mínima          VIVO
+  validate_only con la carga real         VIVO
+  envío real                              messaging/invalid-argument
+```
+
+**`validate_only` le pregunta a FCM, y FCM acepta el token. Pero nunca toca el servicio de
+push de Apple**, que es donde muere de verdad un registro de Safari. La validación no puede
+saber lo que solo se descubre intentando entregar.
+
+### Lo que sí lo sabe
+
+El historial de entregas, que ya estaba escrito y no costaba nada leer. Ahora la pantalla
+mira también **cómo le fue a cada persona en el último aviso real**, y esa señal manda sobre
+las demás.
+
+> Las otras comprueban **condiciones** —aplicación instalada, permiso concedido, token
+> aceptado— y todas pueden cumplirse mientras el aviso no llega. Esta mira el **hecho**: se
+> mandó algo de verdad y no llegó.
+>
+> Una condición que se cumple no demuestra que el aviso llegue. Que haya llegado, sí.
+
+Se mira **el último** envío y no «alguna vez falló»: quien falló en agosto y recibe desde
+entonces está bien, y sacarlo en la lista sería mandar a coordinación a buscar a quien no
+hace falta.
+
+La validación en seco se conserva porque cubre lo que el historial no puede: a quien todavía
+no se le ha mandado nada. Las dos juntas tapan los huecos de la otra.
+
+---
+
+## DT-20 — Android hornea el icono al instalar
+
+**Segunda corrección, el 10 de septiembre de 2026.** La primera puso la marca dentro de la
+zona segura, y aun así el icono seguía igual en Android tras desinstalar y volver a instalar
+varias veces.
+
+El archivo servido **sí** tenía la marca; se verificó descargándolo. Lo que pasa es otra
+cosa: al instalar una aplicación web, Android genera un **WebAPK con el icono horneado
+dentro**. Cambiar los bytes detrás de la misma dirección no le llega, porque el icono se
+sirve desde una caché que la dirección no invalida.
+
+Ahora los iconos marcados van a **rutas propias** —`Icon-192-dev.png`— y el script reescribe
+el manifiesto y el HTML para apuntar ahí. Con un nombre distinto no hay nada que reutilizar:
+es otra dirección, y el WebAPK se genera con lo que encuentre en ella.
+
+Los originales se dejan donde estaban: si algo quedó apuntando a ellos, encuentra un icono
+válido en vez de un hueco.
+
+---
+
 ## DT-20 — El icono no cambiaba en Android
 
 **Corregido el 10 de septiembre de 2026.** En iOS la marca apareció; en Android no.

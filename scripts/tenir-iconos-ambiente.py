@@ -214,11 +214,62 @@ def main() -> None:
     if not iconos:
         sys.exit(f'error: no hay iconos en {carpeta}')
 
+    # ─────────────────────────────────────────────────────────────────────────
+    # Los iconos marcados van a RUTAS NUEVAS, no encima de las originales.
+    # ─────────────────────────────────────────────────────────────────────────
+    #
+    # Marcar el archivo en su sitio no bastó, y el motivo es Android: al
+    # instalar una aplicación web genera un WebAPK con el icono **horneado
+    # dentro**. Cambiar los bytes detrás de la misma dirección no le llega ni
+    # desinstalando y volviendo a instalar, porque el icono se sirve desde una
+    # caché que la dirección no invalida.
+    #
+    # Comprobado el 10 de septiembre de 2026: el archivo servido tenía la marca,
+    # y el teléfono seguía enseñando el icono de antes tras varias
+    # reinstalaciones.
+    #
+    # Con un nombre distinto no hay nada que reutilizar: es otra dirección, y el
+    # WebAPK se genera con lo que encuentra en ella.
+    renombrados: dict[str, str] = {}
     for icono in iconos:
-        marcar(icono, INICIALES[ambiente])
+        marcado = icono.with_name(f'{icono.stem}-{ambiente}{icono.suffix}')
+        marcado.write_bytes(icono.read_bytes())
+        marcar(marcado, INICIALES[ambiente])
+        renombrados[f'icons/{icono.name}'] = f'icons/{marcado.name}'
+
+    _reescribir_referencias(destino, renombrados)
 
     print(f'Marcados {len(iconos)} iconos para «{ambiente}» con la inicial '
-          f'«{INICIALES[ambiente]}».')
+          f'«{INICIALES[ambiente]}», en rutas propias.')
+
+
+def _reescribir_referencias(destino: Path, renombrados: dict[str, str]) -> None:
+    """Apunta el manifiesto y el HTML a los iconos marcados.
+
+    Los originales se dejan donde están: si algo quedó apuntando a ellos, sigue
+    encontrando un icono válido en vez de un hueco.
+    """
+    manifiesto = destino / 'manifest.json'
+    if manifiesto.is_file():
+        import json
+
+        datos = json.loads(manifiesto.read_text(encoding='utf-8'))
+        for icono in datos.get('icons', []):
+            icono['src'] = renombrados.get(icono.get('src', ''), icono.get('src', ''))
+        manifiesto.write_text(
+            json.dumps(datos, ensure_ascii=False, indent=2) + '\n', encoding='utf-8'
+        )
+        print(f'  manifest.json: {len(datos.get("icons", []))} referencias actualizadas')
+
+    indice = destino / 'index.html'
+    if indice.is_file():
+        html = indice.read_text(encoding='utf-8')
+        antes = html
+        for viejo, nuevo in renombrados.items():
+            html = html.replace(viejo, nuevo)
+        if html != antes:
+            indice.write_text(html, encoding='utf-8')
+            print('  index.html: referencias actualizadas')
 
 
 if __name__ == '__main__':

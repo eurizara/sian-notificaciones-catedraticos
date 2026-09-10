@@ -181,6 +181,7 @@ class _Fila extends StatelessWidget {
 
 IconData _icono(EstadoCanal estado) => switch (estado) {
   EstadoCanal.sinDispositivo => Icons.phonelink_erase_outlined,
+  EstadoCanal.ultimoEnvioFallo => Icons.report_problem_outlined,
   EstadoCanal.tokenMuerto => Icons.link_off_outlined,
   EstadoCanal.permisoDenegado => Icons.notifications_off_outlined,
   EstadoCanal.soloEnPestana => Icons.tab_outlined,
@@ -195,6 +196,7 @@ IconData _icono(EstadoCanal estado) => switch (estado) {
 /// «urgente» donde importa.
 Color _color(EstadoCanal estado) => switch (estado) {
   EstadoCanal.sinDispositivo ||
+  EstadoCanal.ultimoEnvioFallo ||
   EstadoCanal.tokenMuerto ||
   EstadoCanal.permisoDenegado => ColoresSian.doradoTexto,
   EstadoCanal.soloEnPestana ||
@@ -204,6 +206,7 @@ Color _color(EstadoCanal estado) => switch (estado) {
 
 String _queLePasa(EstadoCanal estado) => switch (estado) {
   EstadoCanal.sinDispositivo => Textos.canalSinDispositivo,
+  EstadoCanal.ultimoEnvioFallo => Textos.canalUltimoEnvioFallo,
   EstadoCanal.tokenMuerto => Textos.canalTokenMuerto,
   EstadoCanal.permisoDenegado => Textos.canalPermisoDenegado,
   EstadoCanal.soloEnPestana => Textos.canalSoloEnPestana,
@@ -213,6 +216,7 @@ String _queLePasa(EstadoCanal estado) => switch (estado) {
 
 String _quePedirle(EstadoCanal estado) => switch (estado) {
   EstadoCanal.sinDispositivo => Textos.canalPedirRegistrar,
+  EstadoCanal.ultimoEnvioFallo => Textos.canalPedirReenganchar,
   EstadoCanal.tokenMuerto => Textos.canalPedirReabrir,
   EstadoCanal.permisoDenegado => Textos.canalPedirPermiso,
   EstadoCanal.soloEnPestana => Textos.canalPedirInstalar,
