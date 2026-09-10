@@ -256,7 +256,7 @@ Nada de esto falla: falta. Se empieza cuando las cuatro correcciones estén libe
 | # | Mejora | Qué aporta |
 |:---:|---|---|
 | M-1 | **DT-07** · tasa de entrega en el panel | Hoy, saber por qué siete personas no recibieron el aviso del 7 de septiembre exigió consultar la base de datos a mano. El coordinador debería verlo solo |
-| M-2 | **DT-20** · saber en qué ambiente se está | Instalada como aplicación, los tres ambientes se ven iguales. Previene mandar un aviso de prueba a los 22 catedráticos reales |
+| — | ~~**DT-20** · saber en qué ambiente se está~~ | **Pagada el 09/09.** Se adelantó al resto de mejoras porque hace más segura la prueba de todo lo demás. Banda en pantalla e icono marcado; producción no lleva ninguna de las dos |
 | M-3 | **DT-28** · manual accesible desde la barra | El manual ya está publicado; falta el botón. Es la más pequeña de todas y la que menos puede romper |
 | M-4 | **DT-21** · tema oscuro y preferencia del usuario | El tema ya está construido; falta verificar el contraste antes de encenderlo |
 | M-5 | **DT-27** · responder a un aviso | Funcionalidad nueva. Va al final a propósito: primero que lo que ya existe funcione |
