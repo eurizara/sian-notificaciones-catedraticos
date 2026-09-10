@@ -272,11 +272,28 @@ export const sondaDeCanal = onSchedule(
 async function personasConElUltimoEnvioFallido(): Promise<Set<string>> {
   const fallidos = new Set<string>();
 
-  const instantanea = await db
-    .collectionGroup('entregas')
-    .orderBy('creadaEn', 'desc')
-    .limit(LIMITE_ENTREGAS_REVISADAS)
-    .get();
+  let instantanea;
+  try {
+    instantanea = await db
+      .collectionGroup('entregas')
+      .orderBy('creadaEn', 'desc')
+      .limit(LIMITE_ENTREGAS_REVISADAS)
+      .get();
+  } catch (e) {
+    // ────────────────────────────────────────────────────────────────────────
+    // Que falte esta señal no puede dejar la pantalla en blanco.
+    // ────────────────────────────────────────────────────────────────────────
+    //
+    // Pasó el 10 de septiembre de 2026: esta consulta necesita un índice de
+    // grupo de colección que todavía no existía, y en vez de faltar UNA fila la
+    // pantalla entera mostró «No se pudo revisar el alcance».
+    //
+    // Coordinación se quedó sin ver a los que sí sabíamos detectar por otras
+    // vías. Una señal que se añade para informar mejor no puede empeorar lo que
+    // ya funcionaba.
+    logger.error('No se pudo leer el historial de entregas', { error: String(e) });
+    return fallidos;
+  }
 
   // Se recorre de más reciente a más antigua y se conserva solo la primera de
   // cada persona: esa es «la última».
