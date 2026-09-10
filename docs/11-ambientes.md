@@ -294,14 +294,37 @@ que se paga es **cero**. Los números medidos el 24 de agosto de 2026:
 | Recurso | Consumo real | Cuota gratuita | Alcance de la cuota |
 |---|---|---|---|
 | Artifact Registry | 91 MB por ambiente ≈ 274 MB los tres | 500 MB | por cuenta de facturación |
-| Cloud Scheduler | 1 job por ambiente = **3** | 3 jobs | por cuenta de facturación |
+| Cloud Scheduler | 2 jobs por ambiente = **6** | 3 jobs | por cuenta de facturación |
 | Invocaciones de Functions | ~43 200/mes por ambiente ≈ 130 000 | 2 000 000 | por cuenta de facturación |
 | Firestore | muy por debajo | 50 000 lecturas/día | por proyecto |
 | Hosting | muy por debajo | 10 GB + 360 MB/día | por proyecto |
 
-Cloud Scheduler queda **justo en el límite**: el `despachador` corre cada minuto y son
-exactamente 3 jobs. Un cuarto job empieza a costar (RES-04). Antes de agregar cualquier
-tarea programada hay que contar los que ya existen:
+### Cloud Scheduler pasó la cuota, y es lo único que cuesta
+
+**Es el único renglón que dejó de ser cero, y conviene mirarlo de frente.**
+
+Hasta el 9 de septiembre de 2026 había un solo trabajo por ambiente —el `despachador`, que
+corre cada minuto— y eran exactamente 3, justo en el límite. La sonda de canal de DT-22
+añadió un segundo por ambiente: ahora son **6**.
+
+Los tres primeros siguen siendo gratis; los otros tres cuestan **0.10 USD al mes cada uno**,
+o sea **0.30 USD mensuales** sobre una cuenta con un presupuesto de 10 USD. Es el 3 % del
+aviso más bajo.
+
+> **Se decidió pagarlo.** La alternativa era no tener sonda, y sin ella un token muerto solo
+> se descubre cuando falla un aviso real — que el 7 de septiembre costó el 23 % de la
+> audiencia en un solo envío. Treinta centavos al mes por saberlo antes es una compra
+> evidente.
+>
+> Lo que no sería evidente es llegar aquí sin darse cuenta. Por eso este renglón queda
+> escrito con su número, y no diluido en un «sigue siendo gratis».
+
+Si algún día hiciera falta volver a cero: la sonda es semanal y el despachador es por
+minuto, así que el candidato a fusionar sería la sonda dentro del despachador con una
+comprobación de día y hora. **No se hizo** porque mezclar una tarea semanal dentro de una que
+corre cada minuto es la clase de ahorro que se paga en confusión el día que algo falla.
+
+Antes de agregar cualquier tarea programada hay que contar las que ya existen:
 
 ```bash
 npx firebase-tools functions:list --project sian-umg-bdm-qa
