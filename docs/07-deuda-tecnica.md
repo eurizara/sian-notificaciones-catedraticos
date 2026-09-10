@@ -1229,6 +1229,48 @@ no se le ha mandado nada. Las dos juntas tapan los huecos de la otra.
 
 ---
 
+## DT-22 — El aviso que no se apagaba cuando el problema se resolvía
+
+**10 de septiembre de 2026**, y salió de una pregunta, no de un fallo observado:
+
+> «Suponiendo que le avisamos a Alfredo y él hace el proceso, ¿nos desaparecerá de la
+> pantalla de Alcance? ¿O hasta que mandemos un nuevo mensaje y ya le llegue?»
+
+La respuesta era la mala. **Hasta el próximo envío.** Las entregas solo se escriben al mandar
+un aviso, así que reengancharse no producía ningún dato nuevo y el último envío de esa
+persona seguía siendo el fallido, indefinidamente.
+
+O sea: coordinación le pide algo a alguien, la persona lo hace, y el panel no cambia.
+
+> **Un aviso que no se apaga cuando se resuelve el problema enseña a ignorar la pantalla.**
+> Es el mismo mecanismo por el que un `limpio: false` permanente dejó de significar nada, y
+> por el que una auditoría que se cierra por lo que no puede afectar a nadie termina
+> abriéndose por costumbre.
+
+### Cómo se resolvió, y por qué no basta con quitarlo de la lista
+
+El fallo es evidencia **del momento en que ocurrió**. Si desde entonces la persona volvió a
+entrar y su aparato se registró de nuevo, esa evidencia ya no describe el presente y deja de
+contar.
+
+Pero **tampoco se le puede llamar «al día»**, y aquí está el matiz que importa: eso ya se
+dijo una vez de este mismo caso y era mentira. El documento de Alfredo se veía impecable
+—instalado, con permiso, con actividad reciente— y ningún aviso le llegaba.
+
+Así que hay un estado propio: **«Se reenganchó: falta confirmarlo con un envío»**, justo por
+encima de «al día» en el orden. Dice las dos cosas que son ciertas:
+
+  · La persona hizo lo que se le pidió, así que quien avisó sabe que su gestión llegó y no
+    tiene que volver a llamar.
+  · No hay forma de saber si funcionó hasta el próximo envío real, así que no se promete lo
+    que no se puede comprobar.
+
+Y si al reengancharse sigue habiendo algo comprobable mal —quedó solo en pestaña, por
+ejemplo— manda ese problema real: volver a entrar no arregla no tener la aplicación
+instalada.
+
+---
+
 ## DT-22 — Una señal nueva tumbó la pantalla entera
 
 **10 de septiembre de 2026.** Al añadir la lectura del historial de entregas, el Alcance

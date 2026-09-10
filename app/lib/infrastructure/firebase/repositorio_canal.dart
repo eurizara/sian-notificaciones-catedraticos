@@ -22,6 +22,7 @@ enum EstadoCanal {
   permisoDenegado,
   soloEnPestana,
   sinActividadReciente,
+  reenganchadoSinComprobar,
   alDia;
 
   static EstadoCanal desdeServidor(String valor) => switch (valor) {
@@ -31,6 +32,7 @@ enum EstadoCanal {
     'permiso-denegado' => EstadoCanal.permisoDenegado,
     'solo-en-pestana' => EstadoCanal.soloEnPestana,
     'sin-actividad-reciente' => EstadoCanal.sinActividadReciente,
+    'reenganchado-sin-comprobar' => EstadoCanal.reenganchadoSinComprobar,
     _ => EstadoCanal.alDia,
   };
 }

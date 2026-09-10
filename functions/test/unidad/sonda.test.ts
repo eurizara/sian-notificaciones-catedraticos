@@ -109,20 +109,80 @@ describe('estadoDeCanal', () => {
     //
     // Las demás señales comprueban CONDICIONES; esta mira el HECHO.
     expect(
-      estadoDeCanal([disp(true, 'concedido', AHORA, true)], AHORA, 30, true),
+      estadoDeCanal([disp(true, 'concedido', haceDias(3), true)], AHORA, 30, haceDias(1)),
     ).toBe('ultimo-envio-fallo');
   });
 
   it('sin envíos fallidos recientes, el resto de señales decide', () => {
     expect(
-      estadoDeCanal([disp(true, 'concedido', AHORA, true)], AHORA, 30, false),
+      estadoDeCanal([disp(true, 'concedido', AHORA, true)], AHORA, 30, null),
     ).toBe('al-dia');
   });
 
   it('sin dispositivos, eso pesa más que el envío fallido', () => {
     // Quien no tiene dónde recibir necesita registrar un aparato, no
     // reengancharlo. Decirle lo segundo sería pedirle algo imposible.
-    expect(estadoDeCanal([], AHORA, 30, true)).toBe('sin-dispositivo');
+    expect(estadoDeCanal([], AHORA, 30, haceDias(1))).toBe('sin-dispositivo');
+  });
+
+  it('si se reenganchó DESPUÉS del fallo, deja de contarse como fallo', () => {
+    // ────────────────────────────────────────────────────────────────────────
+    // La pregunta que lo destapó: «si Alfredo lo arregla, ¿desaparece?».
+    // ────────────────────────────────────────────────────────────────────────
+    //
+    // Antes no: las entregas solo se escriben al mandar un aviso, así que su
+    // último envío seguía siendo el fallido y la pantalla lo señalaba hasta el
+    // próximo mensaje. Coordinación le pedía algo, la persona lo hacía, y el
+    // panel no cambiaba.
+    //
+    // Un aviso que no se apaga cuando se resuelve el problema enseña a ignorar
+    // la pantalla.
+    expect(
+      estadoDeCanal(
+        [disp(true, 'concedido', haceDias(1), true)],
+        AHORA,
+        30,
+        haceDias(3),
+      ),
+    ).toBe('reenganchado-sin-comprobar');
+  });
+
+  it('reenganchado NO es «al día», y la diferencia importa', () => {
+    // «Al día» ya se dijo una vez de este mismo caso y era mentira: el
+    // documento se veía impecable y ningún aviso llegaba. Lo honesto es decir
+    // que se reenganchó Y que no se sabe si funcionó hasta el próximo envío.
+    const reenganchado = estadoDeCanal(
+      [disp(true, 'concedido', haceDias(1), true)],
+      AHORA,
+      30,
+      haceDias(3),
+    );
+    expect(reenganchado).not.toBe('al-dia');
+    expect(reenganchado).not.toBe('ultimo-envio-fallo');
+  });
+
+  it('reenganchado pero en pestaña: manda el problema real', () => {
+    // Volver a entrar no arregla no tener la aplicación instalada. Si hay algo
+    // comprobable que sigue mal, eso es lo que hay que decir.
+    expect(
+      estadoDeCanal(
+        [disp(false, 'concedido', haceDias(1), true)],
+        AHORA,
+        30,
+        haceDias(3),
+      ),
+    ).toBe('solo-en-pestana');
+  });
+
+  it('sin actividad posterior al fallo, sigue siendo fallo', () => {
+    expect(
+      estadoDeCanal(
+        [disp(true, 'concedido', haceDias(5), true)],
+        AHORA,
+        30,
+        haceDias(2),
+      ),
+    ).toBe('ultimo-envio-fallo');
   });
 
   it('un token muerto no se salva por verse bien el documento', () => {
@@ -196,6 +256,7 @@ describe('GRAVEDAD_DE_CANAL', () => {
       'solo-en-pestana',
       'token-muerto',
       'ultimo-envio-fallo',
+      'reenganchado-sin-comprobar',
       'sin-dispositivo',
     ] as const)
       .slice()
