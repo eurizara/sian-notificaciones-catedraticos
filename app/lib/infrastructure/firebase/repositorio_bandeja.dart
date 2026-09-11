@@ -147,6 +147,7 @@ class RepositorioBandejaFirebase implements RepositorioBandeja {
           estado: (datos['estado'] as String?) ?? 'PENDIENTE',
           requiereConfirmacion: mensaje['requiereConfirmacion'] == true,
           emisor: (mensaje['creadoPorNombre'] as String?) ?? '',
+          creadoPor: (mensaje['creadoPor'] as String?) ?? '',
           entregadoEn: (datos['entregadoEn'] as Timestamp?)?.toDate(),
           abiertoEn: (datos['abiertoEn'] as Timestamp?)?.toDate(),
           confirmadoEn: (datos['confirmadoEn'] as Timestamp?)?.toDate(),

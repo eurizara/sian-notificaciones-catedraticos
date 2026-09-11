@@ -23,6 +23,7 @@ const {
   decidirCuenta,
   esMensajeContable,
   normalizarCuenta,
+  etiquetaDeNotificacion,
 } = require('./sw-decisiones.js');
 
 /** Una notificación como las que devuelve `getNotifications()`. */
@@ -145,5 +146,29 @@ describe('normalizarCuenta', () => {
     assert.equal(normalizarCuenta(undefined), 0);
     assert.equal(normalizarCuenta(4), 4);
     assert.equal(normalizarCuenta('4'), 4);
+  });
+});
+
+describe('etiquetaDeNotificacion — DT-27', () => {
+  test('un aviso se etiqueta con su identificador, como siempre', () => {
+    assert.equal(etiquetaDeNotificacion({ mensajeId: 'm-1' }), 'm-1');
+  });
+
+  test('una respuesta usa su etiqueta, una por aviso', () => {
+    // Así las respuestas a un mismo aviso se reemplazan en vez de apilarse.
+    assert.equal(
+      etiquetaDeNotificacion({ tipo: 'RESPUESTA', etiqueta: 'respuestas-m-1' }),
+      'respuestas-m-1',
+    );
+  });
+
+  test('una respuesta NO cuenta para la insignia', () => {
+    // Por eso no lleva mensajeId: no es un aviso sin leer de la bandeja.
+    assert.equal(esMensajeContable(undefined), false);
+  });
+
+  test('sin nada, la etiqueta genérica', () => {
+    assert.equal(etiquetaDeNotificacion({}), 'sian');
+    assert.equal(etiquetaDeNotificacion(undefined), 'sian');
   });
 });

@@ -12,3 +12,10 @@ Future<bool> mostrarNotificacionDelSistema({
   required bool urgente,
   String? etiqueta,
 }) async => false;
+
+/// Etiquetas que se pidieron cerrar, para que las pruebas lo comprueben.
+final List<String> etiquetasCerradas = <String>[];
+
+Future<void> cerrarNotificacionesDelSistema(String etiqueta) async {
+  etiquetasCerradas.add(etiqueta);
+}

@@ -492,7 +492,7 @@ async function despachar(
  * viejo —documento identificado por el token— y el nuevo —por instalación—, el
  * mismo token puede estar en cualquiera de los dos.
  */
-async function retirarTokensMuertos(
+export async function retirarTokensMuertos(
   muertos: readonly { uid: string; token: string }[],
 ): Promise<void> {
   if (muertos.length === 0) {
@@ -551,8 +551,14 @@ async function marcarSinDispositivo(
   await lote.commit();
 }
 
-/** Identificadores de notificación activos de un usuario (RF-USR-10). */
-async function tokensDe(uid: string): Promise<string[]> {
+/**
+ * Identificadores de notificación activos de un usuario (RF-USR-10).
+ *
+ * Exportada para las respuestas (DT-27), que notifican con el mismo criterio
+ * que los avisos: tener dos formas de leer los tokens es cómo se llegó a que
+ * una leyera el campo y la otra el identificador del documento.
+ */
+export async function tokensDe(uid: string): Promise<string[]> {
   const instantanea = await db
     .collection(RUTAS.usuarios)
     .doc(uid)

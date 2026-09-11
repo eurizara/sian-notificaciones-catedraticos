@@ -25,10 +25,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../application/proveedores_programacion.dart';
+import '../../application/proveedores_respuestas.dart';
 import '../../infrastructure/firebase/repositorio_programacion.dart';
+import '../../infrastructure/firebase/repositorio_respuestas.dart';
 import '../shared/buscador.dart';
 import '../shared/tema.dart';
 import 'resumen_semanal.dart';
+import 'seccion_respuestas.dart';
 import '../shared/textos.dart';
 import 'seccion_programacion.dart' show Marca, filtrarProgramados;
 
@@ -333,6 +336,9 @@ class _ReporteState extends ConsumerState<_Reporte> {
                   ),
               ],
             ),
+            // Las respuestas, en el aviso al que contestan (DT-27). Solo en
+            // los avisos propios: la consulta es de los hilos de quien mira.
+            RespuestasDelAviso(mensajeId: mensaje.id),
             const SizedBox(height: 8),
 
             // Cuándo salió, no cuándo saldrá. Es la primera pregunta al abrir
@@ -681,3 +687,60 @@ SituacionEntrega situacionDe(DestinatarioEntrega d, bool porConfirmacion) {
           color: ColoresSian.confirmado,
         );
 }
+
+/// «3 respuestas · 1 sin leer», y al tocarlo, las conversaciones de ese aviso.
+///
+/// No aparece si el aviso no tiene respuestas: una línea que dice «0
+/// respuestas» en cada aviso sería ruido en el caso más común.
+class RespuestasDelAviso extends ConsumerWidget {
+  const RespuestasDelAviso({required this.mensajeId, super.key});
+
+  final String mensajeId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final List<AvisoConRespuestas> avisos =
+        ref.watch(avisosConRespuestasProvider).value ??
+        const <AvisoConRespuestas>[];
+    final AvisoConRespuestas? aviso = avisos
+        .where((AvisoConRespuestas a) => a.mensajeId == mensajeId)
+        .firstOrNull;
+    if (aviso == null) {
+      return const SizedBox.shrink();
+    }
+
+    final int sinLeer = aviso.sinLeer;
+    final String texto = sinLeer > 0
+        ? '${Textos.respuestasDeUnAviso(aviso.hilos.length)} · '
+              '${Textos.sinLeer(sinLeer)}'
+        : Textos.respuestasDeUnAviso(aviso.hilos.length);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: TextButton.icon(
+        style: TextButton.styleFrom(
+          foregroundColor: PaletaSian.de(context).primarioTexto,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          minimumSize: const Size(48, 40),
+        ),
+        onPressed: () => showModalBottomSheet<void>(
+          context: context,
+          showDragHandle: true,
+          isScrollControlled: true,
+          builder: (BuildContext _) => SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: TarjetaAvisoConRespuestas(aviso: aviso),
+            ),
+          ),
+        ),
+        icon: const Icon(Icons.forum_outlined, size: 18),
+        label: Text(
+          texto,
+          style: TextStyle(fontWeight: sinLeer > 0 ? FontWeight.w600 : null),
+        ),
+      ),
+    );
+  }
+}
+

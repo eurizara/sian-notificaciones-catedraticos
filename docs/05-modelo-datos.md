@@ -284,6 +284,50 @@ RF-CNF-05.
 | `intentos` | number | |
 | `ultimoError` | string | Código de error devuelto por FCM |
 
+### 2.7b `mensajes/{mensajeId}/hilos/{uidCatedratico}` (DT-27)
+
+La conversación entre **un catedrático y quien emitió el aviso**. El identificador del
+documento es el UID del catedrático, por el mismo motivo que en `entregas`: hace imposible
+por construcción que existan dos hilos de la misma persona sobre el mismo aviso.
+
+**Los contadores viven aquí y no en el aviso.** Poner «3 respuestas» en el documento del
+mensaje habría sido más cómodo, pero ese documento lo leen **todos** sus destinatarios, y
+cualquiera habría podido saber cuántos compañeros contestaron.
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `mensajeId` | string | Desnormalizado: el emisor consulta sus hilos por grupo de colección, y ahí no hay ruta |
+| `uid` | string | Duplica el identificador del documento, para poder filtrar en la consulta de grupo |
+| `nombre` | string | Nombre del catedrático, copiado: el emisor no siempre puede leer `usuarios` |
+| `emisorUid` | string | Quien emitió el aviso. Es el campo por el que filtra la consulta del emisor **y** el que evalúan las reglas |
+| `emisorNombre` | string | Copiado por la misma razón |
+| `tituloAviso` | string | Copiado al crear el hilo: el emisor tiene que saber de qué le hablan sin abrir el aviso |
+| `turnos` | number | Cuántas intervenciones lleva |
+| `sinLeerEmisor` | number | Lo que le falta leer al emisor. Cada lado pone a cero **su** contador |
+| `sinLeerCatedratico` | number | Ídem, del otro lado |
+| `ultimo` | map | `{lado, vista}` — vista previa del último turno, para la lista |
+| `creadoEn`, `actualizadoEn` | timestamp | |
+
+### 2.7c `mensajes/{mensajeId}/hilos/{uid}/turnos/{turnoId}` (DT-27)
+
+Cada intervención. **El identificador lo propone el cliente** (20 caracteres) y el servidor
+lo crea con `create`: si el mismo turno llega dos veces —un doble toque, un reintento de la
+red— el segundo encuentra el documento ya creado y no se guarda ni se notifica otra vez. Es
+la misma defensa que DT-24.
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `lado` | string | `CATEDRATICO` o `EMISOR` |
+| `autorUid`, `autorNombre` | string | |
+| `texto` | string | Máximo 1000 caracteres, validado en el servidor |
+| `creadoEn` | timestamp | Del servidor |
+
+### 2.7d `mensajes/{mensajeId}/privado/respuestas` (DT-27)
+
+**Ningún cliente la lee ni la escribe**: no hay regla que la cubra, y el cierre por omisión
+la niega. Solo guarda `avisadoEn`, la última vez que se notificó al emisor por este aviso,
+que es lo que permite plegar veintidós respuestas en una notificación.
+
 ### 2.8 `cola_despacho/{itemId}`
 
 Colección de nivel raíz. **Ningún cliente puede leerla ni escribirla.**
@@ -415,6 +459,7 @@ Documento único con los parámetros globales.
 | `bitacora` | `entidadId` ASC, `ocurridoEn` ASC | Trazabilidad de un mensaje (RF-BIT-07) |
 | Grupo de colección `entregas` | `uid` ASC, `entregadoEn` DESC | Historial del catedrático (RF-ENT-12) |
 | Grupo de colección `entregas` | `estado` ASC | Reporte de confirmación (RF-CNF-06) |
+| Grupo de colección `hilos` | `emisorUid` ASC, `actualizadoEn` DESC | Las conversaciones de un emisor, en todos sus avisos (DT-27) |
 
 ---
 

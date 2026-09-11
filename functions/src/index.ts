@@ -29,6 +29,11 @@
  *
  *   · sondaDeCanal                          DT-22, DT-18
  *   · dispositivosQueNecesitanAtencion      DT-22
+ *
+ * Mejoras de septiembre de 2026:
+ *
+ *   · responderAviso                        DT-27
+ *   · marcarHiloLeido                       DT-27
  */
 
 export { activarSesion } from './triggers/activarSesion';
@@ -41,6 +46,7 @@ export {
 } from './triggers/programacion';
 export { despachador } from './triggers/despachador';
 export { dispositivosQueNecesitanAtencion, sondaDeCanal } from './triggers/sonda';
+export { marcarHiloLeido, responderAviso } from './triggers/respuestas';
 export {
   confirmarLectura,
   detalleEntregas,

@@ -390,8 +390,8 @@ function componer(carga) {
       badge: '/icons/Icon-192.png',
       // Agrupa por mensaje. Sirve además para que las dos rutas que pueden
       // mostrar el mismo aviso —esta y la de la aplicación— se reemplacen en
-      // vez de duplicarse.
-      tag: datos.mensajeId || 'sian',
+      // vez de duplicarse. Las respuestas (DT-27) traen su propia etiqueta.
+      tag: self.SianDecisiones.etiquetaDeNotificacion(datos),
       // Una alerta urgente no se descarta sola: exige un gesto.
       requireInteraction: esUrgente,
       /*

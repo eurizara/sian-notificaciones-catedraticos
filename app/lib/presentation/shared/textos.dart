@@ -356,6 +356,61 @@ abstract final class Textos {
       'Ver quién confirmó y quién no, con el porcentaje sobre el total de '
       'destinatarios y la trazabilidad completa de cada mensaje.';
 
+  // --- Respuestas a un aviso (DT-27) --------------------------------------
+
+  static const String seccionRespuestas = 'Respuestas';
+  static const String seccionRespuestasTitulo = 'Respuestas a tus avisos';
+  static const String seccionRespuestasDescripcion =
+      'Lo que te contestaron sobre cada aviso que enviaste. Cada conversación '
+      'es solo entre tú y quien respondió: nadie más la ve.';
+
+  static const String respuestasVacio =
+      'Todavía nadie ha respondido a tus avisos. Cuando alguien lo haga, '
+      'aparecerá aquí, junto al aviso al que contesta.';
+  static const String respuestasFallo =
+      'No se pudieron cargar las respuestas. Revisa la conexión.';
+
+  /// Sin notificaciones, las respuestas solo se ven al abrir el panel. Se dice
+  /// en esta pantalla porque aquí es donde se echa de menos.
+  static const String respuestasSinNotificaciones =
+      'Para enterarte de una respuesta sin tener SIAN abierta, activa las '
+      'notificaciones en este dispositivo.';
+  static const String respuestasNotifPendienteDetalle =
+      'Sin ellas, las respuestas a tus avisos solo se ven al abrir el panel.';
+  static String respuestasNotifActivasDetalle(String navegador) =>
+      'Te avisaremos de las respuestas en este dispositivo ($navegador).';
+
+  static String conversaciones(int n) =>
+      n == 1 ? '1 conversación' : '$n conversaciones';
+  static String sinLeer(int n) => n == 1 ? '1 sin leer' : '$n sin leer';
+  static String respuestasDeUnAviso(int n) =>
+      n == 1 ? '1 respuesta' : '$n respuestas';
+
+  /// El nombre accesible del número junto a la sección.
+  static String insigniaRespuestas(int n) =>
+      n == 1 ? '1 respuesta sin leer' : '$n respuestas sin leer';
+
+  static String botonResponderA(String nombre) =>
+      nombre.isEmpty ? 'Responder' : 'Responder a $nombre';
+  static const String botonEnviarRespuesta = 'Enviar';
+  static const String enviandoRespuesta = 'Enviando…';
+  static const String etiquetaRespuesta = 'Tu respuesta';
+
+  /// Se dice antes de escribir, no después: quien responde tiene que saber a
+  /// quién le llega, y que sus compañeros no lo verán.
+  static String ayudaRespuesta(String nombre) => nombre.isEmpty
+      ? 'Solo la verá quien envió el aviso.'
+      : 'Solo la verá $nombre, que envió el aviso.';
+  static String ayudaContestar(String nombre) =>
+      'Solo la verá $nombre.';
+
+  static const String tu = 'Tú';
+  static const String respuestaEnviada = 'Respuesta enviada.';
+  static const String respuestaSinHora = 'Enviando…';
+  static const String conversacionTitulo = 'Conversación';
+  static String sobreElAviso(String titulo) => 'Sobre «$titulo»';
+  static const String verConversaciones = 'Ver las conversaciones';
+
   static const String seccionBitacora = 'Bitácora';
   static const String seccionBitacoraTitulo = 'Bitácora del sistema';
   static const String seccionBitacoraDescripcion =

@@ -301,7 +301,7 @@ gratuita.
 | DT-26 | En Android el contador del icono se queda encendido con todo leído | Plataforma | **Media** | **Pagada** | 0 USD |
 | DT-29 | Cambiar el manifiesto deja Android degradado hasta que Chrome regenera la aplicación | Plataforma | Baja | **Aceptada** | 0 USD |
 | DT-30 | Chrome puede marcar los avisos como «posible spam» y ofrecer anular la suscripción | Plataforma | **Media** | Abierta | 0 USD |
-| DT-27 | No hay forma de responder a un aviso | Alcance | Media | Abierta | 0 USD |
+| DT-27 | No hay forma de responder a un aviso | Alcance | Media | **Pagada** (en desarrollo) | 0 USD |
 | DT-28 | El manual no se alcanza desde dentro de la aplicación | Alcance | Baja | **Pagada** (en desarrollo) | 0 USD |
 
 **Prioridad de pago recomendada, en orden:** DT-03 → DT-14 → DT-04 → DT-01.
@@ -1712,6 +1712,59 @@ quien envía viaja con el mensaje porque el receptor no puede leer `usuarios`.
 
 Adjuntos en las respuestas, respuestas entre catedráticos, y reenviar una respuesta a
 terceros. Si hacen falta, que sea otra decisión con su propio análisis.
+
+### Cómo quedó pagada
+
+**11 de septiembre de 2026, en desarrollo.** Se construyó tal como lo pedía el análisis de
+arriba, y lo que más trabajo llevó fue justo lo que la ficha señalaba como delicado.
+
+**El modelo.** `mensajes/{id}/hilos/{uidCatedratico}/turnos/{turnoId}` (documento 05,
+secciones 2.7b a 2.7d). El hilo se identifica por el catedrático, así que no pueden existir
+dos hilos de la misma persona sobre el mismo aviso. Título del aviso y nombres van
+copiados dentro: el emisor tiene que saber de qué le hablan sin abrir otra cosa.
+
+**Los contadores NO viven en el aviso.** Era lo cómodo, y habría filtrado algo: el
+documento del mensaje lo leen todos sus destinatarios, y cualquiera habría podido ver
+cuántos compañeros contestaron. Viven en cada hilo, y el emisor los reúne con una consulta
+de grupo de colección filtrada por él.
+
+**Las reglas.** Un hilo lo leen **solo** sus dos partes. Estar en `destinatariosUids` abre
+el aviso pero no las respuestas de un compañero; ser coordinador abre todos los avisos pero
+no las conversaciones de un aviso ajeno; el auditor tampoco entra. Once pruebas nuevas de
+reglas lo comprueban caso por caso, incluida la consulta de grupo sin filtro, que se
+rechaza entera.
+
+**Escribir, por Function.** `responderAviso` decide de qué lado escribe quien llama: un
+destinatario, en su propio hilo; quien emitió el aviso, en el hilo de alguien que ya le
+escribió —nunca puede iniciar una conversación, que es la línea que separa esto de una
+mensajería general—. Y nadie se responde a sí mismo, caso real en quien emite a toda la
+sede y además recibe avisos.
+
+**El doble toque, resuelto desde el principio (DT-24).** El identificador del turno lo
+propone el cliente y el servidor lo crea con `create`: el segundo intento encuentra el
+documento y no guarda ni notifica otra vez. Si el envío falla, lo escrito se queda y
+conserva su identificador; si se cambia el texto antes de reintentar, se renueva, porque
+si el primero sí había llegado reutilizarlo habría descartado lo nuevo en silencio.
+
+**Notificar sin convertirlo en ruido.** La primera respuesta a un aviso avisa en el acto;
+las que llegan en los diez minutos siguientes solo suben el contador, y la próxima
+notificación dice cuántas hay. Es imprescindible porque en iOS las notificaciones no se
+reemplazan por etiqueta aunque la especificación diga que sí — ya se comprobó con los
+avisos. La notificación de una respuesta **no lleva `mensajeId`**, a propósito: así no
+cuenta para la insignia ni la cierra la limpieza de la bandeja, que ya costó dos
+correcciones (DT-26).
+
+**Quien emite y no recibe avisos no tenía dónde activar notificaciones**, que era el
+«detalle que hoy lo rompería» de esta misma ficha. La sección «Respuestas» incluye la
+tarjeta de activación para ese caso, con su propio texto: prometerle «avisos» a quien no
+los recibe habría sido prometer algo que no va a llegar.
+
+### Lo que quedó fuera, y se sabe
+
+  · **El catedrático no ve desde la lista que le contestaron.** Se entera por la
+    notificación, y lo ve al abrir el aviso. Marcarlo en la fila obligaría a escribir en su
+    entrega, que es un documento con valor probatorio.
+  · Sigue sin haber adjuntos en las respuestas, ni respuestas entre catedráticos.
 
 ---
 

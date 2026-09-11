@@ -131,11 +131,34 @@
     return Math.max(0, Number(valor) || 0);
   }
 
+  /**
+   * La etiqueta (`tag`) de una notificación: qué otras notificaciones reemplaza.
+   *
+   * Un aviso se etiqueta con su identificador, como siempre. Una respuesta
+   * (DT-27) no lleva `mensajeId` —a propósito: no es un aviso sin leer de la
+   * bandeja, y si lo llevara sumaría en la insignia—, así que trae su propia
+   * `etiqueta`, una por aviso. Con ella, las respuestas a un mismo aviso se
+   * reemplazan entre sí en vez de apilarse. Sin ninguna de las dos, `sian`.
+   *
+   * @param {{mensajeId?: string, etiqueta?: string}} datos la carga del push.
+   */
+  function etiquetaDeNotificacion(datos) {
+    const d = datos || {};
+    if (typeof d.mensajeId === 'string' && d.mensajeId.length > 0) {
+      return d.mensajeId;
+    }
+    if (typeof d.etiqueta === 'string' && d.etiqueta.length > 0) {
+      return d.etiqueta;
+    }
+    return 'sian';
+  }
+
   const api = {
     notificacionesACerrar,
     decidirCuenta,
     esMensajeContable,
     normalizarCuenta,
+    etiquetaDeNotificacion,
   };
 
   if (typeof module !== 'undefined' && module.exports) {

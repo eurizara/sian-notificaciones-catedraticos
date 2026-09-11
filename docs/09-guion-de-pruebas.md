@@ -672,7 +672,7 @@ Ejecutadas contra `sian-umg-bdm-qa` el 24 de agosto de 2026:
 | # | Qué se comprueba | Cómo | Resultado |
 |---|---|---|---|
 | C-1 | Las reglas de seguridad están puestas | Leer `mensajes` sin autenticar por REST | `PERMISSION_DENIED` |
-| C-2 | Las 21 Functions existen y arrancaron | Listar funciones de `us-central1` | 19 de 19 en estado `ACTIVE` |
+| C-2 | Las 23 Functions existen y arrancaron | Listar funciones de `us-central1` | 23 de 23 en estado `ACTIVE` |
 | C-3 | Las Functions rechazan a quien no se identificó | `POST` a `activarSesion` sin token | HTTP 401, `UNAUTHENTICATED` |
 | C-4 | El navegador puede llamarlas | `OPTIONS` con `Origin` de QA | HTTP 204 |
 | C-5 | El despachador quedó programado | Listar jobs de Cloud Scheduler | 1 job, cada minuto, `ENABLED` |
@@ -706,6 +706,24 @@ Eso son las rondas 1 a 5, y se recorren con una cuenta de cada rol —la ronda q
 recorrió solo con coordinación fue la que dejó pasar el defecto más caro del proyecto.
 
 ---
+
+## Probar las respuestas a un aviso (DT-27)
+
+Hacen falta **dos aparatos** o dos sesiones: una de catedrático y una de quien emite. Lo
+que más importa comprobar no es que la conversación funcione, sino quién NO la ve.
+
+| # | Paso | Qué debe ocurrir |
+|:--:|------|------------------|
+| R-1 | Como catedrático, abre un aviso recibido | Bajo el mensaje, un botón **Responder a …** |
+| R-2 | Escribe y envía | El cuadro se vacía y la respuesta aparece arriba, con tu nombre y la hora |
+| R-3 | Pulsa enviar dos veces seguidas | Se guarda **una** sola respuesta |
+| R-4 | Como emisor, mira el menú | Un número junto a **Respuestas** |
+| R-5 | Abre **Respuestas** | El aviso, con «1 conversación · 1 sin leer» y el nombre de quien respondió |
+| R-6 | Abre la conversación y contesta | El número desaparece; al catedrático le llega una notificación |
+| R-7 | Entra con **otro catedrático** que recibió el mismo aviso | No ve nada de esa conversación, ni dentro del aviso |
+| R-8 | Entra como **auditor** o como otro coordinador | La sección Respuestas no existe para el auditor; el otro coordinador no ve las conversaciones de un aviso ajeno |
+| R-9 | Desde Entregas, en el aviso propio | Una línea «N respuestas» que abre las conversaciones de ese aviso |
+| R-10 | Manda dos respuestas seguidas desde dos catedráticos | Al emisor le llega **una** notificación, no dos (la segunda se pliega diez minutos) |
 
 ## Probar en Android: dos cosas que despistan y no son defectos
 
