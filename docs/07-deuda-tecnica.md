@@ -121,7 +121,7 @@ momento de tomarla**, no después.
 |---|---|
 | **Origen** | Alcance |
 | **Severidad** | Media |
-| **Estado** | **Pagada a medias** desde el 26 de agosto de 2026 |
+| **Estado** | **Pagada** el 11 de septiembre de 2026, en desarrollo. Las alertas desde el 26 de agosto; la tarjeta de la semana, ahora |
 | **Decisión** | La versión 1 no incluye monitoreo proactivo de fallos de entrega |
 | **Motivo** | Reducir el alcance del prototipo para validar más rápido |
 | **Consecuencia** | Si el despachador falla o si las entregas empiezan a fallar masivamente, nadie se entera hasta que alguien lo nota |
@@ -129,6 +129,20 @@ momento de tomarla**, no después.
 | **Lo que falta** | El indicador de tasa de entrega en el panel: hoy, saber si los avisos de la semana llegaron sigue exigiendo abrir mensaje por mensaje en Entregas |
 | **Plan de pago** | Una tarjeta en el panel con la tasa de entrega y de confirmación de los últimos 7 días, alimentada por lo que ya se guarda en `ocurrencias/entregas`. Esfuerzo estimado: medio día |
 | **Disparador para pagarla** | Al abrir a toda la institución, o cuando coordinación pregunte por segunda vez «¿llegó?» sin poder responderse sola |
+
+**La tarjeta de la semana.** Encabeza la sección Entregas: cuántos avisos salieron en los
+últimos 7 días, a qué porcentaje llegaron, cuántas entregas fallaron y, si alguno pedía
+confirmación, cuántos la dieron.
+
+  · **No lee nada nuevo.** Suma los contadores que cada reporte ya trae, así que no puede
+    discrepar de ellos. Es la lección de la insignia y del Alcance: dos sitios calculando lo
+    mismo por separado terminan diciendo cosas distintas.
+  · **El denominador es siempre el total de destinatarios.** La confirmación se mide solo
+    sobre los avisos que la pedían; mezclarlos la hundiría con ceros que nadie tenía
+    obligación de poner.
+  · **Cuando no hubo avisos, no lo trata como una buena noticia.** Dice hace cuántos días fue
+    el último y sugiere revisar Alcance antes del próximo, porque las semanas de silencio son
+    cuando más registros caducan (DT-22).
 
 **Las alertas que ya están puestas.** Las crea `scripts/configurar-alertas.py`, una vez por
 ambiente, y avisan a `eurizara1@miumg.edu.gt`:
@@ -265,7 +279,7 @@ gratuita.
 | DT-04 | Acceso a adjuntos sin verificar destinatario | Plataforma | Media | Abierta | 0 USD |
 | DT-05 | Precisión del planificador de 60 s | Costo | Baja | Aceptada | — |
 | DT-06 | Dominio duplicado Dart / TypeScript | Conocimiento | Media | Mitigada | 0 USD |
-| DT-07 | Sin observabilidad ni alertas | Alcance | Media | **Pagada a medias** | 0 USD |
+| DT-07 | Sin observabilidad ni alertas | Alcance | Media | **Pagada** (en desarrollo) | 0 USD |
 | DT-08 | Grupos limitados a 200 miembros | Alcance | Baja | Aceptada | 0 USD |
 | DT-09 | Sin multi-idioma | Alcance | Baja | Mitigada | 0 USD |
 | DT-10 | Sin cifrado de extremo a extremo | Alcance | Baja | Aceptada | — |

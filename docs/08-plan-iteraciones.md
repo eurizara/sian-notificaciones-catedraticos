@@ -229,6 +229,10 @@ directamente en producción: la semana pasada mostró lo que cuesta.
 
 ### Correcciones — primero, y se liberan antes de tocar nada más
 
+> **Liberadas en producción el 10 de septiembre de 2026** (C-1, C-2 y C-3), tras probarse en
+> desarrollo y en QA. C-4 sigue bloqueada esperando a Sistemas de la UMG. Con eso se cumplió
+> la regla: las mejoras empiezan después, y empezaron el 11.
+
 Algo falla hoy. Se arranca por aquí, se prueba en desarrollo, se promueve y **se libera**.
 Hasta que las cuatro estén en producción no se empieza con las mejoras.
 
@@ -255,7 +259,7 @@ Nada de esto falla: falta. Se empieza cuando las cuatro correcciones estén libe
 
 | # | Mejora | Qué aporta |
 |:---:|---|---|
-| M-1 | **DT-07** · tasa de entrega en el panel | Hoy, saber por qué siete personas no recibieron el aviso del 7 de septiembre exigió consultar la base de datos a mano. El coordinador debería verlo solo |
+| M-1 | ~~**DT-07** · tasa de entrega en el panel~~ | **Hecha el 11/09, en desarrollo.** Tarjeta con la semana al inicio de Entregas, calculada con los contadores que ya existían |
 | — | ~~**DT-20** · saber en qué ambiente se está~~ | **Pagada el 09/09.** Se adelantó al resto de mejoras porque hace más segura la prueba de todo lo demás. Banda en pantalla e icono marcado; producción no lleva ninguna de las dos |
 | M-3 | **DT-28** · manual accesible desde la barra | El manual ya está publicado; falta el botón. Es la más pequeña de todas y la que menos puede romper |
 | M-4 | **DT-21** · tema oscuro y preferencia del usuario | El tema ya está construido; falta verificar el contraste antes de encenderlo |
