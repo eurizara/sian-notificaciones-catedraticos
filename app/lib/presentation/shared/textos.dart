@@ -914,6 +914,53 @@ abstract final class Textos {
   static const String entregasVacia =
       'Todavía no hay mensajes enviados. Aquí verás quién recibió cada aviso y '
       'quién lo confirmó.';
+
+  // --- Resumen de la semana en Entregas (DT-07, M-1) --------------------------
+
+  static const String resumenTitulo = 'Últimos 7 días';
+
+  static String resumenEntrega(int porcentaje, int entregados, int total) =>
+      'Llegó al $porcentaje % ($entregados de $total)';
+
+  /// Cada combinación de singular y plural, escrita entera.
+  ///
+  /// Nada de armar la frase por trozos: «Los 1 catedráticos» ya se leyó una vez
+  /// al revés en la pantalla de Alcance, y un resumen que obliga a releer se
+  /// entiende por las palabras sueltas, no por la frase.
+  static String resumenDetalle(int avisos, int sinEntregar) {
+    final String enviados = avisos == 1 ? '1 aviso enviado' : '$avisos avisos enviados';
+    if (sinEntregar == 0) {
+      return avisos == 1
+          ? '$enviados, y llegó a todos.'
+          : '$enviados, y llegaron a todos.';
+    }
+    final String faltan = sinEntregar == 1
+        ? '1 entrega no llegó'
+        : '$sinEntregar entregas no llegaron';
+    return '$enviados · $faltan.';
+  }
+
+  static String resumenConfirmacion(int porcentaje, int avisos) => avisos == 1
+      ? 'Confirmado por el $porcentaje % en el aviso que lo pedía.'
+      : 'Confirmado por el $porcentaje % en los $avisos avisos que lo pedían.';
+
+  /// Lo que se dice cuando no hubo avisos en la semana.
+  ///
+  /// No es un estado neutro. Cuanto más tiempo pasa sin mandar nada, más
+  /// registros caducan sin que nadie se entere: el 7 de septiembre de 2026, tras
+  /// ocho días de silencio, un aviso no llegó al 23 % (DT-22). Por eso, cuando
+  /// hace tiempo que no se envía, se sugiere mirar Alcance antes del próximo.
+  static String resumenSinAvisos(int? dias) {
+    if (dias == null) {
+      return 'Todavía no se ha enviado ningún aviso.';
+    }
+    return 'No se envió ningún aviso esta semana; el último fue hace $dias días. '
+        'Antes del próximo conviene revisar Alcance: en semanas de silencio es '
+        'cuando más registros caducan.';
+  }
+
+  static const String resumenMirarAlcance =
+      'En Alcance está quién no los recibe y qué pedirle a cada uno.';
   static String enviadoEl(String cuando) => 'Enviado el $cuando';
   static String ultimaSalidaEl(String cuando) => 'Última salida el $cuando';
   static const String sinFechaDeEnvio = 'Todavía sin enviar';

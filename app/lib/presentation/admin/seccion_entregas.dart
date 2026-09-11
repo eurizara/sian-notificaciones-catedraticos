@@ -28,6 +28,7 @@ import '../../application/proveedores_programacion.dart';
 import '../../infrastructure/firebase/repositorio_programacion.dart';
 import '../shared/buscador.dart';
 import '../shared/tema.dart';
+import 'resumen_semanal.dart';
 import '../shared/textos.dart';
 import 'seccion_programacion.dart' show Marca, filtrarProgramados;
 
@@ -110,6 +111,14 @@ class _SeccionEntregasState extends ConsumerState<SeccionEntregas> {
         return ListView(
           padding: const EdgeInsets.all(16),
           children: <Widget>[
+            // La suma de la semana va arriba de todo: es la pregunta que se trae
+            // al entrar —«¿llegaron?»— y antes había que contestarla abriendo
+            // los reportes uno por uno (DT-07). Se calcula sobre la lista
+            // completa, no sobre la filtrada: la búsqueda no debe cambiarla.
+            TarjetaResumenSemanal(
+              resumen: calcularResumenSemanal(todos, DateTime.now()),
+            ),
+            const SizedBox(height: 16),
             if (enviados.length > 5) ...<Widget>[
               Buscador(
                 controlador: _busqueda,
