@@ -396,13 +396,19 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
   void _avisar(String texto, {TonoAviso tono = TonoAviso.correcto}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(texto),
+        // Blanco explícito: el color por omisión del texto de un aviso
+        // emergente es el del fondo inverso, que en el tema oscuro es casi
+        // negro — y sobre estos rellenos no se leería.
+        content: Text(
+          texto,
+          style: const TextStyle(color: PaletaSian.sobreFondo),
+        ),
         backgroundColor: switch (tono) {
-          TonoAviso.correcto => ColoresSian.confirmado,
+          TonoAviso.correcto => PaletaSian.de(context).fondoConfirmado,
           // Dorado oscurecido: 5.03:1 con blanco encima, que cumple AA para
           // texto normal (RNF-13). Y no se confunde con el rojo de urgente.
-          TonoAviso.atencion => ColoresSian.doradoTexto,
-          TonoAviso.error => ColoresSian.urgente,
+          TonoAviso.atencion => PaletaSian.de(context).fondoDorado,
+          TonoAviso.error => PaletaSian.de(context).fondoUrgente,
         },
         duration: const Duration(seconds: 6),
       ),
@@ -449,7 +455,7 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
       builder: (BuildContext contexto) => AlertDialog(
         title: Text(
           titulo,
-          style: peligroso ? const TextStyle(color: ColoresSian.urgente) : null,
+          style: peligroso ? TextStyle(color: PaletaSian.de(context).urgente) : null,
         ),
         content: contenido,
         actions: <Widget>[
@@ -459,7 +465,10 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
           ),
           FilledButton(
             style: peligroso
-                ? FilledButton.styleFrom(backgroundColor: ColoresSian.urgente)
+                ? FilledButton.styleFrom(
+                    backgroundColor: PaletaSian.de(context).fondoUrgente,
+                    foregroundColor: PaletaSian.sobreFondo,
+                  )
                 : null,
             onPressed: () => Navigator.of(contexto).pop(true),
             child: Text(botonConfirmar),
@@ -495,7 +504,7 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
                 Text(
                   Textos.redactarTitulo,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: ColoresSian.primarioOscuro,
+                    color: PaletaSian.de(context).primarioTexto,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -600,7 +609,8 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
                       : _intentarEnviar,
                   style: FilledButton.styleFrom(
                     minimumSize: const Size(88, 52),
-                    backgroundColor: _urgente ? ColoresSian.urgente : null,
+                    backgroundColor: _urgente ? PaletaSian.de(context).fondoUrgente : null,
+                    foregroundColor: _urgente ? PaletaSian.sobreFondo : null,
                   ),
                   icon: _enviando
                       ? const SizedBox(
@@ -665,7 +675,7 @@ class _Clasificacion extends StatelessWidget {
                 title: Text(
                   Textos.tipoUrgente,
                   style: TextStyle(
-                    color: puedeUrgentes ? ColoresSian.urgente : null,
+                    color: puedeUrgentes ? PaletaSian.de(context).urgente : null,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -782,7 +792,9 @@ class _ResumenConteo extends StatelessWidget {
         Text(
           Textos.conteoDestinatarios(conteo.total),
           style: tema.textTheme.titleMedium?.copyWith(
-            color: urgente ? ColoresSian.urgente : ColoresSian.primarioOscuro,
+            color: urgente
+                ? PaletaSian.de(context).urgente
+                : PaletaSian.de(context).primarioTexto,
           ),
         ),
         // ──────────────────────────────────────────────────────────────────

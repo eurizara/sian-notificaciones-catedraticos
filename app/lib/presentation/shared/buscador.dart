@@ -128,7 +128,7 @@ class Buscador extends StatelessWidget {
             Textos.coincidencias(resultados!),
             style: tema.textTheme.bodySmall?.copyWith(
               color: resultados == 0
-                  ? ColoresSian.doradoTexto
+                  ? PaletaSian.de(context).doradoTexto
                   : tema.colorScheme.onSurfaceVariant,
             ),
           ),

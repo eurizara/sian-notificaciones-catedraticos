@@ -162,7 +162,7 @@ class _TarjetaNotificacionesState extends ConsumerState<TarjetaNotificaciones> {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      color: estado.color.withValues(alpha: 0.08),
+      color: PaletaSian.de(context).adaptar(estado.color).withValues(alpha: 0.08),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -170,7 +170,7 @@ class _TarjetaNotificacionesState extends ConsumerState<TarjetaNotificaciones> {
           children: <Widget>[
             Row(
               children: <Widget>[
-                Icon(estado.icono, color: estado.color),
+                Icon(estado.icono, color: PaletaSian.de(context).adaptar(estado.color)),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(estado.titulo, style: tema.textTheme.titleMedium),
@@ -332,7 +332,7 @@ class _LineaCompactaState extends State<_LineaCompacta> {
                   Icon(
                     widget.estado.icono,
                     size: 18,
-                    color: widget.estado.color,
+                    color: PaletaSian.de(context).adaptar(widget.estado.color),
                   ),
                   const SizedBox(width: 8),
                   Expanded(

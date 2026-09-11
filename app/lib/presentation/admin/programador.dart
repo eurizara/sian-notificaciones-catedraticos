@@ -324,7 +324,7 @@ class _ProgramadorState extends ConsumerState<Programador> {
           if (_previa != null && _previa!.isNotEmpty) ...<Widget>[
             const SizedBox(height: 12),
             Card(
-              color: ColoresSian.primario.withValues(alpha: 0.06),
+              color: PaletaSian.de(context).primario.withValues(alpha: 0.06),
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(
@@ -355,7 +355,7 @@ class _ProgramadorState extends ConsumerState<Programador> {
           Text(
             _error!,
             style: tema.textTheme.bodySmall?.copyWith(
-              color: ColoresSian.urgente,
+              color: PaletaSian.de(context).urgente,
             ),
           ),
         ],
@@ -474,7 +474,7 @@ class _Patron extends StatelessWidget {
           Text(
             Textos.recurrenciaFinObligatoria,
             style: tema.textTheme.bodySmall?.copyWith(
-              color: ColoresSian.doradoTexto,
+              color: PaletaSian.de(context).doradoTexto,
             ),
           ),
         ],

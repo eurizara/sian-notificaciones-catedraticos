@@ -82,8 +82,8 @@ class _AvisoEnPrimerPlanoState extends ConsumerState<AvisoEnPrimerPlano> {
     );
 
     final Color acento = aviso.urgente
-        ? ColoresSian.urgente
-        : ColoresSian.primario;
+        ? PaletaSian.de(context).urgente
+        : PaletaSian.de(context).primario;
     final ThemeData tema = Theme.of(context);
 
     ScaffoldMessenger.of(context)

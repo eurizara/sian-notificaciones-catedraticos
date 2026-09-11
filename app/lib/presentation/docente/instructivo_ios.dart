@@ -50,22 +50,22 @@ class InstructivoIos extends StatelessWidget {
                   Textos.instalarTitulo,
                   textAlign: TextAlign.center,
                   style: tema.textTheme.headlineSmall?.copyWith(
-                    color: ColoresSian.primarioOscuro,
+                    color: PaletaSian.de(context).primarioTexto,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 12),
 
                 Card(
-                  color: ColoresSian.urgente.withValues(alpha: 0.1),
-                  child: const Padding(
-                    padding: EdgeInsets.all(16),
+                  color: PaletaSian.de(context).urgente.withValues(alpha: 0.1),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        Icon(Icons.priority_high, color: ColoresSian.urgente),
-                        SizedBox(width: 12),
-                        Expanded(child: Text(Textos.instalarPorQue)),
+                        Icon(Icons.priority_high, color: PaletaSian.de(context).urgente),
+                        const SizedBox(width: 12),
+                        const Expanded(child: Text(Textos.instalarPorQue)),
                       ],
                     ),
                   ),
@@ -74,7 +74,7 @@ class InstructivoIos extends StatelessWidget {
                 if (entorno.iosDemasiadoAntiguo) ...<Widget>[
                   const SizedBox(height: 12),
                   Card(
-                    color: ColoresSian.dorado.withValues(alpha: 0.12),
+                    color: PaletaSian.de(context).dorado.withValues(alpha: 0.12),
                     child: const Padding(
                       padding: EdgeInsets.all(16),
                       child: Text(Textos.instalarIosAntiguo),
@@ -85,7 +85,7 @@ class InstructivoIos extends StatelessWidget {
                 if (navegadorEquivocado) ...<Widget>[
                   const SizedBox(height: 12),
                   Card(
-                    color: ColoresSian.dorado.withValues(alpha: 0.12),
+                    color: PaletaSian.de(context).dorado.withValues(alpha: 0.12),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Row(
@@ -155,11 +155,11 @@ class _Paso extends StatelessWidget {
         children: <Widget>[
           CircleAvatar(
             radius: 16,
-            backgroundColor: ColoresSian.primario,
+            backgroundColor: PaletaSian.de(context).fondoPrimario,
             child: Text(
               '${paso.numero}',
               style: const TextStyle(
-                color: Colors.white,
+                color: PaletaSian.sobreFondo,
                 fontWeight: FontWeight.bold,
               ),
             ),

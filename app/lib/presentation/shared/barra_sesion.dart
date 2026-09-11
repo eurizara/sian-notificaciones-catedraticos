@@ -13,6 +13,7 @@ import '../../core/plataforma/manual.dart';
 import '../../core/plataforma/recarga.dart';
 import '../../core/ruta_manual.dart';
 import '../../domain/sesion.dart';
+import 'apariencia.dart';
 import 'tema.dart';
 import 'textos.dart';
 
@@ -47,6 +48,12 @@ class BarraSesion extends ConsumerWidget implements PreferredSizeWidget {
     final ThemeData tema = Theme.of(context);
     final bool hayEspacio =
         MediaQuery.sizeOf(context).width >= _anchoMinimoParaIdentidad;
+    // El color de lo que va en la barra sale del tema de la barra, no de
+    // `onPrimary`: en el tema claro son el mismo blanco, pero en el oscuro la
+    // barra es de color superficie y `onPrimary` es azul marino — el nombre y
+    // el rol se escribían oscuro sobre oscuro.
+    final Color sobreBarra =
+        tema.appBarTheme.foregroundColor ?? tema.colorScheme.onSurface;
 
     return AppBar(
       title: Row(
@@ -81,13 +88,17 @@ class BarraSesion extends ConsumerWidget implements PreferredSizeWidget {
                   Text(
                     usuario.nombre,
                     overflow: TextOverflow.ellipsis,
-                    style: tema.textTheme.labelLarge,
+                    style: tema.textTheme.labelLarge?.copyWith(
+                      color: sobreBarra,
+                    ),
                   ),
                   Text(
                     usuario.rol.etiqueta,
                     overflow: TextOverflow.ellipsis,
                     style: tema.textTheme.bodySmall?.copyWith(
-                      color: tema.colorScheme.onPrimary.withValues(alpha: 0.85),
+                      // Sin transparencia: al 85 % sobre el azul daba 4.28:1, por
+                      // debajo de AA. La jerarquía ya la marca el tamaño.
+                      color: sobreBarra,
                     ),
                   ),
                 ],
@@ -122,6 +133,9 @@ class BarraSesion extends ConsumerWidget implements PreferredSizeWidget {
           tooltip: Textos.botonManual,
           onPressed: () => abrirManualDe(rutaDelManual(usuario.rol)),
         ),
+        // La apariencia (DT-21), entre el manual y recargar: cambia cómo se ve
+        // la aplicación, pero se deshace en el mismo sitio y no toca datos.
+        const SelectorApariencia(),
         IconButton(
           icon: const Icon(Icons.refresh),
           tooltip: Textos.botonRecargar,

@@ -67,7 +67,7 @@ class _Fallo extends StatelessWidget {
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        const Icon(Icons.error_outline, size: 40, color: ColoresSian.urgente),
+        Icon(Icons.error_outline, size: 40, color: PaletaSian.de(context).urgente),
         const SizedBox(height: 12),
         const Text(Textos.canalFallo, textAlign: TextAlign.center),
         const SizedBox(height: 12),
@@ -128,13 +128,13 @@ class _TodoEnOrden extends StatelessWidget {
   const _TodoEnOrden();
 
   @override
-  Widget build(BuildContext context) => const Padding(
-    padding: EdgeInsets.symmetric(vertical: 32),
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 32),
     child: Row(
       children: <Widget>[
-        Icon(Icons.check_circle_outline, color: ColoresSian.confirmado),
-        SizedBox(width: 8),
-        Text(Textos.canalTodoEnOrden),
+        Icon(Icons.check_circle_outline, color: PaletaSian.de(context).confirmado),
+        const SizedBox(width: 8),
+        const Text(Textos.canalTodoEnOrden),
       ],
     ),
   );
@@ -150,7 +150,10 @@ class _Fila extends StatelessWidget {
     final ThemeData tema = Theme.of(context);
 
     return ListTile(
-      leading: Icon(_icono(persona.estado), color: _color(persona.estado)),
+      leading: Icon(
+        _icono(persona.estado),
+        color: PaletaSian.de(context).adaptar(_color(persona.estado)),
+      ),
       title: Text(
         persona.nombre.isEmpty ? persona.correo : persona.nombre,
         style: const TextStyle(fontWeight: FontWeight.w600),

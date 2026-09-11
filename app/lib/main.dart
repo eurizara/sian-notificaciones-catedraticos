@@ -15,6 +15,7 @@ import 'core/ambiente.dart';
 import 'core/plataforma/actualizar_worker.dart';
 import 'firebase_options.dart';
 import 'infrastructure/firebase/inicializacion.dart';
+import 'presentation/shared/apariencia.dart';
 import 'presentation/shared/banda_ambiente.dart';
 import 'presentation/shared/enrutador.dart';
 import 'presentation/shared/pantalla_estado.dart';
@@ -60,17 +61,14 @@ class AplicacionSian extends ConsumerWidget {
       title: Textos.nombreApp,
       theme: TemaSian.claro(),
       darkTheme: TemaSian.oscuro(),
-      // Tema claro fijo, sin seguir la preferencia del sistema.
+      // Por omisión, el tema del dispositivo; la persona puede fijar otro
+      // desde la barra superior (DT-21).
       //
-      // El escudo institucional tiene fondo blanco y un anillo rojo que sobre
-      // superficies oscuras pierde definición, y el azul #1C72A5 se aclara
-      // tanto en modo oscuro que deja de ser el color de la universidad. Hasta
-      // tener una paleta oscura verificada contra WCAG 2.1 AA (RNF-13), es más
-      // honesto servir siempre el tema que sí está comprobado.
-      //
-      // `darkTheme` queda declarado a propósito: reactivarlo es cambiar esta
-      // línea por `ThemeMode.system`.
-      themeMode: ThemeMode.light,
+      // Hasta la mejora M-4 esto era `ThemeMode.light` fijo: la paleta oscura
+      // no estaba verificada, y medida resultó que ninguno de los colores con
+      // significado llegaba a AA sobre fondo oscuro. Ahora cada uno tiene su
+      // par oscuro (`PaletaSian`) y una prueba que mide los contrastes.
+      themeMode: ref.watch(aparienciaProvider).modo,
       debugShowCheckedModeBanner: false,
       // La banda de ambiente envuelve TODO, incluida la pantalla de ingreso y la
       // de diagnóstico, que no tienen barra donde ponerla (DT-20). En producción

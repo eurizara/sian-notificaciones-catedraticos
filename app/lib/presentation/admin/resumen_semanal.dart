@@ -182,8 +182,8 @@ class TarjetaResumenSemanal extends StatelessWidget {
                     // Dorado cuando falta alguien, verde cuando llegó a todos.
                     // Nunca rojo: está reservado a lo urgente.
                     color: resumen.sinEntregar == 0
-                        ? ColoresSian.confirmado
-                        : ColoresSian.dorado,
+                        ? PaletaSian.de(context).confirmado
+                        : PaletaSian.de(context).dorado,
                   ),
                 ),
               ),
