@@ -52,7 +52,7 @@ void main() {
 
     test('lo programado que todavía no salió no cuenta', () {
       final ResumenSemanal r = calcularResumenSemanal(<MensajeProgramado>[
-        MensajeProgramado(
+        const MensajeProgramado(
           id: 'futuro',
           titulo: 'Programado',
           tipo: 'INFORMATIVO',
@@ -61,7 +61,7 @@ void main() {
           creadoPor: 'coord',
           requiereConfirmacion: false,
           modoDestinatarios: 'TODOS',
-          formato: const <String>['TEXTO'],
+          formato: <String>['TEXTO'],
         ),
         aviso(haceDias: 2),
       ], ahora);
