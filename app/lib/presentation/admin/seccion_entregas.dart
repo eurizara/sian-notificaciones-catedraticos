@@ -277,7 +277,7 @@ class _ReporteState extends ConsumerState<_Reporte> {
                     ),
                     margin: const EdgeInsets.only(right: 8),
                     decoration: BoxDecoration(
-                      color: ColoresSian.urgente,
+                      color: PaletaSian.de(context).fondoUrgente,
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: const Text(
@@ -402,10 +402,10 @@ class _ReporteState extends ConsumerState<_Reporte> {
               minHeight: 8,
               borderRadius: BorderRadius.circular(4),
               color: porcentaje >= 80
-                  ? ColoresSian.confirmado
+                  ? PaletaSian.de(context).confirmado
                   : porcentaje >= 40
-                  ? ColoresSian.dorado
-                  : ColoresSian.urgente,
+                  ? PaletaSian.de(context).dorado
+                  : PaletaSian.de(context).urgente,
             ),
             const SizedBox(height: 8),
 
@@ -455,7 +455,7 @@ class _ReporteState extends ConsumerState<_Reporte> {
                 Text(
                   Textos.entregasPendientes(pendientes),
                   style: tema.textTheme.bodySmall?.copyWith(
-                    color: ColoresSian.doradoTexto,
+                    color: PaletaSian.de(context).doradoTexto,
                   ),
                 ),
               ],
@@ -509,7 +509,7 @@ class _ReporteState extends ConsumerState<_Reporte> {
                   child: Text(
                     _error!,
                     style: tema.textTheme.bodySmall?.copyWith(
-                      color: ColoresSian.urgente,
+                      color: PaletaSian.de(context).urgente,
                     ),
                   ),
                 )
@@ -563,16 +563,16 @@ class _ListaDestinatarios extends StatelessWidget {
         if (todoConfirmado)
           Row(
             children: <Widget>[
-              const Icon(
+              Icon(
                 Icons.verified_outlined,
                 size: 16,
-                color: ColoresSian.confirmado,
+                color: PaletaSian.de(context).confirmado,
               ),
               const SizedBox(width: 8),
               Text(
                 Textos.nadiePendiente,
                 style: tema.textTheme.bodySmall?.copyWith(
-                  color: ColoresSian.confirmado,
+                  color: PaletaSian.de(context).confirmado,
                 ),
               ),
             ],
@@ -586,7 +586,7 @@ class _ListaDestinatarios extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Row(
                   children: <Widget>[
-                    Icon(s.icono, size: 16, color: s.color),
+                    Icon(s.icono, size: 16, color: PaletaSian.de(context).adaptar(s.color)),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(

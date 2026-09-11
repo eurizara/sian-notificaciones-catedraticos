@@ -46,6 +46,18 @@ abstract final class Textos {
   /// hay dos pestañas y dónde quedó la aplicación.
   static const String botonManual = 'Manual de usuario (se abre en una pestaña nueva)';
 
+  // --- Apariencia (DT-21) ----------------------------------------------------
+
+  /// El nombre del botón incluye lo que está elegido: quien usa un lector de
+  /// pantalla oye el estado sin tener que abrir el menú para averiguarlo.
+  static String botonApariencia(String elegido) => 'Apariencia: $elegido';
+
+  /// «Dispositivo» y no «sistema»: «sistema» se confunde con SIAN, que para
+  /// quien lo usa también es «el sistema».
+  static const String temaSistema = 'Igual que el dispositivo';
+  static const String temaClaro = 'Claro';
+  static const String temaOscuro = 'Oscuro';
+
   // --- Distintivo de ambiente (DT-20) ----------------------------------------
 
   /// Etiqueta de la banda que avisa en qué ambiente se está.

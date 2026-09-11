@@ -165,7 +165,7 @@ class _Fila extends ConsumerWidget {
                     ),
                     margin: const EdgeInsets.only(right: 8),
                     decoration: BoxDecoration(
-                      color: ColoresSian.urgente,
+                      color: PaletaSian.de(context).fondoUrgente,
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: const Text(
@@ -282,7 +282,7 @@ class _Fila extends ConsumerWidget {
                   TextButton.icon(
                     onPressed: () => _actuar(context, ref, 'CANCELAR'),
                     style: TextButton.styleFrom(
-                      foregroundColor: ColoresSian.urgente,
+                      foregroundColor: PaletaSian.de(context).urgente,
                     ),
                     icon: const Icon(Icons.cancel_outlined),
                     label: const Text(Textos.accionCancelar),
@@ -316,7 +316,8 @@ class _Fila extends ConsumerWidget {
             ),
             FilledButton(
               style: FilledButton.styleFrom(
-                backgroundColor: ColoresSian.urgente,
+                backgroundColor: PaletaSian.de(context).fondoUrgente,
+                foregroundColor: PaletaSian.sobreFondo,
               ),
               onPressed: () => Navigator.of(c).pop(true),
               child: const Text(Textos.accionCancelar),
@@ -341,8 +342,11 @@ class _Fila extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.message ?? Textos.errorInesperado),
-            backgroundColor: ColoresSian.urgente,
+            content: Text(
+              e.message ?? Textos.errorInesperado,
+              style: const TextStyle(color: PaletaSian.sobreFondo),
+            ),
+            backgroundColor: PaletaSian.de(context).fondoUrgente,
           ),
         );
       }

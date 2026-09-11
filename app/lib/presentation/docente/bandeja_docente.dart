@@ -506,9 +506,12 @@ class _FilaState extends ConsumerState<_Fila> {
           );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(Textos.confirmacionHecha),
-            backgroundColor: ColoresSian.confirmado,
+          SnackBar(
+            content: const Text(
+              Textos.confirmacionHecha,
+              style: TextStyle(color: PaletaSian.sobreFondo),
+            ),
+            backgroundColor: PaletaSian.de(context).fondoConfirmado,
           ),
         );
       }
@@ -536,10 +539,13 @@ class _FilaState extends ConsumerState<_Fila> {
     final DateFormat formato = DateFormat('dd/MM/yyyy · HH:mm');
 
     final Realce realce = realceDe(mensaje);
+    // El realce se decide sin tema (se prueba sin montar nada) y se adapta
+    // aquí, al pintarlo: en el oscuro, sus colores pasan a los tonos claros.
+    final PaletaSian paleta = PaletaSian.de(context);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      color: realce.fondo,
+      color: realce.fondo == null ? null : paleta.adaptar(realce.fondo!),
       child: InkWell(
         onTap: () {
           setState(() => _desplegado = !_desplegado);
@@ -558,7 +564,7 @@ class _FilaState extends ConsumerState<_Fila> {
               // Franja lateral en vez de un fondo fuerte: se lee de un vistazo
               // recorriendo el borde, y no compite con el texto.
               if (realce.franja != null)
-                Container(width: 5, color: realce.franja),
+                Container(width: 5, color: paleta.adaptar(realce.franja!)),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -604,7 +610,7 @@ class _FilaState extends ConsumerState<_Fila> {
                                   ),
                                   margin: const EdgeInsets.only(right: 8),
                                   decoration: BoxDecoration(
-                                    color: ColoresSian.urgente,
+                                    color: PaletaSian.de(context).fondoUrgente,
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: const Text(
@@ -636,8 +642,8 @@ class _FilaState extends ConsumerState<_Fila> {
                                   width: 9,
                                   height: 9,
                                   margin: const EdgeInsets.only(right: 8),
-                                  decoration: const BoxDecoration(
-                                    color: ColoresSian.primario,
+                                  decoration: BoxDecoration(
+                                    color: PaletaSian.de(context).primario,
                                     shape: BoxShape.circle,
                                   ),
                                 ),
@@ -686,7 +692,7 @@ class _FilaState extends ConsumerState<_Fila> {
                                 _iconoDeEstado(mensaje.estado),
                                 size: 16,
                                 color: mensaje.estaConfirmado
-                                    ? ColoresSian.confirmado
+                                    ? PaletaSian.de(context).confirmado
                                     : tema.colorScheme.onSurfaceVariant,
                               ),
                               const SizedBox(width: 6),
@@ -694,7 +700,7 @@ class _FilaState extends ConsumerState<_Fila> {
                                 _etiquetaDeEstado(mensaje.estado),
                                 style: tema.textTheme.bodySmall?.copyWith(
                                   color: mensaje.estaConfirmado
-                                      ? ColoresSian.confirmado
+                                      ? PaletaSian.de(context).confirmado
                                       : tema.colorScheme.onSurfaceVariant,
                                 ),
                               ),
@@ -1017,7 +1023,7 @@ class _NadaEnEsteFiltro extends StatelessWidget {
             size: 40,
             color: buscando
                 ? tema.colorScheme.onSurfaceVariant
-                : ColoresSian.confirmado,
+                : PaletaSian.de(context).confirmado,
           ),
           const SizedBox(height: 12),
           Text(

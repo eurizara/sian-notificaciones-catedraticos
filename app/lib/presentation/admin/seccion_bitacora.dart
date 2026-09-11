@@ -230,7 +230,7 @@ class _Asiento extends StatelessWidget {
           // Los rechazos de acceso se destacan: son el evento que más interesa
           // auditar (criterio de aceptación de RF-AUT-03).
           color: asiento.esRechazo
-              ? ColoresSian.urgente
+              ? PaletaSian.de(context).urgente
               : tema.colorScheme.primary,
         ),
         title: Text(asiento.resumen),

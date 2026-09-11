@@ -121,7 +121,7 @@ momento de tomarla**, no después.
 |---|---|
 | **Origen** | Alcance |
 | **Severidad** | Media |
-| **Estado** | **Pagada** el 11 de septiembre de 2026, en desarrollo. Las alertas desde el 26 de agosto; la tarjeta de la semana, ahora |
+| **Estado** | **Pagada** el 10 de septiembre de 2026, en desarrollo. Las alertas desde el 26 de agosto; la tarjeta de la semana, ahora |
 | **Decisión** | La versión 1 no incluye monitoreo proactivo de fallos de entrega |
 | **Motivo** | Reducir el alcance del prototipo para validar más rápido |
 | **Consecuencia** | Si el despachador falla o si las entregas empiezan a fallar masivamente, nadie se entera hasta que alguien lo nota |
@@ -293,7 +293,7 @@ gratuita.
 | DT-18 | Se acumula un token de FCM por cada ingreso en iOS | Plataforma | **Alta** | **Pagada** | 0 USD |
 | DT-19 | Entrar con Google falla en la PWA de iOS por aislamiento de almacenamiento | Plataforma | Alta | **Pagada** | 0 USD |
 | DT-20 | Instalada como aplicación, nada dice en qué ambiente se está | Conocimiento | **Media** | **Pagada** | 0 USD |
-| DT-21 | El tema oscuro está construido pero apagado, y no se puede elegir | Alcance | Baja | Abierta | 0 USD |
+| DT-21 | El tema oscuro está construido pero apagado, y no se puede elegir | Alcance | Baja | **Pagada** (en desarrollo) | 0 USD |
 | DT-22 | Un token muerto solo se descubre cuando falla un aviso real | Alcance | **Alta** | **Pagada** | 0 USD |
 | DT-23 | El service worker no atiende `pushsubscriptionchange` | Plataforma | **Media** | **Pagada a medias** | 0 USD |
 | DT-24 | Un envío con algún fallo deja la pantalla igual y se manda dos veces | Conocimiento | **Alta** | **Pagada** | 0 USD |
@@ -643,7 +643,8 @@ de teléfono.
 
 ## DT-21 — El tema oscuro está construido pero apagado, y no se puede elegir
 
-**Origen:** alcance · **Severidad:** baja · **Estado:** abierta · **Costo:** 0 USD
+**Origen:** alcance · **Severidad:** baja · **Estado:** pagada el 10 de septiembre de 2026, en
+desarrollo · **Costo:** 0 USD
 
 `TemaSian.oscuro()` existe, está completo y está conectado como `darkTheme`. Lo que lo
 mantiene apagado es una sola línea en `app/lib/main.dart`:
@@ -680,6 +681,86 @@ paleta.
 
 El orden importa: los pasos 3 y 4 sin los pasos 1 y 2 producen una aplicación que se ve
 mal y que además incumple un requisito no funcional.
+
+### Lo que dio la medición
+
+Se midió antes de encender nada, y resultó peor de lo que decía la ficha. No era solo el
+azul: **ninguno de los siete colores con significado llegaba a AA** sobre la superficie
+oscura (`#101417`):
+
+| Color | Sobre blanco | Sobre la superficie oscura |
+|---|---:|---:|
+| Rojo de urgente `#A32826` | 7.27 | **2.55** |
+| Verde de confirmado `#2D6A3E` | 6.48 | **2.86** |
+| Azul del escudo `#1C72A5` | 5.25 | **3.53** |
+| Dorado de texto `#8A6A2B` | 5.03 | **3.68** |
+| Azul oscuro de títulos `#15597F` | 7.59 | **2.44** |
+| Azul marino `#003168` | 12.81 | **1.44** |
+
+Y el esquema de Material hacía lo mismo con el error: el color que ponía **encima** del rojo
+en el tema oscuro daba 1.80:1. Encender el tema tal cual habría servido ilegible justo la
+etiqueta «URGENTE».
+
+Además, **102 sitios** de las pantallas usaban esas constantes directamente. Cambiar la
+línea de `main.dart` los habría dejado a todos igual que en el tema claro, sobre fondo
+oscuro.
+
+### Cómo quedó pagada
+
+**10 de septiembre de 2026, en desarrollo.**
+
+  · **Una paleta por tema, no un color intermedio.** `PaletaSian` (en `tema.dart`) tiene
+    cada color con significado en dos versiones. La clara son **exactamente** las
+    constantes de siempre; la oscura, tonos claros del mismo matiz, medidos contra la
+    superficie oscura más clara que usa la aplicación (`#313539`), que es el caso peor.
+  · **Texto y relleno por separado.** Sobre fondo claro el mismo rojo sirve para escribir
+    «urgente» y para rellenar la etiqueta con letra blanca; sobre fondo oscuro no, porque el
+    rojo que se lee como texto es demasiado claro para llevar blanco encima. Cada relleno
+    tiene su campo `fondo…`.
+  · **Las pantallas piden el color al tema** (`PaletaSian.de(context)`). Los colores que se
+    deciden lejos del tema —el estado de una entrega, el realce de un mensaje— siguen
+    usando la constante, y se traducen con `adaptar` donde se pintan.
+  · **El escudo va sobre un disco blanco en el tema oscuro**, del mismo tamaño, que es lo
+    que ya hacía la barra superior sobre el azul. No hizo falta otra versión del escudo.
+  · **Por omisión, el tema del dispositivo.** En la barra superior, entre el manual y
+    recargar, un botón abre un menú con tres opciones: *Igual que el dispositivo*, *Claro* y
+    *Oscuro*. Se guarda en el navegador, no en la cuenta: la misma persona puede querer
+    oscuro en el teléfono y claro en la computadora de la sede. El nombre accesible del
+    botón dice qué está elegido.
+
+| Color en el tema oscuro | Contraste (caso peor) |
+|---|---:|
+| Rojo de urgente `#FF8A80` | 5.41 |
+| Verde de confirmado `#7DD29A` | 6.80 |
+| Dorado de texto `#E0B866` | 6.60 |
+| Azul `#7FC4E8` | 6.45 |
+| Azul de títulos `#A8D8F2` | 8.10 |
+| Relleno de urgente `#C62828`, con blanco | 5.62 |
+| Relleno de confirmado `#2F7A45`, con blanco | 5.26 |
+
+Para el rojo se prefirió `#FF8A80` al `#FFB4AB` que propone Material: aquel tira a salmón,
+y este sigue leyéndose como rojo.
+
+**Los números no se quedan en esta tabla.** `app/test/widget/tema_oscuro_test.dart` los
+vuelve a medir en cada compilación, comprueba que la paleta clara siga siendo la de siempre,
+y falla si una pantalla nueva escribe un `ColoresSian.…` directamente —que es la forma de
+volver a introducir, sin darse cuenta, un color que no se lee en oscuro.
+
+### Lo que la medición encontró en el tema claro
+
+Dos fallos que ya estaban, en la barra superior y solo en pantalla ancha (computadora), que
+es donde aparecen el nombre y el rol:
+
+  · **El nombre salía casi negro (`#181C20`) sobre la barra azul**: unos 3.2:1. Tomaba el
+    color del texto general, pensado para fondo claro. Ahora sale blanco, 5.25:1.
+  · **El rol, blanco al 85 %**, daba 4.28:1. Ahora va opaco, 5.25:1; la jerarquía la marca
+    ya el tamaño de letra.
+
+Y en los avisos emergentes de color —«mensaje enviado» en verde, los de atención en dorado
+y los de error en rojo— el texto pasa de casi blanco a blanco, porque el color por omisión
+en el tema oscuro es casi negro. En el claro la diferencia no se aprecia.
+
+Fuera de eso, el tema claro no cambia.
 
 
 ---
@@ -1689,7 +1770,7 @@ a propósito y no dejar a todos en el índice.
 
 ### Cómo quedó pagada
 
-**11 de septiembre de 2026, en desarrollo.** Un botón con el icono de libro, a la izquierda
+**10 de septiembre de 2026, en desarrollo.** Un botón con el icono de libro, a la izquierda
 de recargar, en la barra de todas las pantallas con sesión —la bandeja del catedrático y el
 panel—.
 

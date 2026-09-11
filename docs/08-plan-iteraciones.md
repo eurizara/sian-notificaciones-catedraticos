@@ -259,10 +259,10 @@ Nada de esto falla: falta. Se empieza cuando las cuatro correcciones estén libe
 
 | # | Mejora | Qué aporta |
 |:---:|---|---|
-| M-1 | ~~**DT-07** · tasa de entrega en el panel~~ | **Hecha el 11/09, en desarrollo.** Tarjeta con la semana al inicio de Entregas, calculada con los contadores que ya existían |
+| M-1 | ~~**DT-07** · tasa de entrega en el panel~~ | **Hecha el 10/09, en desarrollo.** Tarjeta con la semana al inicio de Entregas, calculada con los contadores que ya existían |
 | — | ~~**DT-20** · saber en qué ambiente se está~~ | **Pagada el 09/09.** Se adelantó al resto de mejoras porque hace más segura la prueba de todo lo demás. Banda en pantalla e icono marcado; producción no lleva ninguna de las dos |
-| M-3 | ~~**DT-28** · manual accesible desde la barra~~ | **Hecha el 11/09, en desarrollo.** Botón a la izquierda de recargar, abre el manual del rol en otra pestaña |
-| M-4 | **DT-21** · tema oscuro y preferencia del usuario | El tema ya está construido; falta verificar el contraste antes de encenderlo |
+| M-3 | ~~**DT-28** · manual accesible desde la barra~~ | **Hecha el 10/09, en desarrollo.** Botón a la izquierda de recargar, abre el manual del rol en otra pestaña |
+| M-4 | ~~**DT-21** · tema oscuro y preferencia del usuario~~ | **Hecha el 10/09, en desarrollo.** Paleta oscura medida contra AA (ninguno de los colores de antes pasaba), sigue al dispositivo por omisión y se puede fijar desde la barra |
 | M-5 | **DT-27** · responder a un aviso | Funcionalidad nueva. Va al final a propósito: primero que lo que ya existe funcione |
 
 > **Por qué las mejoras van después y no en paralelo.** Construir encima de un canal que
