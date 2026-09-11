@@ -9,7 +9,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/proveedores_sesion.dart';
+import '../../core/plataforma/manual.dart';
 import '../../core/plataforma/recarga.dart';
+import '../../core/ruta_manual.dart';
 import '../../domain/sesion.dart';
 import 'tema.dart';
 import 'textos.dart';
@@ -19,6 +21,7 @@ class BarraSesion extends ConsumerWidget implements PreferredSizeWidget {
     required this.usuario,
     required this.titulo,
     this.recargar = recargarAplicacion,
+    this.abrirManualDe = abrirManual,
     super.key,
   });
 
@@ -27,6 +30,9 @@ class BarraSesion extends ConsumerWidget implements PreferredSizeWidget {
 
   /// Inyectable: en las pruebas no hay navegador que recargar.
   final void Function() recargar;
+
+  /// Inyectable por el mismo motivo: en las pruebas no hay pestaña que abrir.
+  final void Function(String ruta) abrirManualDe;
 
   /// Por debajo de este ancho se oculta el bloque de identidad y queda solo el
   /// menú de la cuenta: en un teléfono, el nombre completo no cabe sin empujar
@@ -96,6 +102,26 @@ class BarraSesion extends ConsumerWidget implements PreferredSizeWidget {
         // sitio haría que quien lo busca sin mirar pulse lo que no quería. Y
         // entre los dos hay una separación, porque uno se deshace pulsándolo
         // otra vez y el otro obliga a volver a entrar.
+        // ────────────────────────────────────────────────────────────────────
+        // EL MANUAL, A LA IZQUIERDA DE RECARGAR (DT-28).
+        // ────────────────────────────────────────────────────────────────────
+        //
+        // Sigue la misma lógica que ya ordena esta barra: cuanto más inocua la
+        // acción, más lejos del borde donde está salir. Abrir el manual no
+        // cambia nada de la aplicación, así que es la que va más lejos.
+        //
+        // Es la heurística de Nielsen de ayuda y documentación: la ayuda tiene
+        // que estar donde surge la duda. Antes había que conocer la dirección o
+        // buscarla en un correo viejo, que es tanto como no tenerla.
+        //
+        // `IconButton` como los otros dos, y no un widget distinto por ser
+        // nuevo: la consistencia también es una heurística. Su `tooltip` es el
+        // nombre accesible, y ese nombre avisa que se abre en otra pestaña.
+        IconButton(
+          icon: const Icon(Icons.menu_book_outlined),
+          tooltip: Textos.botonManual,
+          onPressed: () => abrirManualDe(rutaDelManual(usuario.rol)),
+        ),
         IconButton(
           icon: const Icon(Icons.refresh),
           tooltip: Textos.botonRecargar,

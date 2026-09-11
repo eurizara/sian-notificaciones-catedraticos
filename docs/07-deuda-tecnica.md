@@ -302,7 +302,7 @@ gratuita.
 | DT-29 | Cambiar el manifiesto deja Android degradado hasta que Chrome regenera la aplicación | Plataforma | Baja | **Aceptada** | 0 USD |
 | DT-30 | Chrome puede marcar los avisos como «posible spam» y ofrecer anular la suscripción | Plataforma | **Media** | Abierta | 0 USD |
 | DT-27 | No hay forma de responder a un aviso | Alcance | Media | Abierta | 0 USD |
-| DT-28 | El manual no se alcanza desde dentro de la aplicación | Alcance | Baja | Abierta | 0 USD |
+| DT-28 | El manual no se alcanza desde dentro de la aplicación | Alcance | Baja | **Pagada** (en desarrollo) | 0 USD |
 
 **Prioridad de pago recomendada, en orden:** DT-03 → DT-14 → DT-04 → DT-01.
 
@@ -1685,6 +1685,28 @@ Hay dos, y la aplicación sabe el rol de quien está dentro. Lo natural es que u
 abra el suyo y coordinación el general. Es una decisión de una línea, pero conviene tomarla
 a propósito y no dejar a todos en el índice.
 
+
+
+### Cómo quedó pagada
+
+**11 de septiembre de 2026, en desarrollo.** Un botón con el icono de libro, a la izquierda
+de recargar, en la barra de todas las pantallas con sesión —la bandeja del catedrático y el
+panel—.
+
+  · **Abre el manual que corresponde al rol**: el catedrático el suyo, quien usa el panel el
+    general. Mandar a un catedrático al índice lo obliga a buscar su parte entre secciones
+    que no le tocan.
+  · **La ruta es relativa** —`/manuales/`— y la resuelve el navegador contra el origen desde
+    el que se pulsa. No hay dominio escrito que pueda quedar apuntando al ambiente
+    equivocado.
+  · **Se abre en otra pestaña, y el nombre del botón lo dice**: «Manual de usuario (se abre en
+    una pestaña nueva)». Ese nombre es también el que anuncia el lector de pantalla.
+  · `noopener`, para que la pestaña del manual no pueda tocar la aplicación.
+  · Es un `IconButton` como los otros dos: mismo tamaño táctil de 48 px, mismo contraste,
+    misma forma de mostrar su ayuda.
+
+Siete pruebas, entre ellas la que exige que ninguna ruta del manual lleve `http` ni
+`web.app` escritos.
 
 ---
 

@@ -40,6 +40,12 @@ abstract final class Textos {
   /// llevar días sin renovarse.
   static const String botonRecargar = 'Recargar la aplicación';
 
+  /// El nombre del botón del manual, que es también lo que lee el lector de
+  /// pantalla. Dice que se abre aparte porque un cambio de contexto sin anunciar
+  /// desorienta (WCAG 3.2.5): quien no ve la pantalla tiene que saber que ahora
+  /// hay dos pestañas y dónde quedó la aplicación.
+  static const String botonManual = 'Manual de usuario (se abre en una pestaña nueva)';
+
   // --- Distintivo de ambiente (DT-20) ----------------------------------------
 
   /// Etiqueta de la banda que avisa en qué ambiente se está.
