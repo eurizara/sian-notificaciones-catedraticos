@@ -127,33 +127,137 @@ class BarraSesion extends ConsumerWidget implements PreferredSizeWidget {
         //
         // `IconButton` como los otros dos, y no un widget distinto por ser
         // nuevo: la consistencia también es una heurística. Su `tooltip` es el
-        // nombre accesible, y ese nombre avisa que se abre en otra pestaña.
+        // nombre accesible, y ese nombre dice dónde se abre: en el navegador,
+        // en otra pestaña; instalada, en la misma ventana y con un botón para
+        // volver.
         IconButton(
           icon: const Icon(Icons.menu_book_outlined),
-          tooltip: Textos.botonManual,
+          tooltip: manualSeAbreEnOtraPestana()
+              ? Textos.botonManual
+              : Textos.botonManualInstalada,
           onPressed: () => abrirManualDe(rutaDelManual(usuario.rol)),
         ),
-        // La apariencia (DT-21), entre el manual y recargar: cambia cómo se ve
-        // la aplicación, pero se deshace en el mismo sitio y no toca datos.
-        const SelectorApariencia(),
-        IconButton(
-          icon: const Icon(Icons.refresh),
-          tooltip: Textos.botonRecargar,
-          onPressed: recargar,
-        ),
-        const SizedBox(width: 4),
-        IconButton(
-          icon: const Icon(Icons.logout),
-          // En pantalla estrecha el nombre no se ve, así que quién está dentro
-          // se conserva en la ayuda emergente.
-          tooltip: hayEspacio
-              ? Textos.botonSalir
-              : '${Textos.botonSalir} · ${usuario.nombre} '
-                    '(${usuario.rol.etiqueta})',
-          onPressed: () => ref.read(repositorioSesionProvider).salir(),
-        ),
+        // ────────────────────────────────────────────────────────────────────
+        // EN UN TELÉFONO, TRES BOTONES Y NO CUATRO.
+        // ────────────────────────────────────────────────────────────────────
+        //
+        // Con el de apariencia (DT-21) eran cuatro, y el título quedaba en
+        // «Mis mensa…». Lo que se usa una vez —la apariencia— y lo que no
+        // conviene pulsar sin querer —cerrar sesión— van juntos en el botón
+        // de la cuenta, que es donde casi todas las aplicaciones los ponen.
+        // El manual y recargar se quedan a un toque.
+        //
+        // En pantalla ancha sobra sitio y cada cosa sigue en su botón.
+        if (hayEspacio) ...<Widget>[
+          // La apariencia, entre el manual y recargar: cambia cómo se ve la
+          // aplicación, pero se deshace en el mismo sitio y no toca datos.
+          const SelectorApariencia(),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: Textos.botonRecargar,
+            onPressed: recargar,
+          ),
+          const SizedBox(width: 4),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: Textos.botonSalir,
+            onPressed: () => ref.read(repositorioSesionProvider).salir(),
+          ),
+        ] else ...<Widget>[
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: Textos.botonRecargar,
+            onPressed: recargar,
+          ),
+          MenuCuenta(usuario: usuario),
+        ],
         const SizedBox(width: 8),
       ],
     );
   }
 }
+
+enum _AccionCuenta { salir }
+
+/// El botón de la cuenta, en pantalla estrecha: quién está dentro, la
+/// apariencia y cerrar sesión.
+///
+/// Cerrar sesión pasa a pedir dos toques en el teléfono. No es un estorbo: es
+/// lo único de la barra que obliga a volver a entrar, y en el borde de la
+/// pantalla es fácil pulsarlo con el pulgar sin querer.
+class MenuCuenta extends ConsumerWidget {
+  const MenuCuenta({required this.usuario, super.key});
+
+  final UsuarioSesion usuario;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ThemeData tema = Theme.of(context);
+    final PreferenciaTema actual = ref.watch(aparienciaProvider);
+
+    return PopupMenuButton<Object>(
+      icon: const Icon(Icons.account_circle_outlined),
+      // En pantalla estrecha el nombre no se ve en la barra: quién está dentro
+      // se conserva en el nombre accesible del botón.
+      tooltip: Textos.botonCuenta(usuario.nombre, usuario.rol.etiqueta),
+      onSelected: (Object opcion) {
+        if (opcion is PreferenciaTema) {
+          ref.read(aparienciaProvider.notifier).elegir(opcion);
+        } else if (opcion == _AccionCuenta.salir) {
+          ref.read(repositorioSesionProvider).salir();
+        }
+      },
+      itemBuilder: (BuildContext context) => <PopupMenuEntry<Object>>[
+        PopupMenuItem<Object>(
+          enabled: false,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                usuario.nombre,
+                style: tema.textTheme.titleSmall?.copyWith(
+                  color: tema.colorScheme.onSurface,
+                ),
+              ),
+              Text(
+                usuario.rol.etiqueta,
+                style: tema.textTheme.bodySmall?.copyWith(
+                  color: tema.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(),
+        PopupMenuItem<Object>(
+          enabled: false,
+          height: 32,
+          child: Text(
+            Textos.apariencia,
+            style: tema.textTheme.labelMedium?.copyWith(
+              color: tema.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        for (final PreferenciaTema p in PreferenciaTema.values)
+          CheckedPopupMenuItem<Object>(
+            value: p,
+            checked: p == actual,
+            child: Text(p.etiqueta),
+          ),
+        const PopupMenuDivider(),
+        const PopupMenuItem<Object>(
+          value: _AccionCuenta.salir,
+          child: Row(
+            children: <Widget>[
+              Icon(Icons.logout),
+              SizedBox(width: 12),
+              Text(Textos.botonSalir),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+

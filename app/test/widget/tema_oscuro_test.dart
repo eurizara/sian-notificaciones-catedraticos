@@ -375,15 +375,16 @@ void main() {
         // Cuatro botones en la barra: el título cede, los botones no.
         await montar(tester, tema: tema, ancho: 320);
         expect(tester.takeException(), isNull);
-        expect(find.byType(SelectorApariencia), findsOneWidget);
-        expect(find.byIcon(Icons.logout), findsOneWidget);
+        // En el teléfono, la apariencia y salir van en el botón de la cuenta.
+        expect(find.byType(MenuCuenta), findsOneWidget);
+        expect(find.byIcon(Icons.refresh), findsOneWidget);
       });
     }
 
     testWidgets('el selector va entre el manual y recargar', (
       WidgetTester tester,
     ) async {
-      await montar(tester, tema: TemaSian.claro(), ancho: 400);
+      await montar(tester, tema: TemaSian.claro(), ancho: 1000);
       final double manual = tester
           .getCenter(find.byIcon(Icons.menu_book_outlined))
           .dx;

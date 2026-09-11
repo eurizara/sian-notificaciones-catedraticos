@@ -7,3 +7,6 @@ String? ultimoManualAbierto;
 void abrirManual(String ruta) {
   ultimoManualAbierto = ruta;
 }
+
+/// Las pruebas se comportan como el navegador, que es el caso por omisión.
+bool manualSeAbreEnOtraPestana() => true;

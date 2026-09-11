@@ -141,6 +141,21 @@
 
   footer{max-width:1240px;margin:0 auto;padding:0 28px 60px;color:var(--suave);font-size:14px}
 
+  /* ---- Volver a SIAN ----
+     Solo con la aplicación instalada. Instalada, el manual se abre en la
+     misma ventana —en iPhone no hay otra forma— y no hay barra del navegador
+     ni botón de atrás: sin esto, la única salida era cerrar la aplicación.
+     En una pestaña del navegador sobra: ahí ya están atrás y cerrar. */
+  .volver{
+    display:none; align-items:center; gap:4px; flex:0 0 auto;
+    background:#fff; color:var(--primario-oscuro); text-decoration:none;
+    font-weight:700; font-size:16px; line-height:1;
+    border-radius:999px; padding:0 14px; min-height:44px;
+  }
+  .volver:focus-visible{outline:3px solid #fff; outline-offset:2px}
+  html.instalada .volver{display:inline-flex}
+  @media (display-mode: standalone){ .volver{display:inline-flex} }
+
   @media print{
     header,nav,#velo{display:none}
     .envoltorio{display:block}
@@ -155,6 +170,9 @@
     body{font-size:17px}
     #abrirMenu{display:block}
     header .sede{display:none}
+    /* Con el botón de volver, el escudo cede su sitio al título. */
+    html.instalada header img{display:none}
+    header h1{font-size:17px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
     .envoltorio{display:block; max-width:100%}
     nav{
       position:fixed; top:62px; left:0; bottom:0; width:min(86vw,320px);
@@ -176,11 +194,28 @@
 <body>
 
 <header>
+  <a id="volver" class="volver" href="/">‹ Volver a SIAN</a>
   <button id="abrirMenu" aria-label="Abrir el índice">☰</button>
   <img src="../icons/Icon-192.png" alt="">
   <h1>Manuales de uso · SIAN</h1>
   <div class="sede">Universidad Mariano Gálvez<br>Sede Boca del Monte</div>
 </header>
+
+<script>
+  // Instalada: iOS lo dice con `navigator.standalone`; los demás, con
+  // `display-mode`. Va aquí, pegado a la cabecera, para que el botón aparezca
+  // sin parpadeo.
+  if (window.navigator.standalone === true ||
+      window.matchMedia('(display-mode: standalone)').matches) {
+    document.documentElement.classList.add('instalada');
+  }
+  // Se REEMPLAZA la página, no se añade otra: así el «atrás» de Android no
+  // devuelve al manual después de haber vuelto a la aplicación.
+  document.getElementById('volver').addEventListener('click', function (e) {
+    e.preventDefault();
+    window.location.replace('/');
+  });
+</script>
 
 <div id="velo"></div>
 
@@ -1297,13 +1332,20 @@
         derecha.</td></tr>
     <tr><td><strong>Manual</strong></td>
         <td>Este mismo documento. Se abre desde el botón del libro, el primero
-        de los botones de arriba a la derecha, y aparece en una pestaña aparte
-        para que pueda leerlo sin salir de la aplicación.</td></tr>
+        de los botones de arriba a la derecha. En la computadora aparece en una
+        pestaña aparte; en la aplicación instalada en el celular se abre en la
+        misma pantalla, con un botón <strong>‹ Volver a SIAN</strong> arriba a
+        la izquierda para regresar.</td></tr>
+    <tr><td><strong>Tu cuenta</strong></td>
+        <td>En el celular, el botón del círculo con una persona, arriba a la
+        derecha. Muestra con qué cuenta entró, y dentro están la apariencia y
+        <strong>Cerrar sesión</strong>. En la computadora, esos dos tienen su
+        propio botón.</td></tr>
     <tr><td><strong>Apariencia</strong></td>
         <td>Si la aplicación se ve clara u oscura. Por omisión hace lo mismo que
-        su celular o computadora. Se cambia desde el botón que está entre el
-        del libro y el de recargar
-        (<a href="#apariencia">cómo cambiarla</a>).</td></tr>
+        su celular o computadora. En el celular se cambia desde el botón de
+        su cuenta; en la computadora, desde el que está entre el del libro y el
+        de recargar (<a href="#apariencia">cómo cambiarla</a>).</td></tr>
   </table>
   </div>
 </section>
@@ -1325,17 +1367,22 @@
 
   <h3 id="apariencia">La aplicación se ve oscura (o clara) y quiero lo contrario</h3>
   <p>Por omisión, SIAN se ve como su dispositivo: si el celular está en modo
-  oscuro, SIAN también. Para fijar otra cosa solo aquí, presione el botón
-  <strong>Apariencia</strong> de la barra de arriba —el que está entre el del
-  libro y el de recargar— y elija <strong>Claro</strong>,
-  <strong>Oscuro</strong> o <strong>Igual que el dispositivo</strong>.</p>
+  oscuro, SIAN también. Para fijar otra cosa solo aquí:</p>
+  <ul>
+    <li><strong>En el celular</strong>, toque el botón de su cuenta (el círculo
+        con una persona, arriba a la derecha).</li>
+    <li><strong>En la computadora</strong>, el botón
+        <strong>Apariencia</strong>, entre el del libro y el de recargar.</li>
+  </ul>
+  <p>Y elija <strong>Claro</strong>, <strong>Oscuro</strong> o
+  <strong>Igual que el dispositivo</strong>.</p>
   <p>La elección se guarda en ese dispositivo, no en su cuenta: puede tener
   SIAN oscura en el celular y clara en la computadora. Si borra los datos del
   navegador, vuelve a «Igual que el dispositivo».</p>
 
   <h3>La pantalla se quedó pegada o veo algo raro</h3>
-  <p>Use el botón <strong>recargar</strong> (el círculo con la flecha), a la
-  izquierda del de cerrar sesión. Recarga la aplicación por completo y de paso
+  <p>Use el botón <strong>recargar</strong> (el círculo con la flecha), el
+  penúltimo de arriba a la derecha. Recarga la aplicación por completo y de paso
   trae la versión más reciente, que en una aplicación instalada puede llevar
   días sin renovarse.</p>
 

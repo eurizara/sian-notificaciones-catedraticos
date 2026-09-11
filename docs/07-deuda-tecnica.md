@@ -763,6 +763,18 @@ en el tema oscuro es casi negro. En el claro la diferencia no se aprecia.
 Fuera de eso, el tema claro no cambia.
 
 
+
+### Ajuste del 11 de septiembre de 2026: con cuatro botones, el título se cortaba
+
+En el teléfono la barra pasó a tener cuatro botones —manual, apariencia, recargar, salir— y
+el título quedaba en «Mis mensa…». En pantalla estrecha, la apariencia y cerrar sesión van
+ahora juntos en **un botón de la cuenta** (el círculo con una persona), que además dice con
+qué cuenta se entró. El manual y recargar siguen a un toque. En pantalla ancha no cambia
+nada.
+
+Cerrar sesión pasa a pedir dos toques en el teléfono. Es a propósito: es lo único de la
+barra que obliga a volver a entrar, y en el borde es fácil pulsarlo con el pulgar.
+
 ---
 
 ## DT-22 — Un token muerto solo se descubre cuando falla un aviso real
@@ -1788,6 +1800,22 @@ panel—.
 
 Siete pruebas, entre ellas la que exige que ninguna ruta del manual lleve `http` ni
 `web.app` escritos.
+
+
+### Ajuste del 11 de septiembre de 2026: instalada, el manual no tenía salida
+
+Probado en un iPhone con la aplicación instalada, el manual se abría **dentro de la misma
+ventana** —está dentro del alcance de la aplicación, e iOS no abre pestañas ahí— y, sin
+barra del navegador, no había forma de volver: la única salida era cerrar la aplicación.
+
+  · La aplicación instalada abre ahora el manual **en la misma ventana, a propósito**. Con
+    eso el gesto de atrás de Android regresa a la aplicación.
+  · El manual muestra arriba a la izquierda **«‹ Volver a SIAN»**, pero solo cuando se abrió
+    desde la aplicación instalada. En una pestaña del navegador sobra —ya están atrás y
+    cerrar— y no aparece. Vuelve **reemplazando** la página, para que el atrás de Android no
+    devuelva al manual.
+  · El nombre accesible del botón dice lo que va a pasar en cada caso: «se abre en una
+    pestaña nueva» en el navegador, «se abre aquí, con un botón para volver» instalada.
 
 ---
 
