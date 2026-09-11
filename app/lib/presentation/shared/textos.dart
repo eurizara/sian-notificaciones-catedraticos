@@ -46,11 +46,22 @@ abstract final class Textos {
   /// hay dos pestañas y dónde quedó la aplicación.
   static const String botonManual = 'Manual de usuario (se abre en una pestaña nueva)';
 
+  /// Instalada, el manual se abre en la misma ventana: prometer una pestaña
+  /// nueva sería describir algo que no va a pasar.
+  static const String botonManualInstalada =
+      'Manual de usuario (se abre aquí, con un botón para volver)';
+
   // --- Apariencia (DT-21) ----------------------------------------------------
 
   /// El nombre del botón incluye lo que está elegido: quien usa un lector de
   /// pantalla oye el estado sin tener que abrir el menú para averiguarlo.
   static String botonApariencia(String elegido) => 'Apariencia: $elegido';
+  static const String apariencia = 'Apariencia';
+
+  /// El botón de la cuenta en el teléfono. Dice quién está dentro, porque en
+  /// pantalla estrecha el nombre no cabe en la barra, y qué hay dentro.
+  static String botonCuenta(String nombre, String rol) =>
+      'Tu cuenta: $nombre ($rol). Apariencia y cerrar sesión';
 
   /// «Dispositivo» y no «sistema»: «sistema» se confunde con SIAN, que para
   /// quien lo usa también es «el sistema».
