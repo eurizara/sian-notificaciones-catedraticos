@@ -24,6 +24,11 @@
  *   · despachador                RF-PRG-12, 13, 14 · RES-04
  *   · marcarAbierto              RF-CNF-02
  *   · confirmarLectura           RF-CNF-01, 03, 04, 05
+ *
+ * Correcciones de septiembre de 2026:
+ *
+ *   · sondaDeCanal                          DT-22, DT-18
+ *   · dispositivosQueNecesitanAtencion      DT-22
  */
 
 export { activarSesion } from './triggers/activarSesion';
@@ -35,6 +40,7 @@ export {
   vistaPreviaOcurrencias,
 } from './triggers/programacion';
 export { despachador } from './triggers/despachador';
+export { dispositivosQueNecesitanAtencion, sondaDeCanal } from './triggers/sonda';
 export {
   confirmarLectura,
   detalleEntregas,

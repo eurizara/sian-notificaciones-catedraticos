@@ -38,6 +38,7 @@ void main() {
   setUp(() {
     insigniaPedida = null;
     vecesQueSePidioInsignia = 0;
+    ultimosIdsSinLeer = const <String>[];
     olvidarUltimaInsignia();
   });
 
@@ -84,6 +85,45 @@ void main() {
       // Un icono con un «0» pegado se lee como si algo estuviera pendiente.
       expect(insigniaPedida, isNull);
       expect(vecesQueSePidioInsignia, 1, reason: 'se pidió retirarla');
+    });
+
+    test('manda CUÁLES están sin leer, no solo cuántos (DT-26)', () {
+      // El worker necesita la lista para poder retirar de la bandeja del
+      // sistema la notificación de los mensajes ya leídos. Con solo el número
+      // podía decidir únicamente el caso extremo —cero, cerrar todo—, y en
+      // Android eso dejaba el icono marcado con dos leídos y uno pendiente,
+      // porque el lanzador cuenta las notificaciones puestas.
+      sincronizarInsignia(<MensajeRecibido>[
+        msg(id: 'a', estado: 'ENTREGADO'),
+        msg(id: 'b', estado: 'ABIERTO'),
+        msg(id: 'c', estado: 'ENTREGADO'),
+      ]);
+
+      expect(insigniaPedida, 2);
+      expect(ultimosIdsSinLeer, <String>['a', 'c']);
+    });
+
+    test('la lista y el número dicen siempre lo mismo', () {
+      // Si alguien contara de una forma y listara de otra, el worker cerraría
+      // notificaciones equivocadas. Que salgan del mismo recorrido es la
+      // garantía, y esto lo deja escrito.
+      final List<MensajeRecibido> mezcla = <MensajeRecibido>[
+        msg(id: 'a', estado: 'ENTREGADO'),
+        msg(id: 'b', estado: 'ABIERTO', pideConfirmacion: true),
+        msg(id: 'c', estado: 'ENTREGADO', pideConfirmacion: true),
+        msg(id: 'd', estado: 'CONFIRMADO', pideConfirmacion: true),
+      ];
+
+      sincronizarInsignia(mezcla);
+
+      expect(ultimosIdsSinLeer.length, contarEn(FiltroBandeja.sinLeer, mezcla));
+    });
+
+    test('sin nada sin leer, manda la lista vacía y retira', () {
+      sincronizarInsignia(<MensajeRecibido>[msg(id: 'a', estado: 'ABIERTO')]);
+
+      expect(insigniaPedida, isNull, reason: 'retirada, no un cero pintado');
+      expect(ultimosIdsSinLeer, isEmpty);
     });
 
     test('con la bandeja vacía tampoco se queda un número viejo', () {

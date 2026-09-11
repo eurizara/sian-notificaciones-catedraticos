@@ -63,9 +63,9 @@ bool get insigniaSoportada => true;
 /// parte de la entrega del mensaje: si el navegador se niega —porque la
 /// aplicación no está instalada, o porque el sistema no lo permite—, la bandeja
 /// ya muestra el mismo dato y nada se pierde. Reventar aquí sí rompería algo.
-void fijarInsignia(int cuenta) {
+void fijarInsignia(int cuenta, {List<String> idsSinLeer = const <String>[]}) {
   final int n = cuenta < 0 ? 0 : cuenta;
-  _avisarAlWorker(n);
+  _avisarAlWorker(n, idsSinLeer);
 
   try {
     final _NavegadorConInsignia navegador =
@@ -81,7 +81,7 @@ void fijarInsignia(int cuenta) {
 }
 
 /// Quita la insignia del icono.
-void retirarInsignia() => fijarInsignia(0);
+void retirarInsignia() => fijarInsignia(0, idsSinLeer: const <String>[]);
 
 /// Le pasa el número al service worker, que es quien manda cuando la
 /// aplicación está cerrada.
@@ -107,11 +107,11 @@ void retirarInsignia() => fijarInsignia(0);
 /// Recorrer los registros y avisar a todos cuesta lo mismo y no depende de qué
 /// worker controle la página ni de bajo qué ámbito se registró cada uno. El que
 /// no entienda el mensaje lo ignora.
-void _avisarAlWorker(int cuenta) {
-  unawaited(_repartirAlosWorkers(cuenta));
+void _avisarAlWorker(int cuenta, List<String> idsSinLeer) {
+  unawaited(_repartirAlosWorkers(cuenta, idsSinLeer));
 }
 
-Future<void> _repartirAlosWorkers(int cuenta) async {
+Future<void> _repartirAlosWorkers(int cuenta, List<String> idsSinLeer) async {
   try {
     final JSArray<web.ServiceWorkerRegistration> registros = await web
         .window
@@ -123,6 +123,14 @@ Future<void> _repartirAlosWorkers(int cuenta) async {
     final JSAny? aviso = <String, Object>{
       'tipo': 'sian:insignia',
       'cuenta': cuenta,
+      // Además del número, CUÁLES están sin leer.
+      //
+      // Con solo el número, el worker únicamente podía decidir en el caso
+      // extremo —cero sin leer, cerrar todo—. Con la lista puede cerrar la
+      // notificación de cada mensaje que ya se leyó y dejar puestas las demás,
+      // que es lo que evita que el icono de Android siga marcado con dos
+      // mensajes leídos y uno pendiente (DT-26).
+      'idsSinLeer': idsSinLeer,
     }.jsify();
 
     for (final web.ServiceWorkerRegistration registro in registros.toDart) {

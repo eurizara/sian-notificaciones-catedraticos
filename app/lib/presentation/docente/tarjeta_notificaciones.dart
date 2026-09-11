@@ -10,11 +10,14 @@
 /// que un dispositivo puede quedarse mudo, y para cada uno dice qué hacer.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/proveedores_dispositivos.dart';
 import '../../core/navegador.dart';
+import '../../core/plataforma/rotacion.dart';
 import '../../core/plataforma/consola.dart';
 import '../../infrastructure/firebase/repositorio_dispositivos.dart';
 import '../shared/tema.dart';
@@ -40,6 +43,23 @@ class _TarjetaNotificacionesState extends ConsumerState<TarjetaNotificaciones> {
   void initState() {
     super.initState();
     _consultar();
+
+    // Si el service worker avisa de que la suscripción rotó, hay que volver a
+    // registrarse EN EL MOMENTO, sin esperar a que alguien cierre y vuelva a
+    // abrir (DT-23).
+    //
+    // El SDK de Firebase rota el token por su cuenta dentro del worker y no le
+    // dice nada a nuestro servidor, que se queda con el token muerto. Este es
+    // el único punto donde la aplicación puede enterarse mientras está abierta.
+    escucharRotacionDeSuscripcion(() {
+      if (!mounted) {
+        return;
+      }
+      // Se fuerza el registro aunque ya se hubiera hecho en esta sesión: eso es
+      // justo lo que hay que saltarse, porque el token de entonces ya no vale.
+      ref.read(repositorioDispositivosProvider).olvidarRefresco();
+      unawaited(_activar(silencioso: true));
+    });
   }
 
   Future<void> _consultar() async {

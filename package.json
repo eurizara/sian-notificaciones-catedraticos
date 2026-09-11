@@ -10,7 +10,8 @@
     "seed:dev": "tsx scripts/seed-dev.ts",
     "seed:invitacion": "tsx scripts/seed-invitacion.ts",
     "test:reglas": "firebase emulators:exec --only firestore \"npm --prefix functions run test:rules\"",
-    "verificar": "npm --prefix functions run verificar && npm run test:reglas",
+    "test:sw": "node --test app/web/sw-decisiones.test.js",
+    "verificar": "npm --prefix functions run verificar && npm run test:sw && npm run test:reglas",
     "check:secrets": "bash scripts/check-secrets.sh"
   },
   "devDependencies": {

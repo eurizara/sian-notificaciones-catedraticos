@@ -22,6 +22,10 @@ export const TIPOS_EVENTO = [
   // USUARIO_CREADO, y con eso el filtro «Altas de usuario» de la bitácora
   // mostraba diecisiete altas donde había dos personas.
   'DISPOSITIVO_REGISTRADO',
+  // Y retirarlo tampoco es dar de baja a nadie. Se anota aparte porque el motivo
+  // importa para diagnosticar: no es lo mismo un token que FCM declaró muerto
+  // que un aparato que lleva dos meses sin abrirse (DT-22, DT-18).
+  'DISPOSITIVO_RETIRADO',
   'USUARIO_ROL_CAMBIADO',
   'USUARIO_DESACTIVADO',
   'USUARIO_REACTIVADO',
@@ -59,6 +63,10 @@ export const ENTIDADES = [
   'SESION',
   'CONFIGURACION',
   'INVITACION',
+  // El aparato de alguien no es la persona. Separarlos permite que la bitácora
+  // conteste «¿qué le pasó a este teléfono?» sin mezclarlo con «¿qué le pasó a
+  // este usuario?» (DT-22).
+  'DISPOSITIVO',
 ] as const;
 export type EntidadBitacora = (typeof ENTIDADES)[number];
 

@@ -39,9 +39,142 @@ abstract final class Textos {
   /// versión desplegada más reciente, que en una aplicación instalada puede
   /// llevar días sin renovarse.
   static const String botonRecargar = 'Recargar la aplicación';
+
+  // --- Distintivo de ambiente (DT-20) ----------------------------------------
+
+  /// Etiqueta de la banda que avisa en qué ambiente se está.
+  ///
+  /// Dice «no es producción» antes que el nombre del ambiente, porque eso es lo
+  /// que hay que saber en el segundo que se mira. Cuál de los dos es, después.
+  static const String ambienteDesarrollo = 'NO ES PRODUCCIÓN · Desarrollo';
+  static const String ambienteCalidad = 'NO ES PRODUCCIÓN · Calidad (QA)';
+  static const String ambienteDesconocido = 'NO ES PRODUCCIÓN · ambiente sin identificar';
+
+  // --- Dispositivos que necesitan atención (DT-22) ----------------------------
+
+  static const String seccionCanal = 'Alcance';
+  static const String seccionCanalTitulo = 'Dispositivos que necesitan atención';
+  static const String seccionCanalDescripcion =
+      'Quién no recibiría un aviso si se enviara ahora mismo, y qué le hace '
+      'falta a cada uno. Ordenado por gravedad: primero quien no puede recibir '
+      'nada. Solo aparece quien tiene algo que corregir.';
+
+  /// El resumen que encabeza la pantalla de Alcance.
+  ///
+  /// ──────────────────────────────────────────────────────────────────────────
+  /// Se leyó al revés, y por eso está escrito con este cuidado.
+  /// ──────────────────────────────────────────────────────────────────────────
+  ///
+  /// La primera versión decía «Los 1 catedráticos pueden recibir avisos» cuando
+  /// había un solo destinatario y todo estaba bien. El coordinador lo entendió
+  /// como «1 catedrático no puede recibir» — exactamente lo contrario.
+  ///
+  /// La concordancia rota es lo que lo provocó: «Los 1» obliga a releer, y al
+  /// releer se busca sentido en las palabras sueltas —«1», «catedráticos»— antes
+  /// que en la frase. Un resumen que se puede entender del revés no informa: da
+  /// una impresión, y la impresión puede ser la contraria del dato.
+  ///
+  /// Dice «personas» y no «catedráticos» porque no todos lo son: quien recibe
+  /// avisos lo decide una bandera por persona, y un coordinador que además da
+  /// clases entra en la cuenta. Llamarlos a todos catedráticos era la misma
+  /// inexactitud que ya había hecho que esta pantalla contara sobre la población
+  /// equivocada.
+  static String canalResumen(int cuantos, int total) {
+    if (total == 0) {
+      return 'Todavía no hay nadie configurado para recibir avisos.';
+    }
+    if (cuantos == 0) {
+      return total == 1
+          ? 'La única persona que recibe avisos está al día.'
+          : 'Las $total personas que reciben avisos están al día.';
+    }
+    return cuantos == 1
+        ? '1 de $total no recibiría un aviso enviado ahora.'
+        : '$cuantos de $total no recibirían un aviso enviado ahora.';
+  }
+
+  static const String canalTodoEnOrden = 'No hay nada que atender.';
+
+  /// Qué le pasa a la persona, en una frase que se pueda leer de un vistazo.
+  /// La única señal que mira un hecho y no una condición.
+  ///
+  /// Se mandó un aviso de verdad y no llegó. Cualquier otra fila describe algo
+  /// que **podría** impedir la entrega; esta describe una que ya no ocurrió.
+  static const String canalUltimoEnvioFallo = 'El último aviso NO le llegó';
+
+  static const String canalSinDispositivo = 'Sin dispositivo registrado';
+
+  /// El caso que más engaña: el documento se ve perfecto y el token está muerto.
+  ///
+  /// Se dice «su registro caducó» y no «token muerto» porque quien lee esto no
+  /// tiene por qué saber qué es un token, y lo que necesita es entender que no
+  /// es culpa suya ni algo que la persona hizo mal.
+  static const String canalTokenMuerto = 'Su registro caducó: no le llegaría nada';
+  static const String canalPermisoDenegado = 'Rechazó el permiso de notificaciones';
+  static const String canalSoloEnPestana = 'Solo en pestaña, sin instalar';
+  static const String canalSinActividad = 'Sin abrir la aplicación hace tiempo';
+
+  /// Ni «al día» ni «falló». Las dos cosas serían falsas.
+  ///
+  /// Su último aviso no llegó, pero desde entonces volvió a entrar y su aparato
+  /// se registró de nuevo. Todo lo comprobable dice que está bien — y eso ya se
+  /// dijo una vez de este mismo caso y era mentira. Lo honesto es decir que
+  /// respondió y que la comprobación de verdad es el próximo envío.
+  static const String canalReenganchado = 'Se reenganchó: falta confirmarlo con un envío';
+
+  /// Y qué hay que pedirle, que es distinto en cada caso.
+  static const String canalPedirRegistrar =
+      'Que entre y active las notificaciones.';
+
+  static const String canalPedirReenganchar =
+      'Que cierre sesión, abra la aplicación y vuelva a entrar. Si sigue sin '
+      'llegarle, que la desinstale y la instale otra vez.';
+
+  static const String canalPedirReabrir =
+      'Que abra la aplicación una vez. Con eso se renueva solo, sin reinstalar '
+      'ni volver a configurar nada.';
+  static const String canalPedirPermiso =
+      'Que vuelva a conceder el permiso desde los ajustes del navegador.';
+  static const String canalPedirInstalar =
+      'Que instale la aplicación en la pantalla de inicio. En iPhone, sin '
+      'instalar no llega ninguna notificación.';
+  static const String canalPedirEsperar =
+      'Ya hizo lo que se le pidió. Se confirma solo con el próximo aviso que '
+      'se mande: si le llega, desaparece de esta lista.';
+
+  static const String canalPedirAbrir =
+      'Que abra la aplicación una vez. Con eso se renueva su registro.';
+
+  static String canalDesdeCuando(int dias) => dias <= 0
+      ? 'Actividad hoy'
+      : dias == 1
+      ? 'Última actividad ayer'
+      : 'Última actividad hace $dias días';
+
+  static const String canalSinActividadNunca = 'Nunca ha entrado';
+  static const String canalReintentar = 'Volver a revisar';
+  static const String canalFallo =
+      'No se pudo revisar el alcance. Vuelve a intentarlo.';
   static const String verificandoSesion = 'Verificando sesión…';
+  /// Lo que se ve tras pedir el enlace de recuperación.
+  ///
+  /// ──────────────────────────────────────────────────────────────────────────
+  /// Menciona «No deseado» a propósito, y no es un detalle de redacción.
+  /// ──────────────────────────────────────────────────────────────────────────
+  ///
+  /// El correo sale del dominio de Firebase y **llega a No deseado en
+  /// `miumg.edu.gt`**, que es Google Workspace: comprobado en pruebas reales
+  /// (DT-14). El arreglo de fondo exige un servidor SMTP propio y control del
+  /// DNS institucional, que no depende de programación sino de que Sistemas de
+  /// la UMG ceda un buzón y una entrada de DNS.
+  ///
+  /// Mientras tanto, decirlo aquí es lo único que evita la conclusión de que «la
+  /// recuperación no funciona» y la llamada a coordinación que viene después.
+  /// La frase se mantiene ambigua sobre si la cuenta existe (RF-AUT-05): decir
+  /// que no existiría revelaría quién está registrado.
   static const String recuperacionEnviada =
-      'Si ese correo tiene cuenta, recibirás un enlace para restablecerla.';
+      'Si ese correo tiene cuenta, recibirás un enlace para restablecerla. '
+      'Revisa también la carpeta de correo no deseado: ahí suele caer.';
 
   static const String validacionCorreoObligatorio = 'Escribe tu correo.';
   static const String validacionCorreoInvalido =
