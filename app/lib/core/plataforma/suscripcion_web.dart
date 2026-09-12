@@ -22,6 +22,7 @@ import 'dart:js_interop';
 import 'package:web/web.dart' as web;
 
 import 'consola.dart';
+import 'registro_worker_web.dart';
 
 /// Se suscribe y devuelve lo que hay que guardar, o nulo si no se pudo.
 Future<Map<String, String>?> suscribirConLlavePropia(String clavePublica) async {
@@ -29,8 +30,13 @@ Future<Map<String, String>?> suscribirConLlavePropia(String clavePublica) async 
     return null;
   }
   try {
-    final web.ServiceWorkerRegistration registro =
-        await web.window.navigator.serviceWorker.ready.toDart;
+    // Nunca `serviceWorker.ready`: en esta aplicación no resuelve jamás y deja
+    // el registro del dispositivo colgado sin un solo error. Ver
+    // `registro_worker_web.dart`.
+    final web.ServiceWorkerRegistration? registro = await registroDelWorker();
+    if (registro == null) {
+      return null;
+    }
 
     // La que ya hubiera: si fue creada con otra llave, el navegador la
     // rechazaría al suscribir, así que se retira primero.

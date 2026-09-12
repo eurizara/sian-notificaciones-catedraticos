@@ -295,7 +295,7 @@ gratuita.
 | DT-20 | Instalada como aplicación, nada dice en qué ambiente se está | Conocimiento | **Media** | **Pagada** | 0 USD |
 | DT-21 | El tema oscuro está construido pero apagado, y no se puede elegir | Alcance | Baja | **Pagada** (en desarrollo) | 0 USD |
 | DT-22 | Un token muerto solo se descubre cuando falla un aviso real | Alcance | **Alta** | **Pagada** | 0 USD |
-| DT-23 | El service worker no atiende `pushsubscriptionchange` | Plataforma | **Media** | **Pagada a medias** | 0 USD |
+| DT-23 | El service worker no atiende `pushsubscriptionchange` | Plataforma | **Media** | **Pagada** (en desarrollo) | 0 USD |
 | DT-24 | Un envío con algún fallo deja la pantalla igual y se manda dos veces | Conocimiento | **Alta** | **Pagada** | 0 USD |
 | DT-25 | El entorno local compila con un Flutter distinto del que despliega | Conocimiento | **Media** | **Pagada** | 0 USD |
 | DT-26 | En Android el contador del icono se queda encendido con todo leído | Plataforma | **Media** | **Pagada** | 0 USD |
@@ -934,7 +934,7 @@ minuto—, así que el segundo sigue dentro de lo gratuito.
 
 ## DT-23 — El service worker no atiende `pushsubscriptionchange`
 
-**Origen:** plataforma · **Severidad:** media · **Estado:** abierta · **Costo:** 0 USD
+**Origen:** plataforma · **Severidad:** media · **Estado:** pagada en desarrollo (1.5.6 y 1.5.7) · **Costo:** 0 USD
 
 **Se trabaja antes que DT-22.** La sonda de DT-22 informa de un problema; esto lo reduce.
 Hacerlo al revés es construir un panel para vigilar algo que se podía haber evitado.
@@ -1640,6 +1640,41 @@ coordinación.
 > escribe en Firestore**, y el peor caso —alguien con un token ajeno redirigiendo los
 > avisos de otra persona a su aparato— es exactamente el tipo de fallo que este proyecto
 > evita por diseño. No se descarta; se deja como decisión aparte, con su propio análisis.
+
+### 12 de septiembre de 2026 — pagada del todo, y la lección que costó un envío
+
+Se dejó de depender del token: el aparato se suscribe con **nuestra** llave VAPID y el
+servidor le envía directo (1.5.6). Lo que el service worker sí sabe renovar solo es la
+suscripción en crudo, y ahora es eso lo que se guarda.
+
+**Y se rompió el registro de todos los aparatos sin que se viera.** La suscripción propia se
+pedía así:
+
+```dart
+final registro = await navigator.serviceWorker.ready;   // ← nunca resuelve
+```
+
+`ready` espera a que haya un worker **con alcance sobre la página**, y en SIAN no lo hay:
+
+  · el de Flutter se registra en `/`, pero esta compilación no guarda nada en caché y **se
+    da de baja solo** en cuanto se activa;
+  · el nuestro vive en `/firebase-cloud-messaging-push-scope`, que no cubre `/`.
+
+La promesa se queda pendiente para siempre. **No lanza**, así que el `try` que la rodeaba no
+sirvió de nada, y el registro del dispositivo se quedó colgado antes de pedir el token. El
+efecto medido: entre el despliegue y el aviso de prueba **ningún aparato llamó a
+`registrarDispositivo`** —ni por la vía nueva ni por la vieja—, no hubo una sola línea de
+error en el servidor, y un iPhone recién abierto con la versión del día no recibió nada.
+
+Tres cosas quedaron de esto (1.5.7):
+
+  1. **El registro se busca, no se espera.** `registroDelWorker()` lo localiza por su guion
+     entre los registros existentes, lo registra si falta, y **todo lleva plazo**: si no
+     aparece devuelve nulo y quien llamó sigue por FCM.
+  2. **Un paso nuevo no puede dejar sin canal al que ya había.** La suscripción propia se
+     pide con plazo propio; agotado, el aparato se registra por FCM como antes.
+  3. **Una espera sin plazo es peor que un fallo**, porque el fallo se ve. Hay una prueba
+     que falla si alguien vuelve a escribir `serviceWorker.ready` en el código.
 
 ---
 
