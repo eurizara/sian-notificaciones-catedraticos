@@ -49,7 +49,7 @@ void escucharRotacionDeSuscripcion(void Function() alRotar) {
 ///
 /// Es la prueba de que este aparato sí las enseña, y con ella la tarjeta que
 /// avisa de lo que no se mostró puede callarse en cuanto deja de ser cierto.
-void escucharNotificacionMostrada(void Function() alMostrar) {
+void escucharNotificacionMostrada(void Function([Map<String, String>? datos]) alMostrar) {
   try {
     web.window.navigator.serviceWorker.addEventListener(
       'message',
@@ -57,7 +57,15 @@ void escucharNotificacionMostrada(void Function() alMostrar) {
         final web.MessageEvent mensaje = evento as web.MessageEvent;
         final Object? mapa = mensaje.data?.dartify();
         if (mapa is Map && mapa['tipo'] == 'sian:mostrada') {
-          alMostrar();
+          final Object? datos = mapa['datos'];
+          alMostrar(
+            datos is Map
+                ? <String, String>{
+                    for (final MapEntry<Object?, Object?> e in datos.entries)
+                      '${e.key}': '${e.value}',
+                  }
+                : null,
+          );
         }
       }.toJS,
     );

@@ -20,6 +20,7 @@ import '../../core/entorno.dart';
 import '../../core/navegador.dart';
 import '../../core/plataforma/consola.dart';
 import '../../core/plataforma/instalacion.dart';
+import '../../core/plataforma/suscripcion.dart';
 
 /// Estado del permiso, tal como lo entiende el sistema.
 enum EstadoPermiso { concedido, denegado, pendiente, noSoportado }
@@ -177,6 +178,29 @@ class RepositorioDispositivos {
         );
       }
 
+      // ────────────────────────────────────────────────────────────────────
+      // Con llave propia, NO se pide el token de FCM.
+      // ────────────────────────────────────────────────────────────────────
+      //
+      // El navegador tiene una sola suscripción: pedir el token la haría con
+      // la llave de Firebase, y entonces lo único que podríamos enviar sería
+      // algo que solo esta página sabe acuñar. Con la llave propia guardamos
+      // la suscripción en crudo, que el service worker sí renueva solo cuando
+      // el navegador rota de madrugada (DT-23).
+      final Map<String, String>? suscripcion = await suscribirConLlavePropia(
+        Entorno.claveVapidPropia,
+      );
+      if (suscripcion != null) {
+        consolaError('SIAN.dispositivo suscripción propia | lista');
+        _yaRefrescado = true;
+        return await _registrarEnServidor(
+          token: null,
+          suscripcion: suscripcion,
+          permiso: permiso,
+          enviarPrueba: enviarPrueba,
+        );
+      }
+
       final String? token = await _mensajeria.getToken(
         vapidKey: Entorno.claveVapid.isEmpty ? null : Entorno.claveVapid,
       );
@@ -204,8 +228,9 @@ class RepositorioDispositivos {
     required String? token,
     required EstadoPermiso permiso,
     required bool enviarPrueba,
+    Map<String, String>? suscripcion,
   }) async {
-    if (token == null) {
+    if (token == null && suscripcion == null) {
       return ResultadoRegistro(
         permiso: permiso,
         registrado: false,
@@ -219,7 +244,11 @@ class RepositorioDispositivos {
     final HttpsCallableResult<Object?> r = await _fn
         .httpsCallable('registrarDispositivo')
         .call<Object?>(<String, Object?>{
-          'tokenFCM': token,
+          'tokenFCM': token ?? '',
+          // La suscripción propia, cuando el aparato se suscribió con nuestra
+          // llave. Es lo que permite enviarle sin depender de un token que
+          // solo la página sabe acuñar (DT-23).
+          'webPush': ?suscripcion,
           // Identidad del aparato, estable entre aperturas. El token no sirve
           // para eso: en iOS se rota, y usarlo creaba un dispositivo nuevo en
           // cada ingreso (DT-18).

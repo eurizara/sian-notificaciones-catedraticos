@@ -25,10 +25,8 @@
 
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { logger } from 'firebase-functions/v2';
-import { getMessaging, type TokenMessage } from 'firebase-admin/messaging';
 
 import { crearAsiento } from '../domain/bitacora';
-import { esTokenMuerto } from '../domain/dispositivo';
 import { ErrorAutorizacion, ErrorDominio } from '../domain/errores';
 import {
   avisoAlCatedratico,
@@ -42,7 +40,7 @@ import {
 import type { Rol } from '../domain/tipos';
 import { FieldValue, OPCIONES_FUNCION, RUTAS, Timestamp, db } from '../infrastructure/firebase';
 import { escribirAsiento, nombreDe } from '../infrastructure/repositorios';
-import { retirarTokensMuertos, tokensDe } from './envio';
+import { avisarAPersona } from './envio';
 
 /**
  * Identificador del turno que propone el cliente.
@@ -331,24 +329,11 @@ async function notificar(
   uid: string,
   aviso: { titulo: string; cuerpo: string; etiqueta: string },
 ): Promise<void> {
-  const tokens = await tokensDe(uid);
-  if (tokens.length === 0) {
-    return;
-  }
-
-  const mensajes: TokenMessage[] = tokens.map((token) => ({
-    token,
-    data: { tipo: 'RESPUESTA', titulo: aviso.titulo, cuerpo: aviso.cuerpo, etiqueta: aviso.etiqueta },
-    webpush: { headers: { Urgency: 'normal' }, fcmOptions: { link: '/' } },
-  }));
-
-  const respuesta = await getMessaging().sendEach(mensajes);
-  const muertos: { uid: string; token: string }[] = [];
-  respuesta.responses.forEach((r, i) => {
-    const token = tokens[i];
-    if (!r.success && token !== undefined && esTokenMuerto(r.error?.code)) {
-      muertos.push({ uid, token });
-    }
+  await avisarAPersona(uid, {
+    tipo: 'RESPUESTA',
+    titulo: aviso.titulo,
+    cuerpo: aviso.cuerpo,
+    etiqueta: aviso.etiqueta,
   });
-  await retirarTokensMuertos(muertos);
 }
+

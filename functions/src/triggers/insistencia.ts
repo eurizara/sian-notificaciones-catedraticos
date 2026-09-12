@@ -21,19 +21,16 @@
  */
 
 import { logger } from 'firebase-functions/v2';
-import { getMessaging, type TokenMessage } from 'firebase-admin/messaging';
 import type { Timestamp } from 'firebase-admin/firestore';
 
 import {
   MINUTOS_SIN_ACUSE_PARA_REINTENTAR,
   armarSeña,
-  cabecerasDeEnvio,
   necesitaReintento,
   sabeAcusar,
 } from '../domain/acuse';
-import { esTokenMuerto } from '../domain/dispositivo';
 import { FieldValue, RUTAS, aTimestamp, db } from '../infrastructure/firebase';
-import { retirarTokensMuertos, tokensDe } from './envio';
+import { avisarAPersona } from './envio';
 
 /** Cuántas entregas se reintentan por ciclo. */
 const MAX_POR_CICLO = 30;
@@ -119,35 +116,21 @@ export async function insistirDondeNoHuboAcuse(ahora: Date): Promise<number> {
         continue;
       }
 
-      const tokens = await tokensDe(uid);
-      // Se marca el intento aunque no haya a dónde mandarlo: sin dispositivo no
-      // hay nada que insistir, y volver a mirarlo cada minuto no lo cambia.
+      // Se marca el intento antes de enviar: si no hay a dónde mandarlo, volver
+      // a mirarlo cada minuto no lo cambia.
       await entrega.ref.update({
         reintentosPorAcuse: FieldValue.increment(1),
         reintentadoEn: FieldValue.serverTimestamp(),
       });
-      if (tokens.length === 0) {
+
+      const { entregado } = await avisarAPersona(
+        uid,
+        { ...carga, ac: armarSeña(ocurrenciaId, uid, acuseId) },
+        carga.tipo === 'URGENTE',
+      );
+      if (!entregado) {
         continue;
       }
-
-      const mensajes: TokenMessage[] = tokens.map((token) => ({
-        token,
-        data: { ...carga, ac: armarSeña(ocurrenciaId, uid, acuseId) },
-        webpush: {
-          headers: cabecerasDeEnvio(carga.tipo === 'URGENTE'),
-          fcmOptions: { link: '/' },
-        },
-      }));
-
-      const respuesta = await getMessaging().sendEach(mensajes);
-      const muertos: { uid: string; token: string }[] = [];
-      respuesta.responses.forEach((r, i) => {
-        const token = tokens[i];
-        if (!r.success && token !== undefined && esTokenMuerto(r.error?.code)) {
-          muertos.push({ uid, token });
-        }
-      });
-      await retirarTokensMuertos(muertos);
       insistidos += 1;
     } catch (e) {
       // Una entrega que falla no puede tumbar el ciclo del despachador.

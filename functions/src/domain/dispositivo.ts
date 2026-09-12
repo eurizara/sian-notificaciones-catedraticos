@@ -42,15 +42,24 @@ export interface Dispositivo {
   readonly versionApp: string;
   readonly permisoNotificacion: PermisoNotificacion;
   readonly activo: boolean;
+
+  /**
+   * La suscripción propia, cuando el aparato se suscribió con nuestra llave
+   * VAPID en vez de con la de Firebase (DT-23). Es la única que el service
+   * worker sabe renovar solo, sin que nadie abra la aplicación.
+   */
+  readonly webPush: { endpoint: string; p256dh: string; auth: string } | null;
 }
 
 export interface EntradaDispositivo {
-  readonly tokenFCM: string;
+  /** Vacío cuando el aparato se suscribió con nuestra llave propia (DT-23). */
+  readonly tokenFCM?: string;
   readonly plataforma: string;
   readonly esPWAInstalada?: boolean;
   readonly navegador?: string;
   readonly versionApp?: string;
   readonly permisoNotificacion?: string;
+  readonly webPush?: { endpoint?: string; p256dh?: string; auth?: string } | null;
 }
 
 /** Longitud mínima plausible de un token de FCM. */
@@ -58,8 +67,18 @@ const LONGITUD_MINIMA_TOKEN = 20;
 
 export function crearDispositivo(entrada: EntradaDispositivo): Dispositivo {
   const token = (entrada.tokenFCM ?? '').trim();
+  const web = entrada.webPush ?? null;
+  const tieneWebPush = Boolean(web?.endpoint && web?.p256dh && web?.auth);
 
-  if (token.length < LONGITUD_MINIMA_TOKEN) {
+  // ──────────────────────────────────────────────────────────────────────────
+  // Un aparato vale por CUALQUIERA de las dos vías (DT-23).
+  // ──────────────────────────────────────────────────────────────────────────
+  //
+  // El token de FCM era lo único que había. Desde que el aparato puede
+  // suscribirse con nuestra llave propia, un registro con suscripción y sin
+  // token es válido — y de hecho es el bueno, porque esa suscripción sí la
+  // sabe renovar el service worker sin que nadie abra la aplicación.
+  if (!tieneWebPush && token.length < LONGITUD_MINIMA_TOKEN) {
     throw new ErrorValidacion(
       'TOKEN_FCM_INVALIDO',
       'El identificador de notificación no tiene forma válida.',
@@ -85,6 +104,13 @@ export function crearDispositivo(entrada: EntradaDispositivo): Dispositivo {
 
   return Object.freeze({
     tokenFCM: token,
+    webPush: tieneWebPush
+      ? {
+          endpoint: (web!.endpoint ?? '').slice(0, 500),
+          p256dh: (web!.p256dh ?? '').slice(0, 200),
+          auth: (web!.auth ?? '').slice(0, 100),
+        }
+      : null,
     plataforma,
     esPWAInstalada: entrada.esPWAInstalada === true,
     navegador: (entrada.navegador ?? '').trim().slice(0, 120),

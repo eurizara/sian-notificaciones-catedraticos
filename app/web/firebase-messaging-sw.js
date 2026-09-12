@@ -653,13 +653,17 @@ async function acusarQueSeMostro(datos) {
  * teléfono sí las enseña. Con eso, la tarjeta que avisa de que no se mostraron
  * deja de insistir en vez de quedarse una semana diciendo algo ya resuelto.
  */
-async function avisarQueSeMostro(ventanas) {
+async function avisarQueSeMostro(ventanas, datos) {
   try {
     const abiertas =
       ventanas ||
       (await self.clients.matchAll({ type: 'window', includeUncontrolled: true }));
     for (const ventana of abiertas) {
-      ventana.postMessage({ tipo: 'sian:mostrada' });
+      // Los datos viajan con el aviso para que la aplicación abierta pueda
+      // enseñar su tarjeta. Con Web Push directo (DT-23) el SDK de Firebase no
+      // interviene, así que este es el único camino por el que la pantalla se
+      // entera de un aviso recién llegado.
+      ventana.postMessage({ tipo: 'sian:mostrada', datos: datos || {} });
     }
   } catch (e) {
     trazar('mostrada:aviso-falló', String(e));
@@ -691,7 +695,7 @@ self.addEventListener('push', (evento) => {
       await self.registration.showNotification(titulo, opciones);
       await sumarInsignia(opciones.data && opciones.data.mensajeId);
       await acusarQueSeMostro(carga && carga.data);
-      await avisarQueSeMostro(ventanas);
+      await avisarQueSeMostro(ventanas, carga && carga.data);
     })(),
   );
 });

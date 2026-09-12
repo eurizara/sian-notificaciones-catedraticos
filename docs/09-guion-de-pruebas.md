@@ -729,6 +729,10 @@ la API de revisión periódica no existe ahí, y el canal se sigue renovando al 
 | S-3 | Sin abrir la aplicación, mira **Alcance** | Esa persona aparece con su registro caducado, **sin necesidad de haber perdido un aviso** |
 | S-4 | Abre la aplicación en el teléfono | El registro se renueva y desaparece de Alcance |
 | S-5 | Manda un aviso y revisa la bitácora si alguien falla | Aparece `DISPOSITIVO_RETIRADO` con el motivo, no solo en los registros técnicos |
+| S-6 | Entra con un aparato nuevo en un ambiente **con llaves propias** | Su registro queda con `webPush` y **sin** `tokenFCM`: se suscribió con nuestra llave |
+| S-7 | Mándale un aviso | Le llega igual. En el reporte cuenta como entregado, y el acuse funciona como siempre |
+| S-8 | Con la aplicación abierta, mándale otro | Sale la tarjeta dentro de la aplicación **y** la notificación del sistema: con la vía propia, quien avisa a la pantalla es el worker |
+| S-9 | Un aparato de antes, con token de FCM | Sigue recibiendo por FCM. Cada aparato usa **una sola** vía, nunca las dos |
 
 ## Probar que se sabe si la notificación se mostró (DT-31, C-5)
 
