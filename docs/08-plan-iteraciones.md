@@ -241,12 +241,24 @@ Hasta que las cuatro estén en producción no se empieza con las mejoras.
 | C-1 | **DT-26** · el contador se queda encendido en Android | **Corregida el 09/09.** Una notificación solo se cerraba al tocarla; quien abría desde el icono las dejaba puestas, y el lanzador de Android las cuenta. Ahora la aplicación manda al worker cuáles siguen sin leer y el worker retira las demás. **DT-17 pagada con ella**: 14 pruebas donde no había ninguna |
 | C-2 | **DT-23 → DT-22** · el canal se pierde solo | **Corregida el 09/09.** Sonda semanal en seco que valida los tokens sin entregar nada, y apartado en la pantalla de coordinación con quién no recibiría un aviso ahora mismo. DT-23 quedó pagada a medias por un límite del SDK, explicado en su ficha |
 | C-3 | **DT-18** · dispositivos arrastrados | **Corregida el 09/09.** La misma sonda retira lo que lleva más de sesenta días sin actividad, con el motivo anotado en la bitácora |
+| C-5 | **DT-31** · «entregado» no es «se mostró» | **Nueva, 11/09, y pasa al frente.** Acuse de recibo desde el service worker, prioridad alta en todo aviso, un reintento medido y autodiagnóstico en la aplicación. Es lo único que convierte «supuestamente le llegó» en un dato |
 | C-4 | **DT-14** · correos de recuperación | **Bloqueada, y no por programación.** Exige un buzón institucional y entradas SPF/DKIM en el DNS de la UMG. Lo que sí se hizo: el aviso en pantalla ahora dice que revise la carpeta de no deseado, que es donde caen |
 
 > **DT-17 — pruebas del service worker — no es una corrección con vida propia: es la
 > condición para liberar C-1.** De los siete defectos de notificación, los siete vivían en
 > ese archivo y ninguno lo encontró una prueba. El contador ya falló una vez y volvió; sin
 > pruebas, la tercera es cuestión de tiempo. Viaja con C-1 y se prueba con ella.
+
+> **C-5 se antepone a las mejoras que quedan.** El 11 de septiembre un aviso salió a 23
+> personas: 5 fallaron y varias de las 18 «entregadas» nunca vieron la notificación y se
+> enteraron por WhatsApp. Mientras no se mida el último tramo —del servicio de push al
+> aparato—, cada envío se evalúa con un dato que puede no ser cierto. La ficha DT-31 trae
+> el diagnóstico completo del caso, con nombres y aparatos.
+>
+> **Y hay una parte que no es código y recupera más entregas que ninguna otra:** tres
+> personas no tienen ningún dispositivo registrado, cuatro tienen la aplicación sin instalar
+> en el celular y una solo la tiene en una computadora. Ocho de veinticuatro dependen de un
+> canal débil antes de que falle nada.
 
 **Cómo se liberan.** Una por una por el flujo normal —`develop` → `qa` → `main`— y no todas
 juntas al final. Cada una que llega a producción es gente que vuelve a recibir avisos, y

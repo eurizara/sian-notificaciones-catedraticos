@@ -302,6 +302,7 @@ gratuita.
 | DT-29 | Cambiar el manifiesto deja Android degradado hasta que Chrome regenera la aplicación | Plataforma | Baja | **Aceptada** | 0 USD |
 | DT-30 | Chrome puede marcar los avisos como «posible spam» y ofrecer anular la suscripción | Plataforma | **Media** | Abierta | 0 USD |
 | DT-27 | No hay forma de responder a un aviso | Alcance | Media | **Pagada** (en desarrollo) | 0 USD |
+| DT-31 | «Entregado» no significa que el aparato lo mostrara, y nadie lo mide | Alcance | **Alta** | Abierta | 0 USD |
 | DT-28 | El manual no se alcanza desde dentro de la aplicación | Alcance | Baja | **Pagada** (en desarrollo) | 0 USD |
 
 **Prioridad de pago recomendada, en orden:** DT-03 → DT-14 → DT-04 → DT-01.
@@ -1949,3 +1950,114 @@ Perseguirlo con más notificaciones, ni intentar detectar si Chrome nos marcó. 
 para preguntarlo, y el remedio no es técnico: es que los avisos sean pocos, distintos entre
 sí y realmente útiles. Un sistema de emergencias que manda poco es, además, el que se
 quiere.
+
+---
+
+## DT-31 — «Entregado» no significa que el aparato lo mostrara, y nadie lo mide
+
+**Origen:** alcance · **Severidad:** alta · **Estado:** abierta · **Costo:** 0 USD
+
+Detectado el 11 de septiembre de 2026 con un caso real: se envió «actividades normales el
+día de mañana» a 23 personas. El reporte dijo **18 entregados y 5 fallidos**, y varias de
+las 18 avisaron que **la notificación nunca apareció en su teléfono**: se enteraron por
+WhatsApp y vieron el aviso al entrar a la aplicación.
+
+### El hueco: lo que «entregado» dice de verdad
+
+`ENTREGADO` significa **que FCM aceptó el mensaje para ese aparato**. Nada más. Entre eso y
+que el teléfono enseñe la notificación hay una cadena entera que no vemos:
+
+```
+  servidor → FCM → servicio de push del navegador (Apple/Google) → aparato
+           ↑                                                        ↑
+     esto es lo único                                    esto es lo que la
+     que hoy medimos                                     persona experimenta
+```
+
+Del último tramo **no llega ningún acuse**. Por eso el panel puede decir «entregado» de un
+aviso que nadie vio, y por eso la conversación de hoy —«a varios no les llegó, y a otros
+les llegó pero no les avisó»— no se puede contestar con datos, solo con conjeturas.
+
+### Lo que sí se pudo medir del envío de hoy
+
+**Los 5 fallos tienen explicación, y tres son la misma:**
+
+| Persona | Qué pasó |
+|---|---|
+| `jgomezo20`, `mhernandezb28`, `aurizard` | **Sin ningún dispositivo registrado.** Llevan tres envíos seguidos sin recibir nada (07/09, 10/09, 11/09) |
+| `ftorresa` | Sin dispositivo al momento del envío; **se registró a las 17:02**, seis minutos después |
+| `csalguerov` | FCM rechazó su token (`invalid-argument`); **volvió a registrarse a las 17:31** |
+
+Los dos últimos son DT-22 otra vez: el registro muere entre un aviso y el siguiente, y solo
+revive cuando la persona abre la aplicación.
+
+**Y el reparto de aparatos explica buena parte del resto**, sobre 24 personas que reciben
+avisos:
+
+| Situación | Cuántos | Qué significa |
+|---|:--:|---|
+| Sin ningún dispositivo | 3 | No pueden recibir nada |
+| Solo en una computadora, en el navegador | 1 | Con la laptop apagada no hay aviso posible |
+| En el celular pero **sin instalar** la aplicación | 4 | La notificación la muestra Chrome, no la aplicación: es la más fácil de perder o de silenciar (DT-30) |
+| Con la aplicación instalada en el celular | 16 | El único caso que funciona como se diseñó |
+
+Ocho de veinticuatro dependen de un canal débil **antes** de que intervenga ningún fallo
+técnico.
+
+### Por qué una notificación aceptada puede no mostrarse
+
+Ninguna de estas causas la puede ver el servidor hoy:
+
+  · **El aviso va con prioridad normal.** Solo los urgentes salen con `Urgency: high`. Con
+    prioridad normal, el sistema está autorizado a retrasar la entrega hasta que el
+    aparato salga del modo de reposo — y entonces la notificación llega tarde, o la
+    persona ya abrió la aplicación y nunca la ve.
+  · **Los modos de concentración y el resumen programado de iOS** entregan la notificación
+    pero no la enseñan: aparece agrupada más tarde.
+  · **Las notificaciones del sitio, apagadas en los ajustes del teléfono.** El permiso del
+    navegador sigue diciendo «concedido»: son dos interruptores distintos, y la aplicación
+    solo puede leer uno.
+  · **Chrome silenciando el sitio** por su heurística de «posible spam» (DT-30).
+  · **La suscripción murió** y el servicio de push la descartó sin decírselo a FCM.
+
+**Cerrar la aplicación no es la causa.** Ni en iPhone ni en Android: el sistema despierta al
+service worker aunque la aplicación esté cerrada. Lo que sí rompe el canal es desinstalarla,
+borrar los datos del navegador o apagar sus notificaciones en los ajustes del teléfono.
+
+### Cómo se paga
+
+El orden importa: primero medir, porque sin medir no se sabe cuál de las causas de arriba
+pesa en esta población.
+
+1. **Acuse de recibo desde el service worker.** Al mostrar la notificación, el worker avisa
+   al servidor, que lo anota en la entrega (`mostradaEn`). Es la pieza que convierte
+   «supuestamente le llegó» en un hecho, y de la que dependen las demás.
+2. **El panel deja de decir «entregado» a secas.** Tres estados distintos: *aceptado por
+   FCM*, *se mostró en el aparato*, *se abrió*. Y Alcance gana el estado «recibió el aviso
+   pero su aparato no lo mostró», que es una lista de personas a las que llamar.
+3. **Prioridad alta y vida útil explícita en todos los avisos.** `Urgency: high` siempre
+   —todo aviso institucional es de interés inmediato— y un TTL de 24 horas en los
+   informativos y 4 en los urgentes, para que un aviso viejo no aparezca dos días después.
+4. **Un reintento medido.** Sin acuse a los diez minutos, se reintenta una vez. Si sigue sin
+   acuse, la persona aparece en Alcance.
+5. **Autodiagnóstico en la aplicación.** Si hay avisos recientes que este aparato recibió y
+   no mostró, la aplicación lo dice al abrirla, con un botón de prueba y las instrucciones
+   exactas de cada sistema: en iPhone, Ajustes → Notificaciones → SIAN y revisar los modos
+   de concentración; en Android, los ajustes de la aplicación y la optimización de batería.
+6. **Cerrar la brecha de aparatos, que no es código.** Instalar la aplicación en el celular
+   de los tres que no tienen ninguno, y convertir en instalación los cuatro que solo la
+   tienen abierta en Chrome. Es lo que más entregas recupera y no depende de ningún
+   desarrollo.
+
+### Lo que NO se puede prometer, y conviene decirlo por escrito
+
+La web no permite forzar que un teléfono muestre una notificación: la última palabra es del
+sistema operativo, y sus modos de concentración, ahorro de batería y silenciados están por
+encima de cualquier cosa que envíe el servidor. Ninguna aplicación —nativa incluida— puede
+garantizar el 100 %.
+
+Por eso, para una emergencia real, el aviso tiene que seguir acompañado de un canal humano,
+que es lo que hoy se hizo con WhatsApp. Lo que sí puede lograr este trabajo es que ese
+respaldo deje de ser a ciegas: SIAN dirá **exactamente a quién** hay que llamar, en vez de
+llamar a los veintitrés por si acaso.
+
