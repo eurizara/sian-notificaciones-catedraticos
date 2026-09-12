@@ -194,7 +194,7 @@ async function retirar(
  */
 export const sondaDeCanal = onSchedule(
   {
-    schedule: 'every monday 06:00',
+    schedule: 'every day 06:00',
     timeZone: ZONA_INSTITUCIONAL,
     region: 'us-central1',
     memory: '512MiB',

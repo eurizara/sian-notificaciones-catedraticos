@@ -36,7 +36,7 @@ import {
   type GrupoResuelto,
 } from '../application/resolverDestinatarios';
 import { LARGO_DE_ACUSE, armarSeña, cabecerasDeEnvio } from '../domain/acuse';
-import { crearAsiento } from '../domain/bitacora';
+import { actorSistema, crearAsiento } from '../domain/bitacora';
 import { esIdentificadorDeInstalacion, esTokenMuerto } from '../domain/dispositivo';
 import { exigirPermiso, type Sujeto } from '../domain/autorizacion';
 import { ErrorAutorizacion, ErrorDominio, esDocumentoYaExistente } from '../domain/errores';
@@ -44,7 +44,7 @@ import { MensajeFactory, type Mensaje } from '../domain/mensaje';
 import { normalizarAdjuntos } from '../domain/tipos';
 import type { Adjuntos, Destinatarios, Rol, TipoMensaje } from '../domain/tipos';
 import { FieldValue, OPCIONES_FUNCION, RUTAS, aTimestamp, db } from '../infrastructure/firebase';
-import { escribirAsiento, nombreDe } from '../infrastructure/repositorios';
+import { escribirAsiento, escribirAsientos, nombreDe } from '../infrastructure/repositorios';
 
 /** FCM admite 500 mensajes por lote. Se deja margen. */
 const TAMANO_LOTE = 400;
@@ -567,6 +567,28 @@ export async function retirarTokensMuertos(
   );
 
   logger.info('Tokens muertos retirados', { cuantos: muertos.length });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Y queda dicho en la bitácora, no solo en los registros técnicos.
+  // ──────────────────────────────────────────────────────────────────────────
+  //
+  // El 12 de septiembre de 2026 hubo que reconstruir a mano por qué una
+  // persona se había quedado sin dispositivo: el retiro solo existía en los
+  // registros del servidor. Con el asiento, la próxima vez se lee en pantalla
+  // —qué aparato, cuándo y por qué— igual que cuando lo retira la sonda.
+  await escribirAsientos(
+    muertos.map(({ uid }) =>
+      crearAsiento({
+        tipo: 'DISPOSITIVO_RETIRADO',
+        actor: actorSistema,
+        entidad: 'DISPOSITIVO',
+        entidadId: uid,
+        resumen: 'Su registro de notificaciones ya no existía al enviar un aviso',
+        datos: { motivo: 'TOKEN_RECHAZADO_AL_ENVIAR' },
+        origen: 'PLANIFICADOR',
+      }),
+    ),
+  );
 }
 
 async function marcarSinDispositivo(
