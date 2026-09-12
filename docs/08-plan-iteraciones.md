@@ -282,6 +282,11 @@ copia a `version.json`, que es contra lo que la aplicación se compara.
 
 **Al subir la versión:** cambiar el número en esos dos sitios y anotar aquí qué trae.
 
+| Versión | Qué trae |
+|---|---|
+| 1.5.0 | Iteración de septiembre: correcciones C-1 a C-5 y mejoras M-1 a M-5 |
+| 1.5.1 | La versión se ve también en el menú lateral del panel y en el menú de la cuenta. En 1.5.0 solo estaba en el cajón de pantalla estrecha y al final de la bandeja: en una computadora no aparecía por ningún lado |
+
 **Dónde se ve.** En el pie de la bandeja y del panel; cuando hay una más reciente, una
 tarjeta arriba con el botón de actualizar. Y en **Alcance**, la versión de cada persona:
 desde C-5 eso cambia cómo se leen los datos, porque el acuse de que una notificación se

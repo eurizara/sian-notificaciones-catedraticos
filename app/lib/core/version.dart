@@ -31,4 +31,4 @@
 library;
 
 /// La versión de este código. Ver arriba qué significa cada número.
-const String versionSian = '1.5.0';
+const String versionSian = '1.5.1';

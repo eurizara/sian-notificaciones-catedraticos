@@ -502,6 +502,17 @@ Lo publicado **nunca** es lo que se edita: `app/build/web` y `functions/lib`
 son resultados de compilación y no se versionan. Modificarlos a mano no
 serviría de nada, porque la siguiente compilación los reescribe.
 
+### 6.1b La única función que NO es una llamada firmada
+
+De las 24, `acuseDeNotificacion` es la excepción: es una petición HTTP corriente y tiene que
+serlo. Quien llama es el **service worker**, que se despierta con el push y no tiene sesión
+de nadie —no hay token de usuario que firmar—. Lo identifica una seña aleatoria que viajó
+dentro de ese mismo push.
+
+Por eso no escribe nada con valor probatorio: ni estado de entrega, ni confirmación de
+lectura, ni bitácora. Solo una fecha de diagnóstico. Es la diferencia entre «esto prueba
+algo» y «esto sirve para saber a quién llamar», y está dibujada a propósito.
+
 ### 6.2 Cómo verlo
 
 **En GitHub, que es la fuente de verdad:**
@@ -711,6 +722,9 @@ sian/
 │   │       ├── enviarInmediato.ts
 │   │       ├── despachador.ts     Invocada por Cloud Scheduler
 │   │       ├── confirmarLectura.ts
+│   │       ├── respuestas.ts      Responder a un aviso (DT-27)
+│   │       ├── acuse.ts           «Ya la mostré», del service worker (DT-31)
+│   │       ├── insistencia.ts     Segundo empujón sin acuse (DT-31)
 │   │       ├── onNuevoUsuario.ts
 │   │       └── limpiarTokens.ts
 │   └── test/

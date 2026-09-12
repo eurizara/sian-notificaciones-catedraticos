@@ -400,7 +400,98 @@ sequenceDiagram
 
 ---
 
-## 6. Correspondencia entre secuencias y requisitos
+## 6. Saber si el aparato mostró la notificación, e insistir (RF-ENT-16..18)
+
+Esta secuencia existe porque el tramo final —del servicio de push a la pantalla— era
+invisible. Lo que se ve aquí es quién puede afirmar que la notificación se mostró: **solo el
+service worker**, que es quien la pinta.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant FN as Cloud Functions
+    participant FCM as FCM / servicio de push
+    participant SW as Service Worker
+    actor CA as Catedrático
+    participant FS as Firestore
+    participant PLA as Despachador (cada minuto)
+    actor CO as Coordinador
+
+    FN->>FS: entregas/{uid} con acuseId aleatorio y mostradaEn = null
+    FN->>FCM: push con Urgency: high, TTL, y la seña del acuse
+    FCM-->>FN: aceptado
+    FN->>FS: entregas/{uid}.estado = ENTREGADO
+
+    alt El aparato la muestra
+        FCM->>SW: push
+        SW->>CA: notificación en pantalla
+        SW->>FN: acuseDeNotificacion(mensajeId, seña)
+        FN->>FS: entregas/{uid}.mostradaEn = ahora
+        Note over FN,FS: También suma resumenEntrega.mostrados
+    else El aparato no la muestra
+        Note over FCM,CA: Modo de concentración, ahorro de batería,<br/>notificaciones del sitio apagadas…
+    end
+
+    PLA->>FS: entregas ENTREGADO, mostradaEn = null, hace ≥ 10 min
+    PLA->>FCM: segundo empujón, una sola vez
+    Note over PLA: Si tampoco se muestra, no hay tercer intento:<br/>lo que falla son los ajustes del aparato
+
+    CO->>FS: Reporte del aviso
+    FS-->>CO: «Se mostró en 7 de 10» · «Su aparato no lo mostró»
+```
+
+**Por qué el acuse no va firmado como el resto del sistema.** El service worker se despierta
+con el push y no tiene sesión de nadie: no hay token de usuario que firmar. Lo identifica la
+seña aleatoria que viajó dentro de ese mismo push. Por eso no escribe nada con valor
+probatorio —ni estado, ni confirmación de lectura, ni bitácora—: solo una fecha de
+diagnóstico. Lo peor que puede hacer quien se invente una seña es afirmar que vio un aviso
+que era suyo.
+
+---
+
+## 7. Responder a un aviso (RF-RES-01..06)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor CA as Catedrático
+    participant APP as App del Catedrático
+    participant FN as Cloud Functions
+    participant FS as Firestore
+    participant PA as Panel Web
+    actor CO as Emisor del aviso
+
+    CA->>APP: Abre el aviso y pulsa «Responder»
+    APP->>APP: Genera el identificador del turno
+    APP->>FN: responderAviso(mensajeId, texto, turnoId)
+    activate FN
+    FN->>FS: ¿Está este uid en destinatariosUids?
+    FN->>FS: create turnos/{turnoId} — falla si ya existía
+    FN->>FS: hilos/{uid}: turnos +1, sinLeerEmisor +1
+    FN->>FS: bitácora RESPUESTA_ENVIADA (sin el texto)
+    alt Primera respuesta a este aviso en 10 min
+        FN->>CO: notificación «Respuesta de …»
+    else Ya se avisó hace poco
+        Note over FN,CO: Se pliega: la próxima dirá cuántas hay
+    end
+    deactivate FN
+
+    CO->>PA: Sección Respuestas (con el número sin leer)
+    PA->>FS: hilos donde emisorUid == yo
+    FS-->>PA: Conversaciones agrupadas por aviso
+    CO->>FN: responderAviso(mensajeId, texto, hiloUid)
+    FN->>FS: turno del lado EMISOR, sinLeerCatedratico +1
+    FN->>CA: notificación «… te respondió»
+```
+
+**El doble toque no duplica.** El identificador del turno lo propone el cliente y el
+servidor lo crea con `create`: si la misma respuesta llega dos veces, la segunda encuentra
+el documento ya escrito y no guarda ni notifica otra vez. Es la lección de DT-24, aplicada
+desde el primer día de esta funcionalidad.
+
+---
+
+## 8. Correspondencia entre secuencias y requisitos
 
 | Secuencia | Requisitos que demuestra |
 |-----------|--------------------------|
@@ -409,3 +500,5 @@ sequenceDiagram
 | 3 · Programación | RF-PRG-02, 03, 04, 11 · RN-01, RN-05 |
 | 4 · Despacho y recurrencia | RF-PRG-05..14 · RF-ENT-14 · RNF-04, RNF-06 · RES-04 |
 | 5 · Confirmación y trazabilidad | RF-CNF-01..08 · RF-BIT-01, 02, 07, 08 · RNF-17 |
+| 6 · Acuse de presentación e insistencia | RF-ENT-16, 17, 18 · DT-31 |
+| 7 · Responder a un aviso | RF-RES-01..06 · RN-03 · DT-27 |

@@ -17,9 +17,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sian/core/version.dart';
+import 'package:sian/application/proveedores_sesion.dart';
+import 'package:sian/domain/rol.dart';
+import 'package:sian/domain/sesion.dart';
+import 'package:sian/presentation/admin/panel_admin.dart';
 import 'package:sian/presentation/shared/tema.dart';
 import 'package:sian/presentation/shared/textos.dart';
 import 'package:sian/presentation/shared/version_app.dart';
+
+import '../dobles/repositorios_falsos.dart';
 
 void main() {
   group('el número', () {
@@ -98,6 +104,40 @@ void main() {
       WidgetTester tester,
     ) async {
       expect(Textos.hayVersionNueva, contains('no pierdes nada'));
+    });
+  });
+
+  group('dónde se ve', () {
+    testWidgets('en el menú lateral del panel, en pantalla ancha', (
+      WidgetTester tester,
+    ) async {
+      // Estaba solo en el cajón de pantalla estrecha y en el pie de la
+      // bandeja: en una computadora no aparecía por ningún lado (11/09/2026).
+      final RepositorioSesionFalso sesion = RepositorioSesionFalso(
+        inicial: SesionActiva(usuarioDePrueba(rol: Rol.coordinador)),
+      );
+      addTearDown(sesion.cerrar);
+      tester.view.physicalSize = const Size(1400, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            repositorioSesionProvider.overrideWithValue(sesion),
+            versionPublicadaProvider.overrideWith(
+              (Ref ref) async => versionSian,
+            ),
+          ],
+          child: MaterialApp(
+            theme: TemaSian.claro(),
+            home: PanelAdmin(usuario: usuarioDePrueba(rol: Rol.coordinador)),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(SelloDeVersion), findsOneWidget);
     });
   });
 

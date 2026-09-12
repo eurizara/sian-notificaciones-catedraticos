@@ -87,12 +87,17 @@ solo se verifica desplegando a `dev` (documento 06, etapa D.5).
 | 1.3 | Composición y entrega inmediata, con voz e imágenes | Hecho |
 | 1.4 | Programación, recurrencia y confirmación de lectura | Hecho |
 | 1.4 | Reporte de entregas y bitácora consultable | Hecho |
+| 1.5 | Correcciones C-1 a C-5: contador del icono, canal que se perdía solo, dispositivos arrastrados, y saber si el teléfono mostró el aviso | Hecho |
+| 1.5 | Mejoras M-1 a M-5: la semana de un vistazo, distintivo de ambiente, manual en la barra, tema oscuro y responder a un aviso | Hecho |
 | — | **Desplegado en https://sian-umg-bdm-dev.web.app** | En línea |
 | — | **Manuales de usuario publicados** | En línea |
 | 2.x | Ambiente de QA y pruebas con catedráticos voluntarios | Siguiente |
 
-**Pruebas hoy:** 275 de widget · 257 de dominio y Cloud Functions · reglas de
-seguridad verificadas contra el emulador. Los cuatro trabajos de integración
+**Versión publicada:** 1.5.0. La aplicación la enseña en su pie y avisa cuando hay una más
+reciente; el esquema está explicado en el documento 08.
+
+**Pruebas hoy:** 437 de widget · 335 de dominio y Cloud Functions · 38 de reglas · 22 del
+service worker, todas verificadas contra el emulador. Los cuatro trabajos de integración
 continua corren en cada solicitud de incorporación.
 
 ---
