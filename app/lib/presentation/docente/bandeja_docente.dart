@@ -22,6 +22,7 @@ import '../shared/barra_sesion.dart';
 import '../shared/buscador.dart';
 import 'aviso_en_primer_plano.dart';
 import 'aviso_no_mostrado.dart';
+import '../shared/version_app.dart';
 import 'filtro_bandeja.dart';
 import 'insignia_bandeja.dart';
 import 'instructivo_ios.dart';
@@ -264,6 +265,9 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                       child: Column(
                         children: <Widget>[
+                          // Lo primero: si hay versión nueva, lo demás que se
+                          // vea puede estar desactualizado.
+                          const AvisoDeVersionNueva(),
                           const TarjetaNotificaciones(),
 
                           // El canal está bien y aun así el teléfono no
@@ -336,6 +340,10 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
                             alPulsar: () =>
                                 setState(() => _visibles += _porPagina),
                           ),
+
+                          // Al final y en pequeño: no estorba, y está donde
+                          // uno mira cuando le preguntan «¿qué versión tienes?».
+                          const SelloDeVersion(),
                         ],
                       ),
                     ),

@@ -12,6 +12,7 @@ library;
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
+import '../../core/version.dart';
 import '../../core/entorno.dart';
 import '../../core/navegador.dart';
 import '../../core/plataforma/consola.dart';
@@ -229,6 +230,11 @@ class RepositorioDispositivos {
             _ => 'pendiente',
           },
           'enviarPrueba': enviarPrueba,
+          // Con qué versión está corriendo este aparato. Se manda en cada
+          // apertura, así que la pantalla de Alcance ve quién se quedó atrás
+          // — y desde C-5 eso importa: el acuse de que una notificación se
+          // mostró lo manda el service worker, que viaja con la versión.
+          'versionApp': versionSian,
         });
 
     final Map<Object?, Object?> datos =

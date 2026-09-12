@@ -358,6 +358,24 @@ abstract final class Textos {
 
   // --- Respuestas a un aviso (DT-27) --------------------------------------
 
+  // --- Versión de la aplicación ----------------------------------------------
+
+  /// Se puede leer en voz alta por teléfono, que es de lo que se trata: el
+  /// identificador de commit tiene cuarenta caracteres y nadie lo va a dictar.
+  static String version(String version) => 'SIAN $version';
+  static String versionConActualizacion(String version) =>
+      'SIAN $version · hay una versión más reciente';
+
+  static const String hayVersionNueva =
+      'Hay una versión más reciente de SIAN. Actualizar tarda unos segundos y '
+      'no pierdes nada de lo que ya recibiste.';
+  static const String botonActualizarAhora = 'Actualizar';
+
+  /// En el Alcance: con qué versión está cada persona.
+  static String versionDeLaPersona(String version) =>
+      version.isEmpty ? 'Versión desconocida' : 'Versión $version';
+  static String versionAlDia(String version) => 'Versión publicada: $version';
+
   // --- Se mostró en el aparato (DT-31) ---------------------------------------
 
   /// «Entregado» solo dice que FCM aceptó el mensaje; esto dice que el aparato

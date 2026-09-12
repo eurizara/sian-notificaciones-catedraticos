@@ -265,6 +265,28 @@ juntas al final. Cada una que llega a producción es gente que vuelve a recibir 
 juntarlas solo aumenta lo que hay que revisar si algo sale mal. DT-24 ya se liberó así, sola
 y de urgencia, y funcionó.
 
+### La versión que se ve en pantalla
+
+Desde el 11 de septiembre de 2026 la aplicación **enseña su versión** y avisa cuando hay una
+más reciente publicada. El esquema es `MAYOR.MENOR.PARCHE`:
+
+  · **MAYOR.MENOR es la iteración de este documento.** La **1.5** es la de septiembre de
+    2026: correcciones C-1 a C-5 y mejoras M-1 a M-5. Así, «1.5.2» se puede buscar aquí y
+    leer qué trae — una versión con la fecha solo diría cuándo salió, que es justo lo que
+    ya dice `desplegadoEn` en `version.json`.
+  · **PARCHE sube con cada cambio liberado** dentro de la iteración.
+
+El número vive en `app/lib/core/version.dart`, que es su única fuente: `pubspec.yaml` tiene
+que decir lo mismo —hay una prueba que falla si se separan— y el sellado del despliegue lo
+copia a `version.json`, que es contra lo que la aplicación se compara.
+
+**Al subir la versión:** cambiar el número en esos dos sitios y anotar aquí qué trae.
+
+**Dónde se ve.** En el pie de la bandeja y del panel; cuando hay una más reciente, una
+tarjeta arriba con el botón de actualizar. Y en **Alcance**, la versión de cada persona:
+desde C-5 eso cambia cómo se leen los datos, porque el acuse de que una notificación se
+mostró lo manda el service worker, que viaja con la versión.
+
 ### Mejoras — después, y sobre un canal que ya sea confiable
 
 Nada de esto falla: falta. Se empieza cuando las cuatro correcciones estén liberadas.

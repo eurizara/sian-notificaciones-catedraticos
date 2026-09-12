@@ -28,6 +28,7 @@ import 'seccion_mensajes.dart';
 import 'seccion_usuarios.dart';
 import '../shared/seccion_pendiente.dart';
 import '../shared/tema.dart';
+import '../shared/version_app.dart';
 import '../shared/textos.dart';
 
 @immutable
@@ -285,6 +286,18 @@ class _PanelAdminState extends ConsumerState<PanelAdmin> {
     final bool cabeElMenuLateral =
         MediaQuery.sizeOf(context).width >= _anchoMinimoParaMenuLateral;
 
+    // Encima de cualquier sección: lo que se esté mirando puede ser de una
+    // versión anterior, y eso cambia cómo se leen los datos.
+    Widget conAvisoDeVersion(Widget hijo) => Column(
+      children: <Widget>[
+        const Padding(
+          padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
+          child: AvisoDeVersionNueva(),
+        ),
+        Expanded(child: hijo),
+      ],
+    );
+
     final Widget contenido = actual.construir != null
         ? KeyedSubtree(
             key: _llaveDe(actual.etiqueta),
@@ -321,54 +334,57 @@ class _PanelAdminState extends ConsumerState<PanelAdmin> {
                           Navigator.of(context).pop();
                         },
                       ),
+                    const SelloDeVersion(),
                   ],
                 ),
               ),
             ),
       body: cabeElMenuLateral
-          ? Row(
-              children: <Widget>[
-                // ────────────────────────────────────────────────────────────
-                // El menú se desplaza si no cabe.
-                // ────────────────────────────────────────────────────────────
-                //
-                // Con siete secciones y el teléfono en horizontal no caben en
-                // 390 píxeles de alto, y sin esto el menú se desbordaba por
-                // abajo: las últimas entradas quedaban fuera de la pantalla y
-                // no había forma de llegar a ellas.
-                LayoutBuilder(
-                  builder: (BuildContext _, BoxConstraints limites) =>
-                      SingleChildScrollView(
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            minHeight: limites.maxHeight,
-                          ),
-                          child: IntrinsicHeight(
-                            child: NavigationRail(
-                              selectedIndex: indice,
-                              onDestinationSelected: (int i) =>
-                                  setState(() => _indice = i),
-                              labelType: NavigationRailLabelType.all,
-                              destinations: <NavigationRailDestination>[
-                                for (final SeccionAdmin s in visibles)
-                                  NavigationRailDestination(
-                                    icon: _IconoConContador(
-                                      icono: s.icono,
-                                      cuenta: cuentaDe(s),
+          ? conAvisoDeVersion(
+              Row(
+                children: <Widget>[
+                  // ────────────────────────────────────────────────────────────
+                  // El menú se desplaza si no cabe.
+                  // ────────────────────────────────────────────────────────────
+                  //
+                  // Con siete secciones y el teléfono en horizontal no caben en
+                  // 390 píxeles de alto, y sin esto el menú se desbordaba por
+                  // abajo: las últimas entradas quedaban fuera de la pantalla y
+                  // no había forma de llegar a ellas.
+                  LayoutBuilder(
+                    builder: (BuildContext _, BoxConstraints limites) =>
+                        SingleChildScrollView(
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minHeight: limites.maxHeight,
+                            ),
+                            child: IntrinsicHeight(
+                              child: NavigationRail(
+                                selectedIndex: indice,
+                                onDestinationSelected: (int i) =>
+                                    setState(() => _indice = i),
+                                labelType: NavigationRailLabelType.all,
+                                destinations: <NavigationRailDestination>[
+                                  for (final SeccionAdmin s in visibles)
+                                    NavigationRailDestination(
+                                      icon: _IconoConContador(
+                                        icono: s.icono,
+                                        cuenta: cuentaDe(s),
+                                      ),
+                                      label: Text(s.etiqueta),
                                     ),
-                                    label: Text(s.etiqueta),
-                                  ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                ),
-                const VerticalDivider(width: 1),
-                Expanded(child: contenido),
-              ],
+                  ),
+                  const VerticalDivider(width: 1),
+                  Expanded(child: contenido),
+                ],
+              ),
             )
-          : contenido,
+          : conAvisoDeVersion(contenido),
     );
   }
 }

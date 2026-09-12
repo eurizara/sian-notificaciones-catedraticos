@@ -707,6 +707,16 @@ recorrió solo con coordinación fue la que dejó pasar el defecto más caro del
 
 ---
 
+## Probar la versión a la vista
+
+| # | Paso | Qué debe ocurrir |
+|:--:|------|------------------|
+| V-1 | Abre la aplicación y baja hasta el final de la bandeja | Dice **SIAN 1.5.0** |
+| V-2 | Abre `https://<ambiente>.web.app/version.json` | Trae `"version": "1.5.0"`, el mismo número |
+| V-3 | Con una versión anterior instalada, despliega una nueva y vuelve a abrir | Arriba aparece la tarjeta **«Hay una versión más reciente»** con el botón Actualizar |
+| V-4 | Pulsa **Actualizar** | Recarga y el pie ya dice la versión nueva |
+| V-5 | Entra como coordinación a **Alcance** | Cada persona de la lista muestra su versión; las que no coinciden con la publicada van en dorado |
+
 ## Probar que se sabe si la notificación se mostró (DT-31, C-5)
 
 | # | Paso | Qué debe ocurrir |
