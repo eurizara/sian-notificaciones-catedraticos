@@ -21,6 +21,7 @@ import 'dart:js_interop_unsafe';
 import 'package:web/web.dart' as web;
 
 import 'consola.dart';
+import 'registro_worker_web.dart';
 
 /// Le dice al worker quién está usando este aparato.
 Future<void> avisarIdentidadAlWorker({
@@ -28,8 +29,10 @@ Future<void> avisarIdentidadAlWorker({
   required String instalacionId,
 }) async {
   try {
-    final web.ServiceWorkerRegistration registro =
-        await web.window.navigator.serviceWorker.ready.toDart;
+    final web.ServiceWorkerRegistration? registro = await registroDelWorker();
+    if (registro == null) {
+      return;
+    }
     // `active` es el que está atendiendo; si todavía se está instalando, no hay
     // a quién hablarle y se intentará en la próxima apertura.
     registro.active?.postMessage(
@@ -50,8 +53,10 @@ Future<void> avisarIdentidadAlWorker({
 /// cada doce horas— y puede negarse. Donde no exista la API, no pasa nada.
 Future<void> pedirRevisionPeriodicaDelCanal() async {
   try {
-    final web.ServiceWorkerRegistration registro =
-        await web.window.navigator.serviceWorker.ready.toDart;
+    final web.ServiceWorkerRegistration? registro = await registroDelWorker();
+    if (registro == null) {
+      return;
+    }
     final JSObject registroJS = registro as JSObject;
     if (!registroJS.has('periodicSync')) {
       // No existe en iPhone ni en los navegadores sin la API. El canal se

@@ -187,9 +187,24 @@ class RepositorioDispositivos {
       // algo que solo esta página sabe acuñar. Con la llave propia guardamos
       // la suscripción en crudo, que el service worker sí renueva solo cuando
       // el navegador rota de madrugada (DT-23).
-      final Map<String, String>? suscripcion = await suscribirConLlavePropia(
-        Entorno.claveVapidPropia,
-      );
+      // ────────────────────────────────────────────────────────────────────
+      // CON PLAZO. Un paso nuevo no puede dejar sin canal al que ya había.
+      // ────────────────────────────────────────────────────────────────────
+      //
+      // Aquí se esperaba sin límite, y `serviceWorker.ready` —que no resuelve
+      // nunca en esta aplicación— dejó el registro colgado: ningún aparato
+      // volvió a registrarse, ni por la vía nueva ni por FCM, y no hubo un
+      // solo error que lo delatara (12/09/2026). Si la suscripción propia no
+      // está en unos segundos, se sigue por FCM, que es lo que había antes.
+      final Map<String, String>? suscripcion =
+          await suscribirConLlavePropia(Entorno.claveVapidPropia)
+              .timeout(
+                const Duration(seconds: 12),
+                onTimeout: () {
+                  consolaError('SIAN.dispositivo suscripción propia | sin respuesta');
+                  return null;
+                },
+              );
       if (suscripcion != null) {
         consolaError('SIAN.dispositivo suscripción propia | lista');
         _yaRefrescado = true;
