@@ -364,6 +364,15 @@ class _PanelAdminState extends ConsumerState<PanelAdmin> {
                                 onDestinationSelected: (int i) =>
                                     setState(() => _indice = i),
                                 labelType: NavigationRailLabelType.all,
+                                // Al pie del menú, que es donde se mira cuando
+                                // preguntan qué versión se tiene. Va en el
+                                // hueco que el propio menú reserva para esto:
+                                // una columna alrededor deja al menú sin altura
+                                // que ocupar dentro de la zona desplazable.
+                                trailing: const Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 8),
+                                  child: SelloDeVersion(),
+                                ),
                                 destinations: <NavigationRailDestination>[
                                   for (final SeccionAdmin s in visibles)
                                     NavigationRailDestination(

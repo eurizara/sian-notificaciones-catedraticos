@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/proveedores_sesion.dart';
+import '../../core/version.dart';
 import '../../core/plataforma/manual.dart';
 import '../../core/plataforma/recarga.dart';
 import '../../core/ruta_manual.dart';
@@ -246,6 +247,19 @@ class MenuCuenta extends ConsumerWidget {
             child: Text(p.etiqueta),
           ),
         const PopupMenuDivider(),
+        // La versión, donde se busca: en el menú de la cuenta. Es lo que se
+        // dicta por teléfono cuando algo no funciona.
+        PopupMenuItem<Object>(
+          enabled: false,
+          height: 32,
+          child: Text(
+            Textos.version(versionSian),
+            style: tema.textTheme.bodySmall?.copyWith(
+              color: tema.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        const PopupMenuDivider(),
         const PopupMenuItem<Object>(
           value: _AccionCuenta.salir,
           child: Row(
@@ -260,4 +274,3 @@ class MenuCuenta extends ConsumerWidget {
     );
   }
 }
-

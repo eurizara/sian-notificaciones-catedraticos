@@ -210,6 +210,9 @@ notifica a su creador.
 | RF-ENT-13 | La aplicación muestra un contador de mensajes no leídos, sobre el icono de la aplicación instalada | B |
 | RF-ENT-14 | El envío se procesa por lotes para no exceder los límites del servicio de push | D |
 | RF-ENT-15 | El sistema muestra al emisor el avance del envío en tiempo real | B |
+| RF-ENT-16 | El sistema registra si el aparato llegó a **mostrar** la notificación, y lo distingue de que el servicio de push la aceptara | D |
+| RF-ENT-17 | Todo aviso se envía con prioridad alta y con vida útil acotada | D |
+| RF-ENT-18 | Cuando no consta que la notificación se mostrara, el sistema insiste una vez | D |
 
 **Criterio de aceptación de RF-ENT-13:** con la aplicación **instalada**, el icono muestra
 el número de mensajes sin abrir, y ese número es exactamente el que muestra el filtro
@@ -220,11 +223,61 @@ siguen llegando igual: la insignia necesita un icono donde pintarse.
 En iOS es además la única señal de cantidad disponible, porque no se puede definir sonido
 ni vibración propios (DT-02).
 
+**Criterio de aceptación de RF-ENT-16, 17 y 18 (incorporados el 11 de septiembre de
+2026).** Nacen de un caso real: un aviso a 23 personas dio «18 entregados», y varias de esas
+18 nunca vieron la notificación —se enteraron por otro canal y encontraron el aviso al
+entrar a la aplicación—. «Entregado» solo significaba que el servicio de push aceptó el
+mensaje; del último tramo, hasta la pantalla, no llegaba ninguna señal.
+
+  · **RF-ENT-16.** El service worker avisa al servidor cuando **muestra** la notificación,
+    y solo después de mostrarla. El reporte del emisor distingue entonces tres cosas
+    distintas: aceptado, mostrado y abierto. De los avisos anteriores a esta fecha no se
+    afirma nada: no es que no se mostraran, es que nadie lo medía.
+  · **RF-ENT-17.** Prioridad alta en todos los avisos, no solo en los urgentes: con
+    prioridad normal el servicio de push puede retener el mensaje hasta que el aparato
+    salga del modo de reposo. Vida útil de 4 horas para los urgentes y 24 para los
+    informativos, para que ninguno aparezca cuando ya no significa nada.
+  · **RF-ENT-18.** Una sola vez, diez minutos después. Si dos empujones no se muestran, lo
+    que falla son los ajustes del aparato, y eso lo resuelve una persona, no un tercer
+    intento.
+
+**Lo que este requisito NO promete:** que la notificación se vea. Ninguna aplicación —nativa
+incluida— puede obligar al sistema operativo a mostrarla: los modos de concentración, el
+ahorro de batería y los silenciados del navegador están por encima. Lo que el sistema sí
+garantiza es **saber** que no se mostró, y decir a quién hay que buscar.
+
 **Criterio de aceptación de RF-ENT-05:** en Android, avisos y alertas usan canales de
 notificación distintos con importancia `DEFAULT` y `HIGH` respectivamente. En iOS-PWA, donde
 no es posible definir canales, la distinción se hace por prefijo visible en el título y por
 tratamiento diferenciado dentro de la aplicación. Esta diferencia queda registrada como
 deuda técnica DT-02.
+
+### 3.5b Módulo RES — Respuestas a un aviso
+
+Incorporado el 11 de septiembre de 2026, a petición de coordinación. Hasta entonces la
+comunicación iba en un solo sentido: quien necesitaba contestar algo —«no puedo asistir»,
+«¿a qué hora?»— salía de SIAN, y la respuesta se perdía del registro del aviso que la
+provocó.
+
+| ID | Requisito | Prioridad |
+|----|-----------|:---:|
+| RF-RES-01 | El destinatario responde **dentro** del aviso que recibió | D |
+| RF-RES-02 | La respuesta la lee **solo** quien emitió ese aviso; ningún otro destinatario, coordinador ni auditor | D |
+| RF-RES-03 | El emisor puede contestar dentro de esa misma conversación | D |
+| RF-RES-04 | El emisor ve las conversaciones agrupadas por aviso, y cuántas no ha leído | D |
+| RF-RES-05 | El emisor no puede iniciar una conversación: solo responder a quien le escribió | D |
+| RF-RES-06 | Las respuestas de un mismo aviso no producen una notificación por cada una | D |
+
+**Criterio de aceptación de RF-RES-05.** Es el límite que separa esto de una mensajería
+general. Convertir un sistema de avisos institucionales en un chat traería moderación,
+expectativa de respuesta inmediata y conversaciones sin relación con ningún aviso, y
+chocaría con RN-03 —un aviso enviado no se edita ni se borra—. Una respuesta es una entidad
+nueva atada a un aviso, nunca una edición de él.
+
+**Criterio de aceptación de RF-RES-02.** Que un catedrático esté entre los destinatarios le
+abre el aviso, pero **no** las respuestas de sus compañeros; que un coordinador pueda leer
+todos los avisos no le abre las conversaciones de un aviso ajeno. Se verifica con pruebas de
+reglas, rol por rol.
 
 ### 3.6 Módulo CNF — Confirmación de lectura
 
