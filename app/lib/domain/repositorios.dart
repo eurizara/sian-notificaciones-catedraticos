@@ -59,6 +59,7 @@ class MensajeRecibido {
     required this.estado,
     required this.requiereConfirmacion,
     this.emisor = '',
+    this.creadoPor = '',
     this.entregadoEn,
     this.abiertoEn,
     this.confirmadoEn,
@@ -86,6 +87,11 @@ class MensajeRecibido {
   /// Vacío en los mensajes anteriores a que esto se guardara. Se muestra lo
   /// que hay: inventar un «Sistema» donde no consta quién firmó sería peor.
   final String emisor;
+
+  /// Identificador de quien lo emitió. Hace falta para no ofrecer «Responder»
+  /// en un aviso propio: quien emite a toda la sede y además recibe avisos
+  /// está entre sus destinatarios (DT-27).
+  final String creadoPor;
 
   final DateTime? entregadoEn;
   final DateTime? abiertoEn;

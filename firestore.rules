@@ -124,6 +124,54 @@ service cloud.firestore {
           allow write: if false;
         }
       }
+
+      // -------------------------------------------------------------------
+      // hilos/{uidCatedratico} — respuestas a un aviso (DT-27).
+      //
+      // Una conversación de DOS: quien respondió y quien emitió el aviso.
+      // Ni los demás destinatarios, ni otros coordinadores, ni el auditor.
+      //
+      // Es lo más delicado de esta regla, y por eso va explícito: que un
+      // catedrático esté en `destinatariosUids` le abre el aviso, pero NO las
+      // respuestas de sus compañeros. Y que el coordinador pueda leer todos
+      // los avisos no le abre las conversaciones de un aviso ajeno.
+      //
+      // Toda escritura, por Function (`responderAviso`), que comprueba que
+      // quien responde recibió el aviso.
+      // -------------------------------------------------------------------
+      match /hilos/{hiloUid} {
+        allow read: if activo()
+                    && (esDueno(hiloUid) || resource.data.emisorUid == request.auth.uid);
+        allow write: if false;
+
+        // El turno no repite quién es el emisor: se mira en el hilo. Es una
+        // lectura más por consulta, a cambio de que la regla no pueda
+        // desincronizarse de un campo copiado en cada turno.
+        match /turnos/{turnoId} {
+          allow read: if activo()
+                      && (esDueno(hiloUid)
+                          || get(/databases/$(database)/documents/mensajes/$(mensajeId)/hilos/$(hiloUid))
+                               .data.emisorUid == request.auth.uid);
+          allow write: if false;
+        }
+      }
+    }
+
+    // ---------------------------------------------------------------------
+    // Consulta por grupo de colecciones sobre `hilos` (DT-27).
+    //
+    // El emisor reúne sus conversaciones de todos sus avisos en una sola
+    // consulta —el número junto a la sección sale de ahí—, y eso solo se
+    // puede con una consulta de grupo, que la regla anidada no cubre. Como en
+    // `entregas`, se comprueba contra los campos del documento y la consulta
+    // tiene que filtrar por ellos: `where('emisorUid', '==', miUid)`.
+    // ---------------------------------------------------------------------
+
+    match /{rutaHilos=**}/hilos/{hiloId} {
+      allow read: if activo()
+                  && (resource.data.emisorUid == request.auth.uid
+                      || resource.data.uid == request.auth.uid);
+      allow write: if false;
     }
 
     // ---------------------------------------------------------------------

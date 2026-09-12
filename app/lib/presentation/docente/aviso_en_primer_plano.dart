@@ -77,7 +77,11 @@ class _AvisoEnPrimerPlanoState extends ConsumerState<AvisoEnPrimerPlano> {
         titulo: aviso.titulo,
         cuerpo: aviso.cuerpo,
         urgente: aviso.urgente,
-        etiqueta: mensaje.data['mensajeId'] as String?,
+        // Una respuesta (DT-27) no lleva `mensajeId`, sino su propia
+        // etiqueta: la misma que usa el service worker, para reemplazarse.
+        etiqueta:
+            (mensaje.data['mensajeId'] as String?) ??
+            (mensaje.data['etiqueta'] as String?),
       ),
     );
 
@@ -109,6 +113,8 @@ class _AvisoEnPrimerPlanoState extends ConsumerState<AvisoEnPrimerPlano> {
                         Icon(
                           aviso.urgente
                               ? Icons.priority_high
+                              : mensaje.data['tipo'] == 'RESPUESTA'
+                              ? Icons.forum_outlined
                               : Icons.notifications_active,
                           color: acento,
                         ),

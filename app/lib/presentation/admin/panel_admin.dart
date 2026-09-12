@@ -10,6 +10,9 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../application/proveedores_respuestas.dart';
 
 import '../../domain/rol.dart';
 import '../../domain/sesion.dart';
@@ -20,9 +23,11 @@ import 'seccion_mis_mensajes.dart';
 import 'seccion_canal.dart';
 import 'seccion_grupos.dart';
 import 'seccion_programacion.dart';
+import 'seccion_respuestas.dart';
 import 'seccion_mensajes.dart';
 import 'seccion_usuarios.dart';
 import '../shared/seccion_pendiente.dart';
+import '../shared/tema.dart';
 import '../shared/textos.dart';
 
 @immutable
@@ -37,6 +42,7 @@ class SeccionAdmin {
     required this.visiblePara,
     this.construir,
     this.visibleSegunPersona,
+    this.contador,
   });
 
   final IconData icono;
@@ -59,6 +65,12 @@ class SeccionAdmin {
   /// Contenido real de la sección. Si es `null`, se muestra el marcador que
   /// declara qué hará y en qué iteración llega.
   final Widget Function()? construir;
+
+  /// Un número que mostrar junto a la sección, si tiene algo pendiente.
+  ///
+  /// Existe por «Respuestas» (DT-27): enterarse de que alguien contestó sin
+  /// tener que entrar a mirar.
+  final Provider<int>? contador;
 }
 
 final List<SeccionAdmin> _secciones = <SeccionAdmin>[
@@ -86,6 +98,18 @@ final List<SeccionAdmin> _secciones = <SeccionAdmin>[
     iteracion: Textos.iteracion13,
     construir: SeccionMensajes.new,
     visiblePara: (Rol rol) => rol.esEmisor,
+  ),
+  // Justo después de redactar: lo que vuelve de lo que uno mandó (DT-27).
+  SeccionAdmin(
+    icono: Icons.forum_outlined,
+    etiqueta: Textos.seccionRespuestas,
+    titulo: Textos.seccionRespuestasTitulo,
+    descripcion: Textos.seccionRespuestasDescripcion,
+    requisitos: const <String>['DT-27'],
+    iteracion: Textos.iteracion14,
+    construir: SeccionRespuestas.new,
+    visiblePara: (Rol rol) => rol.esEmisor,
+    contador: respuestasSinLeerProvider,
   ),
   // Va junto a los envíos, no escondida entre las secciones de consulta: lo que
   // dice es «esto le pasaría al aviso que estás por mandar» (DT-22).
@@ -168,16 +192,44 @@ List<SeccionAdmin> seccionesParaUsuario(UsuarioSesion usuario) => _secciones
     )
     .toList();
 
-class PanelAdmin extends StatefulWidget {
+class PanelAdmin extends ConsumerStatefulWidget {
   const PanelAdmin({required this.usuario, super.key});
 
   final UsuarioSesion usuario;
 
   @override
-  State<PanelAdmin> createState() => _PanelAdminState();
+  ConsumerState<PanelAdmin> createState() => _PanelAdminState();
 }
 
-class _PanelAdminState extends State<PanelAdmin> {
+/// El icono de una sección, con su número si tiene algo pendiente.
+///
+/// Azul y no rojo: el rojo está reservado a lo urgente, y una respuesta sin
+/// leer no lo es. El número se lee también con lector de pantalla, porque la
+/// insignia sola es solo una forma.
+class _IconoConContador extends StatelessWidget {
+  const _IconoConContador({required this.icono, required this.cuenta});
+
+  final IconData icono;
+  final int cuenta;
+
+  @override
+  Widget build(BuildContext context) {
+    if (cuenta <= 0) {
+      return Icon(icono);
+    }
+    return Semantics(
+      label: Textos.insigniaRespuestas(cuenta),
+      child: Badge(
+        label: Text(cuenta > 99 ? '99+' : '$cuenta'),
+        backgroundColor: PaletaSian.de(context).fondoPrimario,
+        textColor: PaletaSian.sobreFondo,
+        child: Icon(icono),
+      ),
+    );
+  }
+}
+
+class _PanelAdminState extends ConsumerState<PanelAdmin> {
   int _indice = 0;
 
   /// Una llave global por sección, viva mientras viva el panel.
@@ -216,6 +268,8 @@ class _PanelAdminState extends State<PanelAdmin> {
   @override
   Widget build(BuildContext context) {
     final List<SeccionAdmin> visibles = seccionesParaUsuario(widget.usuario);
+    int cuentaDe(SeccionAdmin s) =>
+        s.contador == null ? 0 : ref.watch(s.contador!);
 
     // Un rol sin ninguna sección no debería llegar aquí, pero si llega, lo
     // dice en lugar de reventar con un índice fuera de rango.
@@ -256,7 +310,10 @@ class _PanelAdminState extends State<PanelAdmin> {
                   children: <Widget>[
                     for (int i = 0; i < visibles.length; i += 1)
                       ListTile(
-                        leading: Icon(visibles[i].icono),
+                        leading: _IconoConContador(
+                          icono: visibles[i].icono,
+                          cuenta: cuentaDe(visibles[i]),
+                        ),
                         title: Text(visibles[i].etiqueta),
                         selected: i == indice,
                         onTap: () {
@@ -295,7 +352,10 @@ class _PanelAdminState extends State<PanelAdmin> {
                               destinations: <NavigationRailDestination>[
                                 for (final SeccionAdmin s in visibles)
                                   NavigationRailDestination(
-                                    icon: Icon(s.icono),
+                                    icon: _IconoConContador(
+                                      icono: s.icono,
+                                      cuenta: cuentaDe(s),
+                                    ),
                                     label: Text(s.etiqueta),
                                   ),
                               ],

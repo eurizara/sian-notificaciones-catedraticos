@@ -25,6 +25,7 @@ import 'filtro_bandeja.dart';
 import 'insignia_bandeja.dart';
 import 'instructivo_ios.dart';
 import 'realce_mensaje.dart';
+import 'respuesta_al_aviso.dart';
 import 'reproductor_adjuntos.dart';
 import 'tarjeta_notificaciones.dart';
 import '../shared/tema.dart';
@@ -792,6 +793,11 @@ class _FilaState extends ConsumerState<_Fila> {
                                 ),
                               ),
                             ],
+
+                            // DT-27. Después de confirmar, no antes: confirmar
+                            // es lo que el aviso pide; responder, lo opcional.
+                            const SizedBox(height: 12),
+                            RespuestaAlAviso(mensaje: mensaje),
                           ],
                         ),
                       ),

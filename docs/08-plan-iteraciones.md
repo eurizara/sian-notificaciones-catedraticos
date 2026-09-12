@@ -263,7 +263,7 @@ Nada de esto falla: falta. Se empieza cuando las cuatro correcciones estén libe
 | — | ~~**DT-20** · saber en qué ambiente se está~~ | **Pagada el 09/09.** Se adelantó al resto de mejoras porque hace más segura la prueba de todo lo demás. Banda en pantalla e icono marcado; producción no lleva ninguna de las dos |
 | M-3 | ~~**DT-28** · manual accesible desde la barra~~ | **Hecha el 10/09, en desarrollo.** Botón a la izquierda de recargar, abre el manual del rol en otra pestaña |
 | M-4 | ~~**DT-21** · tema oscuro y preferencia del usuario~~ | **Hecha el 10/09, en desarrollo.** Paleta oscura medida contra AA (ninguno de los colores de antes pasaba), sigue al dispositivo por omisión y se puede fijar desde la barra |
-| M-5 | **DT-27** · responder a un aviso | Funcionalidad nueva. Va al final a propósito: primero que lo que ya existe funcione |
+| M-5 | ~~**DT-27** · responder a un aviso~~ | **Hecha el 11/09, en desarrollo.** El catedrático responde dentro del aviso; el emisor las ve agrupadas por aviso, con el número de las que no ha leído junto a la sección |
 
 > **Por qué las mejoras van después y no en paralelo.** Construir encima de un canal que
 > pierde gente solo multiplica el problema. Una respuesta a un aviso que nunca llegó no le
