@@ -267,6 +267,7 @@ class DestinatarioEntrega {
     required this.estado,
     this.confirmadoEn,
     this.mostradaEn,
+    this.sabeAcusar = false,
   });
 
   final String uid;
@@ -280,6 +281,13 @@ class DestinatarioEntrega {
   final DateTime? mostradaEn;
 
   bool get seMostro => mostradaEn != null;
+
+  /// Si su aparato sabía acusar cuando se le mandó el aviso (DT-31). Si no
+  /// sabía, el silencio no significa nada y no se le acusa de nada.
+  final bool sabeAcusar;
+
+  /// Le llegó, su aparato sabía decir que lo mostró, y no lo dijo.
+  bool get llegoYNoSeMostro => leLlego && sabeAcusar && !seMostro;
 
   bool get confirmo => estado == 'CONFIRMADO';
 
@@ -507,6 +515,7 @@ class RepositorioProgramacion {
         estado: (m['estado'] as String?) ?? '',
         confirmadoEn: confirmado == null ? null : DateTime.tryParse(confirmado),
         mostradaEn: mostrada == null ? null : DateTime.tryParse(mostrada),
+        sabeAcusar: m['sabeAcusar'] == true,
       );
     }).toList();
   }

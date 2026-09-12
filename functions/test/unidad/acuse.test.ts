@@ -20,6 +20,7 @@ import {
   cabecerasDeEnvio,
   leerSeña,
   necesitaReintento,
+  sabeAcusar,
 } from '../../src/domain/acuse';
 import { esperarCodigo } from './ayudas';
 
@@ -120,5 +121,28 @@ describe('cuándo se insiste', () => {
 
   it('sin fecha de envío no se decide nada', () => {
     expect(necesitaReintento({ ...base, enviadoAFcmEn: null }, ahora)).toBe(false);
+  });
+});
+
+describe('qué aparatos saben acusar', () => {
+  it('desde 1.5.0 en adelante', () => {
+    expect(sabeAcusar('1.5.0')).toBe(true);
+    expect(sabeAcusar('1.5.1')).toBe(true);
+    expect(sabeAcusar('2.0.0')).toBe(true);
+    // Por tramos y no como texto: «1.10.0» es posterior a «1.9.0».
+    expect(sabeAcusar('1.10.0')).toBe(true);
+  });
+
+  it('de un aparato anterior NO se afirma nada', () => {
+    // Es el fallo que se vio media hora después de estrenar el acuse: los
+    // teléfonos corrían la versión anterior, no tenían forma de contestar, y
+    // el panel los acusó de no haber mostrado el aviso.
+    expect(sabeAcusar('1.4.9')).toBe(false);
+    expect(sabeAcusar('1.0.0')).toBe(false);
+    expect(sabeAcusar('')).toBe(false);
+    expect(sabeAcusar(undefined)).toBe(false);
+    expect(sabeAcusar(null)).toBe(false);
+    expect(sabeAcusar('vieja')).toBe(false);
+    expect(sabeAcusar('1.5')).toBe(false);
   });
 });

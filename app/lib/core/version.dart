@@ -31,4 +31,34 @@
 library;
 
 /// La versión de este código. Ver arriba qué significa cada número.
-const String versionSian = '1.5.1';
+const String versionSian = '1.5.2';
+
+/// Desde qué versión el aparato sabe avisar de que mostró una notificación.
+///
+/// El acuse lo manda el service worker, que viaja con la aplicación: un
+/// teléfono que todavía no ha recargado no puede acusar aunque enseñe la
+/// notificación perfectamente. De esos no se afirma nada (DT-31).
+const String versionQueSabeAcusar = '1.5.0';
+
+/// Compara por tramos numéricos: «1.10.0» es posterior a «1.9.0», y comparadas
+/// como texto saldrían al revés.
+bool sabeAcusar(String? version) {
+  final List<int?> tramos = (version ?? '')
+      .trim()
+      .split('.')
+      .map(int.tryParse)
+      .toList();
+  if (tramos.length != 3 || tramos.any((int? t) => t == null)) {
+    return false;
+  }
+  final List<int> minimo = versionQueSabeAcusar
+      .split('.')
+      .map(int.parse)
+      .toList();
+  for (int i = 0; i < 3; i += 1) {
+    if (tramos[i]! != minimo[i]) {
+      return tramos[i]! > minimo[i];
+    }
+  }
+  return true;
+}

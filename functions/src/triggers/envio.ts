@@ -409,14 +409,13 @@ async function despachar(
     const tanda = uids.slice(i, i + TAMANO_LOTE);
 
     const conTokens = await Promise.all(
-      tanda.map(async (uid) => ({
-        uid,
-        tokens: await tokensDe(uid),
-      })),
+      tanda.map(async (uid) => ({ uid, ...(await canalDe(uid)) })),
     );
 
     const envios: { uid: string; mensaje: TokenMessage }[] = [];
     const sinDispositivo: string[] = [];
+
+    const versionPorUid = new Map(conTokens.map((c) => [c.uid, c.version]));
 
     for (const { uid, tokens } of conTokens) {
       if (tokens.length === 0) {
@@ -491,6 +490,10 @@ async function despachar(
       }
       lote.update(refOcurrencia.collection('entregas').doc(uid), {
         estado: resultado.ok ? 'ENTREGADO' : 'FALLIDO',
+        // Con qué versión corría su aparato al mandárselo. Sin esto, el panel
+        // diría «su aparato no lo mostró» de un teléfono que ni siquiera sabía
+        // cómo decir que sí (DT-31).
+        versionAparato: versionPorUid.get(uid) ?? '',
         enviadoAFcmEn: FieldValue.serverTimestamp(),
         ...(resultado.ok ? { entregadoEn: FieldValue.serverTimestamp() } : {}),
         intentos: FieldValue.increment(1),
@@ -592,6 +595,18 @@ async function marcarSinDispositivo(
  * una leyera el campo y la otra el identificador del documento.
  */
 export async function tokensDe(uid: string): Promise<string[]> {
+  return (await canalDe(uid)).tokens;
+}
+
+/**
+ * Los tokens de una persona **y la versión de la aplicación** que corren.
+ *
+ * Van juntos porque salen de la misma lectura y se necesitan a la vez: la
+ * versión decide si de ese aparato se puede afirmar que no mostró el aviso
+ * (DT-31). Se queda con la versión más alta de sus aparatos: si uno de ellos
+ * sabe acusar, el silencio ya significa algo.
+ */
+export async function canalDe(uid: string): Promise<{ tokens: string[]; version: string }> {
   const instantanea = await db
     .collection(RUTAS.usuarios)
     .doc(uid)
@@ -618,9 +633,17 @@ export async function tokensDe(uid: string): Promise<string[]> {
   // El respaldo a `d.id` cubre un documento del esquema viejo al que le
   // faltara el campo. No debería haber ninguno —`crearDispositivo` siempre lo
   // incluye— pero equivocarse aquí deja a alguien sin avisos sin decirlo.
-  return instantanea.docs
-    .map((d) => ((d.get('tokenFCM') as string | undefined) ?? d.id).trim())
-    .filter((t) => t.length > 0);
+  const versiones = instantanea.docs
+    .map((d) => ((d.get('versionApp') as string | undefined) ?? '').trim())
+    .filter((v) => v.length > 0)
+    .sort();
+
+  return {
+    tokens: instantanea.docs
+      .map((d) => ((d.get('tokenFCM') as string | undefined) ?? d.id).trim())
+      .filter((t) => t.length > 0),
+    version: versiones.at(-1) ?? '',
+  };
 }
 
 /** Traduce los errores del dominio a los que entiende el cliente. */

@@ -21,6 +21,7 @@ import '../../core/navegador.dart';
 import '../shared/barra_sesion.dart';
 import '../shared/buscador.dart';
 import 'aviso_en_primer_plano.dart';
+import '../../core/plataforma/rotacion.dart';
 import 'aviso_no_mostrado.dart';
 import '../shared/version_app.dart';
 import 'filtro_bandeja.dart';
@@ -114,9 +115,24 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
   final ScrollController _scroll = ScrollController();
   bool _lejosDelInicio = false;
 
+  /// La última vez que ESTE aparato demostró que muestra notificaciones.
+  ///
+  /// Se lee al abrir y se actualiza en vivo cuando el service worker avisa de
+  /// que acaba de enseñar una — incluida la de prueba (DT-31).
+  DateTime? _ultimaMostrada;
+
   @override
   void initState() {
     super.initState();
+    _ultimaMostrada = ultimaVezQueEsteAparatoMostro();
+    escucharNotificacionMostrada(() {
+      final DateTime ahora = DateTime.now();
+      anotarQueEsteAparatoMostro(ahora);
+      if (mounted) {
+        setState(() => _ultimaMostrada = ahora);
+      }
+    });
+
     _busqueda.addListener(() {
       // Al buscar se vuelve al principio: seguir en la página 4 de un
       // resultado que tiene 2 elementos deja la pantalla vacía sin motivo.
@@ -276,11 +292,13 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
                           if (avisosQueNoSeMostraron(
                             todos,
                             DateTime.now(),
+                            ultimaVezQueMostro: _ultimaMostrada,
                           ).isNotEmpty)
                             AvisoNoMostrado(
                               cuantos: avisosQueNoSeMostraron(
                                 todos,
                                 DateTime.now(),
+                                ultimaVezQueMostro: _ultimaMostrada,
                               ).length,
                             ),
 

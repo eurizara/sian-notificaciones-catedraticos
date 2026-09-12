@@ -2102,6 +2102,30 @@ llegó a este aparato y no te lo mostró»—, explica que el aviso **sí llegó
 una notificación de prueba ahí mismo. Si la de prueba tampoco aparece, el problema está en
 los ajustes del teléfono, y queda demostrado en dos toques.
 
+### Lo primero que enseñó, media hora después de estrenarse
+
+**11 de septiembre de 2026, 21:42.** Se mandó un aviso de prueba en desarrollo tres minutos
+después de desplegar el acuse. El panel dijo **«Se mostró en 0 de 5 aparatos»** y marcó a
+cinco personas con «Su aparato no lo mostró».
+
+Era falso, y el dato que lo delata estaba ahí mismo: los dispositivos que se registraron
+esa noche guardaron la versión **vacía**, que es lo que hace la aplicación anterior. **El
+acuse lo manda el service worker, que viaja con la aplicación**: un teléfono que todavía no
+ha recargado no puede acusar aunque enseñe la notificación perfectamente.
+
+Corregido en 1.5.2, con la misma regla que ya se aplicaba a los avisos anteriores a C-5:
+
+  · Cada entrega guarda **con qué versión corría el aparato** al mandársele el aviso.
+  · Solo se dice «su aparato no lo mostró» si esa versión sabía acusar (1.5.0 o posterior).
+  · **Tampoco se le insiste**: a un aparato que no sabe acusar, insistirle sería mandarle
+    cada aviso dos veces, siempre, sin que nada mejore.
+  · Y la tarjeta del catedrático **se calla** en cuanto su aparato demuestra que sí muestra
+    notificaciones —la de prueba sirve—, en vez de repetir una semana algo ya resuelto.
+
+La lección general: **una medición nueva no puede dar por malo lo que solo era desconocido.**
+Es el mismo error que se evitó con `acuseEsperado` para los avisos viejos, y que aquí volvió
+a aparecer por otro lado.
+
 ### Lo que queda de esta ficha
 
   · **Alcance todavía no lista a quién no le muestran los avisos.** Con los datos del acuse

@@ -491,6 +491,28 @@ async function acusarQueSeMostro(datos) {
   }
 }
 
+/**
+ * Le dice a la aplicación abierta que este aparato ACABA de mostrar una
+ * notificación (DT-31).
+ *
+ * Sirve para lo que el acuse no puede: la notificación de prueba no pertenece a
+ * ningún aviso, así que no hay entrega que anotar — pero demuestra que el
+ * teléfono sí las enseña. Con eso, la tarjeta que avisa de que no se mostraron
+ * deja de insistir en vez de quedarse una semana diciendo algo ya resuelto.
+ */
+async function avisarQueSeMostro(ventanas) {
+  try {
+    const abiertas =
+      ventanas ||
+      (await self.clients.matchAll({ type: 'window', includeUncontrolled: true }));
+    for (const ventana of abiertas) {
+      ventana.postMessage({ tipo: 'sian:mostrada' });
+    }
+  } catch (e) {
+    trazar('mostrada:aviso-falló', String(e));
+  }
+}
+
 self.addEventListener('push', (evento) => {
   evento.waitUntil(
     (async () => {
@@ -516,6 +538,7 @@ self.addEventListener('push', (evento) => {
       await self.registration.showNotification(titulo, opciones);
       await sumarInsignia(opciones.data && opciones.data.mensajeId);
       await acusarQueSeMostro(carga && carga.data);
+      await avisarQueSeMostro(ventanas);
     })(),
   );
 });

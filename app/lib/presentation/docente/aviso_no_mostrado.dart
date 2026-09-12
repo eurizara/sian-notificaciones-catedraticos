@@ -19,6 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/proveedores_dispositivos.dart';
+import '../../core/plataforma/almacen_local.dart';
 import '../../domain/repositorios.dart';
 import '../shared/tema.dart';
 import '../shared/textos.dart';
@@ -33,17 +34,39 @@ const int diasQueSeMiranSinMostrar = 7;
 /// decisión de cuándo se molesta a alguien, y conviene que sea exacta.
 List<MensajeRecibido> avisosQueNoSeMostraron(
   List<MensajeRecibido> mensajes,
-  DateTime ahora,
-) {
+  DateTime ahora, {
+  DateTime? ultimaVezQueMostro,
+}) {
   final DateTime desde = ahora.subtract(
     const Duration(days: diasQueSeMiranSinMostrar),
   );
+  // Desde que el aparato demostró que sí enseña notificaciones, lo de antes
+  // dejó de describir su estado: pudo ser un ajuste que ya se cambió, o una
+  // versión que ya se actualizó. Insistir con eso una semana entera es lo que
+  // convierte un aviso útil en uno que se ignora.
+  final DateTime corte =
+      ultimaVezQueMostro != null && ultimaVezQueMostro.isAfter(desde)
+      ? ultimaVezQueMostro
+      : desde;
   return mensajes
       .where(
         (MensajeRecibido m) =>
-            m.llegoYNoSeMostro && m.entregadoEn!.isAfter(desde),
+            m.llegoYNoSeMostro && m.entregadoEn!.isAfter(corte),
       )
       .toList();
+}
+
+/// Cuándo este aparato mostró una notificación por última vez, según él mismo.
+///
+/// Lo escribe el service worker por mensaje a la ventana, y se guarda en este
+/// navegador: es del aparato, no de la cuenta.
+const String claveUltimaMostrada = 'sian.ultimaMostrada';
+
+DateTime? ultimaVezQueEsteAparatoMostro() =>
+    DateTime.tryParse(leerLocal(claveUltimaMostrada) ?? '');
+
+void anotarQueEsteAparatoMostro(DateTime cuando) {
+  guardarLocal(claveUltimaMostrada, cuando.toIso8601String());
 }
 
 class AvisoNoMostrado extends ConsumerStatefulWidget {

@@ -58,6 +58,29 @@ void main() {
     });
   });
 
+  group('qué aparatos saben acusar', () {
+    test('desde 1.5.0 en adelante', () {
+      expect(sabeAcusar('1.5.0'), isTrue);
+      expect(sabeAcusar('1.5.1'), isTrue);
+      expect(sabeAcusar('2.0.0'), isTrue);
+      // Compara por tramos: como texto, «1.10.0» saldría antes que «1.9.0».
+      expect(sabeAcusar('1.10.0'), isTrue);
+    });
+
+    test('de lo anterior, o de lo que no se entiende, NO se afirma nada', () {
+      expect(sabeAcusar('1.4.9'), isFalse);
+      expect(sabeAcusar('1.0.0'), isFalse);
+      expect(sabeAcusar(''), isFalse);
+      expect(sabeAcusar(null), isFalse);
+      expect(sabeAcusar('vieja'), isFalse);
+      expect(sabeAcusar('1.5'), isFalse);
+    });
+
+    test('la versión de hoy sabe acusar', () {
+      expect(sabeAcusar(versionSian), isTrue);
+    });
+  });
+
   group('el aviso de versión nueva', () {
     Widget montar(String? publicada, {VoidCallback? recargar}) => ProviderScope(
       overrides: [
