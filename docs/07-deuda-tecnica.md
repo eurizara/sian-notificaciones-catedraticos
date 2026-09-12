@@ -2126,6 +2126,24 @@ La lección general: **una medición nueva no puede dar por malo lo que solo era
 Es el mismo error que se evitó con `acuseEsperado` para los avisos viejos, y que aquí volvió
 a aparecer por otro lado.
 
+### Y lo segundo que enseñó: el worker y la aplicación no viajan juntos
+
+**12 de septiembre de 2026, 04:12.** Segunda prueba, y el acuse funcionó: dos de dos, en
+menos de dos segundos, **incluido el iPhone** que la noche anterior no había avisado de
+nada. Quedó demostrado que el canal completo —servidor, FCM, Apple, service worker, vuelta
+al servidor— funciona.
+
+Pero los mismos aparatos seguían reportando la **versión vacía**. No es contradictorio: el
+service worker se comprueba y se renueva **en cada arranque** (`actualizarWorkers`), mientras
+que la aplicación en sí se sirve desde la caché hasta que alguien recarga. Así que hubo una
+ventana en la que el worker sabía acusar y la aplicación todavía no sabía decir qué versión
+era.
+
+Con la regla de 1.5.2 tal cual, esos aparatos habrían quedado en «no se afirma nada» para
+siempre —lo conservador, pero ciego—. En **1.5.3**, el primer acuse de una persona deja
+constancia (`usuarios/{uid}.acusaDesde`), y desde ese momento su silencio en un aviso
+posterior **sí** significa algo, venga o no la versión en el registro del aparato.
+
 ### Lo que queda de esta ficha
 
   · **Alcance todavía no lista a quién no le muestran los avisos.** Con los datos del acuse

@@ -287,6 +287,7 @@ copia a `version.json`, que es contra lo que la aplicación se compara.
 | 1.5.0 | Iteración de septiembre: correcciones C-1 a C-5 y mejoras M-1 a M-5 |
 | 1.5.1 | La versión se ve también en el menú lateral del panel y en el menú de la cuenta. En 1.5.0 solo estaba en el cajón de pantalla estrecha y al final de la bandeja: en una computadora no aparecía por ningún lado |
 | 1.5.2 | No se acusa a un aparato que no sabía acusar. El acuse viaja con la aplicación, así que un teléfono sin actualizar no puede contestar: de esos no se afirma nada, ni se les insiste. Y la tarjeta del catedrático se calla en cuanto el aparato demuestra que sí muestra notificaciones |
+| 1.5.3 | Que llegue un acuse deja constancia de que esa persona puede acusar. Hacía falta porque el service worker se renueva en cada arranque mientras la aplicación espera a que alguien recargue: hay aparatos que acusan con la versión sin reportar |
 
 **Dónde se ve.** En el pie de la bandeja y del panel; cuando hay una más reciente, una
 tarjeta arriba con el botón de actualizar. Y en **Alcance**, la versión de cada persona:

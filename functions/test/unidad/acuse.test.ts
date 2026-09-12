@@ -20,6 +20,7 @@ import {
   cabecerasDeEnvio,
   leerSeña,
   necesitaReintento,
+  podiaAcusar,
   sabeAcusar,
 } from '../../src/domain/acuse';
 import { esperarCodigo } from './ayudas';
@@ -146,3 +147,47 @@ describe('qué aparatos saben acusar', () => {
     expect(sabeAcusar('1.5')).toBe(false);
   });
 });
+
+describe('podiaAcusar · cuándo el silencio significa algo', () => {
+  const envio = new Date('2026-09-12T04:12:43Z');
+
+  it('si su versión sabía acusar, sí', () => {
+    expect(
+      podiaAcusar({ versionAparato: '1.5.2', enviadoAFcmEn: envio, acusaDesde: null }),
+    ).toBe(true);
+  });
+
+  it('si ya acusó antes, también, aunque su versión no lo diga', () => {
+    // El service worker se renueva en cada arranque; la aplicación espera a
+    // que alguien recargue. Hay aparatos que acusan con la versión sin
+    // reportar — un iPhone lo hizo el 12/09/2026.
+    expect(
+      podiaAcusar({
+        versionAparato: '',
+        enviadoAFcmEn: envio,
+        acusaDesde: new Date('2026-09-12T04:00:00Z'),
+      }),
+    ).toBe(true);
+  });
+
+  it('si empezó a acusar DESPUÉS de este envío, no cuenta para este aviso', () => {
+    // Cuando salió este aviso todavía no podía contestar.
+    expect(
+      podiaAcusar({
+        versionAparato: '',
+        enviadoAFcmEn: envio,
+        acusaDesde: new Date('2026-09-12T05:00:00Z'),
+      }),
+    ).toBe(false);
+  });
+
+  it('sin versión y sin constancia, no se afirma nada', () => {
+    expect(
+      podiaAcusar({ versionAparato: '', enviadoAFcmEn: envio, acusaDesde: null }),
+    ).toBe(false);
+    expect(
+      podiaAcusar({ versionAparato: '1.4.0', enviadoAFcmEn: envio, acusaDesde: null }),
+    ).toBe(false);
+  });
+});
+

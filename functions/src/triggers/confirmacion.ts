@@ -21,7 +21,7 @@ import type { DocumentReference } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions/v2';
 
 import { estadoTrasAbrir, exigirConfirmable } from '../application/confirmacion';
-import { sabeAcusar } from '../domain/acuse';
+import { podiaAcusar } from '../domain/acuse';
 import { exigirPermiso } from '../domain/autorizacion';
 import { crearAsiento } from '../domain/bitacora';
 import { ErrorDominio } from '../domain/errores';
@@ -262,7 +262,8 @@ export const detalleEntregas = onCall(OPCIONES_FUNCION, async (peticion) => {
         estado: string;
         confirmadoEn: string | null;
         mostradaEn: string | null;
-        sabeAcusar: boolean;
+        versionAparato: string;
+        enviadoAFcmEn: Date | null;
       }
     >();
 
@@ -288,7 +289,10 @@ export const detalleEntregas = onCall(OPCIONES_FUNCION, async (peticion) => {
                 .toISOString() ?? null,
             // Si su aparato ni siquiera sabía acusar, el silencio no significa
             // nada y la pantalla no debe acusarlo (DT-31).
-            sabeAcusar: sabeAcusar(e.get('versionAparato') as string | undefined),
+            versionAparato: (e.get('versionAparato') as string | undefined) ?? '',
+            enviadoAFcmEn:
+              (e.get('enviadoAFcmEn') as { toDate(): Date } | null | undefined)?.toDate() ??
+              null,
           });
         }
       }
@@ -299,11 +303,18 @@ export const detalleEntregas = onCall(OPCIONES_FUNCION, async (peticion) => {
       uids.map((uid) => db.collection(RUTAS.usuarios).doc(uid).get()),
     );
 
-    const nombres = new Map<string, { nombre: string; correo: string }>();
+    const nombres = new Map<
+      string,
+      { nombre: string; correo: string; acusaDesde: Date | null }
+    >();
     for (const p of perfiles) {
       nombres.set(p.id, {
         nombre: (p.get('nombre') as string | undefined) ?? p.id,
         correo: (p.get('correo') as string | undefined) ?? '',
+        // Desde cuándo consta que esta persona acusa. Es la otra forma de
+        // saberlo cuando la versión del aparato no lo dice (DT-31).
+        acusaDesde:
+          (p.get('acusaDesde') as { toDate(): Date } | null | undefined)?.toDate() ?? null,
       });
     }
 
@@ -314,7 +325,11 @@ export const detalleEntregas = onCall(OPCIONES_FUNCION, async (peticion) => {
       estado: porUid.get(uid)!.estado,
       confirmadoEn: porUid.get(uid)!.confirmadoEn,
       mostradaEn: porUid.get(uid)!.mostradaEn,
-      sabeAcusar: porUid.get(uid)!.sabeAcusar,
+      sabeAcusar: podiaAcusar({
+        versionAparato: porUid.get(uid)!.versionAparato,
+        enviadoAFcmEn: porUid.get(uid)!.enviadoAFcmEn,
+        acusaDesde: nombres.get(uid)?.acusaDesde ?? null,
+      }),
     }));
 
     // Los pendientes primero: es sobre quienes hay que actuar, y buscarlos
