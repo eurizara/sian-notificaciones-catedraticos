@@ -164,6 +164,39 @@ void main() {
     });
   });
 
+  group('al volver a la aplicación', () {
+    testWidgets('vuelve a preguntar qué versión hay publicada', (
+      WidgetTester tester,
+    ) async {
+      // En un iPhone, «abrir la aplicación» restaura la página tal como
+      // estaba: no hay arranque que haga la primera consulta. Sin esto se
+      // puede estar abriéndola a diario con el paquete de la semana pasada
+      // (12/09/2026).
+      int consultas = 0;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            versionPublicadaProvider.overrideWith((Ref ref) async {
+              consultas += 1;
+              return versionSian;
+            }),
+          ],
+          child: const MaterialApp(
+            home: VigilanteDeVersion(child: Scaffold(body: SelloDeVersion())),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(consultas, 1);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+
+      expect(consultas, 2, reason: 'al volver se pregunta otra vez');
+    });
+  });
+
   group('el sello del pie', () {
     Widget montar(String? publicada) => ProviderScope(
       overrides: [
