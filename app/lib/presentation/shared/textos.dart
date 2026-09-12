@@ -358,6 +358,32 @@ abstract final class Textos {
 
   // --- Respuestas a un aviso (DT-27) --------------------------------------
 
+  // --- Se mostró en el aparato (DT-31) ---------------------------------------
+
+  /// «Entregado» solo dice que FCM aceptó el mensaje; esto dice que el aparato
+  /// lo enseñó, que es lo que la persona experimenta.
+  static String seMostroEn(int mostrados, int entregados) =>
+      mostrados >= entregados
+      ? 'Se mostró en los $entregados aparatos'
+      : 'Se mostró en $mostrados de $entregados aparatos';
+
+  static const String detalleNoSeMostro = 'Su aparato no lo mostró';
+
+  /// La tarjeta del catedrático cuando su propio teléfono no le avisó.
+  static String avisosQueNoSeMostraron(int cuantos) => cuantos == 1
+      ? 'Un aviso llegó a este aparato y no te lo mostró'
+      : '$cuantos avisos llegaron a este aparato y no te los mostró';
+
+  static const String porQueNoSeMostro =
+      'El aviso sí llegó: fue el teléfono el que no lo enseñó. Suele ser un '
+      'modo de concentración, el ahorro de batería, o las notificaciones de '
+      'SIAN apagadas en los ajustes del sistema —que son distintas del permiso '
+      'del navegador—.';
+  static const String botonProbarNotificacion = 'Enviarme una de prueba';
+  static const String probandoNotificacion = 'Enviando…';
+  static const String pruebaEnviada =
+      'Enviada. Si no aparece en unos segundos, el teléfono la está bloqueando.';
+
   static const String seccionRespuestas = 'Respuestas';
   static const String seccionRespuestasTitulo = 'Respuestas a tus avisos';
   static const String seccionRespuestasDescripcion =

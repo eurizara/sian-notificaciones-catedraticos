@@ -494,7 +494,7 @@ El código fuente vive en un solo sitio, y es GitHub.
 | Lo que ve el usuario | Qué se ejecuta | Compilado desde | Fuente en el repositorio |
 |---|---|---|---|
 | El sitio web | Archivos estáticos servidos por Hosting | `flutter build web --release` | `app/lib/` y `app/web/` |
-| Las 23 Functions | JavaScript de Node 20 | `npm run build` (TypeScript → JavaScript) | `functions/src/` |
+| Las 24 Functions | JavaScript de Node 20 | `npm run build` (TypeScript → JavaScript) | `functions/src/` |
 | Las reglas de seguridad | Se ejecutan tal cual, sin compilar | — | `firestore.rules`, `storage.rules` |
 | El manual | HTML estático | Se copia sin tocar | `app/web/manuales/` |
 

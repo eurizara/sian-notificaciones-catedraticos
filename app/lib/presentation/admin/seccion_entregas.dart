@@ -334,6 +334,19 @@ class _ReporteState extends ConsumerState<_Reporte> {
                     icono: Icons.image_outlined,
                     texto: Textos.llevaImagenAdjunta,
                   ),
+                // Lo que de verdad experimentó la gente (DT-31). Va junto a lo
+                // demás y no escondido: es el dato que faltaba para saber si un
+                // aviso sirvió de algo.
+                if (mensaje.acuseEsperado && mensaje.entregados > 0)
+                  Marca(
+                    icono: mensaje.entregadosSinMostrar > 0
+                        ? Icons.notifications_off_outlined
+                        : Icons.notifications_active_outlined,
+                    texto: Textos.seMostroEn(
+                      mensaje.mostrados,
+                      mensaje.entregados,
+                    ),
+                  ),
               ],
             ),
             // Las respuestas, en el aviso al que contestan (DT-27). Solo en
@@ -524,6 +537,7 @@ class _ReporteState extends ConsumerState<_Reporte> {
                   destinatarios:
                       _destinatarios ?? const <DestinatarioEntrega>[],
                   porConfirmacion: porConfirmacion,
+                  esperaAcuse: mensaje.acuseEsperado,
                 ),
           ],
         ),
@@ -537,10 +551,15 @@ class _ListaDestinatarios extends StatelessWidget {
   const _ListaDestinatarios({
     required this.destinatarios,
     required this.porConfirmacion,
+    this.esperaAcuse = false,
   });
 
   final List<DestinatarioEntrega> destinatarios;
   final bool porConfirmacion;
+
+  /// Si este aviso pidió acuse (DT-31). Sin él no se puede distinguir «no lo
+  /// abrió» de «su teléfono nunca se lo enseñó».
+  final bool esperaAcuse;
 
   @override
   Widget build(BuildContext context) {
@@ -587,7 +606,11 @@ class _ListaDestinatarios extends StatelessWidget {
         for (final DestinatarioEntrega d in destinatarios)
           Builder(
             builder: (BuildContext _) {
-              final SituacionEntrega s = situacionDe(d, porConfirmacion);
+              final SituacionEntrega s = situacionDe(
+                d,
+                porConfirmacion,
+                esperaAcuse: esperaAcuse,
+              );
               return Padding(
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Row(
@@ -647,7 +670,11 @@ class SituacionEntrega {
 ///
 /// Se calcula aparte de la pantalla para poder comprobarlo: es la parte del
 /// reporte de la que después salen decisiones sobre personas.
-SituacionEntrega situacionDe(DestinatarioEntrega d, bool porConfirmacion) {
+SituacionEntrega situacionDe(
+  DestinatarioEntrega d,
+  bool porConfirmacion, {
+  bool esperaAcuse = false,
+}) {
   // Un fallo de entrega NO es un descuido: uno se resuelve revisando el
   // dispositivo y el otro insistiendo a la persona.
   if (d.fallo) {
@@ -665,8 +692,24 @@ SituacionEntrega situacionDe(DestinatarioEntrega d, bool porConfirmacion) {
     );
   }
   if (!d.abrio) {
-    // Ni siquiera lo ha abierto. Es lo mismo pida o no confirmación, y es el
-    // caso que conviene distinguir: puede que no le estén llegando los avisos.
+    // ────────────────────────────────────────────────────────────────────────
+    // «No lo abrió» y «su teléfono nunca se lo enseñó» no son lo mismo (DT-31).
+    // ────────────────────────────────────────────────────────────────────────
+    //
+    // Al primero se le insiste; al segundo hay que llamarlo y revisar los
+    // ajustes de su aparato, porque va a pasarle con el próximo aviso también.
+    // Antes los dos se veían igual, y por eso el 11 de septiembre no se pudo
+    // contestar «¿a quién no le avisó el teléfono?».
+    //
+    // Solo se distingue en los avisos que pidieron acuse: en los anteriores,
+    // que nadie dijera nada no significa nada.
+    if (esperaAcuse && !d.seMostro) {
+      return const SituacionEntrega(
+        etiqueta: Textos.detalleNoSeMostro,
+        icono: Icons.notifications_off_outlined,
+        color: ColoresSian.urgente,
+      );
+    }
     return const SituacionEntrega(
       etiqueta: Textos.detalleNoAbrio,
       icono: Icons.mail_outline,

@@ -24,6 +24,8 @@ const {
   esMensajeContable,
   normalizarCuenta,
   etiquetaDeNotificacion,
+  direccionDeAcuse,
+  cuerpoDeAcuse,
 } = require('./sw-decisiones.js');
 
 /** Una notificación como las que devuelve `getNotifications()`. */
@@ -170,5 +172,37 @@ describe('etiquetaDeNotificacion — DT-27', () => {
   test('sin nada, la etiqueta genérica', () => {
     assert.equal(etiquetaDeNotificacion({}), 'sian');
     assert.equal(etiquetaDeNotificacion(undefined), 'sian');
+  });
+});
+
+describe('el acuse de que se mostró — DT-31', () => {
+  test('la dirección sale del proyecto, así que apunta a su propio ambiente', () => {
+    // El worker de desarrollo no puede acusar en producción.
+    assert.equal(
+      direccionDeAcuse({ projectId: 'sian-umg-bdm-dev' }),
+      'https://us-central1-sian-umg-bdm-dev.cloudfunctions.net/acuseDeNotificacion',
+    );
+  });
+
+  test('sin configuración no se inventa una dirección', () => {
+    assert.equal(direccionDeAcuse(undefined), null);
+    assert.equal(direccionDeAcuse({}), null);
+    assert.equal(direccionDeAcuse({ projectId: 'SIN-CONFIGURAR' }), null);
+  });
+
+  test('se acusa lo que trae seña', () => {
+    assert.deepEqual(cuerpoDeAcuse({ mensajeId: 'm-1', ac: 'oc-1|uid-1|abcd1234abcd1234' }), {
+      mensajeId: 'm-1',
+      ac: 'oc-1|uid-1|abcd1234abcd1234',
+    });
+  });
+
+  test('lo que no la trae, NO se acusa', () => {
+    // Los avisos anteriores a DT-31 y la notificación de prueba del registro:
+    // de esas no hay entrega que anotar.
+    assert.equal(cuerpoDeAcuse({ mensajeId: 'm-1' }), null);
+    assert.equal(cuerpoDeAcuse({ ac: 'oc-1|uid-1|abcd1234abcd1234' }), null);
+    assert.equal(cuerpoDeAcuse({}), null);
+    assert.equal(cuerpoDeAcuse(undefined), null);
   });
 });

@@ -34,6 +34,7 @@
  *
  *   · responderAviso                        DT-27
  *   · marcarHiloLeido                       DT-27
+ *   · acuseDeNotificacion                   DT-31 · el acuse del service worker
  */
 
 export { activarSesion } from './triggers/activarSesion';
@@ -47,6 +48,7 @@ export {
 export { despachador } from './triggers/despachador';
 export { dispositivosQueNecesitanAtencion, sondaDeCanal } from './triggers/sonda';
 export { marcarHiloLeido, responderAviso } from './triggers/respuestas';
+export { acuseDeNotificacion } from './triggers/acuse';
 export {
   confirmarLectura,
   detalleEntregas,

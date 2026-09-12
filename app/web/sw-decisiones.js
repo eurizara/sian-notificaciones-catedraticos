@@ -153,12 +153,51 @@
     return 'sian';
   }
 
+  /**
+   * ¿A dónde se manda el acuse de que la notificación se mostró? (DT-31)
+   *
+   * La dirección se arma con el identificador del proyecto que ya trae la
+   * configuración de Firebase, y por eso apunta sola al ambiente correcto: el
+   * worker de desarrollo avisa a desarrollo y el de producción a producción.
+   * Sin configuración —o sin proyecto— no hay a dónde avisar, y se devuelve
+   * `null` en vez de inventar una dirección.
+   *
+   * @param {{projectId?: string}} config `self.SIAN_FIREBASE_CONFIG`.
+   */
+  function direccionDeAcuse(config) {
+    const id = config && config.projectId;
+    if (typeof id !== 'string' || id.length === 0 || id === 'SIN-CONFIGURAR') {
+      return null;
+    }
+    return 'https://us-central1-' + id + '.cloudfunctions.net/acuseDeNotificacion';
+  }
+
+  /**
+   * Lo que se manda en el acuse, o `null` si este push no lo pide.
+   *
+   * La seña `ac` viaja dentro del propio push y es lo único que identifica la
+   * entrega. Los avisos anteriores a DT-31 no la llevan, y tampoco la lleva la
+   * notificación de prueba del registro: de esas no hay nada que acusar.
+   */
+  function cuerpoDeAcuse(datos) {
+    const d = datos || {};
+    if (typeof d.ac !== 'string' || d.ac.length === 0) {
+      return null;
+    }
+    if (typeof d.mensajeId !== 'string' || d.mensajeId.length === 0) {
+      return null;
+    }
+    return { mensajeId: d.mensajeId, ac: d.ac };
+  }
+
   const api = {
     notificacionesACerrar,
     decidirCuenta,
     esMensajeContable,
     normalizarCuenta,
     etiquetaDeNotificacion,
+    direccionDeAcuse,
+    cuerpoDeAcuse,
   };
 
   if (typeof module !== 'undefined' && module.exports) {

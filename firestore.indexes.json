@@ -157,6 +157,28 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "entregas",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "estado",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "mostradaEn",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "reintentosPorAcuse",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "enviadoAFcmEn",
+          "order": "ASCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": [
