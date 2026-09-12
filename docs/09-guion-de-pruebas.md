@@ -672,7 +672,7 @@ Ejecutadas contra `sian-umg-bdm-qa` el 24 de agosto de 2026:
 | # | Qué se comprueba | Cómo | Resultado |
 |---|---|---|---|
 | C-1 | Las reglas de seguridad están puestas | Leer `mensajes` sin autenticar por REST | `PERMISSION_DENIED` |
-| C-2 | Las 21 Functions existen y arrancaron | Listar funciones de `us-central1` | 19 de 19 en estado `ACTIVE` |
+| C-2 | Las 24 Functions existen y arrancaron | Listar funciones de `us-central1` | 24 de 24 en estado `ACTIVE` |
 | C-3 | Las Functions rechazan a quien no se identificó | `POST` a `activarSesion` sin token | HTTP 401, `UNAUTHENTICATED` |
 | C-4 | El navegador puede llamarlas | `OPTIONS` con `Origin` de QA | HTTP 204 |
 | C-5 | El despachador quedó programado | Listar jobs de Cloud Scheduler | 1 job, cada minuto, `ENABLED` |
@@ -706,6 +706,46 @@ Eso son las rondas 1 a 5, y se recorren con una cuenta de cada rol —la ronda q
 recorrió solo con coordinación fue la que dejó pasar el defecto más caro del proyecto.
 
 ---
+
+## Probar la versión a la vista
+
+| # | Paso | Qué debe ocurrir |
+|:--:|------|------------------|
+| V-1 | Abre la aplicación y baja hasta el final de la bandeja | Dice **SIAN 1.5.0** |
+| V-2 | Abre `https://<ambiente>.web.app/version.json` | Trae `"version": "1.5.0"`, el mismo número |
+| V-3 | Con una versión anterior instalada, despliega una nueva y vuelve a abrir | Arriba aparece la tarjeta **«Hay una versión más reciente»** con el botón Actualizar |
+| V-4 | Pulsa **Actualizar** | Recarga y el pie ya dice la versión nueva |
+| V-5 | Entra como coordinación a **Alcance** | Cada persona de la lista muestra su versión; las que no coinciden con la publicada van en dorado |
+
+## Probar que se sabe si la notificación se mostró (DT-31, C-5)
+
+| # | Paso | Qué debe ocurrir |
+|:--:|------|------------------|
+| A-1 | Manda un aviso a un teléfono con la aplicación instalada y las notificaciones activas | La notificación aparece, y en el panel el aviso dice **«Se mostró en 1 de 1 aparatos»** |
+| A-2 | Apaga las notificaciones de SIAN en los ajustes del **sistema** (no en el navegador) y manda otro aviso | El aviso consta entregado y **no** se muestra. El panel dice «Se mostró en 0 de 1» |
+| A-3 | Abre el detalle de ese aviso en el panel | Esa persona aparece como **«Su aparato no lo mostró»**, distinta de «No lo ha abierto» |
+| A-4 | Espera diez minutos sin abrir la aplicación | Llega un **segundo** empujón del mismo aviso. Solo uno: no hay un tercero |
+| A-5 | Vuelve a encender las notificaciones y abre la bandeja del catedrático | Aparece la tarjeta «… llegó a este aparato y no te lo mostró», con el botón de prueba |
+| A-6 | Pulsa **Enviarme una de prueba** | Llega la notificación de prueba |
+| A-7 | Mira un aviso enviado **antes** de C-5 | No dice nada de mostrados: de esos no se mide nada |
+
+## Probar las respuestas a un aviso (DT-27)
+
+Hacen falta **dos aparatos** o dos sesiones: una de catedrático y una de quien emite. Lo
+que más importa comprobar no es que la conversación funcione, sino quién NO la ve.
+
+| # | Paso | Qué debe ocurrir |
+|:--:|------|------------------|
+| R-1 | Como catedrático, abre un aviso recibido | Bajo el mensaje, un botón **Responder a …** |
+| R-2 | Escribe y envía | El cuadro se vacía y la respuesta aparece arriba, con tu nombre y la hora |
+| R-3 | Pulsa enviar dos veces seguidas | Se guarda **una** sola respuesta |
+| R-4 | Como emisor, mira el menú | Un número junto a **Respuestas** |
+| R-5 | Abre **Respuestas** | El aviso, con «1 conversación · 1 sin leer» y el nombre de quien respondió |
+| R-6 | Abre la conversación y contesta | El número desaparece; al catedrático le llega una notificación |
+| R-7 | Entra con **otro catedrático** que recibió el mismo aviso | No ve nada de esa conversación, ni dentro del aviso |
+| R-8 | Entra como **auditor** o como otro coordinador | La sección Respuestas no existe para el auditor; el otro coordinador no ve las conversaciones de un aviso ajeno |
+| R-9 | Desde Entregas, en el aviso propio | Una línea «N respuestas» que abre las conversaciones de ese aviso |
+| R-10 | Manda dos respuestas seguidas desde dos catedráticos | Al emisor le llega **una** notificación, no dos (la segunda se pliega diez minutos) |
 
 ## Probar en Android: dos cosas que despistan y no son defectos
 

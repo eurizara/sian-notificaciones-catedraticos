@@ -244,3 +244,37 @@ flowchart TD
 
 > El **envío de prueba automático** al terminar el registro no es un adorno: es la única
 > forma de detectar de inmediato el riesgo R-01, en lugar de descubrirlo el día del simulacro.
+
+---
+
+## 4. Subflujo: qué pasa entre «enviado» y «lo vio»
+
+Tres cosas que se confundían en una sola palabra. Cada salida se resuelve de forma distinta,
+y por eso la pantalla de coordinación las separa.
+
+```mermaid
+flowchart TD
+    A[Aviso enviado] --> B{¿Tiene algún dispositivo?}
+    B -- No --> C[FALLIDO · sin dispositivo<br/>Hay que instalarle la aplicación]
+    B -- Sí --> D{¿FCM acepta el token?}
+    D -- No --> E[FALLIDO · registro muerto<br/>Revive cuando abra la aplicación]
+    D -- Sí --> F[ENTREGADO<br/>Aceptado, todavía no visto]
+    F --> G{¿El worker acusa<br/>que la mostró?}
+    G -- Sí --> H[Se mostró en el aparato]
+    G -- No, pasaron 10 min --> I[Segundo empujón, una vez]
+    I --> J{¿Acusa ahora?}
+    J -- Sí --> H
+    J -- No --> K[Llegó y su aparato no lo mostró<br/>Hay que llamar y revisar ajustes]
+    H --> L{¿Lo abrió?}
+    K --> L
+    L -- Sí --> M[ABIERTO]
+    M --> N{¿Pedía confirmación?}
+    N -- Sí --> O[CONFIRMADO al pulsarlo]
+    N -- No --> P[Cerrado: no había nada que confirmar]
+```
+
+**Lo que este flujo deja claro y antes no se veía:** que un aviso llegue a `ENTREGADO` no
+dice nada sobre si alguien lo vio. Entre esa casilla y la persona hay un tramo que decide el
+sistema operativo del teléfono, y lo único que se puede hacer es medirlo, insistir una vez y
+saber a quién llamar (DT-31).
+

@@ -59,6 +59,10 @@ class MensajeRecibido {
     required this.estado,
     required this.requiereConfirmacion,
     this.emisor = '',
+    this.creadoPor = '',
+    this.esperaAcuse = false,
+    this.aparatoSabeAcusar = false,
+    this.mostradaEn,
     this.entregadoEn,
     this.abiertoEn,
     this.confirmadoEn,
@@ -87,6 +91,25 @@ class MensajeRecibido {
   /// que hay: inventar un «Sistema» donde no consta quién firmó sería peor.
   final String emisor;
 
+  /// Identificador de quien lo emitió. Hace falta para no ofrecer «Responder»
+  /// en un aviso propio: quien emite a toda la sede y además recibe avisos
+  /// está entre sus destinatarios (DT-27).
+  final String creadoPor;
+
+  /// Si este aviso salió pidiendo acuse de que el aparato lo mostró (DT-31).
+  /// Los anteriores a C-5 no lo piden, y de ellos no se puede afirmar nada.
+  final bool esperaAcuse;
+
+  /// Si el aparato al que se le mandó sabía acusar. Si no sabía, que no haya
+  /// acuse no significa nada: no es que no se mostrara, es que no tenía cómo
+  /// decirlo (DT-31).
+  final bool aparatoSabeAcusar;
+
+  /// Cuándo este aparato mostró la notificación. Nulo con [esperaAcuse] cierto
+  /// significa que **llegó y el teléfono no la enseñó**, que es el caso que
+  /// hizo falta distinguir el 11 de septiembre de 2026.
+  final DateTime? mostradaEn;
+
   final DateTime? entregadoEn;
   final DateTime? abiertoEn;
   final DateTime? confirmadoEn;
@@ -108,6 +131,14 @@ class MensajeRecibido {
 
   bool get esUrgente => tipo == 'URGENTE';
   bool get estaConfirmado => estado == 'CONFIRMADO';
+
+  /// Le llegó al aparato y el aparato no lo mostró.
+  bool get llegoYNoSeMostro =>
+      esperaAcuse &&
+      aparatoSabeAcusar &&
+      mostradaEn == null &&
+      entregadoEn != null &&
+      (estado == 'ENTREGADO' || estado == 'ABIERTO' || estado == 'CONFIRMADO');
 
   /// Urgente, exige confirmación y todavía no se ha confirmado: es sobre lo
   /// que la aplicación tiene que insistir (RF-CNF-10).

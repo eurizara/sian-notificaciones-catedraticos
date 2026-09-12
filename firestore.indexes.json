@@ -143,6 +143,42 @@
           "order": "ASCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "hilos",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "emisorUid",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "actualizadoEn",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "entregas",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "estado",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "mostradaEn",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "reintentosPorAcuse",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "enviadoAFcmEn",
+          "order": "ASCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": [

@@ -212,7 +212,16 @@ export const programarMensaje = onCall(OPCIONES_FUNCION, async (peticion) => {
       // está cuando el aviso sale.
       destinatariosUids: [],
       totalDestinatarios: 0,
-      resumenEntrega: { entregados: 0, fallidos: 0, abiertos: 0, confirmados: 0 },
+      resumenEntrega: {
+        entregados: 0,
+        fallidos: 0,
+        abiertos: 0,
+        confirmados: 0,
+        // Cuántos aparatos llegaron a MOSTRAR la notificación (DT-31).
+        mostrados: 0,
+      },
+      // Este aviso sabe pedir acuse; los anteriores a C-5 no.
+      acuseEsperado: true,
       enviadoEn: null,
       proximaOcurrencia: aTimestamp(primera),
     });

@@ -40,6 +40,35 @@ abstract final class Textos {
   /// llevar días sin renovarse.
   static const String botonRecargar = 'Recargar la aplicación';
 
+  /// El nombre del botón del manual, que es también lo que lee el lector de
+  /// pantalla. Dice que se abre aparte porque un cambio de contexto sin anunciar
+  /// desorienta (WCAG 3.2.5): quien no ve la pantalla tiene que saber que ahora
+  /// hay dos pestañas y dónde quedó la aplicación.
+  static const String botonManual = 'Manual de usuario (se abre en una pestaña nueva)';
+
+  /// Instalada, el manual se abre en la misma ventana: prometer una pestaña
+  /// nueva sería describir algo que no va a pasar.
+  static const String botonManualInstalada =
+      'Manual de usuario (se abre aquí, con un botón para volver)';
+
+  // --- Apariencia (DT-21) ----------------------------------------------------
+
+  /// El nombre del botón incluye lo que está elegido: quien usa un lector de
+  /// pantalla oye el estado sin tener que abrir el menú para averiguarlo.
+  static String botonApariencia(String elegido) => 'Apariencia: $elegido';
+  static const String apariencia = 'Apariencia';
+
+  /// El botón de la cuenta en el teléfono. Dice quién está dentro, porque en
+  /// pantalla estrecha el nombre no cabe en la barra, y qué hay dentro.
+  static String botonCuenta(String nombre, String rol) =>
+      'Tu cuenta: $nombre ($rol). Apariencia y cerrar sesión';
+
+  /// «Dispositivo» y no «sistema»: «sistema» se confunde con SIAN, que para
+  /// quien lo usa también es «el sistema».
+  static const String temaSistema = 'Igual que el dispositivo';
+  static const String temaClaro = 'Claro';
+  static const String temaOscuro = 'Oscuro';
+
   // --- Distintivo de ambiente (DT-20) ----------------------------------------
 
   /// Etiqueta de la banda que avisa en qué ambiente se está.
@@ -326,6 +355,105 @@ abstract final class Textos {
   static const String seccionEntregasDescripcion =
       'Ver quién confirmó y quién no, con el porcentaje sobre el total de '
       'destinatarios y la trazabilidad completa de cada mensaje.';
+
+  // --- Respuestas a un aviso (DT-27) --------------------------------------
+
+  // --- Versión de la aplicación ----------------------------------------------
+
+  /// Se puede leer en voz alta por teléfono, que es de lo que se trata: el
+  /// identificador de commit tiene cuarenta caracteres y nadie lo va a dictar.
+  static String version(String version) => 'SIAN $version';
+  static String versionConActualizacion(String version) =>
+      'SIAN $version · hay una versión más reciente';
+
+  static const String hayVersionNueva =
+      'Hay una versión más reciente de SIAN. Actualizar tarda unos segundos y '
+      'no pierdes nada de lo que ya recibiste.';
+  static const String botonActualizarAhora = 'Actualizar';
+
+  /// En el Alcance: con qué versión está cada persona.
+  static String versionDeLaPersona(String version) =>
+      version.isEmpty ? 'Versión desconocida' : 'Versión $version';
+  static String versionAlDia(String version) => 'Versión publicada: $version';
+
+  // --- Se mostró en el aparato (DT-31) ---------------------------------------
+
+  /// «Entregado» solo dice que FCM aceptó el mensaje; esto dice que el aparato
+  /// lo enseñó, que es lo que la persona experimenta.
+  static String seMostroEn(int mostrados, int entregados) =>
+      mostrados >= entregados
+      ? 'Se mostró en los $entregados aparatos'
+      : 'Se mostró en $mostrados de $entregados aparatos';
+
+  static const String detalleNoSeMostro = 'Su aparato no lo mostró';
+
+  /// La tarjeta del catedrático cuando su propio teléfono no le avisó.
+  static String avisosQueNoSeMostraron(int cuantos) => cuantos == 1
+      ? 'Un aviso llegó a este aparato y no te lo mostró'
+      : '$cuantos avisos llegaron a este aparato y no te los mostró';
+
+  static const String porQueNoSeMostro =
+      'El aviso sí llegó: fue el teléfono el que no lo enseñó. Suele ser un '
+      'modo de concentración, el ahorro de batería, o las notificaciones de '
+      'SIAN apagadas en los ajustes del sistema —que son distintas del permiso '
+      'del navegador—.';
+  static const String botonProbarNotificacion = 'Enviarme una de prueba';
+  static const String probandoNotificacion = 'Enviando…';
+  static const String pruebaEnviada =
+      'Enviada. Si no aparece en unos segundos, el teléfono la está bloqueando.';
+
+  static const String seccionRespuestas = 'Respuestas';
+  static const String seccionRespuestasTitulo = 'Respuestas a tus avisos';
+  static const String seccionRespuestasDescripcion =
+      'Lo que te contestaron sobre cada aviso que enviaste. Cada conversación '
+      'es solo entre tú y quien respondió: nadie más la ve.';
+
+  static const String respuestasVacio =
+      'Todavía nadie ha respondido a tus avisos. Cuando alguien lo haga, '
+      'aparecerá aquí, junto al aviso al que contesta.';
+  static const String respuestasFallo =
+      'No se pudieron cargar las respuestas. Revisa la conexión.';
+
+  /// Sin notificaciones, las respuestas solo se ven al abrir el panel. Se dice
+  /// en esta pantalla porque aquí es donde se echa de menos.
+  static const String respuestasSinNotificaciones =
+      'Para enterarte de una respuesta sin tener SIAN abierta, activa las '
+      'notificaciones en este dispositivo.';
+  static const String respuestasNotifPendienteDetalle =
+      'Sin ellas, las respuestas a tus avisos solo se ven al abrir el panel.';
+  static String respuestasNotifActivasDetalle(String navegador) =>
+      'Te avisaremos de las respuestas en este dispositivo ($navegador).';
+
+  static String conversaciones(int n) =>
+      n == 1 ? '1 conversación' : '$n conversaciones';
+  static String sinLeer(int n) => n == 1 ? '1 sin leer' : '$n sin leer';
+  static String respuestasDeUnAviso(int n) =>
+      n == 1 ? '1 respuesta' : '$n respuestas';
+
+  /// El nombre accesible del número junto a la sección.
+  static String insigniaRespuestas(int n) =>
+      n == 1 ? '1 respuesta sin leer' : '$n respuestas sin leer';
+
+  static String botonResponderA(String nombre) =>
+      nombre.isEmpty ? 'Responder' : 'Responder a $nombre';
+  static const String botonEnviarRespuesta = 'Enviar';
+  static const String enviandoRespuesta = 'Enviando…';
+  static const String etiquetaRespuesta = 'Tu respuesta';
+
+  /// Se dice antes de escribir, no después: quien responde tiene que saber a
+  /// quién le llega, y que sus compañeros no lo verán.
+  static String ayudaRespuesta(String nombre) => nombre.isEmpty
+      ? 'Solo la verá quien envió el aviso.'
+      : 'Solo la verá $nombre, que envió el aviso.';
+  static String ayudaContestar(String nombre) =>
+      'Solo la verá $nombre.';
+
+  static const String tu = 'Tú';
+  static const String respuestaEnviada = 'Respuesta enviada.';
+  static const String respuestaSinHora = 'Enviando…';
+  static const String conversacionTitulo = 'Conversación';
+  static String sobreElAviso(String titulo) => 'Sobre «$titulo»';
+  static const String verConversaciones = 'Ver las conversaciones';
 
   static const String seccionBitacora = 'Bitácora';
   static const String seccionBitacoraTitulo = 'Bitácora del sistema';
@@ -908,6 +1036,53 @@ abstract final class Textos {
   static const String entregasVacia =
       'Todavía no hay mensajes enviados. Aquí verás quién recibió cada aviso y '
       'quién lo confirmó.';
+
+  // --- Resumen de la semana en Entregas (DT-07, M-1) --------------------------
+
+  static const String resumenTitulo = 'Últimos 7 días';
+
+  static String resumenEntrega(int porcentaje, int entregados, int total) =>
+      'Llegó al $porcentaje % ($entregados de $total)';
+
+  /// Cada combinación de singular y plural, escrita entera.
+  ///
+  /// Nada de armar la frase por trozos: «Los 1 catedráticos» ya se leyó una vez
+  /// al revés en la pantalla de Alcance, y un resumen que obliga a releer se
+  /// entiende por las palabras sueltas, no por la frase.
+  static String resumenDetalle(int avisos, int sinEntregar) {
+    final String enviados = avisos == 1 ? '1 aviso enviado' : '$avisos avisos enviados';
+    if (sinEntregar == 0) {
+      return avisos == 1
+          ? '$enviados, y llegó a todos.'
+          : '$enviados, y llegaron a todos.';
+    }
+    final String faltan = sinEntregar == 1
+        ? '1 entrega no llegó'
+        : '$sinEntregar entregas no llegaron';
+    return '$enviados · $faltan.';
+  }
+
+  static String resumenConfirmacion(int porcentaje, int avisos) => avisos == 1
+      ? 'Confirmado por el $porcentaje % en el aviso que lo pedía.'
+      : 'Confirmado por el $porcentaje % en los $avisos avisos que lo pedían.';
+
+  /// Lo que se dice cuando no hubo avisos en la semana.
+  ///
+  /// No es un estado neutro. Cuanto más tiempo pasa sin mandar nada, más
+  /// registros caducan sin que nadie se entere: el 7 de septiembre de 2026, tras
+  /// ocho días de silencio, un aviso no llegó al 23 % (DT-22). Por eso, cuando
+  /// hace tiempo que no se envía, se sugiere mirar Alcance antes del próximo.
+  static String resumenSinAvisos(int? dias) {
+    if (dias == null) {
+      return 'Todavía no se ha enviado ningún aviso.';
+    }
+    return 'No se envió ningún aviso esta semana; el último fue hace $dias días. '
+        'Antes del próximo conviene revisar Alcance: en semanas de silencio es '
+        'cuando más registros caducan.';
+  }
+
+  static const String resumenMirarAlcance =
+      'En Alcance está quién no los recibe y qué pedirle a cada uno.';
   static String enviadoEl(String cuando) => 'Enviado el $cuando';
   static String ultimaSalidaEl(String cuando) => 'Última salida el $cuando';
   static const String sinFechaDeEnvio = 'Todavía sin enviar';

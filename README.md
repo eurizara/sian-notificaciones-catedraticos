@@ -28,7 +28,7 @@ un catedrático y los servicios de Google.
 |---|---|---|
 | **Interfaz** | Flutter 3.44 · Dart 3.12, compilado a web | Una sola base de código para celular y computadora, instalable sin pasar por App Store ni Play Store |
 | **Estado** | Riverpod 3 | Inyección de dependencias: es lo que permite probar cada pantalla sin levantar Firebase |
-| **Servidor** | Cloud Functions v2 · Node 20 · TypeScript 5.9 | Todo lo que no puede confiarse al navegador. **21 funciones desplegadas** |
+| **Servidor** | Cloud Functions v2 · Node 20 · TypeScript 5.9 | Todo lo que no puede confiarse al navegador. **24 funciones desplegadas** |
 | **Base de datos** | Cloud Firestore, modo Native — **NoSQL documental** | Lectura directa desde el navegador con reglas por documento, y bandeja que se actualiza sola |
 | **Identidad** | Firebase Authentication + *custom claims* | El rol viaja firmado dentro del token, no se consulta a la base al decidir permisos |
 | **Notificaciones** | Firebase Cloud Messaging | El aviso que suena con la aplicación cerrada |
@@ -87,12 +87,17 @@ solo se verifica desplegando a `dev` (documento 06, etapa D.5).
 | 1.3 | Composición y entrega inmediata, con voz e imágenes | Hecho |
 | 1.4 | Programación, recurrencia y confirmación de lectura | Hecho |
 | 1.4 | Reporte de entregas y bitácora consultable | Hecho |
+| 1.5 | Correcciones C-1 a C-5: contador del icono, canal que se perdía solo, dispositivos arrastrados, y saber si el teléfono mostró el aviso | Hecho |
+| 1.5 | Mejoras M-1 a M-5: la semana de un vistazo, distintivo de ambiente, manual en la barra, tema oscuro y responder a un aviso | Hecho |
 | — | **Desplegado en https://sian-umg-bdm-dev.web.app** | En línea |
 | — | **Manuales de usuario publicados** | En línea |
 | 2.x | Ambiente de QA y pruebas con catedráticos voluntarios | Siguiente |
 
-**Pruebas hoy:** 275 de widget · 257 de dominio y Cloud Functions · reglas de
-seguridad verificadas contra el emulador. Los cuatro trabajos de integración
+**Versión publicada:** 1.5.0. La aplicación la enseña en su pie y avisa cuando hay una más
+reciente; el esquema está explicado en el documento 08.
+
+**Pruebas hoy:** 437 de widget · 335 de dominio y Cloud Functions · 38 de reglas · 22 del
+service worker, todas verificadas contra el emulador. Los cuatro trabajos de integración
 continua corren en cada solicitud de incorporación.
 
 ---

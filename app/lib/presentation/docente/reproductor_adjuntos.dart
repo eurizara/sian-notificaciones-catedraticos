@@ -45,7 +45,7 @@ class NotaDeVoz extends ConsumerWidget {
     final AsyncValue<String> url = ref.watch(urlAdjuntoProvider(ruta));
 
     return Card(
-      color: ColoresSian.primario.withValues(alpha: 0.06),
+      color: PaletaSian.de(context).primario.withValues(alpha: 0.06),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -53,7 +53,7 @@ class NotaDeVoz extends ConsumerWidget {
           children: <Widget>[
             Row(
               children: <Widget>[
-                const Icon(Icons.graphic_eq, color: ColoresSian.primario),
+                Icon(Icons.graphic_eq, color: PaletaSian.de(context).primario),
                 const SizedBox(width: 8),
                 Text(
                   duracionSeg == null
@@ -75,7 +75,7 @@ class NotaDeVoz extends ConsumerWidget {
                   child: Text(
                     Textos.detalleErrorAdjunto,
                     style: tema.textTheme.bodySmall?.copyWith(
-                      color: ColoresSian.urgente,
+                      color: PaletaSian.de(context).urgente,
                     ),
                   ),
                 ),
@@ -177,7 +177,7 @@ class _ImagenCargada extends ConsumerWidget {
         child: Text(
           Textos.detalleErrorAdjunto,
           textAlign: TextAlign.center,
-          style: tema.textTheme.bodySmall?.copyWith(color: ColoresSian.urgente),
+          style: tema.textTheme.bodySmall?.copyWith(color: PaletaSian.de(context).urgente),
         ),
       ),
       data: (String u) => GestureDetector(

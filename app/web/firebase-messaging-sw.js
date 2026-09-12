@@ -390,8 +390,8 @@ function componer(carga) {
       badge: '/icons/Icon-192.png',
       // Agrupa por mensaje. Sirve además para que las dos rutas que pueden
       // mostrar el mismo aviso —esta y la de la aplicación— se reemplacen en
-      // vez de duplicarse.
-      tag: datos.mensajeId || 'sian',
+      // vez de duplicarse. Las respuestas (DT-27) traen su propia etiqueta.
+      tag: self.SianDecisiones.etiquetaDeNotificacion(datos),
       // Una alerta urgente no se descarta sola: exige un gesto.
       requireInteraction: esUrgente,
       /*
@@ -454,6 +454,65 @@ function componer(carga) {
  * El `tag` no es una garantía de unicidad ahí, así que el reparto tiene que
  * ser explícito — este manejador muestra, el otro no.
  */
+/**
+ * Avisa al servidor de que la notificación SE MOSTRÓ (DT-31).
+ *
+ * ────────────────────────────────────────────────────────────────────────────
+ * Es el único punto del sistema que puede afirmarlo.
+ * ────────────────────────────────────────────────────────────────────────────
+ *
+ * «Entregado» solo significa que FCM aceptó el mensaje; entre eso y que el
+ * teléfono lo enseñe hay un tramo que el servidor no ve. El 11 de septiembre de
+ * 2026 varias personas con el aviso «entregado» no vieron ninguna notificación
+ * y se enteraron por otro lado. Desde aquí eso deja de ser una suposición.
+ *
+ * Va DESPUÉS de mostrarla y nunca antes: lo que se está afirmando es que se
+ * mostró. Y si la petición falla —sin red, servidor caído—, no pasa nada: la
+ * notificación ya está en la pantalla, que es lo que importaba. Por eso se
+ * traga el error en vez de propagarlo.
+ */
+async function acusarQueSeMostro(datos) {
+  try {
+    const destino = self.SianDecisiones.direccionDeAcuse(self.SIAN_FIREBASE_CONFIG);
+    const cuerpo = self.SianDecisiones.cuerpoDeAcuse(datos);
+    if (!destino || !cuerpo) {
+      return;
+    }
+    await fetch(destino, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cuerpo),
+      // El worker puede quedarse dormido en cuanto termine de mostrarla.
+      keepalive: true,
+    });
+    trazar('acuse:enviado', cuerpo.mensajeId);
+  } catch (e) {
+    trazar('acuse:falló', String(e));
+  }
+}
+
+/**
+ * Le dice a la aplicación abierta que este aparato ACABA de mostrar una
+ * notificación (DT-31).
+ *
+ * Sirve para lo que el acuse no puede: la notificación de prueba no pertenece a
+ * ningún aviso, así que no hay entrega que anotar — pero demuestra que el
+ * teléfono sí las enseña. Con eso, la tarjeta que avisa de que no se mostraron
+ * deja de insistir en vez de quedarse una semana diciendo algo ya resuelto.
+ */
+async function avisarQueSeMostro(ventanas) {
+  try {
+    const abiertas =
+      ventanas ||
+      (await self.clients.matchAll({ type: 'window', includeUncontrolled: true }));
+    for (const ventana of abiertas) {
+      ventana.postMessage({ tipo: 'sian:mostrada' });
+    }
+  } catch (e) {
+    trazar('mostrada:aviso-falló', String(e));
+  }
+}
+
 self.addEventListener('push', (evento) => {
   evento.waitUntil(
     (async () => {
@@ -478,6 +537,8 @@ self.addEventListener('push', (evento) => {
 
       await self.registration.showNotification(titulo, opciones);
       await sumarInsignia(opciones.data && opciones.data.mensajeId);
+      await acusarQueSeMostro(carga && carga.data);
+      await avisarQueSeMostro(ventanas);
     })(),
   );
 });

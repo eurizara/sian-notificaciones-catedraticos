@@ -67,3 +67,31 @@ Future<bool> mostrarNotificacionDelSistema({
     return false;
   }
 }
+
+/// Cierra las notificaciones del sistema que lleven esta etiqueta.
+///
+/// ────────────────────────────────────────────────────────────────────────────
+/// En Android, una notificación olvidada deja el icono marcado (DT-26).
+/// ────────────────────────────────────────────────────────────────────────────
+///
+/// El lanzador cuenta las notificaciones pendientes, no solo la insignia. Las
+/// de los avisos las cierra el service worker cuando la bandeja dice que ya se
+/// leyeron; las de las respuestas (DT-27) no pasan por la bandeja, así que se
+/// cierran aquí, al abrir la conversación que las provocó.
+///
+/// Si no se puede —sin service worker, sin permiso—, no pasa nada: quedaría
+/// una notificación de más, no una de menos.
+Future<void> cerrarNotificacionesDelSistema(String etiqueta) async {
+  try {
+    final web.ServiceWorkerRegistration registro =
+        await web.window.navigator.serviceWorker.ready.toDart;
+    final JSArray<web.Notification> abiertas = await registro
+        .getNotifications(web.GetNotificationOptions(tag: etiqueta))
+        .toDart;
+    for (final web.Notification n in abiertas.toDart) {
+      n.close();
+    }
+  } on Object catch (e) {
+    consolaError('SIAN.notif no se pudo cerrar | etiqueta=$etiqueta | $e');
+  }
+}

@@ -121,7 +121,7 @@ momento de tomarla**, no después.
 |---|---|
 | **Origen** | Alcance |
 | **Severidad** | Media |
-| **Estado** | **Pagada a medias** desde el 26 de agosto de 2026 |
+| **Estado** | **Pagada** el 10 de septiembre de 2026, en desarrollo. Las alertas desde el 26 de agosto; la tarjeta de la semana, ahora |
 | **Decisión** | La versión 1 no incluye monitoreo proactivo de fallos de entrega |
 | **Motivo** | Reducir el alcance del prototipo para validar más rápido |
 | **Consecuencia** | Si el despachador falla o si las entregas empiezan a fallar masivamente, nadie se entera hasta que alguien lo nota |
@@ -129,6 +129,20 @@ momento de tomarla**, no después.
 | **Lo que falta** | El indicador de tasa de entrega en el panel: hoy, saber si los avisos de la semana llegaron sigue exigiendo abrir mensaje por mensaje en Entregas |
 | **Plan de pago** | Una tarjeta en el panel con la tasa de entrega y de confirmación de los últimos 7 días, alimentada por lo que ya se guarda en `ocurrencias/entregas`. Esfuerzo estimado: medio día |
 | **Disparador para pagarla** | Al abrir a toda la institución, o cuando coordinación pregunte por segunda vez «¿llegó?» sin poder responderse sola |
+
+**La tarjeta de la semana.** Encabeza la sección Entregas: cuántos avisos salieron en los
+últimos 7 días, a qué porcentaje llegaron, cuántas entregas fallaron y, si alguno pedía
+confirmación, cuántos la dieron.
+
+  · **No lee nada nuevo.** Suma los contadores que cada reporte ya trae, así que no puede
+    discrepar de ellos. Es la lección de la insignia y del Alcance: dos sitios calculando lo
+    mismo por separado terminan diciendo cosas distintas.
+  · **El denominador es siempre el total de destinatarios.** La confirmación se mide solo
+    sobre los avisos que la pedían; mezclarlos la hundiría con ceros que nadie tenía
+    obligación de poner.
+  · **Cuando no hubo avisos, no lo trata como una buena noticia.** Dice hace cuántos días fue
+    el último y sugiere revisar Alcance antes del próximo, porque las semanas de silencio son
+    cuando más registros caducan (DT-22).
 
 **Las alertas que ya están puestas.** Las crea `scripts/configurar-alertas.py`, una vez por
 ambiente, y avisan a `eurizara1@miumg.edu.gt`:
@@ -265,7 +279,7 @@ gratuita.
 | DT-04 | Acceso a adjuntos sin verificar destinatario | Plataforma | Media | Abierta | 0 USD |
 | DT-05 | Precisión del planificador de 60 s | Costo | Baja | Aceptada | — |
 | DT-06 | Dominio duplicado Dart / TypeScript | Conocimiento | Media | Mitigada | 0 USD |
-| DT-07 | Sin observabilidad ni alertas | Alcance | Media | **Pagada a medias** | 0 USD |
+| DT-07 | Sin observabilidad ni alertas | Alcance | Media | **Pagada** (en desarrollo) | 0 USD |
 | DT-08 | Grupos limitados a 200 miembros | Alcance | Baja | Aceptada | 0 USD |
 | DT-09 | Sin multi-idioma | Alcance | Baja | Mitigada | 0 USD |
 | DT-10 | Sin cifrado de extremo a extremo | Alcance | Baja | Aceptada | — |
@@ -279,7 +293,7 @@ gratuita.
 | DT-18 | Se acumula un token de FCM por cada ingreso en iOS | Plataforma | **Alta** | **Pagada** | 0 USD |
 | DT-19 | Entrar con Google falla en la PWA de iOS por aislamiento de almacenamiento | Plataforma | Alta | **Pagada** | 0 USD |
 | DT-20 | Instalada como aplicación, nada dice en qué ambiente se está | Conocimiento | **Media** | **Pagada** | 0 USD |
-| DT-21 | El tema oscuro está construido pero apagado, y no se puede elegir | Alcance | Baja | Abierta | 0 USD |
+| DT-21 | El tema oscuro está construido pero apagado, y no se puede elegir | Alcance | Baja | **Pagada** (en desarrollo) | 0 USD |
 | DT-22 | Un token muerto solo se descubre cuando falla un aviso real | Alcance | **Alta** | **Pagada** | 0 USD |
 | DT-23 | El service worker no atiende `pushsubscriptionchange` | Plataforma | **Media** | **Pagada a medias** | 0 USD |
 | DT-24 | Un envío con algún fallo deja la pantalla igual y se manda dos veces | Conocimiento | **Alta** | **Pagada** | 0 USD |
@@ -287,8 +301,9 @@ gratuita.
 | DT-26 | En Android el contador del icono se queda encendido con todo leído | Plataforma | **Media** | **Pagada** | 0 USD |
 | DT-29 | Cambiar el manifiesto deja Android degradado hasta que Chrome regenera la aplicación | Plataforma | Baja | **Aceptada** | 0 USD |
 | DT-30 | Chrome puede marcar los avisos como «posible spam» y ofrecer anular la suscripción | Plataforma | **Media** | Abierta | 0 USD |
-| DT-27 | No hay forma de responder a un aviso | Alcance | Media | Abierta | 0 USD |
-| DT-28 | El manual no se alcanza desde dentro de la aplicación | Alcance | Baja | Abierta | 0 USD |
+| DT-27 | No hay forma de responder a un aviso | Alcance | Media | **Pagada** (en desarrollo) | 0 USD |
+| DT-31 | «Entregado» no significa que el aparato lo mostrara, y nadie lo mide | Alcance | **Alta** | **Pagada** (en desarrollo) | 0 USD |
+| DT-28 | El manual no se alcanza desde dentro de la aplicación | Alcance | Baja | **Pagada** (en desarrollo) | 0 USD |
 
 **Prioridad de pago recomendada, en orden:** DT-03 → DT-14 → DT-04 → DT-01.
 
@@ -629,7 +644,8 @@ de teléfono.
 
 ## DT-21 — El tema oscuro está construido pero apagado, y no se puede elegir
 
-**Origen:** alcance · **Severidad:** baja · **Estado:** abierta · **Costo:** 0 USD
+**Origen:** alcance · **Severidad:** baja · **Estado:** pagada el 10 de septiembre de 2026, en
+desarrollo · **Costo:** 0 USD
 
 `TemaSian.oscuro()` existe, está completo y está conectado como `darkTheme`. Lo que lo
 mantiene apagado es una sola línea en `app/lib/main.dart`:
@@ -667,6 +683,98 @@ paleta.
 El orden importa: los pasos 3 y 4 sin los pasos 1 y 2 producen una aplicación que se ve
 mal y que además incumple un requisito no funcional.
 
+### Lo que dio la medición
+
+Se midió antes de encender nada, y resultó peor de lo que decía la ficha. No era solo el
+azul: **ninguno de los siete colores con significado llegaba a AA** sobre la superficie
+oscura (`#101417`):
+
+| Color | Sobre blanco | Sobre la superficie oscura |
+|---|---:|---:|
+| Rojo de urgente `#A32826` | 7.27 | **2.55** |
+| Verde de confirmado `#2D6A3E` | 6.48 | **2.86** |
+| Azul del escudo `#1C72A5` | 5.25 | **3.53** |
+| Dorado de texto `#8A6A2B` | 5.03 | **3.68** |
+| Azul oscuro de títulos `#15597F` | 7.59 | **2.44** |
+| Azul marino `#003168` | 12.81 | **1.44** |
+
+Y el esquema de Material hacía lo mismo con el error: el color que ponía **encima** del rojo
+en el tema oscuro daba 1.80:1. Encender el tema tal cual habría servido ilegible justo la
+etiqueta «URGENTE».
+
+Además, **102 sitios** de las pantallas usaban esas constantes directamente. Cambiar la
+línea de `main.dart` los habría dejado a todos igual que en el tema claro, sobre fondo
+oscuro.
+
+### Cómo quedó pagada
+
+**10 de septiembre de 2026, en desarrollo.**
+
+  · **Una paleta por tema, no un color intermedio.** `PaletaSian` (en `tema.dart`) tiene
+    cada color con significado en dos versiones. La clara son **exactamente** las
+    constantes de siempre; la oscura, tonos claros del mismo matiz, medidos contra la
+    superficie oscura más clara que usa la aplicación (`#313539`), que es el caso peor.
+  · **Texto y relleno por separado.** Sobre fondo claro el mismo rojo sirve para escribir
+    «urgente» y para rellenar la etiqueta con letra blanca; sobre fondo oscuro no, porque el
+    rojo que se lee como texto es demasiado claro para llevar blanco encima. Cada relleno
+    tiene su campo `fondo…`.
+  · **Las pantallas piden el color al tema** (`PaletaSian.de(context)`). Los colores que se
+    deciden lejos del tema —el estado de una entrega, el realce de un mensaje— siguen
+    usando la constante, y se traducen con `adaptar` donde se pintan.
+  · **El escudo va sobre un disco blanco en el tema oscuro**, del mismo tamaño, que es lo
+    que ya hacía la barra superior sobre el azul. No hizo falta otra versión del escudo.
+  · **Por omisión, el tema del dispositivo.** En la barra superior, entre el manual y
+    recargar, un botón abre un menú con tres opciones: *Igual que el dispositivo*, *Claro* y
+    *Oscuro*. Se guarda en el navegador, no en la cuenta: la misma persona puede querer
+    oscuro en el teléfono y claro en la computadora de la sede. El nombre accesible del
+    botón dice qué está elegido.
+
+| Color en el tema oscuro | Contraste (caso peor) |
+|---|---:|
+| Rojo de urgente `#FF8A80` | 5.41 |
+| Verde de confirmado `#7DD29A` | 6.80 |
+| Dorado de texto `#E0B866` | 6.60 |
+| Azul `#7FC4E8` | 6.45 |
+| Azul de títulos `#A8D8F2` | 8.10 |
+| Relleno de urgente `#C62828`, con blanco | 5.62 |
+| Relleno de confirmado `#2F7A45`, con blanco | 5.26 |
+
+Para el rojo se prefirió `#FF8A80` al `#FFB4AB` que propone Material: aquel tira a salmón,
+y este sigue leyéndose como rojo.
+
+**Los números no se quedan en esta tabla.** `app/test/widget/tema_oscuro_test.dart` los
+vuelve a medir en cada compilación, comprueba que la paleta clara siga siendo la de siempre,
+y falla si una pantalla nueva escribe un `ColoresSian.…` directamente —que es la forma de
+volver a introducir, sin darse cuenta, un color que no se lee en oscuro.
+
+### Lo que la medición encontró en el tema claro
+
+Dos fallos que ya estaban, en la barra superior y solo en pantalla ancha (computadora), que
+es donde aparecen el nombre y el rol:
+
+  · **El nombre salía casi negro (`#181C20`) sobre la barra azul**: unos 3.2:1. Tomaba el
+    color del texto general, pensado para fondo claro. Ahora sale blanco, 5.25:1.
+  · **El rol, blanco al 85 %**, daba 4.28:1. Ahora va opaco, 5.25:1; la jerarquía la marca
+    ya el tamaño de letra.
+
+Y en los avisos emergentes de color —«mensaje enviado» en verde, los de atención en dorado
+y los de error en rojo— el texto pasa de casi blanco a blanco, porque el color por omisión
+en el tema oscuro es casi negro. En el claro la diferencia no se aprecia.
+
+Fuera de eso, el tema claro no cambia.
+
+
+
+### Ajuste del 11 de septiembre de 2026: con cuatro botones, el título se cortaba
+
+En el teléfono la barra pasó a tener cuatro botones —manual, apariencia, recargar, salir— y
+el título quedaba en «Mis mensa…». En pantalla estrecha, la apariencia y cerrar sesión van
+ahora juntos en **un botón de la cuenta** (el círculo con una persona), que además dice con
+qué cuenta se entró. El manual y recargar siguen a un toque. En pantalla ancha no cambia
+nada.
+
+Cerrar sesión pasa a pedir dos toques en el teléfono. Es a propósito: es lo único de la
+barra que obliga a volver a entrar, y en el borde es fácil pulsarlo con el pulgar.
 
 ---
 
@@ -1606,6 +1714,59 @@ quien envía viaja con el mensaje porque el receptor no puede leer `usuarios`.
 Adjuntos en las respuestas, respuestas entre catedráticos, y reenviar una respuesta a
 terceros. Si hacen falta, que sea otra decisión con su propio análisis.
 
+### Cómo quedó pagada
+
+**11 de septiembre de 2026, en desarrollo.** Se construyó tal como lo pedía el análisis de
+arriba, y lo que más trabajo llevó fue justo lo que la ficha señalaba como delicado.
+
+**El modelo.** `mensajes/{id}/hilos/{uidCatedratico}/turnos/{turnoId}` (documento 05,
+secciones 2.7b a 2.7d). El hilo se identifica por el catedrático, así que no pueden existir
+dos hilos de la misma persona sobre el mismo aviso. Título del aviso y nombres van
+copiados dentro: el emisor tiene que saber de qué le hablan sin abrir otra cosa.
+
+**Los contadores NO viven en el aviso.** Era lo cómodo, y habría filtrado algo: el
+documento del mensaje lo leen todos sus destinatarios, y cualquiera habría podido ver
+cuántos compañeros contestaron. Viven en cada hilo, y el emisor los reúne con una consulta
+de grupo de colección filtrada por él.
+
+**Las reglas.** Un hilo lo leen **solo** sus dos partes. Estar en `destinatariosUids` abre
+el aviso pero no las respuestas de un compañero; ser coordinador abre todos los avisos pero
+no las conversaciones de un aviso ajeno; el auditor tampoco entra. Once pruebas nuevas de
+reglas lo comprueban caso por caso, incluida la consulta de grupo sin filtro, que se
+rechaza entera.
+
+**Escribir, por Function.** `responderAviso` decide de qué lado escribe quien llama: un
+destinatario, en su propio hilo; quien emitió el aviso, en el hilo de alguien que ya le
+escribió —nunca puede iniciar una conversación, que es la línea que separa esto de una
+mensajería general—. Y nadie se responde a sí mismo, caso real en quien emite a toda la
+sede y además recibe avisos.
+
+**El doble toque, resuelto desde el principio (DT-24).** El identificador del turno lo
+propone el cliente y el servidor lo crea con `create`: el segundo intento encuentra el
+documento y no guarda ni notifica otra vez. Si el envío falla, lo escrito se queda y
+conserva su identificador; si se cambia el texto antes de reintentar, se renueva, porque
+si el primero sí había llegado reutilizarlo habría descartado lo nuevo en silencio.
+
+**Notificar sin convertirlo en ruido.** La primera respuesta a un aviso avisa en el acto;
+las que llegan en los diez minutos siguientes solo suben el contador, y la próxima
+notificación dice cuántas hay. Es imprescindible porque en iOS las notificaciones no se
+reemplazan por etiqueta aunque la especificación diga que sí — ya se comprobó con los
+avisos. La notificación de una respuesta **no lleva `mensajeId`**, a propósito: así no
+cuenta para la insignia ni la cierra la limpieza de la bandeja, que ya costó dos
+correcciones (DT-26).
+
+**Quien emite y no recibe avisos no tenía dónde activar notificaciones**, que era el
+«detalle que hoy lo rompería» de esta misma ficha. La sección «Respuestas» incluye la
+tarjeta de activación para ese caso, con su propio texto: prometerle «avisos» a quien no
+los recibe habría sido prometer algo que no va a llegar.
+
+### Lo que quedó fuera, y se sabe
+
+  · **El catedrático no ve desde la lista que le contestaron.** Se entera por la
+    notificación, y lo ve al abrir el aviso. Marcarlo en la fila obligaría a escribir en su
+    entrega, que es un documento con valor probatorio.
+  · Sigue sin haber adjuntos en las respuestas, ni respuestas entre catedráticos.
+
 ---
 
 ## DT-28 — El manual no se alcanza desde dentro de la aplicación
@@ -1671,6 +1832,44 @@ Hay dos, y la aplicación sabe el rol de quien está dentro. Lo natural es que u
 abra el suyo y coordinación el general. Es una decisión de una línea, pero conviene tomarla
 a propósito y no dejar a todos en el índice.
 
+
+
+### Cómo quedó pagada
+
+**10 de septiembre de 2026, en desarrollo.** Un botón con el icono de libro, a la izquierda
+de recargar, en la barra de todas las pantallas con sesión —la bandeja del catedrático y el
+panel—.
+
+  · **Abre el manual que corresponde al rol**: el catedrático el suyo, quien usa el panel el
+    general. Mandar a un catedrático al índice lo obliga a buscar su parte entre secciones
+    que no le tocan.
+  · **La ruta es relativa** —`/manuales/`— y la resuelve el navegador contra el origen desde
+    el que se pulsa. No hay dominio escrito que pueda quedar apuntando al ambiente
+    equivocado.
+  · **Se abre en otra pestaña, y el nombre del botón lo dice**: «Manual de usuario (se abre en
+    una pestaña nueva)». Ese nombre es también el que anuncia el lector de pantalla.
+  · `noopener`, para que la pestaña del manual no pueda tocar la aplicación.
+  · Es un `IconButton` como los otros dos: mismo tamaño táctil de 48 px, mismo contraste,
+    misma forma de mostrar su ayuda.
+
+Siete pruebas, entre ellas la que exige que ninguna ruta del manual lleve `http` ni
+`web.app` escritos.
+
+
+### Ajuste del 11 de septiembre de 2026: instalada, el manual no tenía salida
+
+Probado en un iPhone con la aplicación instalada, el manual se abría **dentro de la misma
+ventana** —está dentro del alcance de la aplicación, e iOS no abre pestañas ahí— y, sin
+barra del navegador, no había forma de volver: la única salida era cerrar la aplicación.
+
+  · La aplicación instalada abre ahora el manual **en la misma ventana, a propósito**. Con
+    eso el gesto de atrás de Android regresa a la aplicación.
+  · El manual muestra arriba a la izquierda **«‹ Volver a SIAN»**, pero solo cuando se abrió
+    desde la aplicación instalada. En una pestaña del navegador sobra —ya están atrás y
+    cerrar— y no aparece. Vuelve **reemplazando** la página, para que el atrás de Android no
+    devuelva al manual.
+  · El nombre accesible del botón dice lo que va a pasar en cada caso: «se abre en una
+    pestaña nueva» en el navegador, «se abre aquí, con un botón para volver» instalada.
 
 ---
 
@@ -1751,3 +1950,225 @@ Perseguirlo con más notificaciones, ni intentar detectar si Chrome nos marcó. 
 para preguntarlo, y el remedio no es técnico: es que los avisos sean pocos, distintos entre
 sí y realmente útiles. Un sistema de emergencias que manda poco es, además, el que se
 quiere.
+
+---
+
+## DT-31 — «Entregado» no significa que el aparato lo mostrara, y nadie lo mide
+
+**Origen:** alcance · **Severidad:** alta · **Estado:** pagada el 11 de septiembre de 2026,
+en desarrollo · **Costo:** 0 USD
+
+Detectado el 11 de septiembre de 2026 con un caso real: se envió «actividades normales el
+día de mañana» a 23 personas. El reporte dijo **18 entregados y 5 fallidos**, y varias de
+las 18 avisaron que **la notificación nunca apareció en su teléfono**: se enteraron por
+WhatsApp y vieron el aviso al entrar a la aplicación.
+
+### El hueco: lo que «entregado» dice de verdad
+
+`ENTREGADO` significa **que FCM aceptó el mensaje para ese aparato**. Nada más. Entre eso y
+que el teléfono enseñe la notificación hay una cadena entera que no vemos:
+
+```
+  servidor → FCM → servicio de push del navegador (Apple/Google) → aparato
+           ↑                                                        ↑
+     esto es lo único                                    esto es lo que la
+     que hoy medimos                                     persona experimenta
+```
+
+Del último tramo **no llega ningún acuse**. Por eso el panel puede decir «entregado» de un
+aviso que nadie vio, y por eso la conversación de hoy —«a varios no les llegó, y a otros
+les llegó pero no les avisó»— no se puede contestar con datos, solo con conjeturas.
+
+### Lo que sí se pudo medir del envío de hoy
+
+**Los 5 fallos tienen explicación, y tres son la misma:**
+
+| Persona | Qué pasó |
+|---|---|
+| `jgomezo20`, `mhernandezb28`, `aurizard` | **Sin ningún dispositivo registrado.** Llevan tres envíos seguidos sin recibir nada (07/09, 10/09, 11/09) |
+| `ftorresa` | Sin dispositivo al momento del envío; **se registró a las 17:02**, seis minutos después |
+| `csalguerov` | FCM rechazó su token (`invalid-argument`); **volvió a registrarse a las 17:31** |
+
+Los dos últimos son DT-22 otra vez: el registro muere entre un aviso y el siguiente, y solo
+revive cuando la persona abre la aplicación.
+
+**Y el reparto de aparatos explica buena parte del resto**, sobre 24 personas que reciben
+avisos:
+
+| Situación | Cuántos | Qué significa |
+|---|:--:|---|
+| Sin ningún dispositivo | 3 | No pueden recibir nada |
+| Solo en una computadora, en el navegador | 1 | Con la laptop apagada no hay aviso posible |
+| En el celular pero **sin instalar** la aplicación | 4 | La notificación la muestra Chrome, no la aplicación: es la más fácil de perder o de silenciar (DT-30) |
+| Con la aplicación instalada en el celular | 16 | El único caso que funciona como se diseñó |
+
+Ocho de veinticuatro dependen de un canal débil **antes** de que intervenga ningún fallo
+técnico.
+
+### Por qué una notificación aceptada puede no mostrarse
+
+Ninguna de estas causas la puede ver el servidor hoy:
+
+  · **El aviso va con prioridad normal.** Solo los urgentes salen con `Urgency: high`. Con
+    prioridad normal, el sistema está autorizado a retrasar la entrega hasta que el
+    aparato salga del modo de reposo — y entonces la notificación llega tarde, o la
+    persona ya abrió la aplicación y nunca la ve.
+  · **Los modos de concentración y el resumen programado de iOS** entregan la notificación
+    pero no la enseñan: aparece agrupada más tarde.
+  · **Las notificaciones del sitio, apagadas en los ajustes del teléfono.** El permiso del
+    navegador sigue diciendo «concedido»: son dos interruptores distintos, y la aplicación
+    solo puede leer uno.
+  · **Chrome silenciando el sitio** por su heurística de «posible spam» (DT-30).
+  · **La suscripción murió** y el servicio de push la descartó sin decírselo a FCM.
+
+**Cerrar la aplicación no es la causa.** Ni en iPhone ni en Android: el sistema despierta al
+service worker aunque la aplicación esté cerrada. Lo que sí rompe el canal es desinstalarla,
+borrar los datos del navegador o apagar sus notificaciones en los ajustes del teléfono.
+
+### Cómo se paga
+
+El orden importa: primero medir, porque sin medir no se sabe cuál de las causas de arriba
+pesa en esta población.
+
+1. **Acuse de recibo desde el service worker.** Al mostrar la notificación, el worker avisa
+   al servidor, que lo anota en la entrega (`mostradaEn`). Es la pieza que convierte
+   «supuestamente le llegó» en un hecho, y de la que dependen las demás.
+2. **El panel deja de decir «entregado» a secas.** Tres estados distintos: *aceptado por
+   FCM*, *se mostró en el aparato*, *se abrió*. Y Alcance gana el estado «recibió el aviso
+   pero su aparato no lo mostró», que es una lista de personas a las que llamar.
+3. **Prioridad alta y vida útil explícita en todos los avisos.** `Urgency: high` siempre
+   —todo aviso institucional es de interés inmediato— y un TTL de 24 horas en los
+   informativos y 4 en los urgentes, para que un aviso viejo no aparezca dos días después.
+4. **Un reintento medido.** Sin acuse a los diez minutos, se reintenta una vez. Si sigue sin
+   acuse, la persona aparece en Alcance.
+5. **Autodiagnóstico en la aplicación.** Si hay avisos recientes que este aparato recibió y
+   no mostró, la aplicación lo dice al abrirla, con un botón de prueba y las instrucciones
+   exactas de cada sistema: en iPhone, Ajustes → Notificaciones → SIAN y revisar los modos
+   de concentración; en Android, los ajustes de la aplicación y la optimización de batería.
+6. **Cerrar la brecha de aparatos, que no es código.** Instalar la aplicación en el celular
+   de los tres que no tienen ninguno, y convertir en instalación los cuatro que solo la
+   tienen abierta en Chrome. Es lo que más entregas recupera y no depende de ningún
+   desarrollo.
+
+### Lo que NO se puede prometer, y conviene decirlo por escrito
+
+La web no permite forzar que un teléfono muestre una notificación: la última palabra es del
+sistema operativo, y sus modos de concentración, ahorro de batería y silenciados están por
+encima de cualquier cosa que envíe el servidor. Ninguna aplicación —nativa incluida— puede
+garantizar el 100 %.
+
+Por eso, para una emergencia real, el aviso tiene que seguir acompañado de un canal humano,
+que es lo que hoy se hizo con WhatsApp. Lo que sí puede lograr este trabajo es que ese
+respaldo deje de ser a ciegas: SIAN dirá **exactamente a quién** hay que llamar, en vez de
+llamar a los veintitrés por si acaso.
+
+### Cómo quedó pagada
+
+**11 de septiembre de 2026, en desarrollo.** Los cinco primeros puntos del plan, en el
+orden en que se listaron.
+
+**1 · El acuse.** Cada entrega nace con un identificador aleatorio que **viaja dentro del
+push**. Cuando el service worker muestra la notificación —y solo después de mostrarla—,
+devuelve esa seña a `acuseDeNotificacion`, que anota `mostradaEn`.
+
+Es una petición HTTP sin sesión, porque el worker no tiene ninguna: lo que lo identifica es
+la seña, que solo conoce quien recibió ese push. Por eso no escribe nada con valor
+probatorio —ni estado, ni confirmación, ni bitácora—: solo una fecha de diagnóstico. Lo peor
+que puede hacer quien se invente una seña es afirmar que vio un aviso que era suyo. Si la
+petición falla, no pasa nada: la notificación ya está en la pantalla.
+
+**2 · Tres cosas distintas en el panel.** En cada aviso, «se mostró en 7 de 10 aparatos»; y
+en el detalle, quien recibió el aviso y su teléfono no se lo enseñó aparece con su propia
+etiqueta —**«Su aparato no lo mostró»**, en rojo— separada de «no lo ha abierto», porque se
+resuelven distinto: al segundo se le insiste, al primero hay que llamarlo y revisar sus
+ajustes. En los avisos anteriores a C-5 no se distingue nada: no es que no se mostraran, es
+que nadie lo medía, y `acuseEsperado` en el mensaje marca la diferencia.
+
+**3 · Prioridad alta y vida útil, en todos los avisos.** Antes solo los urgentes salían con
+`Urgency: high`; con urgencia normal el servicio de push puede retener el mensaje hasta que
+el aparato salga del modo de reposo, que es exactamente lo que se describió. Y ahora todo
+aviso lleva TTL —4 horas los urgentes, 24 los informativos— para que uno viejo no aparezca
+dos días después, cuando ya no significa nada.
+
+**4 · Un reintento medido.** Si a los diez minutos nadie dijo que se mostrara y la persona
+tampoco lo abrió, se empuja una segunda vez. Una sola: si dos empujones no aparecieron, lo
+que falla son los ajustes del aparato, y eso lo arregla una persona. Va montado sobre el
+despachador, que ya corre cada minuto, para no pagar otra cuota de Cloud Scheduler en cada
+ambiente.
+
+**5 · La aplicación lo dice en la pantalla de quien lo sufre.** Si en los últimos siete días
+hubo avisos que llegaron a ese aparato y no se mostraron, la bandeja lo dice —«Un aviso
+llegó a este aparato y no te lo mostró»—, explica que el aviso **sí llegó** y ofrece mandar
+una notificación de prueba ahí mismo. Si la de prueba tampoco aparece, el problema está en
+los ajustes del teléfono, y queda demostrado en dos toques.
+
+### Lo primero que enseñó, media hora después de estrenarse
+
+**11 de septiembre de 2026, 21:42.** Se mandó un aviso de prueba en desarrollo tres minutos
+después de desplegar el acuse. El panel dijo **«Se mostró en 0 de 5 aparatos»** y marcó a
+cinco personas con «Su aparato no lo mostró».
+
+Era falso, y el dato que lo delata estaba ahí mismo: los dispositivos que se registraron
+esa noche guardaron la versión **vacía**, que es lo que hace la aplicación anterior. **El
+acuse lo manda el service worker, que viaja con la aplicación**: un teléfono que todavía no
+ha recargado no puede acusar aunque enseñe la notificación perfectamente.
+
+Corregido en 1.5.2, con la misma regla que ya se aplicaba a los avisos anteriores a C-5:
+
+  · Cada entrega guarda **con qué versión corría el aparato** al mandársele el aviso.
+  · Solo se dice «su aparato no lo mostró» si esa versión sabía acusar (1.5.0 o posterior).
+  · **Tampoco se le insiste**: a un aparato que no sabe acusar, insistirle sería mandarle
+    cada aviso dos veces, siempre, sin que nada mejore.
+  · Y la tarjeta del catedrático **se calla** en cuanto su aparato demuestra que sí muestra
+    notificaciones —la de prueba sirve—, en vez de repetir una semana algo ya resuelto.
+
+La lección general: **una medición nueva no puede dar por malo lo que solo era desconocido.**
+Es el mismo error que se evitó con `acuseEsperado` para los avisos viejos, y que aquí volvió
+a aparecer por otro lado.
+
+### Y lo segundo que enseñó: el worker y la aplicación no viajan juntos
+
+**12 de septiembre de 2026, 04:12.** Segunda prueba, y el acuse funcionó: dos de dos, en
+menos de dos segundos, **incluido el iPhone** que la noche anterior no había avisado de
+nada. Quedó demostrado que el canal completo —servidor, FCM, Apple, service worker, vuelta
+al servidor— funciona.
+
+Pero los mismos aparatos seguían reportando la **versión vacía**. No es contradictorio: el
+service worker se comprueba y se renueva **en cada arranque** (`actualizarWorkers`), mientras
+que la aplicación en sí se sirve desde la caché hasta que alguien recarga. Así que hubo una
+ventana en la que el worker sabía acusar y la aplicación todavía no sabía decir qué versión
+era.
+
+Con la regla de 1.5.2 tal cual, esos aparatos habrían quedado en «no se afirma nada» para
+siempre —lo conservador, pero ciego—. En **1.5.3**, el primer acuse de una persona deja
+constancia (`usuarios/{uid}.acusaDesde`), y desde ese momento su silencio en un aviso
+posterior **sí** significa algo, venga o no la versión en el registro del aparato.
+
+### Y lo tercero: «abrir la aplicación» no es cargarla
+
+**12 de septiembre de 2026.** Con el acuse ya funcionando, los aparatos seguían registrando
+la **versión vacía**, que es lo que hace la aplicación anterior a 1.5.0. El servidor
+publicaba 1.5.3 y el teléfono ejecutaba algo de antes.
+
+Se comprobó lo desplegado antes de suponer: el paquete servido **sí** traía la versión, y el
+`flutter_service_worker.js` de esta compilación **no cachea nada** —se desregistra a sí
+mismo—. Así que no era una caché nuestra. Era iOS: **una PWA instalada se restaura tal como
+se dejó**, con la misma página y el mismo código, sin volver a pedir nada. Se puede estar
+«abriéndola» a diario y seguir ejecutando el paquete de la semana pasada.
+
+Corregido en 1.5.4: la comprobación de versión se repite **al volver a la aplicación**, no
+solo al arrancar. En una PWA restaurada es el único momento en que puede enterarse, y basta
+para que aparezca la tarjeta con el botón de actualizar.
+
+Queda anotado para quien lea esto dentro de un año: **un despliegue no es una versión en las
+manos de la gente.** Entre una cosa y la otra hay un paso que depende del teléfono, y por eso
+la versión se enseña en pantalla y se reporta al servidor.
+
+### Lo que queda de esta ficha
+
+  · **Alcance todavía no lista a quién no le muestran los avisos.** Con los datos del acuse
+    ya se puede: es el paso natural cuando haya una semana de mediciones.
+  · **Cerrar la brecha de aparatos no es código** y sigue pendiente: tres personas sin
+    ningún dispositivo, cuatro con la aplicación sin instalar en el celular, una solo en
+    computadora.
+

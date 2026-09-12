@@ -77,13 +77,17 @@ class _AvisoEnPrimerPlanoState extends ConsumerState<AvisoEnPrimerPlano> {
         titulo: aviso.titulo,
         cuerpo: aviso.cuerpo,
         urgente: aviso.urgente,
-        etiqueta: mensaje.data['mensajeId'] as String?,
+        // Una respuesta (DT-27) no lleva `mensajeId`, sino su propia
+        // etiqueta: la misma que usa el service worker, para reemplazarse.
+        etiqueta:
+            (mensaje.data['mensajeId'] as String?) ??
+            (mensaje.data['etiqueta'] as String?),
       ),
     );
 
     final Color acento = aviso.urgente
-        ? ColoresSian.urgente
-        : ColoresSian.primario;
+        ? PaletaSian.de(context).urgente
+        : PaletaSian.de(context).primario;
     final ThemeData tema = Theme.of(context);
 
     ScaffoldMessenger.of(context)
@@ -109,6 +113,8 @@ class _AvisoEnPrimerPlanoState extends ConsumerState<AvisoEnPrimerPlano> {
                         Icon(
                           aviso.urgente
                               ? Icons.priority_high
+                              : mensaje.data['tipo'] == 'RESPUESTA'
+                              ? Icons.forum_outlined
                               : Icons.notifications_active,
                           color: acento,
                         ),

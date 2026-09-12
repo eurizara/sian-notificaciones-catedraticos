@@ -30,6 +30,16 @@ export interface Dispositivo {
    */
   readonly esPWAInstalada: boolean;
   readonly navegador: string;
+
+  /**
+   * Con qué versión de la aplicación se registró (`1.5.0`).
+   *
+   * Sirve para ver en Alcance quién quedó atrás: una aplicación instalada puede
+   * llevar días con la versión vieja sin que nadie se entere, y desde C-5 eso
+   * se nota en los datos — el acuse de que una notificación se mostró lo manda
+   * el service worker, que viaja con la versión.
+   */
+  readonly versionApp: string;
   readonly permisoNotificacion: PermisoNotificacion;
   readonly activo: boolean;
 }
@@ -39,6 +49,7 @@ export interface EntradaDispositivo {
   readonly plataforma: string;
   readonly esPWAInstalada?: boolean;
   readonly navegador?: string;
+  readonly versionApp?: string;
   readonly permisoNotificacion?: string;
 }
 
@@ -79,6 +90,9 @@ export function crearDispositivo(entrada: EntradaDispositivo): Dispositivo {
     navegador: (entrada.navegador ?? '').trim().slice(0, 120),
     permisoNotificacion: permiso,
     activo: permiso === 'concedido',
+    // Con qué versión de la aplicación se registró. Se refresca en cada
+    // apertura, así que dice qué código tiene esa persona delante hoy.
+    versionApp: (entrada.versionApp ?? '').trim().slice(0, 20),
   });
 }
 

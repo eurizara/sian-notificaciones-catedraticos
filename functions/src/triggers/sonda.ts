@@ -82,6 +82,7 @@ interface DispositivoLeido extends DispositivoAEvaluar {
   readonly esPWAInstalada: boolean;
   readonly permisoNotificacion: string;
   readonly plataforma: string;
+  readonly versionApp: string;
 }
 
 function aFecha(valor: unknown): Date | null {
@@ -104,6 +105,7 @@ async function leerDispositivos(): Promise<DispositivoLeido[]> {
     esPWAInstalada: d.get('esPWAInstalada') === true,
     permisoNotificacion: (d.get('permisoNotificacion') as string | undefined) ?? 'pendiente',
     plataforma: (d.get('plataforma') as string | undefined) ?? '',
+    versionApp: (d.get('versionApp') as string | undefined) ?? '',
   }));
 }
 
@@ -319,6 +321,21 @@ async function personasConElUltimoEnvioFallido(): Promise<Map<string, Date>> {
   return fallidos;
 }
 
+/**
+ * La versión más alta entre los aparatos de una persona.
+ *
+ * Se ordena como texto y no por número de versión: con este esquema —dos
+ * dígitos como mucho por tramo— coincide, y comparar versiones «de verdad»
+ * traería un analizador entero para decidir un dato informativo.
+ */
+function versionMasReciente(dispositivos: readonly DispositivoLeido[]): string {
+  return dispositivos
+    .map((d) => d.versionApp.trim())
+    .filter((v) => v.length > 0)
+    .sort()
+    .at(-1) ?? '';
+}
+
 /** Lo que la pantalla de coordinación necesita saber de cada persona. */
 interface FilaDeAtencion {
   readonly uid: string;
@@ -328,6 +345,9 @@ interface FilaDeAtencion {
   readonly estado: EstadoDeCanal;
   readonly plataformas: string[];
   readonly ultimaActividad: string | null;
+
+  /** La versión más reciente entre sus aparatos, vacía si no consta. */
+  readonly versionApp: string;
 }
 
 function sujetoDe(peticion: {
@@ -449,6 +469,7 @@ export const dispositivosQueNecesitanAtencion = onCall(OPCIONES_FUNCION, async (
       estado,
       plataformas: [...new Set(suyos.map((d) => d.plataforma).filter((p) => p.length > 0))],
       ultimaActividad: actividades[0]?.toISOString() ?? null,
+      versionApp: versionMasReciente(suyos),
     });
   }
 

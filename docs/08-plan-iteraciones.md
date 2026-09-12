@@ -229,6 +229,10 @@ directamente en producción: la semana pasada mostró lo que cuesta.
 
 ### Correcciones — primero, y se liberan antes de tocar nada más
 
+> **Liberadas en producción el 10 de septiembre de 2026** (C-1, C-2 y C-3), tras probarse en
+> desarrollo y en QA. C-4 sigue bloqueada esperando a Sistemas de la UMG. Con eso se cumplió
+> la regla: las mejoras empiezan después, y empezaron el 11.
+
 Algo falla hoy. Se arranca por aquí, se prueba en desarrollo, se promueve y **se libera**.
 Hasta que las cuatro estén en producción no se empieza con las mejoras.
 
@@ -237,6 +241,7 @@ Hasta que las cuatro estén en producción no se empieza con las mejoras.
 | C-1 | **DT-26** · el contador se queda encendido en Android | **Corregida el 09/09.** Una notificación solo se cerraba al tocarla; quien abría desde el icono las dejaba puestas, y el lanzador de Android las cuenta. Ahora la aplicación manda al worker cuáles siguen sin leer y el worker retira las demás. **DT-17 pagada con ella**: 14 pruebas donde no había ninguna |
 | C-2 | **DT-23 → DT-22** · el canal se pierde solo | **Corregida el 09/09.** Sonda semanal en seco que valida los tokens sin entregar nada, y apartado en la pantalla de coordinación con quién no recibiría un aviso ahora mismo. DT-23 quedó pagada a medias por un límite del SDK, explicado en su ficha |
 | C-3 | **DT-18** · dispositivos arrastrados | **Corregida el 09/09.** La misma sonda retira lo que lleva más de sesenta días sin actividad, con el motivo anotado en la bitácora |
+| C-5 | ~~**DT-31** · «entregado» no es «se mostró»~~ | **Hecha el 11/09, en desarrollo.** Acuse de recibo desde el service worker, prioridad alta en todo aviso, un reintento medido y autodiagnóstico en la aplicación. Es lo único que convierte «supuestamente le llegó» en un dato |
 | C-4 | **DT-14** · correos de recuperación | **Bloqueada, y no por programación.** Exige un buzón institucional y entradas SPF/DKIM en el DNS de la UMG. Lo que sí se hizo: el aviso en pantalla ahora dice que revise la carpeta de no deseado, que es donde caen |
 
 > **DT-17 — pruebas del service worker — no es una corrección con vida propia: es la
@@ -244,10 +249,51 @@ Hasta que las cuatro estén en producción no se empieza con las mejoras.
 > ese archivo y ninguno lo encontró una prueba. El contador ya falló una vez y volvió; sin
 > pruebas, la tercera es cuestión de tiempo. Viaja con C-1 y se prueba con ella.
 
+> **C-5 se antepone a las mejoras que quedan.** El 11 de septiembre un aviso salió a 23
+> personas: 5 fallaron y varias de las 18 «entregadas» nunca vieron la notificación y se
+> enteraron por WhatsApp. Mientras no se mida el último tramo —del servicio de push al
+> aparato—, cada envío se evalúa con un dato que puede no ser cierto. La ficha DT-31 trae
+> el diagnóstico completo del caso, con nombres y aparatos.
+>
+> **Y hay una parte que no es código y recupera más entregas que ninguna otra:** tres
+> personas no tienen ningún dispositivo registrado, cuatro tienen la aplicación sin instalar
+> en el celular y una solo la tiene en una computadora. Ocho de veinticuatro dependen de un
+> canal débil antes de que falle nada.
+
 **Cómo se liberan.** Una por una por el flujo normal —`develop` → `qa` → `main`— y no todas
 juntas al final. Cada una que llega a producción es gente que vuelve a recibir avisos, y
 juntarlas solo aumenta lo que hay que revisar si algo sale mal. DT-24 ya se liberó así, sola
 y de urgencia, y funcionó.
+
+### La versión que se ve en pantalla
+
+Desde el 11 de septiembre de 2026 la aplicación **enseña su versión** y avisa cuando hay una
+más reciente publicada. El esquema es `MAYOR.MENOR.PARCHE`:
+
+  · **MAYOR.MENOR es la iteración de este documento.** La **1.5** es la de septiembre de
+    2026: correcciones C-1 a C-5 y mejoras M-1 a M-5. Así, «1.5.2» se puede buscar aquí y
+    leer qué trae — una versión con la fecha solo diría cuándo salió, que es justo lo que
+    ya dice `desplegadoEn` en `version.json`.
+  · **PARCHE sube con cada cambio liberado** dentro de la iteración.
+
+El número vive en `app/lib/core/version.dart`, que es su única fuente: `pubspec.yaml` tiene
+que decir lo mismo —hay una prueba que falla si se separan— y el sellado del despliegue lo
+copia a `version.json`, que es contra lo que la aplicación se compara.
+
+**Al subir la versión:** cambiar el número en esos dos sitios y anotar aquí qué trae.
+
+| Versión | Qué trae |
+|---|---|
+| 1.5.0 | Iteración de septiembre: correcciones C-1 a C-5 y mejoras M-1 a M-5 |
+| 1.5.1 | La versión se ve también en el menú lateral del panel y en el menú de la cuenta. En 1.5.0 solo estaba en el cajón de pantalla estrecha y al final de la bandeja: en una computadora no aparecía por ningún lado |
+| 1.5.2 | No se acusa a un aparato que no sabía acusar. El acuse viaja con la aplicación, así que un teléfono sin actualizar no puede contestar: de esos no se afirma nada, ni se les insiste. Y la tarjeta del catedrático se calla en cuanto el aparato demuestra que sí muestra notificaciones |
+| 1.5.3 | Que llegue un acuse deja constancia de que esa persona puede acusar. Hacía falta porque el service worker se renueva en cada arranque mientras la aplicación espera a que alguien recargue: hay aparatos que acusan con la versión sin reportar |
+| 1.5.4 | El aviso de versión nueva se comprueba también al volver a la aplicación. En una PWA de iPhone, «abrirla» restaura la página sin recargarla: se podía estar usándola a diario con el paquete de la semana anterior |
+
+**Dónde se ve.** En el pie de la bandeja y del panel; cuando hay una más reciente, una
+tarjeta arriba con el botón de actualizar. Y en **Alcance**, la versión de cada persona:
+desde C-5 eso cambia cómo se leen los datos, porque el acuse de que una notificación se
+mostró lo manda el service worker, que viaja con la versión.
 
 ### Mejoras — después, y sobre un canal que ya sea confiable
 
@@ -255,11 +301,11 @@ Nada de esto falla: falta. Se empieza cuando las cuatro correcciones estén libe
 
 | # | Mejora | Qué aporta |
 |:---:|---|---|
-| M-1 | **DT-07** · tasa de entrega en el panel | Hoy, saber por qué siete personas no recibieron el aviso del 7 de septiembre exigió consultar la base de datos a mano. El coordinador debería verlo solo |
+| M-1 | ~~**DT-07** · tasa de entrega en el panel~~ | **Hecha el 10/09, en desarrollo.** Tarjeta con la semana al inicio de Entregas, calculada con los contadores que ya existían |
 | — | ~~**DT-20** · saber en qué ambiente se está~~ | **Pagada el 09/09.** Se adelantó al resto de mejoras porque hace más segura la prueba de todo lo demás. Banda en pantalla e icono marcado; producción no lleva ninguna de las dos |
-| M-3 | **DT-28** · manual accesible desde la barra | El manual ya está publicado; falta el botón. Es la más pequeña de todas y la que menos puede romper |
-| M-4 | **DT-21** · tema oscuro y preferencia del usuario | El tema ya está construido; falta verificar el contraste antes de encenderlo |
-| M-5 | **DT-27** · responder a un aviso | Funcionalidad nueva. Va al final a propósito: primero que lo que ya existe funcione |
+| M-3 | ~~**DT-28** · manual accesible desde la barra~~ | **Hecha el 10/09, en desarrollo.** Botón a la izquierda de recargar, abre el manual del rol en otra pestaña |
+| M-4 | ~~**DT-21** · tema oscuro y preferencia del usuario~~ | **Hecha el 10/09, en desarrollo.** Paleta oscura medida contra AA (ninguno de los colores de antes pasaba), sigue al dispositivo por omisión y se puede fijar desde la barra |
+| M-5 | ~~**DT-27** · responder a un aviso~~ | **Hecha el 11/09, en desarrollo.** El catedrático responde dentro del aviso; el emisor las ve agrupadas por aviso, con el número de las que no ha leído junto a la sección |
 
 > **Por qué las mejoras van después y no en paralelo.** Construir encima de un canal que
 > pierde gente solo multiplica el problema. Una respuesta a un aviso que nunca llegó no le

@@ -23,6 +23,8 @@
  * (RF-ENT-11).
  */
 
+import { randomUUID } from 'node:crypto';
+
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { logger } from 'firebase-functions/v2';
 import type { DocumentReference } from 'firebase-admin/firestore';
@@ -33,6 +35,7 @@ import {
   type CandidatoDestinatario,
   type GrupoResuelto,
 } from '../application/resolverDestinatarios';
+import { LARGO_DE_ACUSE, armarSeña, cabecerasDeEnvio } from '../domain/acuse';
 import { crearAsiento } from '../domain/bitacora';
 import { esIdentificadorDeInstalacion, esTokenMuerto } from '../domain/dispositivo';
 import { exigirPermiso, type Sujeto } from '../domain/autorizacion';
@@ -250,7 +253,18 @@ export const enviarInmediato = onCall(OPCIONES_FUNCION, async (peticion) => {
       // (documento 05, sección 2.4).
       destinatariosUids: resolucion.uids,
       totalDestinatarios: resolucion.uids.length,
-      resumenEntrega: { entregados: 0, fallidos: 0, abiertos: 0, confirmados: 0 },
+      resumenEntrega: {
+        entregados: 0,
+        fallidos: 0,
+        abiertos: 0,
+        confirmados: 0,
+        // Cuántos aparatos llegaron a MOSTRAR la notificación (DT-31). Distinto
+        // de `entregados`, que solo dice que FCM aceptó el mensaje.
+        mostrados: 0,
+      },
+      // Marca que este aviso sí sabe pedir acuse. Los enviados antes de C-5 no
+      // lo llevan, y sin ella la pantalla los daría a todos por «no mostrados».
+      acuseEsperado: true,
       enviadoEn: null,
     });
 
@@ -324,7 +338,11 @@ async function escribirEntregasPendientes(
   refOcurrencia: DocumentReference,
   mensajeId: string,
   uids: readonly string[],
-): Promise<void> {
+): Promise<Map<string, string>> {
+  // El identificador que viajará en el push y volverá con el acuse (DT-31).
+  const acuses = new Map<string, string>(
+    uids.map((uid) => [uid, randomUUID().replace(/-/g, '').slice(0, LARGO_DE_ACUSE)]),
+  );
   // Firestore admite 500 operaciones por lote.
   for (let i = 0; i < uids.length; i += TAMANO_LOTE) {
     const lote = db.batch();
@@ -338,10 +356,17 @@ async function escribirEntregasPendientes(
         estado: 'PENDIENTE',
         intentos: 0,
         creadaEn: FieldValue.serverTimestamp(),
+        // Explícitamente nulo, no ausente: Firestore solo encuentra con
+        // `== null` los documentos donde el campo existe, y de esa consulta
+        // depende el reintento por falta de acuse.
+        mostradaEn: null,
+        reintentosPorAcuse: 0,
+        acuseId: acuses.get(uid),
       });
     }
     await lote.commit();
   }
+  return acuses;
 }
 
 /**
@@ -354,6 +379,7 @@ async function escribirEntregasPendientes(
 async function despachar(
   refOcurrencia: DocumentReference,
   mensajeId: string,
+  acuses: ReadonlyMap<string, string>,
   mensaje: {
     titulo: string;
     cuerpo: string;
@@ -383,14 +409,13 @@ async function despachar(
     const tanda = uids.slice(i, i + TAMANO_LOTE);
 
     const conTokens = await Promise.all(
-      tanda.map(async (uid) => ({
-        uid,
-        tokens: await tokensDe(uid),
-      })),
+      tanda.map(async (uid) => ({ uid, ...(await canalDe(uid)) })),
     );
 
     const envios: { uid: string; mensaje: TokenMessage }[] = [];
     const sinDispositivo: string[] = [];
+
+    const versionPorUid = new Map(conTokens.map((c) => [c.uid, c.version]));
 
     for (const { uid, tokens } of conTokens) {
       if (tokens.length === 0) {
@@ -400,14 +425,21 @@ async function despachar(
         sinDispositivo.push(uid);
         continue;
       }
+      // La seña del acuse es de esta persona y de esta entrega: identifica
+      // cuál es la que se mostró cuando el worker conteste (DT-31).
+      const acuseId = acuses.get(uid);
+      const datos: Record<string, string> = acuseId
+        ? { ...carga, ac: armarSeña(refOcurrencia.id, uid, acuseId) }
+        : carga;
+
       for (const token of tokens) {
         envios.push({
           uid,
           mensaje: {
             token,
-            data: carga,
+            data: datos,
             webpush: {
-              headers: { Urgency: esUrgente ? 'high' : 'normal' },
+              headers: cabecerasDeEnvio(esUrgente),
               fcmOptions: { link: '/' },
             },
           },
@@ -458,6 +490,10 @@ async function despachar(
       }
       lote.update(refOcurrencia.collection('entregas').doc(uid), {
         estado: resultado.ok ? 'ENTREGADO' : 'FALLIDO',
+        // Con qué versión corría su aparato al mandárselo. Sin esto, el panel
+        // diría «su aparato no lo mostró» de un teléfono que ni siquiera sabía
+        // cómo decir que sí (DT-31).
+        versionAparato: versionPorUid.get(uid) ?? '',
         enviadoAFcmEn: FieldValue.serverTimestamp(),
         ...(resultado.ok ? { entregadoEn: FieldValue.serverTimestamp() } : {}),
         intentos: FieldValue.increment(1),
@@ -492,7 +528,7 @@ async function despachar(
  * viejo —documento identificado por el token— y el nuevo —por instalación—, el
  * mismo token puede estar en cualquiera de los dos.
  */
-async function retirarTokensMuertos(
+export async function retirarTokensMuertos(
   muertos: readonly { uid: string; token: string }[],
 ): Promise<void> {
   if (muertos.length === 0) {
@@ -551,8 +587,26 @@ async function marcarSinDispositivo(
   await lote.commit();
 }
 
-/** Identificadores de notificación activos de un usuario (RF-USR-10). */
-async function tokensDe(uid: string): Promise<string[]> {
+/**
+ * Identificadores de notificación activos de un usuario (RF-USR-10).
+ *
+ * Exportada para las respuestas (DT-27), que notifican con el mismo criterio
+ * que los avisos: tener dos formas de leer los tokens es cómo se llegó a que
+ * una leyera el campo y la otra el identificador del documento.
+ */
+export async function tokensDe(uid: string): Promise<string[]> {
+  return (await canalDe(uid)).tokens;
+}
+
+/**
+ * Los tokens de una persona **y la versión de la aplicación** que corren.
+ *
+ * Van juntos porque salen de la misma lectura y se necesitan a la vez: la
+ * versión decide si de ese aparato se puede afirmar que no mostró el aviso
+ * (DT-31). Se queda con la versión más alta de sus aparatos: si uno de ellos
+ * sabe acusar, el silencio ya significa algo.
+ */
+export async function canalDe(uid: string): Promise<{ tokens: string[]; version: string }> {
   const instantanea = await db
     .collection(RUTAS.usuarios)
     .doc(uid)
@@ -579,9 +633,17 @@ async function tokensDe(uid: string): Promise<string[]> {
   // El respaldo a `d.id` cubre un documento del esquema viejo al que le
   // faltara el campo. No debería haber ninguno —`crearDispositivo` siempre lo
   // incluye— pero equivocarse aquí deja a alguien sin avisos sin decirlo.
-  return instantanea.docs
-    .map((d) => ((d.get('tokenFCM') as string | undefined) ?? d.id).trim())
-    .filter((t) => t.length > 0);
+  const versiones = instantanea.docs
+    .map((d) => ((d.get('versionApp') as string | undefined) ?? '').trim())
+    .filter((v) => v.length > 0)
+    .sort();
+
+  return {
+    tokens: instantanea.docs
+      .map((d) => ((d.get('tokenFCM') as string | undefined) ?? d.id).trim())
+      .filter((t) => t.length > 0),
+    version: versiones.at(-1) ?? '',
+  };
 }
 
 /** Traduce los errores del dominio a los que entiende el cliente. */
@@ -689,11 +751,12 @@ async function ejecutarDespacho(
     totalDestinatarios: uids.length,
   });
 
-  await escribirEntregasPendientes(refOcurrencia, refMensaje.id, uids);
+  const acuses = await escribirEntregasPendientes(refOcurrencia, refMensaje.id, uids);
 
   const { entregados, fallidos } = await despachar(
     refOcurrencia,
     refMensaje.id,
+    acuses,
     mensaje,
     uids,
   );

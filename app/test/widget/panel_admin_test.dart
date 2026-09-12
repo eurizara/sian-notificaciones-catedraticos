@@ -31,6 +31,8 @@ void main() {
       expect(etiquetasPara(Rol.coordinador), <String>[
         Textos.seccionMisMensajes,
         Textos.seccionMensajes,
+        // Justo después de redactar: lo que vuelve de lo que uno mandó (DT-27).
+        Textos.seccionRespuestas,
         // Va junto a los envíos y no entre las secciones de consulta: lo que
         // dice es «esto le pasaría al aviso que estás por mandar» (DT-22).
         Textos.seccionCanal,
@@ -70,6 +72,20 @@ void main() {
         expect(etiquetas, isNot(contains(Textos.seccionBitacora)));
       },
     );
+
+    test('las respuestas las ve quien emite, y nadie más (DT-27)', () {
+      // El auditor observa todo lo demás, pero una respuesta es una
+      // conversación de dos: quien respondió y quien emitió el aviso.
+      expect(etiquetasPara(Rol.coordinador), contains(Textos.seccionRespuestas));
+      expect(
+        etiquetasPara(Rol.administradora),
+        contains(Textos.seccionRespuestas),
+      );
+      expect(
+        etiquetasPara(Rol.auditor),
+        isNot(contains(Textos.seccionRespuestas)),
+      );
+    });
 
     test('el auditor solo observa: bitácora y entregas', () {
       expect(etiquetasPara(Rol.auditor), <String>[

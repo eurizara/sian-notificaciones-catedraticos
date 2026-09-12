@@ -27,7 +27,19 @@ export '../../application/proveedores_dispositivos.dart'
     show repositorioDispositivosProvider;
 
 class TarjetaNotificaciones extends ConsumerStatefulWidget {
-  const TarjetaNotificaciones({super.key});
+  const TarjetaNotificaciones({
+    this.detallePendiente = Textos.notifPendientesDetalle,
+    this.detalleActivo = Textos.notifActivasDetalle,
+    super.key,
+  });
+
+  /// Qué se pierde sin notificaciones. Al catedrático, los avisos; a quien
+  /// emite y no recibe avisos (DT-27), las respuestas: prometerle «avisos»
+  /// sería prometerle algo que nunca le va a llegar.
+  final String detallePendiente;
+
+  /// Qué se recibe con ellas activas, por el mismo motivo.
+  final String Function(String navegador) detalleActivo;
 
   @override
   ConsumerState<TarjetaNotificaciones> createState() =>
@@ -162,7 +174,7 @@ class _TarjetaNotificacionesState extends ConsumerState<TarjetaNotificaciones> {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      color: estado.color.withValues(alpha: 0.08),
+      color: PaletaSian.de(context).adaptar(estado.color).withValues(alpha: 0.08),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -170,7 +182,7 @@ class _TarjetaNotificacionesState extends ConsumerState<TarjetaNotificaciones> {
           children: <Widget>[
             Row(
               children: <Widget>[
-                Icon(estado.icono, color: estado.color),
+                Icon(estado.icono, color: PaletaSian.de(context).adaptar(estado.color)),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(estado.titulo, style: tema.textTheme.titleMedium),
@@ -268,7 +280,7 @@ class _TarjetaNotificacionesState extends ConsumerState<TarjetaNotificaciones> {
         icono: Icons.notifications_active,
         color: ColoresSian.confirmado,
         titulo: Textos.notifActivasTitulo,
-        detalle: Textos.notifActivasDetalle(entorno.navegador),
+        detalle: widget.detalleActivo(entorno.navegador),
         accion: false,
       ),
       EstadoPermiso.denegado => (
@@ -282,7 +294,7 @@ class _TarjetaNotificacionesState extends ConsumerState<TarjetaNotificaciones> {
         icono: Icons.notifications_none,
         color: ColoresSian.primario,
         titulo: Textos.notifPendientesTitulo,
-        detalle: Textos.notifPendientesDetalle,
+        detalle: widget.detallePendiente,
         accion: true,
       ),
     };
@@ -332,7 +344,7 @@ class _LineaCompactaState extends State<_LineaCompacta> {
                   Icon(
                     widget.estado.icono,
                     size: 18,
-                    color: widget.estado.color,
+                    color: PaletaSian.de(context).adaptar(widget.estado.color),
                   ),
                   const SizedBox(width: 8),
                   Expanded(

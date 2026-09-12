@@ -141,6 +141,21 @@
 
   footer{max-width:1240px;margin:0 auto;padding:0 28px 60px;color:var(--suave);font-size:14px}
 
+  /* ---- Volver a SIAN ----
+     Solo con la aplicación instalada. Instalada, el manual se abre en la
+     misma ventana —en iPhone no hay otra forma— y no hay barra del navegador
+     ni botón de atrás: sin esto, la única salida era cerrar la aplicación.
+     En una pestaña del navegador sobra: ahí ya están atrás y cerrar. */
+  .volver{
+    display:none; align-items:center; gap:4px; flex:0 0 auto;
+    background:#fff; color:var(--primario-oscuro); text-decoration:none;
+    font-weight:700; font-size:16px; line-height:1;
+    border-radius:999px; padding:0 14px; min-height:44px;
+  }
+  .volver:focus-visible{outline:3px solid #fff; outline-offset:2px}
+  html.instalada .volver{display:inline-flex}
+  @media (display-mode: standalone){ .volver{display:inline-flex} }
+
   @media print{
     header,nav,#velo{display:none}
     .envoltorio{display:block}
@@ -155,6 +170,9 @@
     body{font-size:17px}
     #abrirMenu{display:block}
     header .sede{display:none}
+    /* Con el botón de volver, el escudo cede su sitio al título. */
+    html.instalada header img{display:none}
+    header h1{font-size:17px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
     .envoltorio{display:block; max-width:100%}
     nav{
       position:fixed; top:62px; left:0; bottom:0; width:min(86vw,320px);
@@ -176,11 +194,28 @@
 <body>
 
 <header>
+  <a id="volver" class="volver" href="/">‹ Volver a SIAN</a>
   <button id="abrirMenu" aria-label="Abrir el índice">☰</button>
   <img src="../../icons/Icon-192.png" alt="">
   <h1>Guía del catedrático · SIAN</h1>
   <div class="sede">Universidad Mariano Gálvez<br>Sede Boca del Monte</div>
 </header>
+
+<script>
+  // Instalada: iOS lo dice con `navigator.standalone`; los demás, con
+  // `display-mode`. Va aquí, pegado a la cabecera, para que el botón aparezca
+  // sin parpadeo.
+  if (window.navigator.standalone === true ||
+      window.matchMedia('(display-mode: standalone)').matches) {
+    document.documentElement.classList.add('instalada');
+  }
+  // Se REEMPLAZA la página, no se añade otra: así el «atrás» de Android no
+  // devuelve al manual después de haber vuelto a la aplicación.
+  document.getElementById('volver').addEventListener('click', function (e) {
+    e.preventDefault();
+    window.location.replace('/');
+  });
+</script>
 
 <div id="velo"></div>
 
@@ -202,12 +237,14 @@
   <a href="#pestanas">Las pestañas</a>
   <a href="#colores">Los colores</a>
   <a href="#confirmar">Confirmar lectura</a>
+  <a href="#responder">Responder un aviso</a>
   <a href="#adjuntos">Voz e imágenes</a>
   <a href="#buscar">Buscar</a>
 
   <h2>Ayuda</h2>
   <a href="#palabras">Palabras del manual</a>
   <a href="#problemas">Si algo no funciona</a>
+  <a href="#version">Qué versión tengo</a>
 </nav>
 
 <main>
@@ -727,6 +764,38 @@
   </div>
 </section>
 
+<!-- ================= RESPONDER ================= -->
+<section id="responder">
+  <h2>Responder un aviso</h2>
+  <p class="entradilla">Su respuesta la ve solo quien envió el aviso. Sus
+  compañeros no.</p>
+
+  <p>Abra el aviso y, debajo del mensaje, toque <strong>Responder a …</strong>.
+  Escriba y toque <strong>Enviar</strong>. La respuesta queda dentro del aviso,
+  así que quien la reciba sabe de qué le está hablando sin preguntar.</p>
+
+  <div class="aviso">
+    <strong>Responder no es confirmar.</strong> Si el aviso pide confirmación
+    de lectura, tiene que presionar además el botón
+    <strong>Confirmar lectura</strong>: es lo que queda registrado como que
+    usted lo leyó (<a href="#confirmar">ver cómo</a>).
+  </div>
+
+  <p>Si le contestan, le llega una notificación y la respuesta aparece en ese
+  mismo aviso, debajo de la suya. Puede seguir escribiendo ahí las veces que
+  haga falta.</p>
+
+  <h3>Quién ve lo que usted escribe</h3>
+  <ul>
+    <li><strong>Solo</strong> la persona que envió ese aviso.</li>
+    <li>Los demás catedráticos que recibieron el mismo aviso, <strong>no</strong>.</li>
+    <li>Tampoco otro coordinador que no haya sido quien lo envió.</li>
+  </ul>
+
+  <p>Es una conversación sobre ese aviso, no un chat: no se puede escribir a
+  alguien que no le haya mandado nada.</p>
+</section>
+
 <!-- ================= ADJUNTOS ================= -->
 <section id="adjuntos">
   <h2>Notas de voz e imágenes</h2>
@@ -805,8 +874,48 @@
     <tr><td><strong>Recargar</strong></td>
         <td>Volver a cargar la aplicación desde cero. Es el botón del círculo
         con la flecha, arriba a la derecha.</td></tr>
+    <tr><td><strong>Manual</strong></td>
+        <td>Este mismo documento. Se abre desde el botón del libro, el primero
+        de los botones de arriba a la derecha. En la computadora aparece en una
+        pestaña aparte; en la aplicación instalada en el celular se abre en la
+        misma pantalla, con un botón <strong>‹ Volver a SIAN</strong> arriba a
+        la izquierda para regresar.</td></tr>
+    <tr><td><strong>Versión</strong></td>
+        <td>El número que identifica esta entrega de la aplicación, al final de
+        sus mensajes (<a href="#version">cómo verla</a>). Cuando hay una más
+        reciente, SIAN ofrece actualizar.</td></tr>
+    <tr><td><strong>Responder</strong></td>
+        <td>Escribirle a quien le mandó un aviso, desde dentro del aviso. Solo
+        esa persona lo lee (<a href="#responder">cómo se hace</a>).</td></tr>
+    <tr><td><strong>Tu cuenta</strong></td>
+        <td>En el celular, el botón del círculo con una persona, arriba a la
+        derecha. Muestra con qué cuenta entró, y dentro están la apariencia y
+        <strong>Cerrar sesión</strong>. En la computadora, esos dos tienen su
+        propio botón.</td></tr>
+    <tr><td><strong>Apariencia</strong></td>
+        <td>Si la aplicación se ve clara u oscura. Por omisión hace lo mismo que
+        su celular o computadora. En el celular se cambia desde el botón de
+        su cuenta; en la computadora, desde el que está entre el del libro y el
+        de recargar (<a href="#apariencia">cómo cambiarla</a>).</td></tr>
   </table>
   </div>
+</section>
+
+<!-- ================= VERSIÓN ================= -->
+<section id="version">
+  <h2>Qué versión tengo</h2>
+  <p class="entradilla">Baje hasta el final de sus mensajes: ahí dice, en
+  pequeño, algo como <strong>SIAN 1.5.0</strong>.</p>
+
+  <p>Sirve para dos cosas. Si llama a coordinación porque algo no funciona, ese
+  número dice exactamente qué versión tiene usted. Y si hay una más reciente
+  publicada, SIAN se lo avisa arriba de sus mensajes con un botón
+  <strong>Actualizar</strong>.</p>
+
+  <p>Actualizar tarda unos segundos y <strong>no pierde nada</strong>: sus
+  mensajes están guardados en el sistema, no en el teléfono. Conviene hacerlo
+  cuando se lo pida, porque las correcciones de las notificaciones viajan en esas
+  versiones.</p>
 </section>
 
 <!-- ================= PROBLEMAS ================= -->
@@ -824,15 +933,61 @@
     <li>Presione el botón <strong>recargar</strong> de la barra de arriba.</li>
   </ol>
 
+  <h3 id="no-sono">Me llegó el mensaje pero el teléfono no me avisó</h3>
+  <p>Si al entrar encuentra avisos que nunca vio aparecer, SIAN se lo dice: arriba
+  de sus mensajes sale una tarjeta que explica que <strong>el aviso sí
+  llegó</strong> y que fue el teléfono el que no lo enseñó.</p>
+
+  <p>Pulse <strong>Enviarme una de prueba</strong> en esa tarjeta. Si la de
+  prueba tampoco aparece, el teléfono está bloqueando las notificaciones de
+  SIAN, y casi siempre es una de estas tres:</p>
+
+  <ul>
+    <li><strong>Un modo de concentración</strong> —«No molestar», «Trabajo»,
+        «Sueño»— o el <strong>resumen programado</strong> de iPhone, que junta
+        las notificaciones para enseñarlas más tarde.</li>
+    <li><strong>Las notificaciones de SIAN apagadas en los ajustes del
+        teléfono.</strong> Ojo: es un interruptor distinto del permiso que usted
+        aceptó en la aplicación, y la aplicación no puede verlo.
+        <br>En iPhone: <em>Ajustes → Notificaciones → SIAN → Permitir
+        notificaciones</em>.
+        <br>En Android: mantenga pulsado el ícono de SIAN → <em>Información de
+        la app → Notificaciones</em>.</li>
+    <li><strong>El ahorro de batería</strong>, que retrasa los avisos hasta que
+        usted use el teléfono.</li>
+  </ul>
+
+  <div class="aviso">
+    <strong>Cerrar la aplicación no es el problema.</strong> Aunque la cierre por
+    completo, los avisos siguen llegando: el teléfono la despierta solo para
+    mostrarlos. Lo que sí los corta es desinstalarla o apagar sus
+    notificaciones.
+  </div>
+
   <h3>Abrí un mensaje y desapareció de la lista</h3>
   <p>No desapareció: cambió de pestaña. Al abrirlo deja de estar «sin leer» y
   pasa a <strong>Sin confirmar</strong> o a <strong>Leídos</strong>, según
   pidiera confirmación o no. Mientras lo está leyendo se queda a la vista; se
   mueve cuando usted cambia de pestaña.</p>
 
+  <h3 id="apariencia">La aplicación se ve oscura (o clara) y quiero lo contrario</h3>
+  <p>Por omisión, SIAN se ve como su dispositivo: si el celular está en modo
+  oscuro, SIAN también. Para fijar otra cosa solo aquí:</p>
+  <ul>
+    <li><strong>En el celular</strong>, toque el botón de su cuenta (el círculo
+        con una persona, arriba a la derecha).</li>
+    <li><strong>En la computadora</strong>, el botón
+        <strong>Apariencia</strong>, entre el del libro y el de recargar.</li>
+  </ul>
+  <p>Y elija <strong>Claro</strong>, <strong>Oscuro</strong> o
+  <strong>Igual que el dispositivo</strong>.</p>
+  <p>La elección se guarda en ese dispositivo, no en su cuenta: puede tener
+  SIAN oscura en el celular y clara en la computadora. Si borra los datos del
+  navegador, vuelve a «Igual que el dispositivo».</p>
+
   <h3>La pantalla se quedó pegada o veo algo raro</h3>
-  <p>Use el botón <strong>recargar</strong> (el círculo con la flecha), a la
-  izquierda del de cerrar sesión. Recarga la aplicación por completo y de paso
+  <p>Use el botón <strong>recargar</strong> (el círculo con la flecha), el
+  penúltimo de arriba a la derecha. Recarga la aplicación por completo y de paso
   trae la versión más reciente, que en una aplicación instalada puede llevar
   días sin renovarse.</p>
 

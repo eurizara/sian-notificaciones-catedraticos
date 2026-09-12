@@ -93,6 +93,8 @@ class MensajeProgramado {
     this.entregados = 0,
     this.abiertos = 0,
     this.confirmados = 0,
+    this.mostrados = 0,
+    this.acuseEsperado = false,
   });
 
   final String id;
@@ -163,6 +165,27 @@ class MensajeProgramado {
   final int abiertos;
 
   final int confirmados;
+
+  /// En cuántos aparatos consta que la notificación **se mostró** (DT-31).
+  ///
+  /// ──────────────────────────────────────────────────────────────────────────
+  /// «Entregado» solo dice que FCM aceptó el mensaje.
+  /// ──────────────────────────────────────────────────────────────────────────
+  ///
+  /// Entre eso y que el teléfono la enseñe hay un tramo que el servidor no ve,
+  /// y el 11 de septiembre de 2026 varias personas con el aviso «entregado» no
+  /// vieron ninguna notificación. Este número es el único que habla de lo que
+  /// la persona experimenta.
+  final int mostrados;
+
+  /// Si este aviso salió con acuse. Los anteriores a C-5 no, y de esos no se
+  /// puede decir nada: no es que no se mostraran, es que nadie lo medía.
+  final bool acuseEsperado;
+
+  /// Llegó a su aparato y **nadie dijo que se mostrara**. Es la cuenta que
+  /// convierte «raro que no le avisara» en una lista de personas.
+  int get entregadosSinMostrar =>
+      !acuseEsperado || entregados - mostrados < 0 ? 0 : entregados - mostrados;
 
   bool get esUrgente => tipo == 'URGENTE';
   bool get esRecurrente => modo == 'RECURRENTE';
@@ -243,6 +266,8 @@ class DestinatarioEntrega {
     required this.correo,
     required this.estado,
     this.confirmadoEn,
+    this.mostradaEn,
+    this.sabeAcusar = false,
   });
 
   final String uid;
@@ -250,6 +275,19 @@ class DestinatarioEntrega {
   final String correo;
   final String estado;
   final DateTime? confirmadoEn;
+
+  /// Cuándo el aparato mostró la notificación (DT-31). Nulo significa que nadie
+  /// lo ha dicho, que **no** es lo mismo que «no llegó».
+  final DateTime? mostradaEn;
+
+  bool get seMostro => mostradaEn != null;
+
+  /// Si su aparato sabía acusar cuando se le mandó el aviso (DT-31). Si no
+  /// sabía, el silencio no significa nada y no se le acusa de nada.
+  final bool sabeAcusar;
+
+  /// Le llegó, su aparato sabía decir que lo mostró, y no lo dijo.
+  bool get llegoYNoSeMostro => leLlego && sabeAcusar && !seMostro;
 
   bool get confirmo => estado == 'CONFIRMADO';
 
@@ -421,6 +459,8 @@ class RepositorioProgramacion {
         enviadoEn: (x['enviadoEn'] as Timestamp?)?.toDate(),
         totalDestinatarios: (x['totalDestinatarios'] as num?)?.toInt() ?? 0,
         entregados: (resumen['entregados'] as num?)?.toInt() ?? 0,
+        mostrados: (resumen['mostrados'] as num?)?.toInt() ?? 0,
+        acuseEsperado: x['acuseEsperado'] == true,
         abiertos: (resumen['abiertos'] as num?)?.toInt() ?? 0,
         confirmados: (resumen['confirmados'] as num?)?.toInt() ?? 0,
       );
@@ -467,12 +507,15 @@ class RepositorioProgramacion {
     return lista.map((Object? o) {
       final Map<Object?, Object?> m = (o as Map<Object?, Object?>?) ?? {};
       final String? confirmado = m['confirmadoEn'] as String?;
+      final String? mostrada = m['mostradaEn'] as String?;
       return DestinatarioEntrega(
         uid: (m['uid'] as String?) ?? '',
         nombre: (m['nombre'] as String?) ?? '',
         correo: (m['correo'] as String?) ?? '',
         estado: (m['estado'] as String?) ?? '',
         confirmadoEn: confirmado == null ? null : DateTime.tryParse(confirmado),
+        mostradaEn: mostrada == null ? null : DateTime.tryParse(mostrada),
+        sabeAcusar: m['sabeAcusar'] == true,
       );
     }).toList();
   }

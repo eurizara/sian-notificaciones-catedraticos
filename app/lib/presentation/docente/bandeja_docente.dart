@@ -21,10 +21,14 @@ import '../../core/navegador.dart';
 import '../shared/barra_sesion.dart';
 import '../shared/buscador.dart';
 import 'aviso_en_primer_plano.dart';
+import '../../core/plataforma/rotacion.dart';
+import 'aviso_no_mostrado.dart';
+import '../shared/version_app.dart';
 import 'filtro_bandeja.dart';
 import 'insignia_bandeja.dart';
 import 'instructivo_ios.dart';
 import 'realce_mensaje.dart';
+import 'respuesta_al_aviso.dart';
 import 'reproductor_adjuntos.dart';
 import 'tarjeta_notificaciones.dart';
 import '../shared/tema.dart';
@@ -111,9 +115,24 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
   final ScrollController _scroll = ScrollController();
   bool _lejosDelInicio = false;
 
+  /// La última vez que ESTE aparato demostró que muestra notificaciones.
+  ///
+  /// Se lee al abrir y se actualiza en vivo cuando el service worker avisa de
+  /// que acaba de enseñar una — incluida la de prueba (DT-31).
+  DateTime? _ultimaMostrada;
+
   @override
   void initState() {
     super.initState();
+    _ultimaMostrada = ultimaVezQueEsteAparatoMostro();
+    escucharNotificacionMostrada(() {
+      final DateTime ahora = DateTime.now();
+      anotarQueEsteAparatoMostro(ahora);
+      if (mounted) {
+        setState(() => _ultimaMostrada = ahora);
+      }
+    });
+
     _busqueda.addListener(() {
       // Al buscar se vuelve al principio: seguir en la página 4 de un
       // resultado que tiene 2 elementos deja la pantalla vacía sin motivo.
@@ -262,7 +281,26 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                       child: Column(
                         children: <Widget>[
+                          // Lo primero: si hay versión nueva, lo demás que se
+                          // vea puede estar desactualizado.
+                          const AvisoDeVersionNueva(),
                           const TarjetaNotificaciones(),
+
+                          // El canal está bien y aun así el teléfono no
+                          // enseñó los avisos (DT-31). Es un problema
+                          // distinto del permiso, y se resuelve distinto.
+                          if (avisosQueNoSeMostraron(
+                            todos,
+                            DateTime.now(),
+                            ultimaVezQueMostro: _ultimaMostrada,
+                          ).isNotEmpty)
+                            AvisoNoMostrado(
+                              cuantos: avisosQueNoSeMostraron(
+                                todos,
+                                DateTime.now(),
+                                ultimaVezQueMostro: _ultimaMostrada,
+                              ).length,
+                            ),
 
                           // Va aquí arriba y fuera del filtro. Tocarlo lleva a
                           // los que faltan, para no tener que buscarlos.
@@ -320,6 +358,10 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
                             alPulsar: () =>
                                 setState(() => _visibles += _porPagina),
                           ),
+
+                          // Al final y en pequeño: no estorba, y está donde
+                          // uno mira cuando le preguntan «¿qué versión tienes?».
+                          const SelloDeVersion(),
                         ],
                       ),
                     ),
@@ -506,9 +548,12 @@ class _FilaState extends ConsumerState<_Fila> {
           );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(Textos.confirmacionHecha),
-            backgroundColor: ColoresSian.confirmado,
+          SnackBar(
+            content: const Text(
+              Textos.confirmacionHecha,
+              style: TextStyle(color: PaletaSian.sobreFondo),
+            ),
+            backgroundColor: PaletaSian.de(context).fondoConfirmado,
           ),
         );
       }
@@ -536,10 +581,13 @@ class _FilaState extends ConsumerState<_Fila> {
     final DateFormat formato = DateFormat('dd/MM/yyyy · HH:mm');
 
     final Realce realce = realceDe(mensaje);
+    // El realce se decide sin tema (se prueba sin montar nada) y se adapta
+    // aquí, al pintarlo: en el oscuro, sus colores pasan a los tonos claros.
+    final PaletaSian paleta = PaletaSian.de(context);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      color: realce.fondo,
+      color: realce.fondo == null ? null : paleta.adaptar(realce.fondo!),
       child: InkWell(
         onTap: () {
           setState(() => _desplegado = !_desplegado);
@@ -558,7 +606,7 @@ class _FilaState extends ConsumerState<_Fila> {
               // Franja lateral en vez de un fondo fuerte: se lee de un vistazo
               // recorriendo el borde, y no compite con el texto.
               if (realce.franja != null)
-                Container(width: 5, color: realce.franja),
+                Container(width: 5, color: paleta.adaptar(realce.franja!)),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -604,7 +652,7 @@ class _FilaState extends ConsumerState<_Fila> {
                                   ),
                                   margin: const EdgeInsets.only(right: 8),
                                   decoration: BoxDecoration(
-                                    color: ColoresSian.urgente,
+                                    color: PaletaSian.de(context).fondoUrgente,
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: const Text(
@@ -636,8 +684,8 @@ class _FilaState extends ConsumerState<_Fila> {
                                   width: 9,
                                   height: 9,
                                   margin: const EdgeInsets.only(right: 8),
-                                  decoration: const BoxDecoration(
-                                    color: ColoresSian.primario,
+                                  decoration: BoxDecoration(
+                                    color: PaletaSian.de(context).primario,
                                     shape: BoxShape.circle,
                                   ),
                                 ),
@@ -686,7 +734,7 @@ class _FilaState extends ConsumerState<_Fila> {
                                 _iconoDeEstado(mensaje.estado),
                                 size: 16,
                                 color: mensaje.estaConfirmado
-                                    ? ColoresSian.confirmado
+                                    ? PaletaSian.de(context).confirmado
                                     : tema.colorScheme.onSurfaceVariant,
                               ),
                               const SizedBox(width: 6),
@@ -694,7 +742,7 @@ class _FilaState extends ConsumerState<_Fila> {
                                 _etiquetaDeEstado(mensaje.estado),
                                 style: tema.textTheme.bodySmall?.copyWith(
                                   color: mensaje.estaConfirmado
-                                      ? ColoresSian.confirmado
+                                      ? PaletaSian.de(context).confirmado
                                       : tema.colorScheme.onSurfaceVariant,
                                 ),
                               ),
@@ -786,6 +834,11 @@ class _FilaState extends ConsumerState<_Fila> {
                                 ),
                               ),
                             ],
+
+                            // DT-27. Después de confirmar, no antes: confirmar
+                            // es lo que el aviso pide; responder, lo opcional.
+                            const SizedBox(height: 12),
+                            RespuestaAlAviso(mensaje: mensaje),
                           ],
                         ),
                       ),
@@ -1017,7 +1070,7 @@ class _NadaEnEsteFiltro extends StatelessWidget {
             size: 40,
             color: buscando
                 ? tema.colorScheme.onSurfaceVariant
-                : ColoresSian.confirmado,
+                : PaletaSian.de(context).confirmado,
           ),
           const SizedBox(height: 12),
           Text(
