@@ -18,6 +18,21 @@
 /// El aviso de versión nueva **no interrumpe**: es una tarjeta que se puede
 /// ignorar. Actualizar recarga la aplicación, y recargar mientras se redacta un
 /// aviso urgente sería peor que estar una versión atrás.
+///
+/// ────────────────────────────────────────────────────────────────────────────
+/// En un iPhone, «abrir la aplicación» no siempre es cargarla
+/// ────────────────────────────────────────────────────────────────────────────
+///
+/// Una PWA instalada en iOS se restaura tal como se dejó: la misma página, con
+/// el mismo código, sin volver a pedir nada al servidor. Se puede estar
+/// «abriéndola» todos los días y seguir ejecutando el paquete de hace una
+/// semana. Se midió el 12 de septiembre de 2026: el servidor publicaba 1.5.3 y
+/// el teléfono seguía en una versión anterior a 1.5.0 —lo delató que registraba
+/// su dispositivo sin decir qué versión era—.
+///
+/// Por eso la comprobación **se repite al volver a la aplicación**, y no solo
+/// al arrancar: es el único momento en que una PWA restaurada puede enterarse
+/// de que hay algo más nuevo.
 library;
 
 import 'package:flutter/material.dart';
@@ -33,6 +48,44 @@ import 'textos.dart';
 final versionPublicadaProvider = FutureProvider<String?>(
   (Ref ref) => consultarVersionPublicada(),
 );
+
+/// Vuelve a preguntar al servidor qué versión hay publicada.
+///
+/// Se llama al volver a la aplicación. En una PWA de iOS restaurada, esta es la
+/// única forma de enterarse: no hubo arranque que hiciera la primera consulta.
+class VigilanteDeVersion extends ConsumerStatefulWidget {
+  const VigilanteDeVersion({required this.child, super.key});
+
+  final Widget child;
+
+  @override
+  ConsumerState<VigilanteDeVersion> createState() => _VigilanteDeVersionState();
+}
+
+class _VigilanteDeVersionState extends ConsumerState<VigilanteDeVersion>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState estado) {
+    if (estado == AppLifecycleState.resumed) {
+      ref.invalidate(versionPublicadaProvider);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
 
 /// ¿Lo que se está usando es distinto de lo publicado?
 ///

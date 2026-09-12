@@ -2144,6 +2144,26 @@ siempre —lo conservador, pero ciego—. En **1.5.3**, el primer acuse de una p
 constancia (`usuarios/{uid}.acusaDesde`), y desde ese momento su silencio en un aviso
 posterior **sí** significa algo, venga o no la versión en el registro del aparato.
 
+### Y lo tercero: «abrir la aplicación» no es cargarla
+
+**12 de septiembre de 2026.** Con el acuse ya funcionando, los aparatos seguían registrando
+la **versión vacía**, que es lo que hace la aplicación anterior a 1.5.0. El servidor
+publicaba 1.5.3 y el teléfono ejecutaba algo de antes.
+
+Se comprobó lo desplegado antes de suponer: el paquete servido **sí** traía la versión, y el
+`flutter_service_worker.js` de esta compilación **no cachea nada** —se desregistra a sí
+mismo—. Así que no era una caché nuestra. Era iOS: **una PWA instalada se restaura tal como
+se dejó**, con la misma página y el mismo código, sin volver a pedir nada. Se puede estar
+«abriéndola» a diario y seguir ejecutando el paquete de la semana pasada.
+
+Corregido en 1.5.4: la comprobación de versión se repite **al volver a la aplicación**, no
+solo al arrancar. En una PWA restaurada es el único momento en que puede enterarse, y basta
+para que aparezca la tarjeta con el botón de actualizar.
+
+Queda anotado para quien lea esto dentro de un año: **un despliegue no es una versión en las
+manos de la gente.** Entre una cosa y la otra hay un paso que depende del teléfono, y por eso
+la versión se enseña en pantalla y se reporta al servidor.
+
 ### Lo que queda de esta ficha
 
   · **Alcance todavía no lista a quién no le muestran los avisos.** Con los datos del acuse
