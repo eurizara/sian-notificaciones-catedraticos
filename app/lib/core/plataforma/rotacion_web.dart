@@ -45,6 +45,27 @@ void escucharRotacionDeSuscripcion(void Function() alRotar) {
   }
 }
 
+/// Avisa cada vez que el service worker MUESTRA una notificación (DT-31).
+///
+/// Es la prueba de que este aparato sí las enseña, y con ella la tarjeta que
+/// avisa de lo que no se mostró puede callarse en cuanto deja de ser cierto.
+void escucharNotificacionMostrada(void Function() alMostrar) {
+  try {
+    web.window.navigator.serviceWorker.addEventListener(
+      'message',
+      (web.Event evento) {
+        final web.MessageEvent mensaje = evento as web.MessageEvent;
+        final Object? mapa = mensaje.data?.dartify();
+        if (mapa is Map && mapa['tipo'] == 'sian:mostrada') {
+          alMostrar();
+        }
+      }.toJS,
+    );
+  } on Object catch (_) {
+    // Sin service worker no hay nada que escuchar.
+  }
+}
+
 /// No se consulta la marca de IndexedDB desde aquí.
 ///
 /// Leerla exigiría abrir la misma base que el worker desde otro hilo, y el

@@ -61,6 +61,7 @@ class MensajeRecibido {
     this.emisor = '',
     this.creadoPor = '',
     this.esperaAcuse = false,
+    this.aparatoSabeAcusar = false,
     this.mostradaEn,
     this.entregadoEn,
     this.abiertoEn,
@@ -99,6 +100,11 @@ class MensajeRecibido {
   /// Los anteriores a C-5 no lo piden, y de ellos no se puede afirmar nada.
   final bool esperaAcuse;
 
+  /// Si el aparato al que se le mandó sabía acusar. Si no sabía, que no haya
+  /// acuse no significa nada: no es que no se mostrara, es que no tenía cómo
+  /// decirlo (DT-31).
+  final bool aparatoSabeAcusar;
+
   /// Cuándo este aparato mostró la notificación. Nulo con [esperaAcuse] cierto
   /// significa que **llegó y el teléfono no la enseñó**, que es el caso que
   /// hizo falta distinguir el 11 de septiembre de 2026.
@@ -129,6 +135,7 @@ class MensajeRecibido {
   /// Le llegó al aparato y el aparato no lo mostró.
   bool get llegoYNoSeMostro =>
       esperaAcuse &&
+      aparatoSabeAcusar &&
       mostradaEn == null &&
       entregadoEn != null &&
       (estado == 'ENTREGADO' || estado == 'ABIERTO' || estado == 'CONFIRMADO');

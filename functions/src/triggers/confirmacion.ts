@@ -21,6 +21,7 @@ import type { DocumentReference } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions/v2';
 
 import { estadoTrasAbrir, exigirConfirmable } from '../application/confirmacion';
+import { sabeAcusar } from '../domain/acuse';
 import { exigirPermiso } from '../domain/autorizacion';
 import { crearAsiento } from '../domain/bitacora';
 import { ErrorDominio } from '../domain/errores';
@@ -257,7 +258,12 @@ export const detalleEntregas = onCall(OPCIONES_FUNCION, async (peticion) => {
     // lo que se pregunta es «¿esta persona lo confirmó?», no cuántas veces.
     const porUid = new Map<
       string,
-      { estado: string; confirmadoEn: string | null; mostradaEn: string | null }
+      {
+        estado: string;
+        confirmadoEn: string | null;
+        mostradaEn: string | null;
+        sabeAcusar: boolean;
+      }
     >();
 
     for (const oc of ocurrencias.docs) {
@@ -280,6 +286,9 @@ export const detalleEntregas = onCall(OPCIONES_FUNCION, async (peticion) => {
               (e.get('mostradaEn') as { toDate(): Date } | null | undefined)
                 ?.toDate()
                 .toISOString() ?? null,
+            // Si su aparato ni siquiera sabía acusar, el silencio no significa
+            // nada y la pantalla no debe acusarlo (DT-31).
+            sabeAcusar: sabeAcusar(e.get('versionAparato') as string | undefined),
           });
         }
       }
@@ -305,6 +314,7 @@ export const detalleEntregas = onCall(OPCIONES_FUNCION, async (peticion) => {
       estado: porUid.get(uid)!.estado,
       confirmadoEn: porUid.get(uid)!.confirmadoEn,
       mostradaEn: porUid.get(uid)!.mostradaEn,
+      sabeAcusar: porUid.get(uid)!.sabeAcusar,
     }));
 
     // Los pendientes primero: es sobre quienes hay que actuar, y buscarlos

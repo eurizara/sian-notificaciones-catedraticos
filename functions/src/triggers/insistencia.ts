@@ -29,6 +29,7 @@ import {
   armarSeña,
   cabecerasDeEnvio,
   necesitaReintento,
+  sabeAcusar,
 } from '../domain/acuse';
 import { esTokenMuerto } from '../domain/dispositivo';
 import { FieldValue, RUTAS, aTimestamp, db } from '../infrastructure/firebase';
@@ -88,6 +89,12 @@ export async function insistirDondeNoHuboAcuse(ahora: Date): Promise<number> {
         },
         ahora,
       );
+      // Un aparato que no sabe acusar nunca va a acusar: insistirle sería
+      // mandarle el mismo aviso dos veces, cada vez, para siempre (DT-31).
+      if (!sabeAcusar(entrega.get('versionAparato') as string | undefined)) {
+        await entrega.ref.update({ reintentosPorAcuse: FieldValue.increment(1) });
+        continue;
+      }
       if (!procede || !mensajeId || !acuseId || !ocurrenciaId) {
         continue;
       }

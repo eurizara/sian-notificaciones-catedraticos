@@ -37,6 +37,45 @@
 
 import { ErrorValidacion } from './errores';
 
+/**
+ * Desde qué versión de la aplicación un aparato sabe acusar.
+ *
+ * ───────────────────────────────────────────────────────────────────────────
+ * Sin esto, el panel acusa a quien no tenía forma de contestar.
+ * ───────────────────────────────────────────────────────────────────────────
+ *
+ * El acuse lo manda el service worker, que viaja con la aplicación. Un teléfono
+ * que todavía no ha recargado corre la versión anterior y **no puede** acusar
+ * aunque muestre la notificación perfectamente. Se vio el 11 de septiembre de
+ * 2026, media hora después de estrenar el acuse: el reporte dijo «se mostró en
+ * 0 de 5» cuando lo único cierto era que ninguno de los cinco sabía todavía
+ * cómo decirlo.
+ *
+ * Así que de un aparato por debajo de esta versión **no se afirma nada**, igual
+ * que no se afirma nada de los avisos anteriores a C-5.
+ */
+export const VERSION_QUE_SABE_ACUSAR = '1.5.0';
+
+/**
+ * ¿Este aparato sabía acusar cuando se le mandó el aviso?
+ *
+ * Compara por tramos numéricos, no como texto: «1.10.0» es posterior a «1.9.0»
+ * y comparado como cadena saldría al revés.
+ */
+export function sabeAcusar(version: string | undefined | null): boolean {
+  const tramos = (version ?? '').trim().split('.').map((t) => Number.parseInt(t, 10));
+  if (tramos.length !== 3 || tramos.some((t) => !Number.isFinite(t))) {
+    return false;
+  }
+  const minimo = VERSION_QUE_SABE_ACUSAR.split('.').map((t) => Number.parseInt(t, 10));
+  for (let i = 0; i < 3; i += 1) {
+    if (tramos[i]! !== minimo[i]!) {
+      return tramos[i]! > minimo[i]!;
+    }
+  }
+  return true;
+}
+
 /** Cuánto se espera un acuse antes de volver a intentar el aviso. */
 export const MINUTOS_SIN_ACUSE_PARA_REINTENTAR = 10;
 

@@ -22,20 +22,25 @@ import 'package:sian/presentation/admin/seccion_entregas.dart';
 import 'package:sian/presentation/docente/aviso_no_mostrado.dart';
 import 'package:sian/presentation/shared/textos.dart';
 
-DestinatarioEntrega persona(String estado, {DateTime? mostradaEn}) =>
-    DestinatarioEntrega(
-      uid: 'uid-1',
-      nombre: 'Ana López',
-      correo: 'ana@umg.edu.gt',
-      estado: estado,
-      mostradaEn: mostradaEn,
-    );
+DestinatarioEntrega persona(
+  String estado, {
+  DateTime? mostradaEn,
+  bool sabeAcusar = true,
+}) => DestinatarioEntrega(
+  uid: 'uid-1',
+  nombre: 'Ana López',
+  correo: 'ana@umg.edu.gt',
+  estado: estado,
+  mostradaEn: mostradaEn,
+  sabeAcusar: sabeAcusar,
+);
 
 MensajeRecibido recibido({
   required String estado,
   bool esperaAcuse = true,
   DateTime? mostradaEn,
   DateTime? entregadoEn,
+  bool aparatoSabeAcusar = true,
 }) => MensajeRecibido(
   mensajeId: 'm-1',
   titulo: 'Reunión',
@@ -44,6 +49,7 @@ MensajeRecibido recibido({
   estado: estado,
   requiereConfirmacion: false,
   esperaAcuse: esperaAcuse,
+  aparatoSabeAcusar: aparatoSabeAcusar,
   mostradaEn: mostradaEn,
   entregadoEn: entregadoEn ?? DateTime(2026, 9, 11, 10),
 );
@@ -96,6 +102,21 @@ void main() {
           isNot(Textos.detalleNoSeMostro),
         );
       }
+    });
+
+    test('a un aparato que NO sabía acusar no se le acusa de nada', () {
+      // Pasó media hora después de estrenar el acuse: los teléfonos todavía
+      // corrían la versión anterior, no tenían forma de contestar, y el panel
+      // dijo «se mostró en 0 de 5». Lo único cierto era que nadie sabía cómo
+      // decir que sí.
+      expect(
+        situacionDe(
+          persona('ENTREGADO', sabeAcusar: false),
+          false,
+          esperaAcuse: true,
+        ).etiqueta,
+        Textos.detalleNoAbrio,
+      );
     });
 
     test('un fallo de entrega sigue siendo un fallo de entrega', () {
@@ -157,6 +178,52 @@ void main() {
       expect(avisosQueNoSeMostraron(mensajes, ahora), hasLength(2));
     });
 
+    test('tampoco cuenta si el aparato no sabía acusar', () {
+      expect(
+        avisosQueNoSeMostraron(<MensajeRecibido>[
+          recibido(estado: 'ENTREGADO', aparatoSabeAcusar: false),
+        ], ahora),
+        isEmpty,
+      );
+    });
+
+    test('deja de insistir desde que el aparato demostró que sí muestra', () {
+      // La notificación de prueba no pertenece a ningún aviso, así que no hay
+      // entrega que anotar; pero demuestra que el teléfono las enseña. Sin
+      // esto, la tarjeta se quedaba una semana diciendo algo ya resuelto.
+      final List<MensajeRecibido> mensajes = <MensajeRecibido>[
+        recibido(
+          estado: 'ENTREGADO',
+          entregadoEn: ahora.subtract(const Duration(hours: 3)),
+        ),
+      ];
+      expect(avisosQueNoSeMostraron(mensajes, ahora), hasLength(1));
+      expect(
+        avisosQueNoSeMostraron(
+          mensajes,
+          ahora,
+          ultimaVezQueMostro: ahora.subtract(const Duration(minutes: 5)),
+        ),
+        isEmpty,
+      );
+    });
+
+    test('pero si después vuelve a no mostrarse, lo vuelve a decir', () {
+      expect(
+        avisosQueNoSeMostraron(
+          <MensajeRecibido>[
+            recibido(
+              estado: 'ENTREGADO',
+              entregadoEn: ahora.subtract(const Duration(minutes: 2)),
+            ),
+          ],
+          ahora,
+          ultimaVezQueMostro: ahora.subtract(const Duration(hours: 5)),
+        ),
+        hasLength(1),
+      );
+    });
+
     test('no cuenta los avisos que salieron sin acuse', () {
       expect(
         avisosQueNoSeMostraron(<MensajeRecibido>[
@@ -178,6 +245,7 @@ void main() {
             estado: 'FALLIDO',
             requiereConfirmacion: false,
             esperaAcuse: true,
+            aparatoSabeAcusar: true,
           ),
         ], ahora),
         isEmpty,

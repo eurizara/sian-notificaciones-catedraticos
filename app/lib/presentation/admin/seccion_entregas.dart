@@ -703,7 +703,9 @@ SituacionEntrega situacionDe(
     //
     // Solo se distingue en los avisos que pidieron acuse: en los anteriores,
     // que nadie dijera nada no significa nada.
-    if (esperaAcuse && !d.seMostro) {
+    // Y solo si su aparato sabía acusar: acusar a quien no tenía forma de
+    // contestar es lo que hizo el panel media hora después de estrenar esto.
+    if (esperaAcuse && d.llegoYNoSeMostro) {
       return const SituacionEntrega(
         etiqueta: Textos.detalleNoSeMostro,
         icono: Icons.notifications_off_outlined,
