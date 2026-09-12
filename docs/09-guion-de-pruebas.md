@@ -672,7 +672,7 @@ Ejecutadas contra `sian-umg-bdm-qa` el 24 de agosto de 2026:
 | # | Qué se comprueba | Cómo | Resultado |
 |---|---|---|---|
 | C-1 | Las reglas de seguridad están puestas | Leer `mensajes` sin autenticar por REST | `PERMISSION_DENIED` |
-| C-2 | Las 23 Functions existen y arrancaron | Listar funciones de `us-central1` | 23 de 23 en estado `ACTIVE` |
+| C-2 | Las 24 Functions existen y arrancaron | Listar funciones de `us-central1` | 24 de 24 en estado `ACTIVE` |
 | C-3 | Las Functions rechazan a quien no se identificó | `POST` a `activarSesion` sin token | HTTP 401, `UNAUTHENTICATED` |
 | C-4 | El navegador puede llamarlas | `OPTIONS` con `Origin` de QA | HTTP 204 |
 | C-5 | El despachador quedó programado | Listar jobs de Cloud Scheduler | 1 job, cada minuto, `ENABLED` |
@@ -706,6 +706,18 @@ Eso son las rondas 1 a 5, y se recorren con una cuenta de cada rol —la ronda q
 recorrió solo con coordinación fue la que dejó pasar el defecto más caro del proyecto.
 
 ---
+
+## Probar que se sabe si la notificación se mostró (DT-31, C-5)
+
+| # | Paso | Qué debe ocurrir |
+|:--:|------|------------------|
+| A-1 | Manda un aviso a un teléfono con la aplicación instalada y las notificaciones activas | La notificación aparece, y en el panel el aviso dice **«Se mostró en 1 de 1 aparatos»** |
+| A-2 | Apaga las notificaciones de SIAN en los ajustes del **sistema** (no en el navegador) y manda otro aviso | El aviso consta entregado y **no** se muestra. El panel dice «Se mostró en 0 de 1» |
+| A-3 | Abre el detalle de ese aviso en el panel | Esa persona aparece como **«Su aparato no lo mostró»**, distinta de «No lo ha abierto» |
+| A-4 | Espera diez minutos sin abrir la aplicación | Llega un **segundo** empujón del mismo aviso. Solo uno: no hay un tercero |
+| A-5 | Vuelve a encender las notificaciones y abre la bandeja del catedrático | Aparece la tarjeta «… llegó a este aparato y no te lo mostró», con el botón de prueba |
+| A-6 | Pulsa **Enviarme una de prueba** | Llega la notificación de prueba |
+| A-7 | Mira un aviso enviado **antes** de C-5 | No dice nada de mostrados: de esos no se mide nada |
 
 ## Probar las respuestas a un aviso (DT-27)
 

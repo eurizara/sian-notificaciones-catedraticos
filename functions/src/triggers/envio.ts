@@ -23,6 +23,8 @@
  * (RF-ENT-11).
  */
 
+import { randomUUID } from 'node:crypto';
+
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { logger } from 'firebase-functions/v2';
 import type { DocumentReference } from 'firebase-admin/firestore';
@@ -33,6 +35,7 @@ import {
   type CandidatoDestinatario,
   type GrupoResuelto,
 } from '../application/resolverDestinatarios';
+import { LARGO_DE_ACUSE, armarSeña, cabecerasDeEnvio } from '../domain/acuse';
 import { crearAsiento } from '../domain/bitacora';
 import { esIdentificadorDeInstalacion, esTokenMuerto } from '../domain/dispositivo';
 import { exigirPermiso, type Sujeto } from '../domain/autorizacion';
@@ -250,7 +253,18 @@ export const enviarInmediato = onCall(OPCIONES_FUNCION, async (peticion) => {
       // (documento 05, sección 2.4).
       destinatariosUids: resolucion.uids,
       totalDestinatarios: resolucion.uids.length,
-      resumenEntrega: { entregados: 0, fallidos: 0, abiertos: 0, confirmados: 0 },
+      resumenEntrega: {
+        entregados: 0,
+        fallidos: 0,
+        abiertos: 0,
+        confirmados: 0,
+        // Cuántos aparatos llegaron a MOSTRAR la notificación (DT-31). Distinto
+        // de `entregados`, que solo dice que FCM aceptó el mensaje.
+        mostrados: 0,
+      },
+      // Marca que este aviso sí sabe pedir acuse. Los enviados antes de C-5 no
+      // lo llevan, y sin ella la pantalla los daría a todos por «no mostrados».
+      acuseEsperado: true,
       enviadoEn: null,
     });
 
@@ -324,7 +338,11 @@ async function escribirEntregasPendientes(
   refOcurrencia: DocumentReference,
   mensajeId: string,
   uids: readonly string[],
-): Promise<void> {
+): Promise<Map<string, string>> {
+  // El identificador que viajará en el push y volverá con el acuse (DT-31).
+  const acuses = new Map<string, string>(
+    uids.map((uid) => [uid, randomUUID().replace(/-/g, '').slice(0, LARGO_DE_ACUSE)]),
+  );
   // Firestore admite 500 operaciones por lote.
   for (let i = 0; i < uids.length; i += TAMANO_LOTE) {
     const lote = db.batch();
@@ -338,10 +356,17 @@ async function escribirEntregasPendientes(
         estado: 'PENDIENTE',
         intentos: 0,
         creadaEn: FieldValue.serverTimestamp(),
+        // Explícitamente nulo, no ausente: Firestore solo encuentra con
+        // `== null` los documentos donde el campo existe, y de esa consulta
+        // depende el reintento por falta de acuse.
+        mostradaEn: null,
+        reintentosPorAcuse: 0,
+        acuseId: acuses.get(uid),
       });
     }
     await lote.commit();
   }
+  return acuses;
 }
 
 /**
@@ -354,6 +379,7 @@ async function escribirEntregasPendientes(
 async function despachar(
   refOcurrencia: DocumentReference,
   mensajeId: string,
+  acuses: ReadonlyMap<string, string>,
   mensaje: {
     titulo: string;
     cuerpo: string;
@@ -400,14 +426,21 @@ async function despachar(
         sinDispositivo.push(uid);
         continue;
       }
+      // La seña del acuse es de esta persona y de esta entrega: identifica
+      // cuál es la que se mostró cuando el worker conteste (DT-31).
+      const acuseId = acuses.get(uid);
+      const datos: Record<string, string> = acuseId
+        ? { ...carga, ac: armarSeña(refOcurrencia.id, uid, acuseId) }
+        : carga;
+
       for (const token of tokens) {
         envios.push({
           uid,
           mensaje: {
             token,
-            data: carga,
+            data: datos,
             webpush: {
-              headers: { Urgency: esUrgente ? 'high' : 'normal' },
+              headers: cabecerasDeEnvio(esUrgente),
               fcmOptions: { link: '/' },
             },
           },
@@ -695,11 +728,12 @@ async function ejecutarDespacho(
     totalDestinatarios: uids.length,
   });
 
-  await escribirEntregasPendientes(refOcurrencia, refMensaje.id, uids);
+  const acuses = await escribirEntregasPendientes(refOcurrencia, refMensaje.id, uids);
 
   const { entregados, fallidos } = await despachar(
     refOcurrencia,
     refMensaje.id,
+    acuses,
     mensaje,
     uids,
   );

@@ -302,7 +302,7 @@ gratuita.
 | DT-29 | Cambiar el manifiesto deja Android degradado hasta que Chrome regenera la aplicación | Plataforma | Baja | **Aceptada** | 0 USD |
 | DT-30 | Chrome puede marcar los avisos como «posible spam» y ofrecer anular la suscripción | Plataforma | **Media** | Abierta | 0 USD |
 | DT-27 | No hay forma de responder a un aviso | Alcance | Media | **Pagada** (en desarrollo) | 0 USD |
-| DT-31 | «Entregado» no significa que el aparato lo mostrara, y nadie lo mide | Alcance | **Alta** | Abierta | 0 USD |
+| DT-31 | «Entregado» no significa que el aparato lo mostrara, y nadie lo mide | Alcance | **Alta** | **Pagada** (en desarrollo) | 0 USD |
 | DT-28 | El manual no se alcanza desde dentro de la aplicación | Alcance | Baja | **Pagada** (en desarrollo) | 0 USD |
 
 **Prioridad de pago recomendada, en orden:** DT-03 → DT-14 → DT-04 → DT-01.
@@ -1955,7 +1955,8 @@ quiere.
 
 ## DT-31 — «Entregado» no significa que el aparato lo mostrara, y nadie lo mide
 
-**Origen:** alcance · **Severidad:** alta · **Estado:** abierta · **Costo:** 0 USD
+**Origen:** alcance · **Severidad:** alta · **Estado:** pagada el 11 de septiembre de 2026,
+en desarrollo · **Costo:** 0 USD
 
 Detectado el 11 de septiembre de 2026 con un caso real: se envió «actividades normales el
 día de mañana» a 23 personas. El reporte dijo **18 entregados y 5 fallidos**, y varias de
@@ -2060,4 +2061,52 @@ Por eso, para una emergencia real, el aviso tiene que seguir acompañado de un c
 que es lo que hoy se hizo con WhatsApp. Lo que sí puede lograr este trabajo es que ese
 respaldo deje de ser a ciegas: SIAN dirá **exactamente a quién** hay que llamar, en vez de
 llamar a los veintitrés por si acaso.
+
+### Cómo quedó pagada
+
+**11 de septiembre de 2026, en desarrollo.** Los cinco primeros puntos del plan, en el
+orden en que se listaron.
+
+**1 · El acuse.** Cada entrega nace con un identificador aleatorio que **viaja dentro del
+push**. Cuando el service worker muestra la notificación —y solo después de mostrarla—,
+devuelve esa seña a `acuseDeNotificacion`, que anota `mostradaEn`.
+
+Es una petición HTTP sin sesión, porque el worker no tiene ninguna: lo que lo identifica es
+la seña, que solo conoce quien recibió ese push. Por eso no escribe nada con valor
+probatorio —ni estado, ni confirmación, ni bitácora—: solo una fecha de diagnóstico. Lo peor
+que puede hacer quien se invente una seña es afirmar que vio un aviso que era suyo. Si la
+petición falla, no pasa nada: la notificación ya está en la pantalla.
+
+**2 · Tres cosas distintas en el panel.** En cada aviso, «se mostró en 7 de 10 aparatos»; y
+en el detalle, quien recibió el aviso y su teléfono no se lo enseñó aparece con su propia
+etiqueta —**«Su aparato no lo mostró»**, en rojo— separada de «no lo ha abierto», porque se
+resuelven distinto: al segundo se le insiste, al primero hay que llamarlo y revisar sus
+ajustes. En los avisos anteriores a C-5 no se distingue nada: no es que no se mostraran, es
+que nadie lo medía, y `acuseEsperado` en el mensaje marca la diferencia.
+
+**3 · Prioridad alta y vida útil, en todos los avisos.** Antes solo los urgentes salían con
+`Urgency: high`; con urgencia normal el servicio de push puede retener el mensaje hasta que
+el aparato salga del modo de reposo, que es exactamente lo que se describió. Y ahora todo
+aviso lleva TTL —4 horas los urgentes, 24 los informativos— para que uno viejo no aparezca
+dos días después, cuando ya no significa nada.
+
+**4 · Un reintento medido.** Si a los diez minutos nadie dijo que se mostrara y la persona
+tampoco lo abrió, se empuja una segunda vez. Una sola: si dos empujones no aparecieron, lo
+que falla son los ajustes del aparato, y eso lo arregla una persona. Va montado sobre el
+despachador, que ya corre cada minuto, para no pagar otra cuota de Cloud Scheduler en cada
+ambiente.
+
+**5 · La aplicación lo dice en la pantalla de quien lo sufre.** Si en los últimos siete días
+hubo avisos que llegaron a ese aparato y no se mostraron, la bandeja lo dice —«Un aviso
+llegó a este aparato y no te lo mostró»—, explica que el aviso **sí llegó** y ofrece mandar
+una notificación de prueba ahí mismo. Si la de prueba tampoco aparece, el problema está en
+los ajustes del teléfono, y queda demostrado en dos toques.
+
+### Lo que queda de esta ficha
+
+  · **Alcance todavía no lista a quién no le muestran los avisos.** Con los datos del acuse
+    ya se puede: es el paso natural cuando haya una semana de mediciones.
+  · **Cerrar la brecha de aparatos no es código** y sigue pendiente: tres personas sin
+    ningún dispositivo, cuatro con la aplicación sin instalar en el celular, una solo en
+    computadora.
 

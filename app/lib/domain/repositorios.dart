@@ -60,6 +60,8 @@ class MensajeRecibido {
     required this.requiereConfirmacion,
     this.emisor = '',
     this.creadoPor = '',
+    this.esperaAcuse = false,
+    this.mostradaEn,
     this.entregadoEn,
     this.abiertoEn,
     this.confirmadoEn,
@@ -93,6 +95,15 @@ class MensajeRecibido {
   /// está entre sus destinatarios (DT-27).
   final String creadoPor;
 
+  /// Si este aviso salió pidiendo acuse de que el aparato lo mostró (DT-31).
+  /// Los anteriores a C-5 no lo piden, y de ellos no se puede afirmar nada.
+  final bool esperaAcuse;
+
+  /// Cuándo este aparato mostró la notificación. Nulo con [esperaAcuse] cierto
+  /// significa que **llegó y el teléfono no la enseñó**, que es el caso que
+  /// hizo falta distinguir el 11 de septiembre de 2026.
+  final DateTime? mostradaEn;
+
   final DateTime? entregadoEn;
   final DateTime? abiertoEn;
   final DateTime? confirmadoEn;
@@ -114,6 +125,13 @@ class MensajeRecibido {
 
   bool get esUrgente => tipo == 'URGENTE';
   bool get estaConfirmado => estado == 'CONFIRMADO';
+
+  /// Le llegó al aparato y el aparato no lo mostró.
+  bool get llegoYNoSeMostro =>
+      esperaAcuse &&
+      mostradaEn == null &&
+      entregadoEn != null &&
+      (estado == 'ENTREGADO' || estado == 'ABIERTO' || estado == 'CONFIRMADO');
 
   /// Urgente, exige confirmación y todavía no se ha confirmado: es sobre lo
   /// que la aplicación tiene que insistir (RF-CNF-10).

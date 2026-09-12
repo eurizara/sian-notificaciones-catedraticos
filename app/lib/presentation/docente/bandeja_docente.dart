@@ -21,6 +21,7 @@ import '../../core/navegador.dart';
 import '../shared/barra_sesion.dart';
 import '../shared/buscador.dart';
 import 'aviso_en_primer_plano.dart';
+import 'aviso_no_mostrado.dart';
 import 'filtro_bandeja.dart';
 import 'insignia_bandeja.dart';
 import 'instructivo_ios.dart';
@@ -264,6 +265,20 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
                       child: Column(
                         children: <Widget>[
                           const TarjetaNotificaciones(),
+
+                          // El canal está bien y aun así el teléfono no
+                          // enseñó los avisos (DT-31). Es un problema
+                          // distinto del permiso, y se resuelve distinto.
+                          if (avisosQueNoSeMostraron(
+                            todos,
+                            DateTime.now(),
+                          ).isNotEmpty)
+                            AvisoNoMostrado(
+                              cuantos: avisosQueNoSeMostraron(
+                                todos,
+                                DateTime.now(),
+                              ).length,
+                            ),
 
                           // Va aquí arriba y fuera del filtro. Tocarlo lleva a
                           // los que faltan, para no tener que buscarlos.

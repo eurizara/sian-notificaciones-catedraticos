@@ -255,7 +255,10 @@ export const detalleEntregas = onCall(OPCIONES_FUNCION, async (peticion) => {
 
     // Un destinatario aparece una sola vez aunque el mensaje sea recurrente:
     // lo que se pregunta es «¿esta persona lo confirmó?», no cuántas veces.
-    const porUid = new Map<string, { estado: string; confirmadoEn: string | null }>();
+    const porUid = new Map<
+      string,
+      { estado: string; confirmadoEn: string | null; mostradaEn: string | null }
+    >();
 
     for (const oc of ocurrencias.docs) {
       const entregas = await oc.ref.collection('entregas').get();
@@ -269,6 +272,12 @@ export const detalleEntregas = onCall(OPCIONES_FUNCION, async (peticion) => {
             estado,
             confirmadoEn:
               (e.get('confirmadoEn') as { toDate(): Date } | undefined)
+                ?.toDate()
+                .toISOString() ?? null,
+            // DT-31: cuándo el aparato MOSTRÓ la notificación. Nulo significa
+            // «nadie ha dicho que se mostrara», que es distinto de «no llegó».
+            mostradaEn:
+              (e.get('mostradaEn') as { toDate(): Date } | null | undefined)
                 ?.toDate()
                 .toISOString() ?? null,
           });
@@ -295,6 +304,7 @@ export const detalleEntregas = onCall(OPCIONES_FUNCION, async (peticion) => {
       correo: nombres.get(uid)?.correo ?? '',
       estado: porUid.get(uid)!.estado,
       confirmadoEn: porUid.get(uid)!.confirmadoEn,
+      mostradaEn: porUid.get(uid)!.mostradaEn,
     }));
 
     // Los pendientes primero: es sobre quienes hay que actuar, y buscarlos
@@ -316,6 +326,9 @@ export const detalleEntregas = onCall(OPCIONES_FUNCION, async (peticion) => {
     return {
       destinatarios,
       requiereConfirmacion: mensaje.get('requiereConfirmacion') === true,
+      // Los avisos anteriores a C-5 no piden acuse: sin esto, la pantalla los
+      // daría a todos por «no mostrados», que sería inventar un problema.
+      acuseEsperado: mensaje.get('acuseEsperado') === true,
     };
   } catch (e) {
     if (e instanceof HttpsError) {

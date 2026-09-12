@@ -283,6 +283,10 @@ RF-CNF-05.
 | `dispositivoConfirmacion` | string | RF-CNF-03 |
 | `intentos` | number | |
 | `ultimoError` | string | Código de error devuelto por FCM |
+| `mostradaEn` | timestamp **o nulo** | Cuándo el aparato MOSTRÓ la notificación (DT-31). Se escribe explícitamente nulo al crear la entrega: Firestore solo encuentra con `== null` los documentos donde el campo existe, y de esa consulta depende el reintento |
+| `acuseId` | string | Identificador aleatorio que viaja dentro del push y vuelve con el acuse. Es lo único que identifica al service worker, que no tiene sesión |
+| `reintentosPorAcuse` | number | Cuántas veces se insistió por falta de acuse. Como máximo una |
+| `reintentadoEn` | timestamp | |
 
 ### 2.7b `mensajes/{mensajeId}/hilos/{uidCatedratico}` (DT-27)
 
@@ -460,6 +464,7 @@ Documento único con los parámetros globales.
 | Grupo de colección `entregas` | `uid` ASC, `entregadoEn` DESC | Historial del catedrático (RF-ENT-12) |
 | Grupo de colección `entregas` | `estado` ASC | Reporte de confirmación (RF-CNF-06) |
 | Grupo de colección `hilos` | `emisorUid` ASC, `actualizadoEn` DESC | Las conversaciones de un emisor, en todos sus avisos (DT-27) |
+| Grupo de colección `entregas` | `estado` ASC, `mostradaEn` ASC, `reintentosPorAcuse` ASC, `enviadoAFcmEn` ASC | Los avisos que llegaron y el aparato no mostró, para insistir (DT-31) |
 
 ---
 
