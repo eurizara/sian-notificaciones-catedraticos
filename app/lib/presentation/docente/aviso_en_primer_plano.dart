@@ -23,6 +23,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/proveedores_dispositivos.dart';
 import '../../core/plataforma/notificacion_sistema.dart';
+import '../../core/plataforma/rotacion.dart';
 import '../shared/tema.dart';
 import '../shared/textos.dart';
 
@@ -45,7 +46,21 @@ class _AvisoEnPrimerPlanoState extends ConsumerState<AvisoEnPrimerPlano> {
     _suscripcion = ref
         .read(repositorioDispositivosProvider)
         .mensajesEnPrimerPlano()
-        .listen(_mostrar);
+        .listen((RemoteMessage m) => _mostrar(datosDe(m)));
+
+    // ────────────────────────────────────────────────────────────────────────
+    // Y por el worker, que es el único camino con Web Push directo (DT-23).
+    // ────────────────────────────────────────────────────────────────────────
+    //
+    // Cuando el aparato se suscribe con nuestra llave, el SDK de Firebase no
+    // interviene y `onMessage` no se dispara: el aviso llega al service
+    // worker, que lo muestra y avisa a la ventana. Sin esto, la tarjeta dentro
+    // de la aplicación habría dejado de salir en esos aparatos.
+    escucharNotificacionMostrada(([Map<String, String>? datos]) {
+      if (datos != null && datos.isNotEmpty) {
+        _mostrar(datos);
+      }
+    });
   }
 
   @override
@@ -54,14 +69,12 @@ class _AvisoEnPrimerPlanoState extends ConsumerState<AvisoEnPrimerPlano> {
     super.dispose();
   }
 
-  void _mostrar(RemoteMessage mensaje) {
+  void _mostrar(Map<String, String> datos) {
     if (!mounted) {
       return;
     }
 
-    final ({String titulo, String cuerpo, bool urgente}) aviso = leerAviso(
-      mensaje,
-    );
+    final ({String titulo, String cuerpo, bool urgente}) aviso = leerAviso(datos);
 
     // Se le pide al sistema operativo que la muestre él, con su banner, su
     // sonido y su vibración. Sin esto, un mensaje que llega con la aplicación
@@ -79,9 +92,7 @@ class _AvisoEnPrimerPlanoState extends ConsumerState<AvisoEnPrimerPlano> {
         urgente: aviso.urgente,
         // Una respuesta (DT-27) no lleva `mensajeId`, sino su propia
         // etiqueta: la misma que usa el service worker, para reemplazarse.
-        etiqueta:
-            (mensaje.data['mensajeId'] as String?) ??
-            (mensaje.data['etiqueta'] as String?),
+        etiqueta: datos['mensajeId'] ?? datos['etiqueta'],
       ),
     );
 
@@ -113,7 +124,7 @@ class _AvisoEnPrimerPlanoState extends ConsumerState<AvisoEnPrimerPlano> {
                         Icon(
                           aviso.urgente
                               ? Icons.priority_high
-                              : mensaje.data['tipo'] == 'RESPUESTA'
+                              : datos['tipo'] == 'RESPUESTA'
                               ? Icons.forum_outlined
                               : Icons.notifications_active,
                           color: acento,
@@ -169,16 +180,29 @@ class _AvisoEnPrimerPlanoState extends ConsumerState<AvisoEnPrimerPlano> {
 /// datos —para decidir aquí el prefijo «URGENTE» y no dejárselo al navegador—,
 /// pero leer ambos evita que un desajuste de nombres deje el aviso mudo, que
 /// es como se perdió la notificación de prueba.
-({String titulo, String cuerpo, bool urgente}) leerAviso(RemoteMessage m) {
-  final Map<String, dynamic> datos = m.data;
-  final bool urgente = datos['tipo'] == 'URGENTE';
+/// Convierte lo que entrega el SDK de Firebase en los datos del aviso.
+///
+/// Mira `data` y también `notification`. El servidor manda solo datos —para
+/// decidir aquí el prefijo «URGENTE» y no dejárselo al navegador—, pero leer
+/// ambos evita que un desajuste de nombres deje el aviso mudo, que es como se
+/// perdió la notificación de prueba durante toda una ronda.
+Map<String, String> datosDe(RemoteMessage m) => <String, String>{
+  for (final MapEntry<String, dynamic> e in m.data.entries) e.key: '${e.value}',
+  if (m.data['titulo'] == null && m.notification?.title != null)
+    'titulo': m.notification!.title!,
+  if (m.data['cuerpo'] == null && m.notification?.body != null)
+    'cuerpo': m.notification!.body!,
+};
 
-  final String base =
-      (datos['titulo'] as String?) ?? m.notification?.title ?? Textos.nombreApp;
+({String titulo, String cuerpo, bool urgente}) leerAviso(
+  Map<String, String> datos,
+) {
+  final bool urgente = datos['tipo'] == 'URGENTE';
+  final String base = datos['titulo'] ?? Textos.nombreApp;
 
   return (
     titulo: urgente ? 'URGENTE · $base' : base,
-    cuerpo: (datos['cuerpo'] as String?) ?? m.notification?.body ?? '',
+    cuerpo: datos['cuerpo'] ?? '',
     urgente: urgente,
   );
 }

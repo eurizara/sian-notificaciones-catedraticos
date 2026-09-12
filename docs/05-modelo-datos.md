@@ -161,12 +161,12 @@ El identificador del documento es el UID de Firebase Authentication.
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | `instalacionId` | string | Identidad del aparato. **Es también el identificador del documento** |
-| `tokenFCM` | string | Identificador de registro de Firebase Cloud Messaging. Cambia solo |
+| `tokenFCM` | string | Identificador de registro de Firebase Cloud Messaging. Cambia solo · Vacío en los aparatos que se suscribieron con la llave propia: ahí la vía es `webPush` |
 | `plataforma` | string | `WEB_ANDROID` · `WEB_IOS` · `WEB_ESCRITORIO` |
 | `esPWAInstalada` | boolean | Crítico en iOS: sin instalación no hay notificaciones (RES-05) |
 | `navegador` | string | Nombre y versión |
 | `versionApp` | string | Con qué versión de la aplicación se registró (`1.5.0`). Se refresca en cada apertura: dice qué código tiene esa persona delante hoy |
-| `webPush` | map | La suscripción en crudo que reportó el service worker: `endpoint`, `p256dh`, `auth` y cuándo. Hoy es diagnóstico; es lo que hará falta el día que se envíe por Web Push directo (DT-23) |
+| `webPush` | map | La suscripción en crudo: `endpoint`, `p256dh`, `auth`. **Es la vía de envío preferente** cuando existe (DT-23): se envía por Web Push directo con nuestras llaves VAPID, sin pasar por el token de FCM. La renueva el propio service worker |
 | `suscripcionRotadaEn` | timestamp | Cuándo el navegador rotó la suscripción, según el propio worker |
 | `tokenPendienteDeRenovar` | boolean | El token guardado ya no vale; solo la página puede acuñar uno nuevo, y lo hace en la siguiente apertura |
 | `canalRevisadoEn` | timestamp | Última revisión periódica del worker (solo Android con la aplicación instalada) |

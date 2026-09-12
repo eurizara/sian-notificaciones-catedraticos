@@ -1048,16 +1048,43 @@ Lo que se añadió:
     hacía la sonda. Hubo que reconstruir a mano la historia de esos dos casos porque solo
     existía en los registros técnicos del servidor.
 
-### Lo que sigue sin poder hacerse, y conviene tener claro
+### Y el cierre: Web Push directo con llaves propias
 
-El worker puede recuperar la **suscripción**, pero **no el token de FCM**: ese solo se
-acuña desde la página. Así que hasta que la persona abra la aplicación, el registro sigue
-sin servir para enviar — la diferencia es que ahora se sabe desde el primer minuto y no
-desde el aviso perdido.
+Lo anterior dejaba un hueco reconocido: el worker recupera la **suscripción**, pero el
+**token de FCM** solo se acuña desde la página, así que hasta que alguien abriera la
+aplicación el registro seguía sin servir para enviar.
 
-Cerrar del todo ese hueco exige dejar de depender del token y **enviar por Web Push directo
-con llaves VAPID propias**, que es justo lo que el worker sí puede renovar solo. Es la
-continuación natural de esto: la suscripción en crudo ya se está guardando para ese día.
+**12 de septiembre de 2026.** Se cerró cambiando de qué depende el envío:
+
+  · El aparato se suscribe con **nuestra llave VAPID pública** en vez de con la de
+    Firebase, y lo que se guarda es la **suscripción en crudo** —dirección y llaves de
+    cifrado—.
+  · El servidor le envía **directamente al servicio de push** del navegador, firmando con
+    nuestra llave privada. No hay token intermedio que solo la página sepa acuñar.
+  · Y como esa suscripción **sí la sabe rehacer el service worker**, el canal se repara de
+    madrugada sin que nadie abra nada.
+
+**Las dos vías conviven, y cada aparato usa una sola.** El que tenga suscripción propia va
+por Web Push directo; el que solo tenga token sigue por FCM, exactamente como antes.
+Mandar por las dos le enseñaría la misma notificación dos veces —en iPhone no se funden
+aunque lleven la misma etiqueta—.
+
+Para el service worker no cambia nada: el mensaje llega con la misma forma, así que la
+notificación, la insignia y el acuse funcionan igual. Lo que sí cambia es que con la vía
+propia el SDK de Firebase no interviene, y por eso la tarjeta que sale dentro de la
+aplicación ahora la alimenta el worker.
+
+**Qué hace falta por ambiente** (documento 11): habilitar Secret Manager, crear el secreto
+`VAPID_PRIVADA` con la llave privada, y añadir la pública en `vapid.ts` y en el despliegue.
+Donde no esté configurado, esta vía queda apagada y todo va por FCM: **un ambiente sin
+llaves despliega y funciona igual**.
+
+### Lo que sigue sin poder hacerse, ni con esto
+
+Si el navegador borra la suscripción y **no despierta al worker** —porque el aparato está
+apagado, o porque el sistema no le da ocasión—, no hay a dónde enviar hasta que alguien
+abra la aplicación. Lo que cambia es que ese caso pasa a ser la excepción y no la norma, y
+que se sabe en el momento en vez de al perder un aviso.
 
 ---
 

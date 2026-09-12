@@ -19,6 +19,8 @@ import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { logger } from 'firebase-functions/v2';
 import { getMessaging } from 'firebase-admin/messaging';
 
+import { enviarPorWebPush } from '../infrastructure/webpush';
+
 import { crearAsiento } from '../domain/bitacora';
 import {
   crearDispositivo,
@@ -126,18 +128,25 @@ export const registrarDispositivo = onCall(OPCIONES_FUNCION, async (peticion) =>
         // El service worker es quien pinta la notificación, y lee estos
         // mismos nombres. Enviar `notification` dejaba el cuerpo vacío
         // porque buscaba `data.cuerpo` y nadie lo mandaba.
-        await getMessaging().send({
-          token: dispositivo.tokenFCM,
-          data: {
-            tipo: 'PRUEBA_REGISTRO',
-            titulo: 'SIAN UMG-BDM',
-            cuerpo: 'Tu dispositivo quedó registrado. Aquí llegarán los avisos.',
-          },
-          webpush: {
-            fcmOptions: { link: '/' },
-          },
-        });
-        pruebaEnviada = true;
+        const prueba = {
+          tipo: 'PRUEBA_REGISTRO',
+          titulo: 'SIAN UMG-BDM',
+          cuerpo: 'Tu dispositivo quedó registrado. Aquí llegarán los avisos.',
+        };
+
+        // Por la vía de ESTE aparato: si se suscribió con nuestra llave, no
+        // tiene token de FCM y la prueba va por Web Push directo (DT-23).
+        if (dispositivo.webPush) {
+          const r = await enviarPorWebPush(dispositivo.webPush, prueba);
+          pruebaEnviada = r.ok;
+        } else {
+          await getMessaging().send({
+            token: dispositivo.tokenFCM,
+            data: prueba,
+            webpush: { fcmOptions: { link: '/' } },
+          });
+          pruebaEnviada = true;
+        }
       } catch (e) {
         // Que falle la prueba no invalida el registro: el token queda
         // guardado y el problema se ve en la bitácora.

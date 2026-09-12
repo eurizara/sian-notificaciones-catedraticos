@@ -290,6 +290,7 @@ copia a `version.json`, que es contra lo que la aplicación se compara.
 | 1.5.3 | Que llegue un acuse deja constancia de que esa persona puede acusar. Hacía falta porque el service worker se renueva en cada arranque mientras la aplicación espera a que alguien recargue: hay aparatos que acusan con la versión sin reportar |
 | 1.5.4 | El aviso de versión nueva se comprueba también al volver a la aplicación. En una PWA de iPhone, «abrirla» restaura la página sin recargarla: se podía estar usándola a diario con el paquete de la semana anterior |
 | 1.5.5 | El canal se repara solo donde se puede: el worker se vuelve a suscribir y reporta la suscripción, el sistema lo despierta cada doce horas en Android instalado, la sonda pasa a diaria y el retiro de un registro muerto deja asiento en bitácora |
+| 1.5.6 | **Web Push directo con llaves propias.** El aparato se suscribe con nuestra llave VAPID y el servidor le envía sin pasar por el token de FCM, así que el service worker puede renovar el canal él solo. Conviven las dos vías: cada aparato usa la suya |
 
 **Dónde se ve.** En el pie de la bandeja y del panel; cuando hay una más reciente, una
 tarjeta arriba con el botón de actualizar. Y en **Alcance**, la versión de cada persona:

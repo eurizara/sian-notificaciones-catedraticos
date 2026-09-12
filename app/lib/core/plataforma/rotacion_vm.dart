@@ -8,4 +8,6 @@ void escucharRotacionDeSuscripcion(void Function() alRotar) {}
 Future<bool> huboRotacionPendiente() async => false;
 
 /// Nadie muestra notificaciones fuera del navegador.
-void escucharNotificacionMostrada(void Function() alMostrar) {}
+void escucharNotificacionMostrada(
+  void Function([Map<String, String>? datos]) alMostrar,
+) {}

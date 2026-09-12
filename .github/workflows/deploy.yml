@@ -92,8 +92,14 @@ jobs:
         working-directory: app
         run: |
           flutter pub get
+          # SIAN_VAPID_PROPIA es la llave pública propia (DT-23). Va en claro a
+          # propósito: es pública por diseño —viaja a cada navegador en cada
+          # suscripción— y su pareja privada vive en Secret Manager del
+          # proyecto. Los ambientes sin par propio la dejan vacía y siguen
+          # usando FCM como siempre.
           flutter build web --release \
             --dart-define=FIREBASE_VAPID_KEY=${{ secrets.DEV_VAPID_KEY }} \
+            --dart-define=SIAN_VAPID_PROPIA=BKXdY3qydUGq6byS_W9cUwy3ysqlpThNqh-HhxtkrUgXeuWfK2dk0WhGwT8fxrHbW-OJVFaJjp3AfUYVIS2czNU \
             --dart-define=USE_EMULATOR=false
 
       - name: Desplegar reglas, índices y Functions

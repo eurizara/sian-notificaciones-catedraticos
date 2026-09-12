@@ -125,7 +125,7 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
   void initState() {
     super.initState();
     _ultimaMostrada = ultimaVezQueEsteAparatoMostro();
-    escucharNotificacionMostrada(() {
+    escucharNotificacionMostrada(([Map<String, String>? datos]) {
       final DateTime ahora = DateTime.now();
       anotarQueEsteAparatoMostro(ahora);
       if (mounted) {

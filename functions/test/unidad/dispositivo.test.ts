@@ -199,3 +199,44 @@ describe('esIdentificadorDeInstalacion', () => {
     expect(esIdentificadorDeInstalacion('')).toBe(false);
   });
 });
+
+describe('DT-23 · un aparato vale por cualquiera de las dos vías', () => {
+  const suscripcion = {
+    endpoint: 'https://fcm.googleapis.com/wp/abc',
+    p256dh: 'BKp0123456789',
+    auth: 'auth12345',
+  };
+
+  it('con suscripción propia y SIN token de FCM, el registro es válido', () => {
+    // Es el caso bueno: esa suscripción sí la sabe renovar el service worker
+    // sin que nadie abra la aplicación.
+    const d = crearDispositivo({
+      plataforma: 'WEB_ANDROID',
+      permisoNotificacion: 'concedido',
+      webPush: suscripcion,
+    });
+    expect(d.webPush?.endpoint).toBe(suscripcion.endpoint);
+    expect(d.tokenFCM).toBe('');
+    expect(puedeRecibirNotificaciones(d)).toBe(true);
+  });
+
+  it('sin ninguna de las dos, se rechaza', () => {
+    esperarCodigo(
+      () => crearDispositivo({ plataforma: 'WEB_ANDROID', permisoNotificacion: 'concedido' }),
+      'TOKEN_FCM_INVALIDO',
+    );
+  });
+
+  it('una suscripción a medias no cuenta como vía', () => {
+    // Sin las llaves de cifrado no se le puede mandar nada.
+    esperarCodigo(
+      () =>
+        crearDispositivo({
+          plataforma: 'WEB_ANDROID',
+          permisoNotificacion: 'concedido',
+          webPush: { endpoint: suscripcion.endpoint },
+        }),
+      'TOKEN_FCM_INVALIDO',
+    );
+  });
+});

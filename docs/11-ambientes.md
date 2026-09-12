@@ -122,6 +122,23 @@ de forma intermitente, que es lo peor: se reintenta, se queda pensando, y a la t
 entra. El cliente OAuth es uno por proyecto, así que registrar la URL en uno no sirve para
 los otros (DT-19).
 
+**Las llaves VAPID propias (DT-23).** Son las que permiten enviar Web Push **directo**, sin
+pasar por el token de FCM — y por tanto que el service worker pueda reparar el canal sin que
+nadie abra la aplicación. Por ambiente hace falta:
+
+  1. Generar el par: `node -e "console.log(JSON.stringify(require('web-push').generateVAPIDKeys()))"`
+     desde `functions/`.
+  2. Habilitar **Secret Manager** en el proyecto y crear el secreto `VAPID_PRIVADA` con la
+     llave privada, dando acceso de lectura a la cuenta con la que corren las funciones.
+  3. Poner la **pública** en `functions/src/infrastructure/vapid.ts` y en el
+     `--dart-define=SIAN_VAPID_PROPIA` de ese ambiente en `deploy.yml`.
+
+La privada **no se guarda en el repositorio ni en GitHub**. La pública sí, porque lo es:
+viaja a cada navegador en cada suscripción.
+
+Mientras un ambiente no tenga par propio, esta vía queda apagada y los avisos salen por FCM
+como siempre: **desplegar sin llaves no rompe nada**.
+
 **El proveedor de Google.** Se habilita en Authentication → Sign-in method → Google.
 Ese clic crea el cliente OAuth; la API no lo crea sola. Sin él, el botón «Entrar con
 Google» aparece en pantalla y falla al pulsarlo.
