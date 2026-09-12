@@ -23,6 +23,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/version.dart';
 import '../../infrastructure/firebase/repositorio_canal.dart';
 import '../shared/tema.dart';
 import '../shared/textos.dart';
@@ -173,9 +174,24 @@ class _Fila extends StatelessWidget {
           ),
         ],
       ),
-      trailing: Text(
-        _desdeCuando(persona.ultimaActividad),
-        style: tema.textTheme.bodySmall,
+      trailing: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: <Widget>[
+          Text(_desdeCuando(persona.ultimaActividad), style: tema.textTheme.bodySmall),
+          // Con qué versión está. Importa para leer bien el resto: desde C-5,
+          // el acuse de que una notificación se mostró lo manda el service
+          // worker, así que un aparato atrasado informa distinto.
+          if (persona.versionApp.isNotEmpty)
+            Text(
+              Textos.versionDeLaPersona(persona.versionApp),
+              style: tema.textTheme.bodySmall?.copyWith(
+                color: persona.versionApp == versionSian
+                    ? tema.colorScheme.onSurfaceVariant
+                    : PaletaSian.de(context).doradoTexto,
+              ),
+            ),
+        ],
       ),
       isThreeLine: true,
     );

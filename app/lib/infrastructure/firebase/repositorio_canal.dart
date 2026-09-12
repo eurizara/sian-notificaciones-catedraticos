@@ -46,6 +46,7 @@ class PersonaSinCanal {
     required this.estado,
     this.plataformas = const <String>[],
     this.ultimaActividad,
+    this.versionApp = '',
   });
 
   final String uid;
@@ -54,6 +55,10 @@ class PersonaSinCanal {
   final EstadoCanal estado;
   final List<String> plataformas;
   final DateTime? ultimaActividad;
+
+  /// Con qué versión de la aplicación está corriendo su aparato. Vacía si no
+  /// consta: son los registros anteriores a que se empezara a guardar.
+  final String versionApp;
 
   static PersonaSinCanal desdeMapa(Map<Object?, Object?> m) => PersonaSinCanal(
     uid: (m['uid'] as String?) ?? '',
@@ -65,6 +70,7 @@ class PersonaSinCanal {
         if (p is String) p,
     ],
     ultimaActividad: DateTime.tryParse((m['ultimaActividad'] as String?) ?? ''),
+    versionApp: (m['versionApp'] as String?) ?? '',
   );
 }
 

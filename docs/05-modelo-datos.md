@@ -165,6 +165,7 @@ El identificador del documento es el UID de Firebase Authentication.
 | `plataforma` | string | `WEB_ANDROID` · `WEB_IOS` · `WEB_ESCRITORIO` |
 | `esPWAInstalada` | boolean | Crítico en iOS: sin instalación no hay notificaciones (RES-05) |
 | `navegador` | string | Nombre y versión |
+| `versionApp` | string | Con qué versión de la aplicación se registró (`1.5.0`). Se refresca en cada apertura: dice qué código tiene esa persona delante hoy |
 | `permisoNotificacion` | string | `concedido` · `denegado` · `pendiente` |
 | `activo` | boolean | Se pone en `false` cuando FCM rechaza el token |
 | `registradoEn` | timestamp | |
