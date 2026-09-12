@@ -62,6 +62,52 @@ export interface EntradaDispositivo {
   readonly webPush?: { endpoint?: string; p256dh?: string; auth?: string } | null;
 }
 
+/**
+ * Traduce lo que manda la aplicación a la entrada del dominio.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Existe porque el trigger se copiaba los campos a mano, y se le olvidaron dos.
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * El 12 de septiembre de 2026 la aplicación empezó a mandar `webPush` —la
+ * suscripción propia— y el trigger, que enumeraba los campos uno a uno, no lo
+ * leía. Un aparato que se suscribe con nuestra llave **no pide token de FCM**,
+ * así que llegaba con el token vacío y la suscripción se perdía por el camino:
+ * el dominio lo rechazaba por «token inválido» y la respuesta era un 400. En el
+ * iPhone se veía como «Activa las notificaciones» que no se iba nunca.
+ *
+ * `versionApp` llevaba desde 1.5.2 con el mismo problema y nadie lo notó: todos
+ * los dispositivos tenían la versión vacía, que es justo lo que decide si de un
+ * aparato se puede afirmar que no mostró un aviso (DT-31).
+ *
+ * Con la traducción en un solo sitio, y probada, añadir un campo deja de ser
+ * una oportunidad de olvidarlo.
+ */
+export function leerEntradaDeRegistro(datos: unknown): EntradaDispositivo {
+  const d = (datos ?? {}) as Record<string, unknown>;
+  const web = (d.webPush ?? null) as Record<string, unknown> | null;
+
+  return {
+    tokenFCM: texto(d.tokenFCM),
+    plataforma: texto(d.plataforma),
+    esPWAInstalada: d.esPWAInstalada === true,
+    navegador: texto(d.navegador),
+    versionApp: texto(d.versionApp),
+    permisoNotificacion: texto(d.permisoNotificacion) || 'pendiente',
+    webPush: web
+      ? {
+          endpoint: texto(web.endpoint),
+          p256dh: texto(web.p256dh),
+          auth: texto(web.auth),
+        }
+      : null,
+  };
+}
+
+function texto(valor: unknown): string {
+  return typeof valor === 'string' ? valor.trim() : '';
+}
+
 /** Longitud mínima plausible de un token de FCM. */
 const LONGITUD_MINIMA_TOKEN = 20;
 
