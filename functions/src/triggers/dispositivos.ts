@@ -173,6 +173,10 @@ export const registrarDispositivo = onCall(OPCIONES_FUNCION, async (peticion) =>
       puedeRecibir: puedeRecibirNotificaciones(dispositivo),
       motivoSinRecepcion: motivo,
       pruebaEnviada,
+      // Para que la aplicación le pueda decir al service worker a quién
+      // pertenece este aparato: él no tiene sesión, y sin eso no podría
+      // reportar una suscripción nueva (DT-23).
+      uid,
     };
   } catch (e) {
     if (e instanceof ErrorDominio) {

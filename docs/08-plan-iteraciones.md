@@ -239,7 +239,7 @@ Hasta que las cuatro estén en producción no se empieza con las mejoras.
 | # | Corrección | Estado |
 |:---:|---|---|
 | C-1 | **DT-26** · el contador se queda encendido en Android | **Corregida el 09/09.** Una notificación solo se cerraba al tocarla; quien abría desde el icono las dejaba puestas, y el lanzador de Android las cuenta. Ahora la aplicación manda al worker cuáles siguen sin leer y el worker retira las demás. **DT-17 pagada con ella**: 14 pruebas donde no había ninguna |
-| C-2 | **DT-23 → DT-22** · el canal se pierde solo | **Corregida el 09/09.** Sonda semanal en seco que valida los tokens sin entregar nada, y apartado en la pantalla de coordinación con quién no recibiría un aviso ahora mismo. DT-23 quedó pagada a medias por un límite del SDK, explicado en su ficha |
+| C-2 | **DT-23 → DT-22** · el canal se pierde solo | **Corregida el 09/09 y completada el 12/09.** Sonda en seco —ahora **diaria**— que valida los tokens sin entregar nada, y apartado en la pantalla de coordinación con quién no recibiría un aviso ahora mismo. El 12/09 se cerró la mitad que faltaba: el worker se vuelve a suscribir solo y reporta la suscripción, y el sistema lo despierta cada doce horas en Android instalado |
 | C-3 | **DT-18** · dispositivos arrastrados | **Corregida el 09/09.** La misma sonda retira lo que lleva más de sesenta días sin actividad, con el motivo anotado en la bitácora |
 | C-5 | ~~**DT-31** · «entregado» no es «se mostró»~~ | **Hecha el 11/09, en desarrollo.** Acuse de recibo desde el service worker, prioridad alta en todo aviso, un reintento medido y autodiagnóstico en la aplicación. Es lo único que convierte «supuestamente le llegó» en un dato |
 | C-4 | **DT-14** · correos de recuperación | **Bloqueada, y no por programación.** Exige un buzón institucional y entradas SPF/DKIM en el DNS de la UMG. Lo que sí se hizo: el aviso en pantalla ahora dice que revise la carpeta de no deseado, que es donde caen |
@@ -289,6 +289,7 @@ copia a `version.json`, que es contra lo que la aplicación se compara.
 | 1.5.2 | No se acusa a un aparato que no sabía acusar. El acuse viaja con la aplicación, así que un teléfono sin actualizar no puede contestar: de esos no se afirma nada, ni se les insiste. Y la tarjeta del catedrático se calla en cuanto el aparato demuestra que sí muestra notificaciones |
 | 1.5.3 | Que llegue un acuse deja constancia de que esa persona puede acusar. Hacía falta porque el service worker se renueva en cada arranque mientras la aplicación espera a que alguien recargue: hay aparatos que acusan con la versión sin reportar |
 | 1.5.4 | El aviso de versión nueva se comprueba también al volver a la aplicación. En una PWA de iPhone, «abrirla» restaura la página sin recargarla: se podía estar usándola a diario con el paquete de la semana anterior |
+| 1.5.5 | El canal se repara solo donde se puede: el worker se vuelve a suscribir y reporta la suscripción, el sistema lo despierta cada doce horas en Android instalado, la sonda pasa a diaria y el retiro de un registro muerto deja asiento en bitácora |
 
 **Dónde se ve.** En el pie de la bandeja y del panel; cuando hay una más reciente, una
 tarjeta arriba con el botón de actualizar. Y en **Alcance**, la versión de cada persona:

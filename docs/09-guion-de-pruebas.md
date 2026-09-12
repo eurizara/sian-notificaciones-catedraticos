@@ -672,7 +672,7 @@ Ejecutadas contra `sian-umg-bdm-qa` el 24 de agosto de 2026:
 | # | Qué se comprueba | Cómo | Resultado |
 |---|---|---|---|
 | C-1 | Las reglas de seguridad están puestas | Leer `mensajes` sin autenticar por REST | `PERMISSION_DENIED` |
-| C-2 | Las 24 Functions existen y arrancaron | Listar funciones de `us-central1` | 24 de 24 en estado `ACTIVE` |
+| C-2 | Las 25 Functions existen y arrancaron | Listar funciones de `us-central1` | 25 de 25 en estado `ACTIVE` |
 | C-3 | Las Functions rechazan a quien no se identificó | `POST` a `activarSesion` sin token | HTTP 401, `UNAUTHENTICATED` |
 | C-4 | El navegador puede llamarlas | `OPTIONS` con `Origin` de QA | HTTP 204 |
 | C-5 | El despachador quedó programado | Listar jobs de Cloud Scheduler | 1 job, cada minuto, `ENABLED` |
@@ -716,6 +716,19 @@ recorrió solo con coordinación fue la que dejó pasar el defecto más caro del
 | V-3 | Con una versión anterior instalada, despliega una nueva y vuelve a abrir | Arriba aparece la tarjeta **«Hay una versión más reciente»** con el botón Actualizar |
 | V-4 | Pulsa **Actualizar** | Recarga y el pie ya dice la versión nueva |
 | V-5 | Entra como coordinación a **Alcance** | Cada persona de la lista muestra su versión; las que no coinciden con la publicada van en dorado |
+
+## Probar que el canal se repara solo (DT-23)
+
+Hace falta un **Android con la aplicación instalada**. En iPhone estos pasos no aplican:
+la API de revisión periódica no existe ahí, y el canal se sigue renovando al abrir.
+
+| # | Paso | Qué debe ocurrir |
+|:--:|------|------------------|
+| S-1 | Instala e inicia sesión en Android | En Firestore, su dispositivo queda con `versionApp` y, al poco, con `canalRevisadoEn` o `webPush` |
+| S-2 | En Chrome → Configuración del sitio → Notificaciones, **quita y vuelve a dar** el permiso | El worker se resuscribe solo y el registro queda con `suscripcionRotadaEn` y `tokenPendienteDeRenovar` |
+| S-3 | Sin abrir la aplicación, mira **Alcance** | Esa persona aparece con su registro caducado, **sin necesidad de haber perdido un aviso** |
+| S-4 | Abre la aplicación en el teléfono | El registro se renueva y desaparece de Alcance |
+| S-5 | Manda un aviso y revisa la bitácora si alguien falla | Aparece `DISPOSITIVO_RETIRADO` con el motivo, no solo en los registros técnicos |
 
 ## Probar que se sabe si la notificación se mostró (DT-31, C-5)
 

@@ -319,9 +319,9 @@ aviso más bajo.
 > Lo que no sería evidente es llegar aquí sin darse cuenta. Por eso este renglón queda
 > escrito con su número, y no diluido en un «sigue siendo gratis».
 
-Si algún día hiciera falta volver a cero: la sonda es semanal y el despachador es por
+Si algún día hiciera falta volver a cero: la sonda es diaria y el despachador es por
 minuto, así que el candidato a fusionar sería la sonda dentro del despachador con una
-comprobación de día y hora. **No se hizo** porque mezclar una tarea semanal dentro de una que
+comprobación de día y hora. **No se hizo** porque mezclar una tarea diaria dentro de una que
 corre cada minuto es la clase de ahorro que se paga en confusión el día que algo falla.
 
 Antes de agregar cualquier tarea programada hay que contar las que ya existen:

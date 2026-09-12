@@ -1014,6 +1014,51 @@ Quien nunca abre la aplicación termina siendo inalcanzable en todas ellas. Es u
 de la plataforma, no de este proyecto.
 
 
+
+### Cómo se terminó de pagar: el canal que se repara solo
+
+**12 de septiembre de 2026.** Dos casos medidos en desarrollo, y ninguno provocado por
+nadie:
+
+  · Un **Android** dejó de recibir entre las 22:50 y las 08:19, con el teléfono en reposo y
+    sin que su dueña lo tocara. El aviso de la mañana falló con
+    `registration-token-not-registered`.
+  · Una **computadora** con la aplicación instalada perdió el canal **a los cuarenta
+    minutos** de registrarse.
+
+Los dos son lo que esta ficha describía: el navegador rota la suscripción, el SDK acuña una
+nueva dentro del aparato, y nuestro servidor se queda con la anterior. La diferencia es que
+ahora sabemos que **no hace falta que pasen semanas**: puede ocurrir en horas.
+
+Lo que se añadió:
+
+  · **El worker se vuelve a suscribir él solo.** Al despertar por `pushsubscriptionchange`
+    comprueba si tiene suscripción y, si no, se suscribe de nuevo **con la misma llave
+    pública** —la lee de la suscripción anterior, y la guarda para cuando el navegador la
+    retire sin avisar—.
+  · **Y lo reporta al servidor** (`reportarSuscripcion`), que anota la suscripción en crudo
+    y marca el registro como *pendiente de renovar*. Así el panel puede enseñarlo en el
+    momento, en vez de esperar a perder un aviso.
+  · **El sistema lo despierta cada doce horas** para revisar el canal (`periodicsync`). Solo
+    existe en **Android con la aplicación instalada**; en iPhone la API no está y la
+    petición ni se hace — no se rompe nada, sencillamente no aporta ahí.
+  · **La sonda pasa a diaria.** Antes corría los lunes: un canal que moría el martes pasaba
+    seis días sin que nadie lo supiera.
+  · **El retiro de un registro muerto durante un envío deja asiento en bitácora**, como ya
+    hacía la sonda. Hubo que reconstruir a mano la historia de esos dos casos porque solo
+    existía en los registros técnicos del servidor.
+
+### Lo que sigue sin poder hacerse, y conviene tener claro
+
+El worker puede recuperar la **suscripción**, pero **no el token de FCM**: ese solo se
+acuña desde la página. Así que hasta que la persona abra la aplicación, el registro sigue
+sin servir para enviar — la diferencia es que ahora se sabe desde el primer minuto y no
+desde el aviso perdido.
+
+Cerrar del todo ese hueco exige dejar de depender del token y **enviar por Web Push directo
+con llaves VAPID propias**, que es justo lo que el worker sí puede renovar solo. Es la
+continuación natural de esto: la suscripción en crudo ya se está guardando para ese día.
+
 ---
 
 ## DT-24 — Un envío con algún fallo deja la pantalla igual y el aviso se manda dos veces

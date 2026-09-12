@@ -166,6 +166,10 @@ El identificador del documento es el UID de Firebase Authentication.
 | `esPWAInstalada` | boolean | Crítico en iOS: sin instalación no hay notificaciones (RES-05) |
 | `navegador` | string | Nombre y versión |
 | `versionApp` | string | Con qué versión de la aplicación se registró (`1.5.0`). Se refresca en cada apertura: dice qué código tiene esa persona delante hoy |
+| `webPush` | map | La suscripción en crudo que reportó el service worker: `endpoint`, `p256dh`, `auth` y cuándo. Hoy es diagnóstico; es lo que hará falta el día que se envíe por Web Push directo (DT-23) |
+| `suscripcionRotadaEn` | timestamp | Cuándo el navegador rotó la suscripción, según el propio worker |
+| `tokenPendienteDeRenovar` | boolean | El token guardado ya no vale; solo la página puede acuñar uno nuevo, y lo hace en la siguiente apertura |
+| `canalRevisadoEn` | timestamp | Última revisión periódica del worker (solo Android con la aplicación instalada) |
 | `permisoNotificacion` | string | `concedido` · `denegado` · `pendiente` |
 | `activo` | boolean | Se pone en `false` cuando FCM rechaza el token |
 | `registradoEn` | timestamp | |

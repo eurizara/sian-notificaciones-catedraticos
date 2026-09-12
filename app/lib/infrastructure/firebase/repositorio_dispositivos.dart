@@ -9,9 +9,12 @@
 /// principal del riesgo R-01.
 library;
 
+import 'dart:async';
+
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
+import '../../core/plataforma/canal.dart';
 import '../../core/version.dart';
 import '../../core/entorno.dart';
 import '../../core/navegador.dart';
@@ -239,6 +242,27 @@ class RepositorioDispositivos {
 
     final Map<Object?, Object?> datos =
         (r.data as Map<Object?, Object?>?) ?? <Object?, Object?>{};
+
+    if (datos['registrado'] == true) {
+      // ──────────────────────────────────────────────────────────────────────
+      // Que el worker pueda arreglar el canal sin nosotros (DT-23).
+      // ──────────────────────────────────────────────────────────────────────
+      //
+      // Se le deja dicho a quién pertenece este aparato —no tiene sesión ni
+      // puede leer `localStorage`— y se pide que el sistema lo despierte cada
+      // cierto tiempo para revisar la suscripción. Lo segundo solo existe en
+      // Android con la aplicación instalada; donde no está, no se hace nada.
+      //
+      // Nada de esto puede tumbar un registro que ya salió bien, así que los
+      // fallos se tragan.
+      unawaited(
+        avisarIdentidadAlWorker(
+          uid: (datos['uid'] as String?) ?? '',
+          instalacionId: identificadorDeInstalacion(),
+        ).catchError((Object _) {}),
+      );
+      unawaited(pedirRevisionPeriodicaDelCanal().catchError((Object _) {}));
+    }
 
     return ResultadoRegistro(
       permiso: permiso,
