@@ -76,6 +76,33 @@ export function sabeAcusar(version: string | undefined | null): boolean {
   return true;
 }
 
+/**
+ * ¿Se puede afirmar que a esta persona su aparato no le mostró el aviso?
+ *
+ * Dos caminos, y basta uno:
+ *
+ *   · La **versión** que corría su aparato sabía acusar.
+ *   · O ya **consta que acusó** algo antes de este envío, aunque su versión no
+ *     lo diga: el service worker se renueva en cada arranque mientras la
+ *     aplicación espera a que alguien recargue, así que hay aparatos que acusan
+ *     con la versión sin reportar. Se vio el 12 de septiembre de 2026.
+ *
+ * Sin ninguno de los dos, el silencio no significa nada y no se acusa a nadie.
+ */
+export function podiaAcusar(entrada: {
+  versionAparato?: string | null;
+  enviadoAFcmEn: Date | null;
+  acusaDesde: Date | null;
+}): boolean {
+  if (sabeAcusar(entrada.versionAparato)) {
+    return true;
+  }
+  if (entrada.acusaDesde === null) {
+    return false;
+  }
+  return entrada.enviadoAFcmEn === null || entrada.acusaDesde <= entrada.enviadoAFcmEn;
+}
+
 /** Cuánto se espera un acuse antes de volver a intentar el aviso. */
 export const MINUTOS_SIN_ACUSE_PARA_REINTENTAR = 10;
 

@@ -53,15 +53,34 @@ export const acuseDeNotificacion = onRequest(
         .collection('entregas')
         .doc(uid);
 
+      const refUsuario = db.collection(RUTAS.usuarios).doc(uid);
+
       // Una sola vez: el mismo aviso puede mostrarse en dos aparatos de la
       // misma persona, y lo que se cuenta es «a esta persona se le mostró».
       const anotado = await db.runTransaction(async (tx) => {
-        const entrega = await tx.get(refEntrega);
+        const [entrega, usuario] = await Promise.all([
+          tx.get(refEntrega),
+          tx.get(refUsuario),
+        ]);
         if (!entrega.exists || entrega.get('acuseId') !== acuseId) {
           // Seña que no corresponde. Se responde igual que en el caso bueno:
           // decir «esa entrega no existe» ya contaría algo.
           return false;
         }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Que llegue un acuse DEMUESTRA que esta persona puede acusar.
+        // ────────────────────────────────────────────────────────────────────
+        //
+        // La versión del aparato no siempre lo dice: el service worker se
+        // renueva en cada arranque, mientras que la aplicación en sí espera a
+        // que alguien recargue. Se vio el 12 de septiembre de 2026 — acusó un
+        // iPhone cuya versión constaba vacía—. Desde el primer acuse, su
+        // silencio en un aviso posterior sí significa algo.
+        if (usuario.exists && usuario.get('acusaDesde') == null) {
+          tx.update(refUsuario, { acusaDesde: FieldValue.serverTimestamp() });
+        }
+
         if (entrega.get('mostradaEn') != null) {
           return false;
         }
