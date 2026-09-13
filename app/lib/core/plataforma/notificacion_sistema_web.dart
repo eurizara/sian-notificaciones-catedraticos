@@ -51,7 +51,9 @@ Future<bool> mostrarNotificacionDelSistema({
           web.NotificationOptions(
             body: cuerpo,
             icon: '/icons/Icon-192.png',
-            badge: '/icons/Icon-192.png',
+            // Silueta sobre transparente: Android pinta la insignia solo con
+            // el canal alfa, y el icono opaco salía como un cuadrado blanco.
+            badge: '/icons/insignia-notificacion.png',
             // Misma etiqueta que usa el service worker: si las dos rutas
             // muestran el mismo aviso, se reemplazan en vez de duplicarse.
             tag: etiqueta ?? 'sian',

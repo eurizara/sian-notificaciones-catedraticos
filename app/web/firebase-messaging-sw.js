@@ -540,7 +540,11 @@ function componer(carga) {
     opciones: {
       body: datos.cuerpo || deNotificacion.body || '',
       icon: '/icons/Icon-192.png',
-      badge: '/icons/Icon-192.png',
+      // Android pinta la insignia usando SOLO el canal alfa. El icono de la
+      // aplicación es opaco de borde a borde y salía como un cuadrado blanco
+      // macizo, en la notificación y en la barra de estado. La insignia es una
+      // silueta sobre transparente (scripts/generar-insignia-notificacion.py).
+      badge: '/icons/insignia-notificacion.png',
       // Agrupa por mensaje. Sirve además para que las dos rutas que pueden
       // mostrar el mismo aviso —esta y la de la aplicación— se reemplacen en
       // vez de duplicarse. Las respuestas (DT-27) traen su propia etiqueta.
