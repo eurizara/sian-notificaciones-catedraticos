@@ -30,7 +30,8 @@
 const PUBLICAS: Record<string, string> = {
   'sian-umg-bdm-dev':
     'BKXdY3qydUGq6byS_W9cUwy3ysqlpThNqh-HhxtkrUgXeuWfK2dk0WhGwT8fxrHbW-OJVFaJjp3AfUYVIS2czNU',
-  // 'sian-umg-bdm-qa': pendiente de generar
+  'sian-umg-bdm-qa':
+    'BJdWvY3LzFBl35JW1fVXtJDFfLO5C_VuEM8kTWciWoXkvXXSIst65N2rrZ9MLb_BAxO-m8oTBf4aOjg6A4-lcKE',
   // 'sian-umg-bdm': pendiente de generar
 };
 
