@@ -9,14 +9,18 @@
 /// principal del riesgo R-01.
 library;
 
+import 'dart:async';
+
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
+import '../../core/plataforma/canal.dart';
 import '../../core/version.dart';
 import '../../core/entorno.dart';
 import '../../core/navegador.dart';
 import '../../core/plataforma/consola.dart';
 import '../../core/plataforma/instalacion.dart';
+import '../../core/plataforma/suscripcion.dart';
 
 /// Estado del permiso, tal como lo entiende el sistema.
 enum EstadoPermiso { concedido, denegado, pendiente, noSoportado }
@@ -174,6 +178,44 @@ class RepositorioDispositivos {
         );
       }
 
+      // ────────────────────────────────────────────────────────────────────
+      // Con llave propia, NO se pide el token de FCM.
+      // ────────────────────────────────────────────────────────────────────
+      //
+      // El navegador tiene una sola suscripción: pedir el token la haría con
+      // la llave de Firebase, y entonces lo único que podríamos enviar sería
+      // algo que solo esta página sabe acuñar. Con la llave propia guardamos
+      // la suscripción en crudo, que el service worker sí renueva solo cuando
+      // el navegador rota de madrugada (DT-23).
+      // ────────────────────────────────────────────────────────────────────
+      // CON PLAZO. Un paso nuevo no puede dejar sin canal al que ya había.
+      // ────────────────────────────────────────────────────────────────────
+      //
+      // Aquí se esperaba sin límite, y `serviceWorker.ready` —que no resuelve
+      // nunca en esta aplicación— dejó el registro colgado: ningún aparato
+      // volvió a registrarse, ni por la vía nueva ni por FCM, y no hubo un
+      // solo error que lo delatara (12/09/2026). Si la suscripción propia no
+      // está en unos segundos, se sigue por FCM, que es lo que había antes.
+      final Map<String, String>? suscripcion =
+          await suscribirConLlavePropia(Entorno.claveVapidPropia)
+              .timeout(
+                const Duration(seconds: 12),
+                onTimeout: () {
+                  consolaError('SIAN.dispositivo suscripción propia | sin respuesta');
+                  return null;
+                },
+              );
+      if (suscripcion != null) {
+        consolaError('SIAN.dispositivo suscripción propia | lista');
+        _yaRefrescado = true;
+        return await _registrarEnServidor(
+          token: null,
+          suscripcion: suscripcion,
+          permiso: permiso,
+          enviarPrueba: enviarPrueba,
+        );
+      }
+
       final String? token = await _mensajeria.getToken(
         vapidKey: Entorno.claveVapid.isEmpty ? null : Entorno.claveVapid,
       );
@@ -201,8 +243,9 @@ class RepositorioDispositivos {
     required String? token,
     required EstadoPermiso permiso,
     required bool enviarPrueba,
+    Map<String, String>? suscripcion,
   }) async {
-    if (token == null) {
+    if (token == null && suscripcion == null) {
       return ResultadoRegistro(
         permiso: permiso,
         registrado: false,
@@ -216,7 +259,11 @@ class RepositorioDispositivos {
     final HttpsCallableResult<Object?> r = await _fn
         .httpsCallable('registrarDispositivo')
         .call<Object?>(<String, Object?>{
-          'tokenFCM': token,
+          'tokenFCM': token ?? '',
+          // La suscripción propia, cuando el aparato se suscribió con nuestra
+          // llave. Es lo que permite enviarle sin depender de un token que
+          // solo la página sabe acuñar (DT-23).
+          'webPush': ?suscripcion,
           // Identidad del aparato, estable entre aperturas. El token no sirve
           // para eso: en iOS se rota, y usarlo creaba un dispositivo nuevo en
           // cada ingreso (DT-18).
@@ -239,6 +286,27 @@ class RepositorioDispositivos {
 
     final Map<Object?, Object?> datos =
         (r.data as Map<Object?, Object?>?) ?? <Object?, Object?>{};
+
+    if (datos['registrado'] == true) {
+      // ──────────────────────────────────────────────────────────────────────
+      // Que el worker pueda arreglar el canal sin nosotros (DT-23).
+      // ──────────────────────────────────────────────────────────────────────
+      //
+      // Se le deja dicho a quién pertenece este aparato —no tiene sesión ni
+      // puede leer `localStorage`— y se pide que el sistema lo despierte cada
+      // cierto tiempo para revisar la suscripción. Lo segundo solo existe en
+      // Android con la aplicación instalada; donde no está, no se hace nada.
+      //
+      // Nada de esto puede tumbar un registro que ya salió bien, así que los
+      // fallos se tragan.
+      unawaited(
+        avisarIdentidadAlWorker(
+          uid: (datos['uid'] as String?) ?? '',
+          instalacionId: identificadorDeInstalacion(),
+        ).catchError((Object _) {}),
+      );
+      unawaited(pedirRevisionPeriodicaDelCanal().catchError((Object _) {}));
+    }
 
     return ResultadoRegistro(
       permiso: permiso,

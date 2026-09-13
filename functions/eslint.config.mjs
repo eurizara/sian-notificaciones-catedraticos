@@ -29,6 +29,9 @@ export default [
         process: 'readonly',
         Buffer: 'readonly',
         __dirname: 'readonly',
+        // Node 20 lo trae de serie; se usa para leer la llave VAPID y el
+        // token de la cuenta de servicio sin añadir dependencias (DT-23).
+        fetch: 'readonly',
       },
     },
     plugins: {

@@ -83,6 +83,13 @@ interface DispositivoLeido extends DispositivoAEvaluar {
   readonly permisoNotificacion: string;
   readonly plataforma: string;
   readonly versionApp: string;
+
+  /**
+   * Si se suscribió con nuestra llave propia (DT-23). Ese aparato **no tiene
+   * token de FCM que validar**: su suscripción la comprueba el servicio de push
+   * en cada envío real, devolviendo 404 o 410 cuando ya no existe.
+   */
+  readonly tieneWebPush: boolean;
 }
 
 function aFecha(valor: unknown): Date | null {
@@ -106,6 +113,9 @@ async function leerDispositivos(): Promise<DispositivoLeido[]> {
     permisoNotificacion: (d.get('permisoNotificacion') as string | undefined) ?? 'pendiente',
     plataforma: (d.get('plataforma') as string | undefined) ?? '',
     versionApp: (d.get('versionApp') as string | undefined) ?? '',
+    tieneWebPush: Boolean(
+      (d.get('webPush') as { endpoint?: string } | undefined)?.endpoint,
+    ),
   }));
 }
 
@@ -194,7 +204,7 @@ async function retirar(
  */
 export const sondaDeCanal = onSchedule(
   {
-    schedule: 'every monday 06:00',
+    schedule: 'every day 06:00',
     timeZone: ZONA_INSTITUCIONAL,
     region: 'us-central1',
     memory: '512MiB',
@@ -218,7 +228,7 @@ export const sondaDeCanal = onSchedule(
     for (const dispositivo of dispositivos) {
       const decision = decidirSobreDispositivo(
         dispositivo,
-        !muertos.has(dispositivo.tokenFCM),
+        dispositivo.tieneWebPush || !muertos.has(dispositivo.tokenFCM),
         ahora,
       );
       if (decision === 'conservar') {
@@ -447,7 +457,12 @@ export const dispositivosQueNecesitanAtencion = onCall(OPCIONES_FUNCION, async (
 
     const suyos = porUid.get(doc.id) ?? [];
     const estado = estadoDeCanal(
-      suyos.map((d) => ({ ...d, tokenVivo: !muertos.has(d.tokenFCM) })),
+      // Un aparato con vía propia se da por vivo aquí: no hay token que
+      // preguntar, y su suscripción se comprueba en cada envío real.
+      suyos.map((d) => ({
+        ...d,
+        tokenVivo: d.tieneWebPush || !muertos.has(d.tokenFCM),
+      })),
       ahora,
       30,
       falloElUltimo.get(doc.id) ?? null,

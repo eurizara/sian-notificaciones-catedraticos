@@ -57,24 +57,133 @@ importScripts('/sw-decisiones.js');
  */
 self.addEventListener('pushsubscriptionchange', (evento) => {
   trazar('suscripcion:rotada');
-  evento.waitUntil(
-    (async () => {
-      try {
-        await marcarSuscripcionRotada();
-        const ventanas = await self.clients.matchAll({
-          type: 'window',
-          includeUncontrolled: true,
-        });
-        for (const ventana of ventanas) {
-          ventana.postMessage({ tipo: 'sian:reregistrar' });
-        }
-        trazar('suscripcion:avisadas', { ventanas: ventanas.length });
-      } catch (e) {
-        trazar('suscripcion:aviso-fallo', String(e));
-      }
-    })(),
-  );
+  evento.waitUntil(renovarYReportar('rotada', evento));
 });
+
+/**
+ * Revisión periódica del canal, solo donde el navegador la ofrece (DT-23).
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Sin esto, un canal roto de madrugada no se arregla hasta que alguien abre.
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * `periodicsync` lo despierta el sistema cada cierto tiempo —el navegador
+ * decide, en la práctica no más de una vez cada doce horas— con la aplicación
+ * cerrada. Es la única forma de comprobar el canal sin pedirle nada a nadie.
+ *
+ * Existe en Chrome de Android con la aplicación instalada. En iPhone **no
+ * existe**, y por eso el evento sencillamente nunca llega ahí: no se rompe
+ * nada, simplemente no aporta. Para iOS sigue valiendo lo de siempre —se
+ * renueva al abrir— y la sonda del servidor, que ahora mira a diario.
+ */
+self.addEventListener('periodicsync', (evento) => {
+  if (evento.tag !== 'sian-revisar-canal') {
+    return;
+  }
+  trazar('canal:revision');
+  evento.waitUntil(renovarYReportar('revision', null));
+});
+
+/**
+ * Se vuelve a suscribir si hace falta, y **le dice al servidor cuál es su
+ * suscripción de ahora**.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * El agujero que tapa: el navegador rota y nadie se entera.
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * El 12 de septiembre de 2026 un Android y una computadora perdieron el canal
+ * de madrugada, sin que nadie tocara nada. El navegador había rotado la
+ * suscripción; el servidor se quedó con la anterior, y el aviso de la mañana
+ * falló. Solo se supo **después** de perder ese aviso.
+ *
+ * Aquí se hacen las dos cosas que el worker sí puede hacer solo:
+ *
+ *   1. **Resuscribirse** con la misma llave pública que ya se estaba usando
+ *      —se lee de la suscripción anterior, o del evento cuando el navegador la
+ *      entrega—, para que el aparato vuelva a tener un canal vivo.
+ *   2. **Reportarlo** al servidor, que anota la suscripción nueva y marca el
+ *      registro para que Alcance lo enseñe en el momento, en vez de esperar a
+ *      que falle un envío.
+ *
+ * Lo que NO puede hacer: acuñar el token de FCM, que solo se consigue desde la
+ * página. Por eso el registro queda marcado como «pendiente de renovar» y la
+ * aplicación lo completa en la siguiente apertura.
+ */
+async function renovarYReportar(motivo, evento) {
+  try {
+    await marcarSuscripcionRotada();
+
+    let suscripcion = await self.registration.pushManager.getSubscription();
+
+    if (!suscripcion) {
+      // La llave con la que estaba suscrito. Sin ella no se puede volver a
+      // suscribir, y suscribirse con otra distinta rompería el canal en vez de
+      // arreglarlo.
+      const llave =
+        (evento && evento.oldSubscription && evento.oldSubscription.options &&
+          evento.oldSubscription.options.applicationServerKey) ||
+        (await leerDelAlmacen(LLAVE_CLAVE_PUBLICA)) ||
+        null;
+      if (llave) {
+        suscripcion = await self.registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: llave,
+        });
+        trazar('suscripcion:renovada');
+      }
+    }
+
+    if (suscripcion) {
+      // Se guarda la llave para la próxima: cuando el navegador retira la
+      // suscripción sin avisar, ya no hay de dónde sacarla.
+      const opciones = suscripcion.options || {};
+      if (opciones.applicationServerKey) {
+        await guardarEnAlmacen(LLAVE_CLAVE_PUBLICA, opciones.applicationServerKey);
+      }
+      await reportarSuscripcion(suscripcion, motivo);
+    }
+
+    // Y si hay alguna ventana abierta, que se registre ya, sin esperar a que
+    // alguien cierre y vuelva a abrir.
+    const ventanas = await self.clients.matchAll({
+      type: 'window',
+      includeUncontrolled: true,
+    });
+    for (const ventana of ventanas) {
+      ventana.postMessage({ tipo: 'sian:reregistrar' });
+    }
+    trazar('suscripcion:avisadas', { ventanas: ventanas.length });
+  } catch (e) {
+    trazar('suscripcion:renovar-fallo', String(e));
+  }
+}
+
+/** Manda la suscripción al servidor, si se sabe de quién es. */
+async function reportarSuscripcion(suscripcion, motivo) {
+  try {
+    const destino = self.SianDecisiones.direccionDeSuscripcion(self.SIAN_FIREBASE_CONFIG);
+    const identidad = await leerDelAlmacen(LLAVE_IDENTIDAD);
+    const cuerpo = self.SianDecisiones.cuerpoDeSuscripcion(
+      identidad,
+      suscripcion.toJSON ? suscripcion.toJSON() : suscripcion,
+      motivo,
+    );
+    if (!destino || !cuerpo) {
+      trazar('suscripcion:sin-a-donde-reportar');
+      return;
+    }
+    await fetch(destino, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cuerpo),
+      keepalive: true,
+    });
+    trazar('suscripcion:reportada', motivo);
+  } catch (e) {
+    trazar('suscripcion:reporte-fallo', String(e));
+  }
+}
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (evento) => evento.waitUntil(self.clients.claim()));
@@ -112,6 +221,8 @@ const ALMACEN = 'estado';
 const LLAVE = 'sinLeer';
 const LLAVE_AVISADOS = 'avisados';
 const LLAVE_ROTADA = 'suscripcionRotada';
+const LLAVE_IDENTIDAD = 'identidad';
+const LLAVE_CLAVE_PUBLICA = 'clavePublica';
 
 function _abrirBase() {
   return new Promise((resolver, rechazar) => {
@@ -178,6 +289,36 @@ function anotarMensaje(mensajeId) {
 }
 
 /** Anota que la suscripción rotó, para que la aplicación se entere al arrancar. */
+/** Guarda un valor suelto en el almacén del worker. */
+function guardarEnAlmacen(llave, valor) {
+  return _abrirBase()
+    .then(
+      (bd) =>
+        new Promise((resolver, rechazar) => {
+          const transaccion = bd.transaction(ALMACEN, 'readwrite');
+          transaccion.objectStore(ALMACEN).put(valor, llave);
+          transaccion.oncomplete = () => resolver();
+          transaccion.onerror = () => rechazar(transaccion.error);
+        }),
+    )
+    .catch(() => undefined);
+}
+
+/** Lee un valor suelto del almacén del worker. */
+function leerDelAlmacen(llave) {
+  return _abrirBase()
+    .then(
+      (bd) =>
+        new Promise((resolver) => {
+          const transaccion = bd.transaction(ALMACEN, 'readonly');
+          const pedir = transaccion.objectStore(ALMACEN).get(llave);
+          pedir.onsuccess = () => resolver(pedir.result);
+          pedir.onerror = () => resolver(undefined);
+        }),
+    )
+    .catch(() => undefined);
+}
+
 function marcarSuscripcionRotada() {
   return _abrirBase().then(
     (bd) =>
@@ -356,6 +497,18 @@ async function cerrarLasQueYaSeLeyeron(idsSinLeer, cuenta) {
  */
 self.addEventListener('message', (evento) => {
   const dato = evento.data || {};
+  // La aplicación deja aquí quién es y en qué aparato está. El worker no tiene
+  // sesión y no puede leer `localStorage`, así que sin esto no podría decirle
+  // al servidor a qué registro pertenece una suscripción nueva (DT-23).
+  if (dato.tipo === 'sian:identidad') {
+    evento.waitUntil(
+      guardarEnAlmacen(LLAVE_IDENTIDAD, {
+        uid: dato.uid,
+        instalacionId: dato.instalacionId,
+      }),
+    );
+    return;
+  }
   if (dato.tipo === 'sian:insignia') {
     // `idsSinLeer` llega desde la versión que corrige DT-26. Puede faltar si la
     // pestaña abierta es de un despliegue anterior: `fijarInsignia` sabe
@@ -387,7 +540,11 @@ function componer(carga) {
     opciones: {
       body: datos.cuerpo || deNotificacion.body || '',
       icon: '/icons/Icon-192.png',
-      badge: '/icons/Icon-192.png',
+      // Android pinta la insignia usando SOLO el canal alfa. El icono de la
+      // aplicación es opaco de borde a borde y salía como un cuadrado blanco
+      // macizo, en la notificación y en la barra de estado. La insignia es una
+      // silueta sobre transparente (scripts/generar-insignia-notificacion.py).
+      badge: '/icons/insignia-notificacion.png',
       // Agrupa por mensaje. Sirve además para que las dos rutas que pueden
       // mostrar el mismo aviso —esta y la de la aplicación— se reemplacen en
       // vez de duplicarse. Las respuestas (DT-27) traen su propia etiqueta.
@@ -500,13 +657,17 @@ async function acusarQueSeMostro(datos) {
  * teléfono sí las enseña. Con eso, la tarjeta que avisa de que no se mostraron
  * deja de insistir en vez de quedarse una semana diciendo algo ya resuelto.
  */
-async function avisarQueSeMostro(ventanas) {
+async function avisarQueSeMostro(ventanas, datos) {
   try {
     const abiertas =
       ventanas ||
       (await self.clients.matchAll({ type: 'window', includeUncontrolled: true }));
     for (const ventana of abiertas) {
-      ventana.postMessage({ tipo: 'sian:mostrada' });
+      // Los datos viajan con el aviso para que la aplicación abierta pueda
+      // enseñar su tarjeta. Con Web Push directo (DT-23) el SDK de Firebase no
+      // interviene, así que este es el único camino por el que la pantalla se
+      // entera de un aviso recién llegado.
+      ventana.postMessage({ tipo: 'sian:mostrada', datos: datos || {} });
     }
   } catch (e) {
     trazar('mostrada:aviso-falló', String(e));
@@ -538,7 +699,7 @@ self.addEventListener('push', (evento) => {
       await self.registration.showNotification(titulo, opciones);
       await sumarInsignia(opciones.data && opciones.data.mensajeId);
       await acusarQueSeMostro(carga && carga.data);
-      await avisarQueSeMostro(ventanas);
+      await avisarQueSeMostro(ventanas, carga && carga.data);
     })(),
   );
 });

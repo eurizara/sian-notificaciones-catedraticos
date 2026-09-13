@@ -26,6 +26,8 @@ const {
   etiquetaDeNotificacion,
   direccionDeAcuse,
   cuerpoDeAcuse,
+  direccionDeSuscripcion,
+  cuerpoDeSuscripcion,
 } = require('./sw-decisiones.js');
 
 /** Una notificación como las que devuelve `getNotifications()`. */
@@ -206,3 +208,47 @@ describe('el acuse de que se mostró — DT-31', () => {
     assert.equal(cuerpoDeAcuse(undefined), null);
   });
 });
+
+describe('el reporte de suscripción — DT-23', () => {
+  const suscripcion = {
+    endpoint: 'https://fcm.googleapis.com/wp/abc123',
+    keys: { p256dh: 'BKp...', auth: 'x9y8' },
+  };
+  const identidad = { uid: 'uid-1', instalacionId: 'ins_abc' };
+
+  test('la dirección sale del proyecto, como el acuse', () => {
+    assert.equal(
+      direccionDeSuscripcion({ projectId: 'sian-umg-bdm-qa' }),
+      'https://us-central1-sian-umg-bdm-qa.cloudfunctions.net/reportarSuscripcion',
+    );
+    assert.equal(direccionDeSuscripcion({}), null);
+  });
+
+  test('lleva identidad, suscripción y motivo', () => {
+    assert.deepEqual(cuerpoDeSuscripcion(identidad, suscripcion, 'rotada'), {
+      uid: 'uid-1',
+      instalacionId: 'ins_abc',
+      endpoint: 'https://fcm.googleapis.com/wp/abc123',
+      p256dh: 'BKp...',
+      auth: 'x9y8',
+      motivo: 'rotada',
+    });
+  });
+
+  test('sin identidad NO se reporta: el servidor no sabría de quién es', () => {
+    // La identidad la deja la aplicación al registrar el dispositivo. Si el
+    // worker se despierta antes de que eso ocurra, se calla.
+    assert.equal(cuerpoDeSuscripcion(undefined, suscripcion, 'rotada'), null);
+    assert.equal(cuerpoDeSuscripcion({ uid: 'uid-1' }, suscripcion, 'rotada'), null);
+  });
+
+  test('sin suscripción tampoco hay nada que reportar', () => {
+    assert.equal(cuerpoDeSuscripcion(identidad, {}, 'rotada'), null);
+    assert.equal(cuerpoDeSuscripcion(identidad, undefined, 'rotada'), null);
+  });
+
+  test('un motivo desconocido se guarda como revisión, no se inventa', () => {
+    assert.equal(cuerpoDeSuscripcion(identidad, suscripcion, 'cualquiera').motivo, 'revision');
+  });
+});
+

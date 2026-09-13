@@ -25,6 +25,17 @@ abstract final class Entorno {
   /// navegador. Aun así se trata como configuración por ambiente.
   static const String claveVapid = String.fromEnvironment('FIREBASE_VAPID_KEY');
 
+  /// Llave pública VAPID **propia**, para suscribirse sin pasar por FCM (DT-23).
+  ///
+  /// Cuando está configurada, el aparato se suscribe con ella y lo que se
+  /// guarda es la suscripción en crudo: la única que el service worker sabe
+  /// renovar solo, sin que nadie abra la aplicación. Vacía en los ambientes
+  /// donde todavía no se ha generado el par, y entonces todo va por FCM como
+  /// siempre.
+  static const String claveVapidPropia = String.fromEnvironment(
+    'SIAN_VAPID_PROPIA',
+  );
+
   /// Zona horaria institucional (RF-ADM-01, RN-05).
   ///
   /// Toda fecha se almacena en UTC y se presenta en esta zona. El valor real

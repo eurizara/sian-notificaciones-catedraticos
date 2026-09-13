@@ -295,7 +295,7 @@ gratuita.
 | DT-20 | Instalada como aplicación, nada dice en qué ambiente se está | Conocimiento | **Media** | **Pagada** | 0 USD |
 | DT-21 | El tema oscuro está construido pero apagado, y no se puede elegir | Alcance | Baja | **Pagada** (en desarrollo) | 0 USD |
 | DT-22 | Un token muerto solo se descubre cuando falla un aviso real | Alcance | **Alta** | **Pagada** | 0 USD |
-| DT-23 | El service worker no atiende `pushsubscriptionchange` | Plataforma | **Media** | **Pagada a medias** | 0 USD |
+| DT-23 | El service worker no atiende `pushsubscriptionchange` | Plataforma | **Media** | **Pagada** (en desarrollo) | 0 USD |
 | DT-24 | Un envío con algún fallo deja la pantalla igual y se manda dos veces | Conocimiento | **Alta** | **Pagada** | 0 USD |
 | DT-25 | El entorno local compila con un Flutter distinto del que despliega | Conocimiento | **Media** | **Pagada** | 0 USD |
 | DT-26 | En Android el contador del icono se queda encendido con todo leído | Plataforma | **Media** | **Pagada** | 0 USD |
@@ -934,7 +934,7 @@ minuto—, así que el segundo sigue dentro de lo gratuito.
 
 ## DT-23 — El service worker no atiende `pushsubscriptionchange`
 
-**Origen:** plataforma · **Severidad:** media · **Estado:** abierta · **Costo:** 0 USD
+**Origen:** plataforma · **Severidad:** media · **Estado:** pagada en desarrollo (1.5.6 y 1.5.7) · **Costo:** 0 USD
 
 **Se trabaja antes que DT-22.** La sonda de DT-22 informa de un problema; esto lo reduce.
 Hacerlo al revés es construir un panel para vigilar algo que se podía haber evitado.
@@ -1013,6 +1013,78 @@ No hay magia; es la misma escalera de cuatro peldaños, y SIAN tiene dos:
 Quien nunca abre la aplicación termina siendo inalcanzable en todas ellas. Es una propiedad
 de la plataforma, no de este proyecto.
 
+
+
+### Cómo se terminó de pagar: el canal que se repara solo
+
+**12 de septiembre de 2026.** Dos casos medidos en desarrollo, y ninguno provocado por
+nadie:
+
+  · Un **Android** dejó de recibir entre las 22:50 y las 08:19, con el teléfono en reposo y
+    sin que su dueña lo tocara. El aviso de la mañana falló con
+    `registration-token-not-registered`.
+  · Una **computadora** con la aplicación instalada perdió el canal **a los cuarenta
+    minutos** de registrarse.
+
+Los dos son lo que esta ficha describía: el navegador rota la suscripción, el SDK acuña una
+nueva dentro del aparato, y nuestro servidor se queda con la anterior. La diferencia es que
+ahora sabemos que **no hace falta que pasen semanas**: puede ocurrir en horas.
+
+Lo que se añadió:
+
+  · **El worker se vuelve a suscribir él solo.** Al despertar por `pushsubscriptionchange`
+    comprueba si tiene suscripción y, si no, se suscribe de nuevo **con la misma llave
+    pública** —la lee de la suscripción anterior, y la guarda para cuando el navegador la
+    retire sin avisar—.
+  · **Y lo reporta al servidor** (`reportarSuscripcion`), que anota la suscripción en crudo
+    y marca el registro como *pendiente de renovar*. Así el panel puede enseñarlo en el
+    momento, en vez de esperar a perder un aviso.
+  · **El sistema lo despierta cada doce horas** para revisar el canal (`periodicsync`). Solo
+    existe en **Android con la aplicación instalada**; en iPhone la API no está y la
+    petición ni se hace — no se rompe nada, sencillamente no aporta ahí.
+  · **La sonda pasa a diaria.** Antes corría los lunes: un canal que moría el martes pasaba
+    seis días sin que nadie lo supiera.
+  · **El retiro de un registro muerto durante un envío deja asiento en bitácora**, como ya
+    hacía la sonda. Hubo que reconstruir a mano la historia de esos dos casos porque solo
+    existía en los registros técnicos del servidor.
+
+### Y el cierre: Web Push directo con llaves propias
+
+Lo anterior dejaba un hueco reconocido: el worker recupera la **suscripción**, pero el
+**token de FCM** solo se acuña desde la página, así que hasta que alguien abriera la
+aplicación el registro seguía sin servir para enviar.
+
+**12 de septiembre de 2026.** Se cerró cambiando de qué depende el envío:
+
+  · El aparato se suscribe con **nuestra llave VAPID pública** en vez de con la de
+    Firebase, y lo que se guarda es la **suscripción en crudo** —dirección y llaves de
+    cifrado—.
+  · El servidor le envía **directamente al servicio de push** del navegador, firmando con
+    nuestra llave privada. No hay token intermedio que solo la página sepa acuñar.
+  · Y como esa suscripción **sí la sabe rehacer el service worker**, el canal se repara de
+    madrugada sin que nadie abra nada.
+
+**Las dos vías conviven, y cada aparato usa una sola.** El que tenga suscripción propia va
+por Web Push directo; el que solo tenga token sigue por FCM, exactamente como antes.
+Mandar por las dos le enseñaría la misma notificación dos veces —en iPhone no se funden
+aunque lleven la misma etiqueta—.
+
+Para el service worker no cambia nada: el mensaje llega con la misma forma, así que la
+notificación, la insignia y el acuse funcionan igual. Lo que sí cambia es que con la vía
+propia el SDK de Firebase no interviene, y por eso la tarjeta que sale dentro de la
+aplicación ahora la alimenta el worker.
+
+**Qué hace falta por ambiente** (documento 11): habilitar Secret Manager, crear el secreto
+`VAPID_PRIVADA` con la llave privada, y añadir la pública en `vapid.ts` y en el despliegue.
+Donde no esté configurado, esta vía queda apagada y todo va por FCM: **un ambiente sin
+llaves despliega y funciona igual**.
+
+### Lo que sigue sin poder hacerse, ni con esto
+
+Si el navegador borra la suscripción y **no despierta al worker** —porque el aparato está
+apagado, o porque el sistema no le da ocasión—, no hay a dónde enviar hasta que alguien
+abra la aplicación. Lo que cambia es que ese caso pasa a ser la excepción y no la norma, y
+que se sabe en el momento en vez de al perder un aviso.
 
 ---
 
@@ -1568,6 +1640,41 @@ coordinación.
 > escribe en Firestore**, y el peor caso —alguien con un token ajeno redirigiendo los
 > avisos de otra persona a su aparato— es exactamente el tipo de fallo que este proyecto
 > evita por diseño. No se descarta; se deja como decisión aparte, con su propio análisis.
+
+### 12 de septiembre de 2026 — pagada del todo, y la lección que costó un envío
+
+Se dejó de depender del token: el aparato se suscribe con **nuestra** llave VAPID y el
+servidor le envía directo (1.5.6). Lo que el service worker sí sabe renovar solo es la
+suscripción en crudo, y ahora es eso lo que se guarda.
+
+**Y se rompió el registro de todos los aparatos sin que se viera.** La suscripción propia se
+pedía así:
+
+```dart
+final registro = await navigator.serviceWorker.ready;   // ← nunca resuelve
+```
+
+`ready` espera a que haya un worker **con alcance sobre la página**, y en SIAN no lo hay:
+
+  · el de Flutter se registra en `/`, pero esta compilación no guarda nada en caché y **se
+    da de baja solo** en cuanto se activa;
+  · el nuestro vive en `/firebase-cloud-messaging-push-scope`, que no cubre `/`.
+
+La promesa se queda pendiente para siempre. **No lanza**, así que el `try` que la rodeaba no
+sirvió de nada, y el registro del dispositivo se quedó colgado antes de pedir el token. El
+efecto medido: entre el despliegue y el aviso de prueba **ningún aparato llamó a
+`registrarDispositivo`** —ni por la vía nueva ni por la vieja—, no hubo una sola línea de
+error en el servidor, y un iPhone recién abierto con la versión del día no recibió nada.
+
+Tres cosas quedaron de esto (1.5.7):
+
+  1. **El registro se busca, no se espera.** `registroDelWorker()` lo localiza por su guion
+     entre los registros existentes, lo registra si falta, y **todo lleva plazo**: si no
+     aparece devuelve nulo y quien llamó sigue por FCM.
+  2. **Un paso nuevo no puede dejar sin canal al que ya había.** La suscripción propia se
+     pide con plazo propio; agotado, el aparato se registra por FCM como antes.
+  3. **Una espera sin plazo es peor que un fallo**, porque el fallo se ve. Hay una prueba
+     que falla si alguien vuelve a escribir `serviceWorker.ready` en el código.
 
 ---
 

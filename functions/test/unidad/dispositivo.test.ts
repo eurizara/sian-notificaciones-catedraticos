@@ -9,6 +9,7 @@
 
 import {
   crearDispositivo,
+  leerEntradaDeRegistro,
   esIdentificadorDeInstalacion,
   esTokenMuerto,
   motivoPorElQueNoRecibe,
@@ -197,5 +198,163 @@ describe('esIdentificadorDeInstalacion', () => {
 
   it('una cadena vacía no lo es', () => {
     expect(esIdentificadorDeInstalacion('')).toBe(false);
+  });
+});
+
+describe('DT-23 · un aparato vale por cualquiera de las dos vías', () => {
+  const suscripcion = {
+    endpoint: 'https://fcm.googleapis.com/wp/abc',
+    p256dh: 'BKp0123456789',
+    auth: 'auth12345',
+  };
+
+  it('con suscripción propia y SIN token de FCM, el registro es válido', () => {
+    // Es el caso bueno: esa suscripción sí la sabe renovar el service worker
+    // sin que nadie abra la aplicación.
+    const d = crearDispositivo({
+      plataforma: 'WEB_ANDROID',
+      permisoNotificacion: 'concedido',
+      webPush: suscripcion,
+    });
+    expect(d.webPush?.endpoint).toBe(suscripcion.endpoint);
+    expect(d.tokenFCM).toBe('');
+    expect(puedeRecibirNotificaciones(d)).toBe(true);
+  });
+
+  it('sin ninguna de las dos, se rechaza', () => {
+    esperarCodigo(
+      () => crearDispositivo({ plataforma: 'WEB_ANDROID', permisoNotificacion: 'concedido' }),
+      'TOKEN_FCM_INVALIDO',
+    );
+  });
+
+  it('una suscripción a medias no cuenta como vía', () => {
+    // Sin las llaves de cifrado no se le puede mandar nada.
+    esperarCodigo(
+      () =>
+        crearDispositivo({
+          plataforma: 'WEB_ANDROID',
+          permisoNotificacion: 'concedido',
+          webPush: { endpoint: suscripcion.endpoint },
+        }),
+      'TOKEN_FCM_INVALIDO',
+    );
+  });
+});
+
+
+describe('lo que manda la aplicación al registrarse', () => {
+  /**
+   * El cuerpo exacto que envía `repositorio_dispositivos.dart`. Si la
+   * aplicación añade un campo y aquí no se lee, esta prueba es la que lo dice.
+   */
+  const deUnIPhoneConLlavePropia = {
+    tokenFCM: '',
+    webPush: {
+      endpoint: 'https://web.push.apple.com/QMf6…',
+      p256dh: 'BJ3xY…',
+      auth: 'k7sQ…',
+    },
+    instalacionId: 'ins_0zaoi5xce3k800dy9d4t',
+    plataforma: 'WEB_IOS',
+    esPWAInstalada: true,
+    navegador: 'Safari',
+    permisoNotificacion: 'concedido',
+    enviarPrueba: true,
+    versionApp: '1.5.7',
+  };
+
+  it('la suscripción propia NO se queda por el camino', () => {
+    // El fallo del 12/09/2026: el trigger enumeraba los campos a mano y no
+    // leía `webPush`. Un aparato suscrito con nuestra llave no pide token, así
+    // que llegaba vacío por las dos vías y el registro se rechazaba con un
+    // 400. En el iPhone: «Activa las notificaciones» que no se iba nunca.
+    const entrada = leerEntradaDeRegistro(deUnIPhoneConLlavePropia);
+    expect(entrada.webPush?.endpoint).toBe('https://web.push.apple.com/QMf6…');
+    expect(entrada.webPush?.p256dh).toBe('BJ3xY…');
+    expect(entrada.webPush?.auth).toBe('k7sQ…');
+
+    const dispositivo = crearDispositivo(entrada);
+    expect(dispositivo.webPush).not.toBeNull();
+    expect(dispositivo.activo).toBe(true);
+  });
+
+  it('la versión del aparato tampoco', () => {
+    // Llevaba desde 1.5.2 perdiéndose, y es la que decide si de un aparato se
+    // puede afirmar que no mostró un aviso (DT-31): todos los dispositivos de
+    // desarrollo tenían la versión vacía.
+    expect(leerEntradaDeRegistro(deUnIPhoneConLlavePropia).versionApp).toBe('1.5.7');
+    expect(crearDispositivo(leerEntradaDeRegistro(deUnIPhoneConLlavePropia)).versionApp).toBe(
+      '1.5.7',
+    );
+  });
+
+  it('lo demás llega tal cual', () => {
+    const entrada = leerEntradaDeRegistro(deUnIPhoneConLlavePropia);
+    expect(entrada.plataforma).toBe('WEB_IOS');
+    expect(entrada.esPWAInstalada).toBe(true);
+    expect(entrada.navegador).toBe('Safari');
+    expect(entrada.permisoNotificacion).toBe('concedido');
+  });
+
+  it('un aparato que solo tiene token de FCM sigue registrándose igual', () => {
+    // Quien no haya recargado todavía manda lo de antes, sin `webPush`.
+    const entrada = leerEntradaDeRegistro({
+      tokenFCM: 'dM393XyJ3miedxcmVxgHmA:APA91bF'.padEnd(140, 'x'),
+      instalacionId: 'ins_vieja',
+      plataforma: 'WEB_ESCRITORIO',
+      navegador: 'Chrome',
+      permisoNotificacion: 'concedido',
+      versionApp: '1.5.4',
+    });
+    expect(entrada.webPush).toBeNull();
+    expect(crearDispositivo(entrada).tokenFCM.length).toBeGreaterThan(20);
+  });
+
+  it('sin ninguna de las dos vías se rechaza, como antes', () => {
+    esperarCodigo(
+      () =>
+        crearDispositivo(
+          leerEntradaDeRegistro({ tokenFCM: '', plataforma: 'WEB_IOS', webPush: null }),
+        ),
+      'TOKEN_FCM_INVALIDO',
+    );
+  });
+
+  it('una suscripción a medias no cuenta como vía', () => {
+    // Sin `auth` no se puede cifrar el mensaje: guardarla sería creer que hay
+    // canal donde no lo hay.
+    esperarCodigo(
+      () =>
+        crearDispositivo(
+          leerEntradaDeRegistro({
+            tokenFCM: '',
+            plataforma: 'WEB_IOS',
+            webPush: { endpoint: 'https://web.push.apple.com/QMf6…', p256dh: 'BJ3xY…' },
+          }),
+        ),
+      'TOKEN_FCM_INVALIDO',
+    );
+  });
+
+  it('lo que no es texto no revienta la traducción', () => {
+    // Llega de fuera: un número o un nulo donde se esperaba texto no puede
+    // tumbar el registro de todo el mundo.
+    const entrada = leerEntradaDeRegistro({
+      tokenFCM: 42,
+      plataforma: 'WEB_IOS',
+      navegador: null,
+      versionApp: undefined,
+      webPush: 'no soy un objeto',
+    });
+    expect(entrada.tokenFCM).toBe('');
+    expect(entrada.navegador).toBe('');
+    expect(entrada.versionApp).toBe('');
+    expect(entrada.webPush).toEqual({ endpoint: '', p256dh: '', auth: '' });
+  });
+
+  it('sin datos no se afirma nada', () => {
+    expect(leerEntradaDeRegistro(undefined).plataforma).toBe('');
+    expect(leerEntradaDeRegistro(null).permisoNotificacion).toBe('pendiente');
   });
 });

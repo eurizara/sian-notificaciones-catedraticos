@@ -20,6 +20,7 @@ import 'dart:js_interop';
 import 'package:web/web.dart' as web;
 
 import 'consola.dart';
+import 'registro_worker_web.dart';
 
 Future<bool> mostrarNotificacionDelSistema({
   required String titulo,
@@ -36,8 +37,11 @@ Future<bool> mostrarNotificacionDelSistema({
       return false;
     }
 
-    final web.ServiceWorkerRegistration registro =
-        await web.window.navigator.serviceWorker.ready.toDart;
+    final web.ServiceWorkerRegistration? registro = await registroDelWorker();
+    if (registro == null) {
+      consolaError('SIAN.notif sin worker | no se puede mostrar');
+      return false;
+    }
 
     consolaError('SIAN.notif registro | alcance=${registro.scope}');
 
@@ -47,7 +51,9 @@ Future<bool> mostrarNotificacionDelSistema({
           web.NotificationOptions(
             body: cuerpo,
             icon: '/icons/Icon-192.png',
-            badge: '/icons/Icon-192.png',
+            // Silueta sobre transparente: Android pinta la insignia solo con
+            // el canal alfa, y el icono opaco salía como un cuadrado blanco.
+            badge: '/icons/insignia-notificacion.png',
             // Misma etiqueta que usa el service worker: si las dos rutas
             // muestran el mismo aviso, se reemplazan en vez de duplicarse.
             tag: etiqueta ?? 'sian',
@@ -83,8 +89,10 @@ Future<bool> mostrarNotificacionDelSistema({
 /// una notificación de más, no una de menos.
 Future<void> cerrarNotificacionesDelSistema(String etiqueta) async {
   try {
-    final web.ServiceWorkerRegistration registro =
-        await web.window.navigator.serviceWorker.ready.toDart;
+    final web.ServiceWorkerRegistration? registro = await registroDelWorker();
+    if (registro == null) {
+      return;
+    }
     final JSArray<web.Notification> abiertas = await registro
         .getNotifications(web.GetNotificationOptions(tag: etiqueta))
         .toDart;

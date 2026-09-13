@@ -190,6 +190,52 @@
     return { mensajeId: d.mensajeId, ac: d.ac };
   }
 
+  /**
+   * ¿A dónde se reporta que la suscripción cambió? (DT-23, segunda mitad)
+   *
+   * Misma forma que el acuse: la dirección sale del proyecto que ya trae la
+   * configuración, así que apunta sola a su ambiente.
+   */
+  function direccionDeSuscripcion(config) {
+    const id = config && config.projectId;
+    if (typeof id !== 'string' || id.length === 0 || id === 'SIN-CONFIGURAR') {
+      return null;
+    }
+    return 'https://us-central1-' + id + '.cloudfunctions.net/reportarSuscripcion';
+  }
+
+  /**
+   * Lo que se manda al reportar una suscripción, o `null` si falta algo.
+   *
+   * Sin identidad —quién y qué aparato— el servidor no sabría a qué registro
+   * pertenece, y sin `endpoint` no hay suscripción que reportar. La identidad
+   * la deja la aplicación en el almacén del worker cuando registra el
+   * dispositivo: el worker no tiene sesión ni puede leer `localStorage`.
+   *
+   * @param {{uid?: string, instalacionId?: string}} identidad
+   * @param {{endpoint?: string, keys?: object}} suscripcion en forma JSON
+   * @param {string} motivo «rotada» o «revision»
+   */
+  function cuerpoDeSuscripcion(identidad, suscripcion, motivo) {
+    const i = identidad || {};
+    const s = suscripcion || {};
+    if (!i.uid || !i.instalacionId) {
+      return null;
+    }
+    if (typeof s.endpoint !== 'string' || s.endpoint.length === 0) {
+      return null;
+    }
+    const claves = s.keys || {};
+    return {
+      uid: i.uid,
+      instalacionId: i.instalacionId,
+      endpoint: s.endpoint,
+      p256dh: claves.p256dh || '',
+      auth: claves.auth || '',
+      motivo: motivo === 'rotada' ? 'rotada' : 'revision',
+    };
+  }
+
   const api = {
     notificacionesACerrar,
     decidirCuenta,
@@ -198,6 +244,8 @@
     etiquetaDeNotificacion,
     direccionDeAcuse,
     cuerpoDeAcuse,
+    direccionDeSuscripcion,
+    cuerpoDeSuscripcion,
   };
 
   if (typeof module !== 'undefined' && module.exports) {

@@ -19,13 +19,16 @@ import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { logger } from 'firebase-functions/v2';
 import { getMessaging } from 'firebase-admin/messaging';
 
+import { enviarPorWebPush } from '../infrastructure/webpush';
+
 import { crearAsiento } from '../domain/bitacora';
 import {
   crearDispositivo,
+  leerEntradaDeRegistro,
   motivoPorElQueNoRecibe,
   puedeRecibirNotificaciones,
 } from '../domain/dispositivo';
-import { ErrorDominio } from '../domain/errores';
+import { ErrorDominio, ErrorValidacion } from '../domain/errores';
 import type { Rol } from '../domain/tipos';
 import { FieldValue, OPCIONES_FUNCION, RUTAS, db } from '../infrastructure/firebase';
 import { escribirAsiento } from '../infrastructure/repositorios';
@@ -40,23 +43,14 @@ export const registrarDispositivo = onCall(OPCIONES_FUNCION, async (peticion) =>
   const rol = (peticion.auth.token.rol as Rol | undefined) ?? 'CATEDRATICO';
 
   const datos = peticion.data as {
-    tokenFCM?: string;
     instalacionId?: string;
-    plataforma?: string;
-    esPWAInstalada?: boolean;
-    navegador?: string;
-    permisoNotificacion?: string;
     enviarPrueba?: boolean;
   };
 
   try {
-    const dispositivo = crearDispositivo({
-      tokenFCM: datos.tokenFCM ?? '',
-      plataforma: datos.plataforma ?? '',
-      esPWAInstalada: datos.esPWAInstalada ?? false,
-      navegador: datos.navegador ?? '',
-      permisoNotificacion: datos.permisoNotificacion ?? 'pendiente',
-    });
+    // Toda la traducción vive en el dominio y está probada. Enumerar los
+    // campos aquí fue lo que perdió `webPush` y `versionApp` por el camino.
+    const dispositivo = crearDispositivo(leerEntradaDeRegistro(peticion.data));
 
     // ──────────────────────────────────────────────────────────────────────
     // EL DOCUMENTO SE IDENTIFICA POR INSTALACIÓN, NO POR TOKEN.
@@ -82,7 +76,17 @@ export const registrarDispositivo = onCall(OPCIONES_FUNCION, async (peticion) =>
     // atrás: sigue registrándose igual hasta que recargue.
     const coleccion = db.collection(RUTAS.usuarios).doc(uid).collection('dispositivos');
     const instalacionId = (datos.instalacionId ?? '').trim();
-    const ref = coleccion.doc(instalacionId || dispositivo.tokenFCM);
+    // Un aparato que se suscribió con nuestra llave no tiene token: sin
+    // identificador de instalación no habría nombre para el documento, y
+    // `doc('')` revienta con un error que no explica nada.
+    const nombre = instalacionId || dispositivo.tokenFCM;
+    if (nombre.length === 0) {
+      throw new ErrorValidacion(
+        'SIN_IDENTIFICADOR_DE_APARATO',
+        'No se pudo identificar este aparato. Vuelve a abrir la aplicación.',
+      );
+    }
+    const ref = coleccion.doc(nombre);
 
     const yaExistia = (await ref.get()).exists;
 
@@ -99,7 +103,13 @@ export const registrarDispositivo = onCall(OPCIONES_FUNCION, async (peticion) =>
     // Retira el registro que el esquema viejo había dejado con este mismo
     // token como identificador. Sin esto convivirían los dos y la persona
     // recibiría cada aviso dos veces.
-    if (instalacionId && instalacionId !== dispositivo.tokenFCM) {
+    // Con la llave propia no hay token, y `doc('')` no lanza una promesa
+    // rechazada: revienta en el acto, por debajo del `catch`.
+    if (
+      instalacionId &&
+      dispositivo.tokenFCM.length > 0 &&
+      instalacionId !== dispositivo.tokenFCM
+    ) {
       await coleccion
         .doc(dispositivo.tokenFCM)
         .delete()
@@ -126,18 +136,25 @@ export const registrarDispositivo = onCall(OPCIONES_FUNCION, async (peticion) =>
         // El service worker es quien pinta la notificación, y lee estos
         // mismos nombres. Enviar `notification` dejaba el cuerpo vacío
         // porque buscaba `data.cuerpo` y nadie lo mandaba.
-        await getMessaging().send({
-          token: dispositivo.tokenFCM,
-          data: {
-            tipo: 'PRUEBA_REGISTRO',
-            titulo: 'SIAN UMG-BDM',
-            cuerpo: 'Tu dispositivo quedó registrado. Aquí llegarán los avisos.',
-          },
-          webpush: {
-            fcmOptions: { link: '/' },
-          },
-        });
-        pruebaEnviada = true;
+        const prueba = {
+          tipo: 'PRUEBA_REGISTRO',
+          titulo: 'SIAN UMG-BDM',
+          cuerpo: 'Tu dispositivo quedó registrado. Aquí llegarán los avisos.',
+        };
+
+        // Por la vía de ESTE aparato: si se suscribió con nuestra llave, no
+        // tiene token de FCM y la prueba va por Web Push directo (DT-23).
+        if (dispositivo.webPush) {
+          const r = await enviarPorWebPush(dispositivo.webPush, prueba);
+          pruebaEnviada = r.ok;
+        } else {
+          await getMessaging().send({
+            token: dispositivo.tokenFCM,
+            data: prueba,
+            webpush: { fcmOptions: { link: '/' } },
+          });
+          pruebaEnviada = true;
+        }
       } catch (e) {
         // Que falle la prueba no invalida el registro: el token queda
         // guardado y el problema se ve en la bitácora.
@@ -173,6 +190,10 @@ export const registrarDispositivo = onCall(OPCIONES_FUNCION, async (peticion) =>
       puedeRecibir: puedeRecibirNotificaciones(dispositivo),
       motivoSinRecepcion: motivo,
       pruebaEnviada,
+      // Para que la aplicación le pueda decir al service worker a quién
+      // pertenece este aparato: él no tiene sesión, y sin eso no podría
+      // reportar una suscripción nueva (DT-23).
+      uid,
     };
   } catch (e) {
     if (e instanceof ErrorDominio) {

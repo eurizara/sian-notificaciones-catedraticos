@@ -122,6 +122,36 @@ de forma intermitente, que es lo peor: se reintenta, se queda pensando, y a la t
 entra. El cliente OAuth es uno por proyecto, así que registrar la URL en uno no sirve para
 los otros (DT-19).
 
+**Las llaves VAPID propias (DT-23).** Son las que permiten enviar Web Push **directo**, sin
+pasar por el token de FCM — y por tanto que el service worker pueda reparar el canal sin que
+nadie abra la aplicación. Por ambiente hace falta:
+
+  1. Generar el par: `node -e "console.log(JSON.stringify(require('web-push').generateVAPIDKeys()))"`
+     desde `functions/`.
+  2. Habilitar **Secret Manager** en el proyecto y crear el secreto `VAPID_PRIVADA` con la
+     llave privada, dando acceso de lectura a la cuenta con la que corren las funciones.
+  3. Poner la **pública** en `functions/src/infrastructure/vapid.ts` y en el
+     `--dart-define=SIAN_VAPID_PROPIA` de ese ambiente en `deploy.yml`.
+
+La privada **no se guarda en el repositorio ni en GitHub**. La pública sí, porque lo es:
+viaja a cada navegador en cada suscripción.
+
+Mientras un ambiente no tenga par propio, esta vía queda apagada y los avisos salen por FCM
+como siempre: desplegar sin **ninguna** de las dos llaves no rompe nada.
+
+> **El orden importa, y equivocarse deja al ambiente mudo.** Una aplicación compilada con
+> la pública se suscribe con ella y **ya no pide token de FCM**. Si el servidor no puede leer
+> la privada, no puede enviarle por Web Push y tampoco tiene token al que caer: el envío
+> sale como `SIN_LLAVES` y a ese aparato no le llega nada. Por eso:
+>
+>   1. **Primero** el secreto `VAPID_PRIVADA` en Secret Manager, con acceso para la cuenta
+>      de las funciones, y comprobado.
+>   2. **Después** la pública en `vapid.ts` y en `deploy.yml`, en el mismo cambio.
+>
+> Las dos públicas tienen que ser idénticas: si difieren, el servicio de push rechaza la
+> firma de todos los envíos. `functions/test/unidad/vapid.test.ts` falla si no coinciden o
+> si una tiene mal la forma.
+
 **El proveedor de Google.** Se habilita en Authentication → Sign-in method → Google.
 Ese clic crea el cliente OAuth; la API no lo crea sola. Sin él, el botón «Entrar con
 Google» aparece en pantalla y falla al pulsarlo.
@@ -319,9 +349,9 @@ aviso más bajo.
 > Lo que no sería evidente es llegar aquí sin darse cuenta. Por eso este renglón queda
 > escrito con su número, y no diluido en un «sigue siendo gratis».
 
-Si algún día hiciera falta volver a cero: la sonda es semanal y el despachador es por
+Si algún día hiciera falta volver a cero: la sonda es diaria y el despachador es por
 minuto, así que el candidato a fusionar sería la sonda dentro del despachador con una
-comprobación de día y hora. **No se hizo** porque mezclar una tarea semanal dentro de una que
+comprobación de día y hora. **No se hizo** porque mezclar una tarea diaria dentro de una que
 corre cada minuto es la clase de ahorro que se paga en confusión el día que algo falla.
 
 Antes de agregar cualquier tarea programada hay que contar las que ya existen:
