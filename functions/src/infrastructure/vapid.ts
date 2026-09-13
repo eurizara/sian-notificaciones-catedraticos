@@ -18,15 +18,20 @@
  *
  * La pública va aquí porque **es pública por diseño**: viaja a cada navegador en
  * cada suscripción. La privada vive en Secret Manager de cada proyecto, y se lee
- * en tiempo de ejecución; si falta, no se envía por esta vía y se sigue usando
- * FCM como siempre.
+ * en tiempo de ejecución.
+ *
+ * Si falta la privada, esta vía no envía. Eso es inofensivo solo mientras la
+ * aplicación de ese ambiente se compile SIN la pública: un aparato suscrito con
+ * ella no tiene token de FCM al que caer. Primero el secreto, después la
+ * pública — ver el documento 11 y `test/unidad/vapid.test.ts`.
  */
 
 /** Llave pública por proyecto. Vacío = ese ambiente aún no tiene par propio. */
 const PUBLICAS: Record<string, string> = {
   'sian-umg-bdm-dev':
     'BKXdY3qydUGq6byS_W9cUwy3ysqlpThNqh-HhxtkrUgXeuWfK2dk0WhGwT8fxrHbW-OJVFaJjp3AfUYVIS2czNU',
-  // 'sian-umg-bdm-qa': pendiente de generar
+  'sian-umg-bdm-qa':
+    'BJdWvY3LzFBl35JW1fVXtJDFfLO5C_VuEM8kTWciWoXkvXXSIst65N2rrZ9MLb_BAxO-m8oTBf4aOjg6A4-lcKE',
   // 'sian-umg-bdm': pendiente de generar
 };
 

@@ -137,7 +137,20 @@ La privada **no se guarda en el repositorio ni en GitHub**. La pública sí, por
 viaja a cada navegador en cada suscripción.
 
 Mientras un ambiente no tenga par propio, esta vía queda apagada y los avisos salen por FCM
-como siempre: **desplegar sin llaves no rompe nada**.
+como siempre: desplegar sin **ninguna** de las dos llaves no rompe nada.
+
+> **El orden importa, y equivocarse deja al ambiente mudo.** Una aplicación compilada con
+> la pública se suscribe con ella y **ya no pide token de FCM**. Si el servidor no puede leer
+> la privada, no puede enviarle por Web Push y tampoco tiene token al que caer: el envío
+> sale como `SIN_LLAVES` y a ese aparato no le llega nada. Por eso:
+>
+>   1. **Primero** el secreto `VAPID_PRIVADA` en Secret Manager, con acceso para la cuenta
+>      de las funciones, y comprobado.
+>   2. **Después** la pública en `vapid.ts` y en `deploy.yml`, en el mismo cambio.
+>
+> Las dos públicas tienen que ser idénticas: si difieren, el servicio de push rechaza la
+> firma de todos los envíos. `functions/test/unidad/vapid.test.ts` falla si no coinciden o
+> si una tiene mal la forma.
 
 **El proveedor de Google.** Se habilita en Authentication → Sign-in method → Google.
 Ese clic crea el cliente OAuth; la API no lo crea sola. Sin él, el botón «Entrar con
