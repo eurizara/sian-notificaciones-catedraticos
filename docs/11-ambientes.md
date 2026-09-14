@@ -140,7 +140,7 @@ viaja a cada navegador en cada suscripción.
 |---|---|---|
 | Desarrollo | Sí · `VAPID_PRIVADA` con lectura para la cuenta de funciones | 12/09/2026 |
 | QA | Sí · la privada la cargó el responsable por consola; solo *Usuario con acceso a secretos* | 12/09/2026 |
-| Producción | **No todavía.** Hace falta generar el par y cargar la privada antes de liberar 1.5.6 o posterior | — |
+| Producción | Sí · la privada la cargó el responsable por consola; solo *Usuario con acceso a secretos* | 13/09/2026 |
 
 En la consola en español, el rol correcto se llama **«Usuario con acceso a secretos de Secret
 Manager»**. «Visualizador» no sirve —ve el secreto pero no lee su valor— y «Administrador» da
