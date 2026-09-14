@@ -75,12 +75,91 @@ class PersonaSinCanal {
 }
 
 /// El resultado completo: a quién buscar, y sobre cuántos.
+/// Un aparato de una persona, con la versión que reportó al registrarse.
+class AparatoConVersion {
+  const AparatoConVersion({
+    required this.plataforma,
+    required this.versionApp,
+    this.ultimaActividad,
+  });
+
+  /// `WEB_ANDROID`, `WEB_IOS` o `WEB_ESCRITORIO`.
+  final String plataforma;
+
+  /// Vacía si el aparato no ha abierto SIAN desde que el servidor la guarda
+  /// (1.5.8): no se sabe qué corre, y por eso cuenta como no actualizado.
+  final String versionApp;
+  final DateTime? ultimaActividad;
+}
+
+/// Qué versión tiene cada aparato de una persona (pantalla de Alcance).
+class VersionesDePersona {
+  const VersionesDePersona({
+    required this.uid,
+    required this.nombre,
+    required this.correo,
+    required this.aparatos,
+  });
+
+  final String uid;
+  final String nombre;
+  final String correo;
+  final List<AparatoConVersion> aparatos;
+
+  static VersionesDePersona desdeMapa(Map<Object?, Object?> m) =>
+      VersionesDePersona(
+        uid: (m['uid'] as String?) ?? '',
+        nombre: (m['nombre'] as String?) ?? '',
+        correo: (m['correo'] as String?) ?? '',
+        aparatos: <AparatoConVersion>[
+          for (final Object? a
+              in (m['aparatos'] as List<Object?>? ?? <Object?>[]))
+            if (a is Map<Object?, Object?>)
+              AparatoConVersion(
+                plataforma: (a['plataforma'] as String?) ?? '',
+                versionApp: ((a['versionApp'] as String?) ?? '').trim(),
+                ultimaActividad: DateTime.tryParse(
+                  (a['ultimaActividad'] as String?) ?? '',
+                ),
+              ),
+        ],
+      );
+}
+
+/// Quiénes tienen algún aparato sin la versión publicada, con solo esos
+/// aparatos.
+///
+/// Va por aparato: alguien puede tener el teléfono al día y la computadora
+/// atrasada, y lo que hay que pedirle es abrir SIAN en la computadora. Una
+/// versión vacía cuenta como no actualizada: ese aparato no ha abierto SIAN
+/// desde que se guarda la versión, así que no puede estar al día.
+List<VersionesDePersona> sinLaVersionPublicada(
+  List<VersionesDePersona> personas,
+  String publicada,
+) => <VersionesDePersona>[
+  for (final VersionesDePersona p in personas)
+    if (p.aparatos.any((AparatoConVersion a) => a.versionApp != publicada))
+      VersionesDePersona(
+        uid: p.uid,
+        nombre: p.nombre,
+        correo: p.correo,
+        aparatos: <AparatoConVersion>[
+          for (final AparatoConVersion a in p.aparatos)
+            if (a.versionApp != publicada) a,
+        ],
+      ),
+];
+
 class RevisionDeCanal {
   const RevisionDeCanal({
     required this.total,
     required this.catedraticos,
     required this.personas,
+    this.versiones = const <VersionesDePersona>[],
   });
+
+  /// Cada destinatario con aparatos, y la versión de cada aparato.
+  final List<VersionesDePersona> versiones;
 
   /// Cuántos necesitan atención.
   final int total;
@@ -117,6 +196,11 @@ class RepositorioCanal {
       personas: <PersonaSinCanal>[
         for (final Object? fila in (datos['filas'] as List<Object?>? ?? <Object?>[]))
           if (fila is Map<Object?, Object?>) PersonaSinCanal.desdeMapa(fila),
+      ],
+      versiones: <VersionesDePersona>[
+        for (final Object? v
+            in (datos['versiones'] as List<Object?>? ?? <Object?>[]))
+          if (v is Map<Object?, Object?>) VersionesDePersona.desdeMapa(v),
       ],
     );
   }

@@ -55,6 +55,7 @@ import {
   type DispositivoAEvaluar,
   type EstadoDeCanal,
 } from '../domain/dispositivo';
+import { resumirVersiones, versionMasAlta } from '../domain/version';
 import { crearAsiento } from '../domain/bitacora';
 import type { Rol } from '../domain/tipos';
 import { OPCIONES_FUNCION, RUTAS, db } from '../infrastructure/firebase';
@@ -334,16 +335,12 @@ async function personasConElUltimoEnvioFallido(): Promise<Map<string, Date>> {
 /**
  * La versión más alta entre los aparatos de una persona.
  *
- * Se ordena como texto y no por número de versión: con este esquema —dos
- * dígitos como mucho por tramo— coincide, y comparar versiones «de verdad»
- * traería un analizador entero para decidir un dato informativo.
+ * Por tramos numéricos. Aquí se ordenaba como texto, con el argumento de que
+ * con dos dígitos por tramo coincidía: no coincide, «1.5.10» queda antes que
+ * «1.5.9» como cadena, y se notó al salir 1.5.10 (13/09/2026).
  */
 function versionMasReciente(dispositivos: readonly DispositivoLeido[]): string {
-  return dispositivos
-    .map((d) => d.versionApp.trim())
-    .filter((v) => v.length > 0)
-    .sort()
-    .at(-1) ?? '';
+  return versionMasAlta(dispositivos.map((d) => d.versionApp));
 }
 
 /** Lo que la pantalla de coordinación necesita saber de cada persona. */
@@ -505,5 +502,22 @@ export const dispositivosQueNecesitanAtencion = onCall(OPCIONES_FUNCION, async (
         recibeAvisos(d.get('rol') as Rol, d.get('recibeAvisos') as boolean | undefined),
     ).length,
     filas,
+    // Qué versión tiene cada aparato de cada destinatario, estén bien o mal de
+    // canal: quien recibe perfectamente con una versión vieja no sale en la
+    // lista de arriba, y es justo a quien hay que pedirle actualizar.
+    versiones: resumirVersiones(
+      usuarios.docs
+        .filter(
+          (d) =>
+            d.get('activo') === true &&
+            recibeAvisos(d.get('rol') as Rol, d.get('recibeAvisos') as boolean | undefined),
+        )
+        .map((d) => ({
+          uid: d.id,
+          nombre: (d.get('nombre') as string | undefined) ?? '',
+          correo: (d.get('correo') as string | undefined) ?? '',
+        })),
+      dispositivos,
+    ),
   };
 });
