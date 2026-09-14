@@ -733,6 +733,9 @@ la API de revisión periódica no existe ahí, y el canal se sigue renovando al 
 | S-7 | Mándale un aviso | Le llega igual. En el reporte cuenta como entregado, y el acuse funciona como siempre |
 | S-8 | Con la aplicación abierta, mándale otro | Sale la tarjeta dentro de la aplicación **y** la notificación del sistema: con la vía propia, quien avisa a la pantalla es el worker |
 | S-9 | Un aparato de antes, con token de FCM | Sigue recibiendo por FCM. Cada aparato usa **una sola** vía, nunca las dos |
+| S-10 | Android con la app instalada y notificaciones activas: abre la bandeja | Sale **una vez** la tarjeta «Un ajuste más para que los avisos lleguen al momento», con los tres pasos. «Ya lo activé» la retira y no vuelve. En iPhone, computadora o Android sin instalar **no** sale |
+| S-11 | En ese Android, con «Permitir uso en segundo plano» **apagado**, deja la pantalla apagada 5 minutos y manda dos avisos | Llegan tarde, de golpe y con cabecera «Chrome» — es la falla que la guía previene. Ojo: el panel puede decir «se mostró» antes de que se vean (DT-31) |
+| S-12 | Enciende el ajuste y repite S-11 | Llegan en segundos y a nombre de **SIAN** |
 
 ## Probar que se sabe si la notificación se mostró (DT-31, C-5)
 

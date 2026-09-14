@@ -2271,6 +2271,46 @@ Queda anotado para quien lea esto dentro de un año: **un despliegue no es una v
 manos de la gente.** Entre una cosa y la otra hay un paso que depende del teléfono, y por eso
 la versión se enseña en pantalla y se reporta al servidor.
 
+### 13 de septiembre de 2026 — en Android, «se mostró» quiere decir «Chrome la aceptó»
+
+En QA, un Android con **todo concedido** —permiso del sitio delegado a la aplicación
+instalada, notificaciones de la aplicación y canal «General» activos— recibió ocho avisos,
+y el acuse los dio por mostrados entre 0 y 49 segundos. **La persona no los vio**: aparecieron
+más tarde, **todos de golpe y con la cabecera «Chrome»**. El iPhone, en paralelo, normal.
+
+Leyendo el código de Chrome para Android se ve el mecanismo completo:
+
+  1. Si el sitio tiene una aplicación instalada, Chrome **se conecta a ella** antes de
+     mostrar la notificación, para preguntarle qué navegador la respalda
+     (`ChromeWebApkHost.checkChromeBacksWebApkAsync`).
+  2. La conexión es un `bindService` **sin plazo** (`WebApkServiceConnectionManager.connect`).
+     Si Android no deja arrancar a la aplicación, las notificaciones siguientes **se encolan**
+     detrás de la misma conexión pendiente.
+  3. Cuando Chrome da la conexión por perdida (`disconnectAll`, al detenerse sus actividades)
+     *avisa a todos los que esperaban que la conexión falló*: sin respuesta de la aplicación
+     no la puede dar por respaldada, y **muestra todas las encoladas a su propio nombre**.
+
+La causa en el teléfono: **«Permitir uso en segundo plano» estaba apagado** para la
+aplicación instalada. Encendido, los dos avisos siguientes llegaron en 3 y 4 segundos, y a
+nombre de SIAN.
+
+Lo que esto cambia para quien lea el panel:
+
+  · **El acuse lo manda el worker cuando `showNotification` se resuelve**, y en este caso
+    Chrome la resolvió **antes** de ponerla en pantalla. En Android, «se mostró» significa
+    «Chrome la aceptó»; casi siempre coincide, pero no siempre. Desde la web no hay forma de
+    saber cuándo Android la pone de verdad en pantalla, así que el dato no se puede afinar.
+  · Nada de esto se arregla desde la web: pedir que no se aplique el ahorro de batería es un
+    permiso nativo, Chrome no deja abrir los ajustes del sistema desde una página, y el
+    ajuste no se puede consultar. Lo que se hizo (1.5.10) es **explicarlo**: una tarjeta en la
+    bandeja, una sola vez, para Android con la aplicación instalada y notificaciones
+    concedidas, y el paso en el manual del catedrático junto con la advertencia de no tocar
+    «Anular suscripción».
+  · Publicar SIAN en Play Store como aplicación que envuelve la web **no es una salida
+    segura**: ese tipo de aplicación también delega las notificaciones a través de una
+    conexión con la aplicación, y podría quedar igual. No se descarta ni se da por buena sin
+    comprobarlo.
+
 ### Lo que queda de esta ficha
 
   · **Alcance todavía no lista a quién no le muestran los avisos.** Con los datos del acuse
