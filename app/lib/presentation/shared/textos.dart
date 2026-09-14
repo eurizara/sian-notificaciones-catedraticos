@@ -599,6 +599,24 @@ abstract final class Textos {
   static const String notifDenegadasTitulo = 'Notificaciones bloqueadas';
   static const String notifInstalarTitulo = 'Ábrela desde la pantalla de inicio';
 
+  // --- Uso en segundo plano en Android (13/09/2026) -------------------------
+  static const String segundoPlanoTitulo =
+      'Un ajuste más para que los avisos lleguen al momento';
+  static const String segundoPlanoPorQue =
+      'Si Android no deja trabajar a SIAN en segundo plano, los avisos pueden '
+      'quedarse retenidos y aparecer tarde, todos juntos.';
+  static const String segundoPlanoPaso1 =
+      'Mantén presionado el icono de SIAN y toca «Información de la app».';
+  static const String segundoPlanoPaso2 =
+      'Entra en «Batería» o «Uso de batería de la app».';
+  static const String segundoPlanoPaso3 =
+      'Activa «Permitir uso en segundo plano». En algunos teléfonos se llama '
+      '«Sin restricciones».';
+  static const String segundoPlanoNoAnular =
+      'Si una notificación trae el botón «Anular suscripción», no lo toques: '
+      'dejarías de recibir avisos.';
+  static const String botonSegundoPlanoListo = 'Ya lo activé';
+
   /// Habla de ESTA pestaña, no del teléfono.
   ///
   /// Decía «sin ese paso no llegará ninguna», que es una afirmación sobre el
