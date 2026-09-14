@@ -32,7 +32,8 @@ const PUBLICAS: Record<string, string> = {
     'BKXdY3qydUGq6byS_W9cUwy3ysqlpThNqh-HhxtkrUgXeuWfK2dk0WhGwT8fxrHbW-OJVFaJjp3AfUYVIS2czNU',
   'sian-umg-bdm-qa':
     'BJdWvY3LzFBl35JW1fVXtJDFfLO5C_VuEM8kTWciWoXkvXXSIst65N2rrZ9MLb_BAxO-m8oTBf4aOjg6A4-lcKE',
-  // 'sian-umg-bdm': pendiente de generar
+  'sian-umg-bdm':
+    'BJtdI-ItSgEHd-MDTUpzg1K2Lbq50J7jwCfPOrJpcn4U9LSotJH9ehu1W2_qC87fSal78OvYxwAut0GuXkzFzW0',
 };
 
 /** Quién firma las peticiones de push, según pide el estándar. */

@@ -417,8 +417,12 @@ jobs:
         working-directory: app
         run: |
           flutter pub get
+          # Llave pública propia de producción (DT-23). Su privada está en Secret
+          # Manager de sian-umg-bdm desde el 13/09/2026, con solo permiso de
+          # lectura para la cuenta de funciones. Idéntica a la de vapid.ts.
           flutter build web --release \
             --dart-define=FIREBASE_VAPID_KEY=${{ secrets.PROD_VAPID_KEY }} \
+            --dart-define=SIAN_VAPID_PROPIA=BJtdI-ItSgEHd-MDTUpzg1K2Lbq50J7jwCfPOrJpcn4U9LSotJH9ehu1W2_qC87fSal78OvYxwAut0GuXkzFzW0 \
             --dart-define=USE_EMULATOR=false
 
       - name: Desplegar reglas, índices y Functions
