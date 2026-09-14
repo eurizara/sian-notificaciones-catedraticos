@@ -716,6 +716,9 @@ recorrió solo con coordinación fue la que dejó pasar el defecto más caro del
 | V-3 | Con una versión anterior instalada, despliega una nueva y vuelve a abrir | Arriba aparece la tarjeta **«Hay una versión más reciente»** con el botón Actualizar |
 | V-4 | Pulsa **Actualizar** | Recarga y el pie ya dice la versión nueva |
 | V-5 | Entra como coordinación a **Alcance** | Cada persona de la lista muestra su versión; las que no coinciden con la publicada van en dorado |
+| V-6 | En **Alcance**, baja hasta **Versión de la aplicación** | Dice cuántas personas tienen algún aparato sin la versión publicada y lista cada aparato atrasado con su versión y última actividad. Quien está al día no sale |
+| V-7 | Actualiza uno de esos aparatos y recarga Alcance | Ese aparato desaparece de la lista |
+| V-8 | Abre el manual → **Notas de la versión** | La primera sección es la versión que dice el pie de la bandeja, marcada **Actual**; los dos manuales enlazan a esta página |
 
 ## Probar que el canal se repara solo (DT-23)
 
