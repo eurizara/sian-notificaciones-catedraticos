@@ -55,6 +55,7 @@ import {
   type DispositivoAEvaluar,
   type EstadoDeCanal,
 } from '../domain/dispositivo';
+import { resumirVersiones, versionMasAlta } from '../domain/version';
 import { crearAsiento } from '../domain/bitacora';
 import type { Rol } from '../domain/tipos';
 import { OPCIONES_FUNCION, RUTAS, db } from '../infrastructure/firebase';
@@ -82,6 +83,14 @@ interface DispositivoLeido extends DispositivoAEvaluar {
   readonly esPWAInstalada: boolean;
   readonly permisoNotificacion: string;
   readonly plataforma: string;
+  readonly versionApp: string;
+
+  /**
+   * Si se suscribió con nuestra llave propia (DT-23). Ese aparato **no tiene
+   * token de FCM que validar**: su suscripción la comprueba el servicio de push
+   * en cada envío real, devolviendo 404 o 410 cuando ya no existe.
+   */
+  readonly tieneWebPush: boolean;
 }
 
 function aFecha(valor: unknown): Date | null {
@@ -104,6 +113,10 @@ async function leerDispositivos(): Promise<DispositivoLeido[]> {
     esPWAInstalada: d.get('esPWAInstalada') === true,
     permisoNotificacion: (d.get('permisoNotificacion') as string | undefined) ?? 'pendiente',
     plataforma: (d.get('plataforma') as string | undefined) ?? '',
+    versionApp: (d.get('versionApp') as string | undefined) ?? '',
+    tieneWebPush: Boolean(
+      (d.get('webPush') as { endpoint?: string } | undefined)?.endpoint,
+    ),
   }));
 }
 
@@ -192,7 +205,7 @@ async function retirar(
  */
 export const sondaDeCanal = onSchedule(
   {
-    schedule: 'every monday 06:00',
+    schedule: 'every day 06:00',
     timeZone: ZONA_INSTITUCIONAL,
     region: 'us-central1',
     memory: '512MiB',
@@ -216,7 +229,7 @@ export const sondaDeCanal = onSchedule(
     for (const dispositivo of dispositivos) {
       const decision = decidirSobreDispositivo(
         dispositivo,
-        !muertos.has(dispositivo.tokenFCM),
+        dispositivo.tieneWebPush || !muertos.has(dispositivo.tokenFCM),
         ahora,
       );
       if (decision === 'conservar') {
@@ -319,6 +332,17 @@ async function personasConElUltimoEnvioFallido(): Promise<Map<string, Date>> {
   return fallidos;
 }
 
+/**
+ * La versión más alta entre los aparatos de una persona.
+ *
+ * Por tramos numéricos. Aquí se ordenaba como texto, con el argumento de que
+ * con dos dígitos por tramo coincidía: no coincide, «1.5.10» queda antes que
+ * «1.5.9» como cadena, y se notó al salir 1.5.10 (13/09/2026).
+ */
+function versionMasReciente(dispositivos: readonly DispositivoLeido[]): string {
+  return versionMasAlta(dispositivos.map((d) => d.versionApp));
+}
+
 /** Lo que la pantalla de coordinación necesita saber de cada persona. */
 interface FilaDeAtencion {
   readonly uid: string;
@@ -328,6 +352,9 @@ interface FilaDeAtencion {
   readonly estado: EstadoDeCanal;
   readonly plataformas: string[];
   readonly ultimaActividad: string | null;
+
+  /** La versión más reciente entre sus aparatos, vacía si no consta. */
+  readonly versionApp: string;
 }
 
 function sujetoDe(peticion: {
@@ -427,7 +454,12 @@ export const dispositivosQueNecesitanAtencion = onCall(OPCIONES_FUNCION, async (
 
     const suyos = porUid.get(doc.id) ?? [];
     const estado = estadoDeCanal(
-      suyos.map((d) => ({ ...d, tokenVivo: !muertos.has(d.tokenFCM) })),
+      // Un aparato con vía propia se da por vivo aquí: no hay token que
+      // preguntar, y su suscripción se comprueba en cada envío real.
+      suyos.map((d) => ({
+        ...d,
+        tokenVivo: d.tieneWebPush || !muertos.has(d.tokenFCM),
+      })),
       ahora,
       30,
       falloElUltimo.get(doc.id) ?? null,
@@ -449,6 +481,7 @@ export const dispositivosQueNecesitanAtencion = onCall(OPCIONES_FUNCION, async (
       estado,
       plataformas: [...new Set(suyos.map((d) => d.plataforma).filter((p) => p.length > 0))],
       ultimaActividad: actividades[0]?.toISOString() ?? null,
+      versionApp: versionMasReciente(suyos),
     });
   }
 
@@ -469,5 +502,22 @@ export const dispositivosQueNecesitanAtencion = onCall(OPCIONES_FUNCION, async (
         recibeAvisos(d.get('rol') as Rol, d.get('recibeAvisos') as boolean | undefined),
     ).length,
     filas,
+    // Qué versión tiene cada aparato de cada destinatario, estén bien o mal de
+    // canal: quien recibe perfectamente con una versión vieja no sale en la
+    // lista de arriba, y es justo a quien hay que pedirle actualizar.
+    versiones: resumirVersiones(
+      usuarios.docs
+        .filter(
+          (d) =>
+            d.get('activo') === true &&
+            recibeAvisos(d.get('rol') as Rol, d.get('recibeAvisos') as boolean | undefined),
+        )
+        .map((d) => ({
+          uid: d.id,
+          nombre: (d.get('nombre') as string | undefined) ?? '',
+          correo: (d.get('correo') as string | undefined) ?? '',
+        })),
+      dispositivos,
+    ),
   };
 });

@@ -76,9 +76,9 @@ class _FilaGrupo extends ConsumerWidget {
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: grupo.activo
-              ? ColoresSian.primario
+              ? PaletaSian.de(context).fondoPrimario
               : tema.colorScheme.outline,
-          foregroundColor: Colors.white,
+          foregroundColor: PaletaSian.sobreFondo,
           // El número va en el sitio más visible de la fila: es el dato que
           // evita enviar a veinte creyendo que van cuarenta y cinco.
           child: Text('${grupo.totalMiembros}'),
@@ -104,7 +104,7 @@ class _FilaGrupo extends ConsumerWidget {
               Text(
                 Textos.grupoRozaElLimite(LimitesGrupo.maxMiembros),
                 style: tema.textTheme.bodySmall?.copyWith(
-                  color: ColoresSian.doradoTexto,
+                  color: PaletaSian.de(context).doradoTexto,
                 ),
               ),
           ],
@@ -122,7 +122,7 @@ class _FilaGrupo extends ConsumerWidget {
               onPressed: () => _alternarEstado(context, ref),
               icon: Icon(
                 grupo.activo ? Icons.block : Icons.restore,
-                color: grupo.activo ? ColoresSian.urgente : null,
+                color: grupo.activo ? PaletaSian.de(context).urgente : null,
               ),
               tooltip: grupo.activo
                   ? Textos.grupoDesactivar
@@ -150,7 +150,8 @@ class _FilaGrupo extends ConsumerWidget {
             ),
             FilledButton(
               style: FilledButton.styleFrom(
-                backgroundColor: ColoresSian.urgente,
+                backgroundColor: PaletaSian.de(context).fondoUrgente,
+                foregroundColor: PaletaSian.sobreFondo,
               ),
               onPressed: () => Navigator.of(c).pop(true),
               child: const Text(Textos.grupoDesactivar),
@@ -391,7 +392,7 @@ class _EditorGrupoState extends ConsumerState<EditorGrupo> {
               Text(
                 Textos.grupoRozaElLimite(LimitesGrupo.maxMiembros),
                 style: tema.textTheme.bodySmall?.copyWith(
-                  color: ColoresSian.doradoTexto,
+                  color: PaletaSian.de(context).doradoTexto,
                 ),
               ),
             ],
@@ -401,7 +402,7 @@ class _EditorGrupoState extends ConsumerState<EditorGrupo> {
               Text(
                 _error!,
                 style: tema.textTheme.bodySmall?.copyWith(
-                  color: ColoresSian.urgente,
+                  color: PaletaSian.de(context).urgente,
                 ),
               ),
             ],

@@ -363,7 +363,7 @@ class _AvisoInstalarIos extends StatelessWidget {
     final ThemeData tema = Theme.of(context);
 
     return Card(
-      color: ColoresSian.dorado.withValues(alpha: 0.12),
+      color: PaletaSian.de(context).dorado.withValues(alpha: 0.12),
       child: InkWell(
         onTap: () => Navigator.of(context).push<void>(
           MaterialPageRoute<void>(
@@ -375,7 +375,7 @@ class _AvisoInstalarIos extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: <Widget>[
-              const Icon(Icons.add_to_home_screen, color: ColoresSian.dorado),
+              Icon(Icons.add_to_home_screen, color: PaletaSian.de(context).dorado),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(

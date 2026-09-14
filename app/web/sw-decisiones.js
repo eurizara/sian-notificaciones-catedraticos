@@ -131,11 +131,121 @@
     return Math.max(0, Number(valor) || 0);
   }
 
+  /**
+   * La etiqueta (`tag`) de una notificación: qué otras notificaciones reemplaza.
+   *
+   * Un aviso se etiqueta con su identificador, como siempre. Una respuesta
+   * (DT-27) no lleva `mensajeId` —a propósito: no es un aviso sin leer de la
+   * bandeja, y si lo llevara sumaría en la insignia—, así que trae su propia
+   * `etiqueta`, una por aviso. Con ella, las respuestas a un mismo aviso se
+   * reemplazan entre sí en vez de apilarse. Sin ninguna de las dos, `sian`.
+   *
+   * @param {{mensajeId?: string, etiqueta?: string}} datos la carga del push.
+   */
+  function etiquetaDeNotificacion(datos) {
+    const d = datos || {};
+    if (typeof d.mensajeId === 'string' && d.mensajeId.length > 0) {
+      return d.mensajeId;
+    }
+    if (typeof d.etiqueta === 'string' && d.etiqueta.length > 0) {
+      return d.etiqueta;
+    }
+    return 'sian';
+  }
+
+  /**
+   * ¿A dónde se manda el acuse de que la notificación se mostró? (DT-31)
+   *
+   * La dirección se arma con el identificador del proyecto que ya trae la
+   * configuración de Firebase, y por eso apunta sola al ambiente correcto: el
+   * worker de desarrollo avisa a desarrollo y el de producción a producción.
+   * Sin configuración —o sin proyecto— no hay a dónde avisar, y se devuelve
+   * `null` en vez de inventar una dirección.
+   *
+   * @param {{projectId?: string}} config `self.SIAN_FIREBASE_CONFIG`.
+   */
+  function direccionDeAcuse(config) {
+    const id = config && config.projectId;
+    if (typeof id !== 'string' || id.length === 0 || id === 'SIN-CONFIGURAR') {
+      return null;
+    }
+    return 'https://us-central1-' + id + '.cloudfunctions.net/acuseDeNotificacion';
+  }
+
+  /**
+   * Lo que se manda en el acuse, o `null` si este push no lo pide.
+   *
+   * La seña `ac` viaja dentro del propio push y es lo único que identifica la
+   * entrega. Los avisos anteriores a DT-31 no la llevan, y tampoco la lleva la
+   * notificación de prueba del registro: de esas no hay nada que acusar.
+   */
+  function cuerpoDeAcuse(datos) {
+    const d = datos || {};
+    if (typeof d.ac !== 'string' || d.ac.length === 0) {
+      return null;
+    }
+    if (typeof d.mensajeId !== 'string' || d.mensajeId.length === 0) {
+      return null;
+    }
+    return { mensajeId: d.mensajeId, ac: d.ac };
+  }
+
+  /**
+   * ¿A dónde se reporta que la suscripción cambió? (DT-23, segunda mitad)
+   *
+   * Misma forma que el acuse: la dirección sale del proyecto que ya trae la
+   * configuración, así que apunta sola a su ambiente.
+   */
+  function direccionDeSuscripcion(config) {
+    const id = config && config.projectId;
+    if (typeof id !== 'string' || id.length === 0 || id === 'SIN-CONFIGURAR') {
+      return null;
+    }
+    return 'https://us-central1-' + id + '.cloudfunctions.net/reportarSuscripcion';
+  }
+
+  /**
+   * Lo que se manda al reportar una suscripción, o `null` si falta algo.
+   *
+   * Sin identidad —quién y qué aparato— el servidor no sabría a qué registro
+   * pertenece, y sin `endpoint` no hay suscripción que reportar. La identidad
+   * la deja la aplicación en el almacén del worker cuando registra el
+   * dispositivo: el worker no tiene sesión ni puede leer `localStorage`.
+   *
+   * @param {{uid?: string, instalacionId?: string}} identidad
+   * @param {{endpoint?: string, keys?: object}} suscripcion en forma JSON
+   * @param {string} motivo «rotada» o «revision»
+   */
+  function cuerpoDeSuscripcion(identidad, suscripcion, motivo) {
+    const i = identidad || {};
+    const s = suscripcion || {};
+    if (!i.uid || !i.instalacionId) {
+      return null;
+    }
+    if (typeof s.endpoint !== 'string' || s.endpoint.length === 0) {
+      return null;
+    }
+    const claves = s.keys || {};
+    return {
+      uid: i.uid,
+      instalacionId: i.instalacionId,
+      endpoint: s.endpoint,
+      p256dh: claves.p256dh || '',
+      auth: claves.auth || '',
+      motivo: motivo === 'rotada' ? 'rotada' : 'revision',
+    };
+  }
+
   const api = {
     notificacionesACerrar,
     decidirCuenta,
     esMensajeContable,
     normalizarCuenta,
+    etiquetaDeNotificacion,
+    direccionDeAcuse,
+    cuerpoDeAcuse,
+    direccionDeSuscripcion,
+    cuerpoDeSuscripcion,
   };
 
   if (typeof module !== 'undefined' && module.exports) {

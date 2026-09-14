@@ -23,6 +23,11 @@ const {
   decidirCuenta,
   esMensajeContable,
   normalizarCuenta,
+  etiquetaDeNotificacion,
+  direccionDeAcuse,
+  cuerpoDeAcuse,
+  direccionDeSuscripcion,
+  cuerpoDeSuscripcion,
 } = require('./sw-decisiones.js');
 
 /** Una notificación como las que devuelve `getNotifications()`. */
@@ -147,3 +152,103 @@ describe('normalizarCuenta', () => {
     assert.equal(normalizarCuenta('4'), 4);
   });
 });
+
+describe('etiquetaDeNotificacion — DT-27', () => {
+  test('un aviso se etiqueta con su identificador, como siempre', () => {
+    assert.equal(etiquetaDeNotificacion({ mensajeId: 'm-1' }), 'm-1');
+  });
+
+  test('una respuesta usa su etiqueta, una por aviso', () => {
+    // Así las respuestas a un mismo aviso se reemplazan en vez de apilarse.
+    assert.equal(
+      etiquetaDeNotificacion({ tipo: 'RESPUESTA', etiqueta: 'respuestas-m-1' }),
+      'respuestas-m-1',
+    );
+  });
+
+  test('una respuesta NO cuenta para la insignia', () => {
+    // Por eso no lleva mensajeId: no es un aviso sin leer de la bandeja.
+    assert.equal(esMensajeContable(undefined), false);
+  });
+
+  test('sin nada, la etiqueta genérica', () => {
+    assert.equal(etiquetaDeNotificacion({}), 'sian');
+    assert.equal(etiquetaDeNotificacion(undefined), 'sian');
+  });
+});
+
+describe('el acuse de que se mostró — DT-31', () => {
+  test('la dirección sale del proyecto, así que apunta a su propio ambiente', () => {
+    // El worker de desarrollo no puede acusar en producción.
+    assert.equal(
+      direccionDeAcuse({ projectId: 'sian-umg-bdm-dev' }),
+      'https://us-central1-sian-umg-bdm-dev.cloudfunctions.net/acuseDeNotificacion',
+    );
+  });
+
+  test('sin configuración no se inventa una dirección', () => {
+    assert.equal(direccionDeAcuse(undefined), null);
+    assert.equal(direccionDeAcuse({}), null);
+    assert.equal(direccionDeAcuse({ projectId: 'SIN-CONFIGURAR' }), null);
+  });
+
+  test('se acusa lo que trae seña', () => {
+    assert.deepEqual(cuerpoDeAcuse({ mensajeId: 'm-1', ac: 'oc-1|uid-1|abcd1234abcd1234' }), {
+      mensajeId: 'm-1',
+      ac: 'oc-1|uid-1|abcd1234abcd1234',
+    });
+  });
+
+  test('lo que no la trae, NO se acusa', () => {
+    // Los avisos anteriores a DT-31 y la notificación de prueba del registro:
+    // de esas no hay entrega que anotar.
+    assert.equal(cuerpoDeAcuse({ mensajeId: 'm-1' }), null);
+    assert.equal(cuerpoDeAcuse({ ac: 'oc-1|uid-1|abcd1234abcd1234' }), null);
+    assert.equal(cuerpoDeAcuse({}), null);
+    assert.equal(cuerpoDeAcuse(undefined), null);
+  });
+});
+
+describe('el reporte de suscripción — DT-23', () => {
+  const suscripcion = {
+    endpoint: 'https://fcm.googleapis.com/wp/abc123',
+    keys: { p256dh: 'BKp...', auth: 'x9y8' },
+  };
+  const identidad = { uid: 'uid-1', instalacionId: 'ins_abc' };
+
+  test('la dirección sale del proyecto, como el acuse', () => {
+    assert.equal(
+      direccionDeSuscripcion({ projectId: 'sian-umg-bdm-qa' }),
+      'https://us-central1-sian-umg-bdm-qa.cloudfunctions.net/reportarSuscripcion',
+    );
+    assert.equal(direccionDeSuscripcion({}), null);
+  });
+
+  test('lleva identidad, suscripción y motivo', () => {
+    assert.deepEqual(cuerpoDeSuscripcion(identidad, suscripcion, 'rotada'), {
+      uid: 'uid-1',
+      instalacionId: 'ins_abc',
+      endpoint: 'https://fcm.googleapis.com/wp/abc123',
+      p256dh: 'BKp...',
+      auth: 'x9y8',
+      motivo: 'rotada',
+    });
+  });
+
+  test('sin identidad NO se reporta: el servidor no sabría de quién es', () => {
+    // La identidad la deja la aplicación al registrar el dispositivo. Si el
+    // worker se despierta antes de que eso ocurra, se calla.
+    assert.equal(cuerpoDeSuscripcion(undefined, suscripcion, 'rotada'), null);
+    assert.equal(cuerpoDeSuscripcion({ uid: 'uid-1' }, suscripcion, 'rotada'), null);
+  });
+
+  test('sin suscripción tampoco hay nada que reportar', () => {
+    assert.equal(cuerpoDeSuscripcion(identidad, {}, 'rotada'), null);
+    assert.equal(cuerpoDeSuscripcion(identidad, undefined, 'rotada'), null);
+  });
+
+  test('un motivo desconocido se guarda como revisión, no se inventa', () => {
+    assert.equal(cuerpoDeSuscripcion(identidad, suscripcion, 'cualquiera').motivo, 'revision');
+  });
+});
+

@@ -54,6 +54,8 @@ falta.
 | [CU-10](#cu-10) | Administrar usuarios, roles y grupos | Coordinador | Objetivo de usuario |
 | [CU-11](#cu-11) | Suspender o cancelar una programación | Emisor | Objetivo de usuario |
 | [CU-12](#cu-12) | Despachar las ocurrencias vencidas | Planificador | Subfunción |
+| [CU-13](#cu-13) | Responder a un aviso recibido | Catedrático | Objetivo de usuario |
+| [CU-14](#cu-14) | Averiguar a quién no le avisó su teléfono | Emisor | Objetivo de usuario |
 
 ---
 
@@ -677,6 +679,89 @@ recurrentes tienen ya encolada la siguiente.
 
 ---
 
+
+---
+
+<a id="cu-13"></a>
+
+## CU-13 · Responder a un aviso recibido
+
+| | |
+|---|---|
+| **Actor principal** | Catedrático |
+| **Actores secundarios** | `responderAviso`, emisor del aviso |
+| **Nivel** | Objetivo de usuario |
+
+**Precondiciones.** El catedrático recibió el aviso —está entre sus destinatarios—.
+
+**Garantía de éxito.** La respuesta queda guardada dentro de ese aviso y le llega **solo** a
+quien lo emitió. Ningún otro destinatario, coordinador ni auditor puede leerla.
+
+**Flujo principal**
+
+1. El catedrático abre el aviso en su bandeja.
+2. Bajo el mensaje pulsa **Responder a …**, que dice a quién le va a llegar.
+3. Escribe y pulsa **Enviar**.
+4. `responderAviso` comprueba que sea destinatario y crea el turno con el identificador que
+   propuso la aplicación.
+5. El emisor recibe una notificación y ve la conversación en su sección **Respuestas**.
+6. Si el emisor contesta, la respuesta aparece bajo la suya, dentro del mismo aviso, y le
+   llega una notificación.
+
+**Extensiones**
+
+- **3a. Pulsa enviar dos veces.** El servidor encuentra el turno ya creado y no lo guarda ni
+  lo notifica otra vez (DT-24).
+- **3b. Falla la red.** El texto se queda escrito y conserva su identificador: reintentar no
+  duplica. Si se cambia el texto antes de reintentar, se renueva el identificador, porque si
+  el primero sí había llegado reutilizarlo descartaría lo nuevo en silencio.
+- **2a. El aviso es propio** —quien emite y además recibe avisos—. No aparece el botón:
+  responderse a uno mismo no significa nada.
+- **4a. Quien llama no es destinatario.** Se rechaza. Y un destinatario no puede escribir en
+  la conversación de otro.
+
+**Requisitos que cubre:** RF-RES-01, 02, 03, 06 · RN-03 · DT-27.
+
+---
+
+<a id="cu-14"></a>
+
+## CU-14 · Averiguar a quién no le avisó su teléfono
+
+| | |
+|---|---|
+| **Actor principal** | Coordinador o Administrador Académico |
+| **Actores secundarios** | Service worker de cada aparato, `detalleEntregas` |
+| **Nivel** | Objetivo de usuario |
+
+**Precondiciones.** El aviso se envió después del 11 de septiembre de 2026, que es cuando
+los avisos empezaron a pedir acuse. De los anteriores no se puede afirmar nada.
+
+**Garantía de éxito.** El emisor obtiene una lista de personas a las que el aviso llegó y su
+aparato **no** se lo mostró, separada de quienes simplemente no lo han abierto.
+
+**Flujo principal**
+
+1. El emisor entra en **Entregas** y mira el aviso: «Se mostró en 7 de 10 aparatos».
+2. Pulsa **Ver quién falta**.
+3. Los que recibieron el aviso y no lo vieron aparecen como **«Su aparato no lo mostró»**,
+   distintos de «No lo ha abierto».
+4. El emisor los llama. En **Alcance** puede además ver con qué versión de la aplicación
+   está cada uno, porque el acuse lo manda el service worker: un aparato atrasado informa
+   distinto.
+5. Al abrir su aplicación, esas personas ven la tarjeta que explica qué pasó y el botón para
+   mandarse una notificación de prueba.
+
+**Extensiones**
+
+- **1a. El aviso es de antes del acuse.** No dice nada de mostrados, a propósito.
+- **3a. La persona lo abrió igual** —lo vio al entrar, sin notificación—. Aparece como
+  abierto: lo que se perseguía ya ocurrió.
+
+**Lo que este caso de uso NO puede prometer:** que la notificación aparezca. La última
+palabra la tiene el sistema operativo del teléfono. Lo que sí garantiza es saber que no
+apareció y a quién buscar (DT-31).
+
 ## Matriz de trazabilidad inversa
 
 Qué caso de uso cubre cada familia de requisitos. Un requisito sin caso de uso
@@ -688,6 +773,7 @@ es un requisito que nadie va a probar.
 | RF-USR · Usuarios y grupos | CU-10, CU-06 |
 | RF-MSG · Composición | CU-03, CU-04, CU-05 |
 | RF-PRG · Programación | CU-04, CU-05, CU-11, CU-12 |
-| RF-ENT · Entrega | CU-03, CU-06, CU-12 |
+| RF-ENT · Entrega | CU-03, CU-06, CU-12, CU-14 |
 | RF-CNF · Confirmación | CU-06, CU-07, CU-08 |
 | RF-BIT · Bitácora | CU-08, CU-09 |
+| RF-RES · Respuestas | CU-13 |

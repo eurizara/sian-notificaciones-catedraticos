@@ -50,6 +50,9 @@ export const TIPOS_EVENTO = [
   'ENTREGA_FALLIDA',
   'MENSAJE_ABIERTO',
   'LECTURA_CONFIRMADA',
+  // DT-27. Sin el texto: la conversación es de dos personas, y la bitácora la
+  // leen el coordinador y el auditor. Queda que ocurrió, no qué se dijo.
+  'RESPUESTA_ENVIADA',
   'BITACORA_CONSULTADA',
   'CONFIGURACION_MODIFICADA',
 ] as const;

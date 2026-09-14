@@ -80,8 +80,21 @@ else
   echo "$SUCIOS" | sed 's/^/  /' >&2
 fi
 
+# La versión que se le enseña a la gente, leída de su única fuente.
+#
+# El identificador de árbol dice si dos ambientes corren lo mismo, pero no se
+# le puede pedir a un catedrático que compare cuarenta caracteres por teléfono.
+# «1.5.0» sí se puede leer en voz alta, y la aplicación lo compara sola contra
+# este archivo para avisar de que hay algo más nuevo.
+VERSION="$(sed -n "s/^const String versionSian = '\(.*\)';/\1/p" app/lib/core/version.dart)"
+if [ -z "$VERSION" ]; then
+  echo "error: no se pudo leer versionSian de app/lib/core/version.dart" >&2
+  exit 1
+fi
+
 cat > "$DESTINO/version.json" <<JSON
 {
+  "version": "$VERSION",
   "commit": "$COMMIT",
   "arbol": "$ARBOL",
   "rama": "$RAMA",
@@ -90,4 +103,4 @@ cat > "$DESTINO/version.json" <<JSON
 }
 JSON
 
-echo "Sellado: $DESTINO/version.json  (árbol ${ARBOL:0:12}, commit ${COMMIT:0:12}, rama $RAMA, limpio=$LIMPIO)"
+echo "Sellado: $DESTINO/version.json  (versión $VERSION, árbol ${ARBOL:0:12}, commit ${COMMIT:0:12}, rama $RAMA, limpio=$LIMPIO)"

@@ -296,8 +296,8 @@ class _PanelAdjuntosState extends State<PanelAdjuntos> {
                     : null,
                 style: grabando
                     ? FilledButton.styleFrom(
-                        backgroundColor: ColoresSian.urgente,
-                        foregroundColor: Colors.white,
+                        backgroundColor: PaletaSian.de(context).fondoUrgente,
+                        foregroundColor: PaletaSian.sobreFondo,
                       )
                     : null,
                 icon: Icon(grabando ? Icons.stop : Icons.mic),
@@ -338,8 +338,8 @@ class _PanelAdjuntosState extends State<PanelAdjuntos> {
           LinearProgressIndicator(
             value: _grabadora.segundos / LimitesVoz.maxSegundos,
             color: _grabadora.segundos > LimitesVoz.maxSegundos - 10
-                ? ColoresSian.urgente
-                : ColoresSian.primario,
+                ? PaletaSian.de(context).urgente
+                : PaletaSian.de(context).primario,
           ),
           const SizedBox(height: 4),
           Text(
@@ -392,17 +392,17 @@ class _PanelAdjuntosState extends State<PanelAdjuntos> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              const Icon(
+              Icon(
                 Icons.error_outline,
                 size: 18,
-                color: ColoresSian.urgente,
+                color: PaletaSian.de(context).urgente,
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   _error!,
                   style: tema.textTheme.bodySmall?.copyWith(
-                    color: ColoresSian.urgente,
+                    color: PaletaSian.de(context).urgente,
                   ),
                 ),
               ),
@@ -464,7 +464,7 @@ class _Adjunto extends StatelessWidget {
                 ),
               )
             else
-              Icon(icono, color: ColoresSian.primario),
+              Icon(icono, color: PaletaSian.de(context).primario),
           ],
         ),
         title: Text(titulo, maxLines: 1, overflow: TextOverflow.ellipsis),

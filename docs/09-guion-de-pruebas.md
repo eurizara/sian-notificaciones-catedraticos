@@ -672,7 +672,7 @@ Ejecutadas contra `sian-umg-bdm-qa` el 24 de agosto de 2026:
 | # | Qué se comprueba | Cómo | Resultado |
 |---|---|---|---|
 | C-1 | Las reglas de seguridad están puestas | Leer `mensajes` sin autenticar por REST | `PERMISSION_DENIED` |
-| C-2 | Las 21 Functions existen y arrancaron | Listar funciones de `us-central1` | 19 de 19 en estado `ACTIVE` |
+| C-2 | Las 25 Functions existen y arrancaron | Listar funciones de `us-central1` | 25 de 25 en estado `ACTIVE` |
 | C-3 | Las Functions rechazan a quien no se identificó | `POST` a `activarSesion` sin token | HTTP 401, `UNAUTHENTICATED` |
 | C-4 | El navegador puede llamarlas | `OPTIONS` con `Origin` de QA | HTTP 204 |
 | C-5 | El despachador quedó programado | Listar jobs de Cloud Scheduler | 1 job, cada minuto, `ENABLED` |
@@ -706,6 +706,69 @@ Eso son las rondas 1 a 5, y se recorren con una cuenta de cada rol —la ronda q
 recorrió solo con coordinación fue la que dejó pasar el defecto más caro del proyecto.
 
 ---
+
+## Probar la versión a la vista
+
+| # | Paso | Qué debe ocurrir |
+|:--:|------|------------------|
+| V-1 | Abre la aplicación y baja hasta el final de la bandeja | Dice **SIAN 1.5.0** |
+| V-2 | Abre `https://<ambiente>.web.app/version.json` | Trae `"version": "1.5.0"`, el mismo número |
+| V-3 | Con una versión anterior instalada, despliega una nueva y vuelve a abrir | Arriba aparece la tarjeta **«Hay una versión más reciente»** con el botón Actualizar |
+| V-4 | Pulsa **Actualizar** | Recarga y el pie ya dice la versión nueva |
+| V-5 | Entra como coordinación a **Alcance** | Cada persona de la lista muestra su versión; las que no coinciden con la publicada van en dorado |
+| V-6 | En **Alcance**, baja hasta **Versión de la aplicación** | Dice cuántas personas tienen algún aparato sin la versión publicada y lista cada aparato atrasado con su versión y última actividad. Quien está al día no sale |
+| V-7 | Actualiza uno de esos aparatos y recarga Alcance | Ese aparato desaparece de la lista |
+| V-8 | Abre el manual → **Notas de la versión** | La primera sección es la versión que dice el pie de la bandeja, marcada **Actual**; los dos manuales enlazan a esta página |
+
+## Probar que el canal se repara solo (DT-23)
+
+Hace falta un **Android con la aplicación instalada**. En iPhone estos pasos no aplican:
+la API de revisión periódica no existe ahí, y el canal se sigue renovando al abrir.
+
+| # | Paso | Qué debe ocurrir |
+|:--:|------|------------------|
+| S-1 | Instala e inicia sesión en Android | En Firestore, su dispositivo queda con `versionApp` y, al poco, con `canalRevisadoEn` o `webPush` |
+| S-2 | En Chrome → Configuración del sitio → Notificaciones, **quita y vuelve a dar** el permiso | El worker se resuscribe solo y el registro queda con `suscripcionRotadaEn` y `tokenPendienteDeRenovar` |
+| S-3 | Sin abrir la aplicación, mira **Alcance** | Esa persona aparece con su registro caducado, **sin necesidad de haber perdido un aviso** |
+| S-4 | Abre la aplicación en el teléfono | El registro se renueva y desaparece de Alcance |
+| S-5 | Manda un aviso y revisa la bitácora si alguien falla | Aparece `DISPOSITIVO_RETIRADO` con el motivo, no solo en los registros técnicos |
+| S-6 | Entra con un aparato nuevo en un ambiente **con llaves propias** | Su registro queda con `webPush` y **sin** `tokenFCM`: se suscribió con nuestra llave |
+| S-7 | Mándale un aviso | Le llega igual. En el reporte cuenta como entregado, y el acuse funciona como siempre |
+| S-8 | Con la aplicación abierta, mándale otro | Sale la tarjeta dentro de la aplicación **y** la notificación del sistema: con la vía propia, quien avisa a la pantalla es el worker |
+| S-9 | Un aparato de antes, con token de FCM | Sigue recibiendo por FCM. Cada aparato usa **una sola** vía, nunca las dos |
+| S-10 | Android con la app instalada y notificaciones activas: abre la bandeja | Sale **una vez** la tarjeta «Un ajuste más para que los avisos lleguen al momento», con los tres pasos. «Ya lo activé» la retira y no vuelve. En iPhone, computadora o Android sin instalar **no** sale |
+| S-11 | En ese Android, con «Permitir uso en segundo plano» **apagado**, deja la pantalla apagada 5 minutos y manda dos avisos | Llegan tarde, de golpe y con cabecera «Chrome» — es la falla que la guía previene. Ojo: el panel puede decir «se mostró» antes de que se vean (DT-31) |
+| S-12 | Enciende el ajuste y repite S-11 | Llegan en segundos y a nombre de **SIAN** |
+
+## Probar que se sabe si la notificación se mostró (DT-31, C-5)
+
+| # | Paso | Qué debe ocurrir |
+|:--:|------|------------------|
+| A-1 | Manda un aviso a un teléfono con la aplicación instalada y las notificaciones activas | La notificación aparece, y en el panel el aviso dice **«Se mostró en 1 de 1 aparatos»** |
+| A-2 | Apaga las notificaciones de SIAN en los ajustes del **sistema** (no en el navegador) y manda otro aviso | El aviso consta entregado y **no** se muestra. El panel dice «Se mostró en 0 de 1» |
+| A-3 | Abre el detalle de ese aviso en el panel | Esa persona aparece como **«Su aparato no lo mostró»**, distinta de «No lo ha abierto» |
+| A-4 | Espera diez minutos sin abrir la aplicación | Llega un **segundo** empujón del mismo aviso. Solo uno: no hay un tercero |
+| A-5 | Vuelve a encender las notificaciones y abre la bandeja del catedrático | Aparece la tarjeta «… llegó a este aparato y no te lo mostró», con el botón de prueba |
+| A-6 | Pulsa **Enviarme una de prueba** | Llega la notificación de prueba |
+| A-7 | Mira un aviso enviado **antes** de C-5 | No dice nada de mostrados: de esos no se mide nada |
+
+## Probar las respuestas a un aviso (DT-27)
+
+Hacen falta **dos aparatos** o dos sesiones: una de catedrático y una de quien emite. Lo
+que más importa comprobar no es que la conversación funcione, sino quién NO la ve.
+
+| # | Paso | Qué debe ocurrir |
+|:--:|------|------------------|
+| R-1 | Como catedrático, abre un aviso recibido | Bajo el mensaje, un botón **Responder a …** |
+| R-2 | Escribe y envía | El cuadro se vacía y la respuesta aparece arriba, con tu nombre y la hora |
+| R-3 | Pulsa enviar dos veces seguidas | Se guarda **una** sola respuesta |
+| R-4 | Como emisor, mira el menú | Un número junto a **Respuestas** |
+| R-5 | Abre **Respuestas** | El aviso, con «1 conversación · 1 sin leer» y el nombre de quien respondió |
+| R-6 | Abre la conversación y contesta | El número desaparece; al catedrático le llega una notificación |
+| R-7 | Entra con **otro catedrático** que recibió el mismo aviso | No ve nada de esa conversación, ni dentro del aviso |
+| R-8 | Entra como **auditor** o como otro coordinador | La sección Respuestas no existe para el auditor; el otro coordinador no ve las conversaciones de un aviso ajeno |
+| R-9 | Desde Entregas, en el aviso propio | Una línea «N respuestas» que abre las conversaciones de ese aviso |
+| R-10 | Manda dos respuestas seguidas desde dos catedráticos | Al emisor le llega **una** notificación, no dos (la segunda se pliega diez minutos) |
 
 ## Probar en Android: dos cosas que despistan y no son defectos
 

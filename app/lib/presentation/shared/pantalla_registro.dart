@@ -143,7 +143,7 @@ class _PantallaRegistroState extends ConsumerState<PantallaRegistro> {
                   Textos.registroTitulo,
                   textAlign: TextAlign.center,
                   style: tema.textTheme.headlineSmall?.copyWith(
-                    color: ColoresSian.primarioOscuro,
+                    color: PaletaSian.de(context).primarioTexto,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -152,17 +152,17 @@ class _PantallaRegistroState extends ConsumerState<PantallaRegistro> {
                 // El aviso va ANTES del formulario, no después de fallar.
                 Card(
                   color: tema.colorScheme.surfaceContainerHighest,
-                  child: const Padding(
-                    padding: EdgeInsets.all(16),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         Icon(
                           Icons.verified_user_outlined,
-                          color: ColoresSian.primario,
+                          color: PaletaSian.de(context).primario,
                         ),
-                        SizedBox(width: 12),
-                        Expanded(child: Text(Textos.registroAvisoListaBlanca)),
+                        const SizedBox(width: 12),
+                        const Expanded(child: Text(Textos.registroAvisoListaBlanca)),
                       ],
                     ),
                   ),
@@ -314,22 +314,22 @@ class _MedidorFuerza extends StatelessWidget {
         switch (resultado.fuerza) {
           FuerzaContrasena.insuficiente => (
             valor: 0.2,
-            color: ColoresSian.urgente,
+            color: PaletaSian.de(context).urgente,
             etiqueta: Textos.fuerzaInsuficiente,
           ),
           FuerzaContrasena.aceptable => (
             valor: 0.5,
-            color: ColoresSian.dorado,
+            color: PaletaSian.de(context).dorado,
             etiqueta: Textos.fuerzaAceptable,
           ),
           FuerzaContrasena.buena => (
             valor: 0.8,
-            color: ColoresSian.primario,
+            color: PaletaSian.de(context).primario,
             etiqueta: Textos.fuerzaBuena,
           ),
           FuerzaContrasena.excelente => (
             valor: 1,
-            color: ColoresSian.confirmado,
+            color: PaletaSian.de(context).confirmado,
             etiqueta: Textos.fuerzaExcelente,
           ),
         };

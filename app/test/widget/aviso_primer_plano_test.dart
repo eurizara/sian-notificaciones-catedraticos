@@ -45,7 +45,9 @@ void main() {
     test('lee título y cuerpo de los datos', () {
       // El servidor manda solo datos, para decidir aquí el prefijo «URGENTE» y
       // no dejárselo al navegador.
-      final aviso = leerAviso(mensaje(titulo: 'Simulacro', cuerpo: 'A las 10'));
+      final aviso = leerAviso(
+        datosDe(mensaje(titulo: 'Simulacro', cuerpo: 'A las 10')),
+      );
       expect(aviso.titulo, 'Simulacro');
       expect(aviso.cuerpo, 'A las 10');
       expect(aviso.urgente, isFalse);
@@ -54,7 +56,9 @@ void main() {
     test('un urgente lleva el prefijo visible', () {
       // En iOS-PWA no se puede definir sonido ni vibración propios: el prefijo
       // en el título es la única distinción disponible (DT-02).
-      final aviso = leerAviso(mensaje(tipo: 'URGENTE', titulo: 'Evacuación'));
+      final aviso = leerAviso(
+        datosDe(mensaje(tipo: 'URGENTE', titulo: 'Evacuación')),
+      );
       expect(aviso.titulo, 'URGENTE · Evacuación');
       expect(aviso.urgente, isTrue);
     });
@@ -63,8 +67,10 @@ void main() {
       // El desajuste de nombres entre lo que se enviaba y lo que se leía dejó
       // el cuerpo vacío durante toda la ronda 3. Leer ambos evita repetirlo.
       final aviso = leerAviso(
-        const RemoteMessage(
-          notification: RemoteNotification(title: 'Aviso', body: 'Contenido'),
+        datosDe(
+          const RemoteMessage(
+            notification: RemoteNotification(title: 'Aviso', body: 'Contenido'),
+          ),
         ),
       );
       expect(aviso.titulo, 'Aviso');

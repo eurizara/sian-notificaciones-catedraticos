@@ -19,6 +19,7 @@ import {
   type RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
 import {
+  collection,
   collectionGroup,
   doc,
   getDoc,
@@ -239,6 +240,122 @@ describe('Entregas y confirmación de lectura', () => {
         confirmadoEn: new Date(),
       }),
     );
+  });
+});
+
+describe('DT-27 · respuestas: una conversación de dos', () => {
+  // Los dos catedráticos recibieron el aviso de la administradora, y solo el
+  // primero respondió. Es el caso que importa: estar entre los destinatarios
+  // abre el aviso, pero NO las respuestas de un compañero.
+  const HILO = ['mensajes', 'm-1', 'hilos', UID.catedratico] as const;
+  const TURNO = [...HILO, 'turnos', 't-1'] as const;
+
+  beforeEach(async () => {
+    await entorno.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await updateDoc(doc(db, 'mensajes', 'm-1'), {
+        destinatariosUids: [UID.catedratico, UID.otroCatedratico],
+      });
+      await setDoc(doc(db, ...HILO), {
+        mensajeId: 'm-1',
+        uid: UID.catedratico,
+        emisorUid: UID.administradora,
+        actualizadoEn: new Date('2026-09-11T15:00:00Z'),
+        sinLeerEmisor: 1,
+      });
+      await setDoc(doc(db, ...TURNO), { lado: 'CATEDRATICO', texto: 'No puedo asistir.' });
+      await setDoc(doc(db, 'mensajes', 'm-1', 'privado', 'respuestas'), { avisadoEn: new Date() });
+    });
+  });
+
+  it('quien respondió lee su hilo y sus turnos', async () => {
+    const db = contexto(UID.catedratico, 'CATEDRATICO');
+    await assertSucceeds(getDoc(doc(db, ...HILO)));
+    await assertSucceeds(getDocs(collection(db, ...HILO, 'turnos')));
+  });
+
+  it('quien emitió el aviso lee el hilo y sus turnos', async () => {
+    const db = contexto(UID.administradora, 'ADMINISTRADORA');
+    await assertSucceeds(getDoc(doc(db, ...HILO)));
+    await assertSucceeds(getDocs(collection(db, ...HILO, 'turnos')));
+  });
+
+  it('otro destinatario del MISMO aviso no lee la conversación', async () => {
+    const db = contexto(UID.otroCatedratico, 'CATEDRATICO');
+    await assertFails(getDoc(doc(db, ...HILO)));
+    await assertFails(getDoc(doc(db, ...TURNO)));
+    await assertFails(getDocs(collection(db, 'mensajes', 'm-1', 'hilos')));
+  });
+
+  it('el coordinador lee todos los avisos, pero no las conversaciones ajenas', async () => {
+    const db = contexto(UID.coordinador, 'COORDINADOR');
+    await assertFails(getDoc(doc(db, ...HILO)));
+    await assertFails(getDoc(doc(db, ...TURNO)));
+  });
+
+  it('el auditor tampoco', async () => {
+    const db = contexto(UID.auditor, 'AUDITOR');
+    await assertFails(getDoc(doc(db, ...HILO)));
+    await assertFails(getDoc(doc(db, ...TURNO)));
+  });
+
+  it('el emisor reúne sus hilos de todos sus avisos filtrando por él', async () => {
+    const db = contexto(UID.administradora, 'ADMINISTRADORA');
+    await assertSucceeds(
+      getDocs(
+        query(
+          collectionGroup(db, 'hilos'),
+          where('emisorUid', '==', UID.administradora),
+          orderBy('actualizadoEn', 'desc'),
+        ),
+      ),
+    );
+  });
+
+  it('una consulta de hilos que no filtra por uno mismo se rechaza entera', async () => {
+    const coordinador = contexto(UID.coordinador, 'COORDINADOR');
+    await assertFails(getDocs(collectionGroup(coordinador, 'hilos')));
+    await assertFails(
+      getDocs(
+        query(collectionGroup(coordinador, 'hilos'), where('emisorUid', '==', UID.administradora)),
+      ),
+    );
+  });
+
+  it('nadie escribe en un hilo desde el cliente, ni siquiera sus dos partes', async () => {
+    // Si se pudiera, bastaría la consola para responder en nombre de otro.
+    const catedratico = contexto(UID.catedratico, 'CATEDRATICO');
+    const emisor = contexto(UID.administradora, 'ADMINISTRADORA');
+    await assertFails(setDoc(doc(catedratico, ...HILO, 'turnos', 't-2'), { texto: 'Directo' }));
+    await assertFails(updateDoc(doc(catedratico, ...HILO), { sinLeerCatedratico: 0 }));
+    await assertFails(setDoc(doc(emisor, ...HILO, 'turnos', 't-3'), { texto: 'Directo' }));
+    await assertFails(updateDoc(doc(emisor, ...HILO), { sinLeerEmisor: 0 }));
+  });
+
+  it('un catedrático no crea un hilo en nombre de otro', async () => {
+    const db = contexto(UID.otroCatedratico, 'CATEDRATICO');
+    await assertFails(
+      setDoc(doc(db, 'mensajes', 'm-1', 'hilos', UID.otroCatedratico), {
+        uid: UID.otroCatedratico,
+        emisorUid: UID.otroCatedratico,
+      }),
+    );
+  });
+
+  it('lo que el servidor guarda para plegar notificaciones no lo lee nadie', async () => {
+    await assertFails(
+      getDoc(doc(contexto(UID.coordinador, 'COORDINADOR'), 'mensajes', 'm-1', 'privado', 'respuestas')),
+    );
+    await assertFails(
+      getDoc(
+        doc(contexto(UID.administradora, 'ADMINISTRADORA'), 'mensajes', 'm-1', 'privado', 'respuestas'),
+      ),
+    );
+  });
+
+  it('una cuenta desactivada ya no lee su conversación', async () => {
+    const db = contexto(UID.catedratico, 'CATEDRATICO', false);
+    await assertFails(getDoc(doc(db, ...HILO)));
   });
 });
 

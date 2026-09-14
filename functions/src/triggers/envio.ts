@@ -23,6 +23,8 @@
  * (RF-ENT-11).
  */
 
+import { randomUUID } from 'node:crypto';
+
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { logger } from 'firebase-functions/v2';
 import type { DocumentReference } from 'firebase-admin/firestore';
@@ -33,7 +35,12 @@ import {
   type CandidatoDestinatario,
   type GrupoResuelto,
 } from '../application/resolverDestinatarios';
-import { crearAsiento } from '../domain/bitacora';
+import { LARGO_DE_ACUSE, armarSeña, cabecerasDeEnvio } from '../domain/acuse';
+import {
+  type SuscripcionWeb,
+  enviarPorWebPush,
+} from '../infrastructure/webpush';
+import { actorSistema, crearAsiento } from '../domain/bitacora';
 import { esIdentificadorDeInstalacion, esTokenMuerto } from '../domain/dispositivo';
 import { exigirPermiso, type Sujeto } from '../domain/autorizacion';
 import { ErrorAutorizacion, ErrorDominio, esDocumentoYaExistente } from '../domain/errores';
@@ -41,7 +48,8 @@ import { MensajeFactory, type Mensaje } from '../domain/mensaje';
 import { normalizarAdjuntos } from '../domain/tipos';
 import type { Adjuntos, Destinatarios, Rol, TipoMensaje } from '../domain/tipos';
 import { FieldValue, OPCIONES_FUNCION, RUTAS, aTimestamp, db } from '../infrastructure/firebase';
-import { escribirAsiento, nombreDe } from '../infrastructure/repositorios';
+import { escribirAsiento, escribirAsientos, nombreDe } from '../infrastructure/repositorios';
+import { versionMasAlta } from '../domain/version';
 
 /** FCM admite 500 mensajes por lote. Se deja margen. */
 const TAMANO_LOTE = 400;
@@ -250,7 +258,18 @@ export const enviarInmediato = onCall(OPCIONES_FUNCION, async (peticion) => {
       // (documento 05, sección 2.4).
       destinatariosUids: resolucion.uids,
       totalDestinatarios: resolucion.uids.length,
-      resumenEntrega: { entregados: 0, fallidos: 0, abiertos: 0, confirmados: 0 },
+      resumenEntrega: {
+        entregados: 0,
+        fallidos: 0,
+        abiertos: 0,
+        confirmados: 0,
+        // Cuántos aparatos llegaron a MOSTRAR la notificación (DT-31). Distinto
+        // de `entregados`, que solo dice que FCM aceptó el mensaje.
+        mostrados: 0,
+      },
+      // Marca que este aviso sí sabe pedir acuse. Los enviados antes de C-5 no
+      // lo llevan, y sin ella la pantalla los daría a todos por «no mostrados».
+      acuseEsperado: true,
       enviadoEn: null,
     });
 
@@ -324,7 +343,11 @@ async function escribirEntregasPendientes(
   refOcurrencia: DocumentReference,
   mensajeId: string,
   uids: readonly string[],
-): Promise<void> {
+): Promise<Map<string, string>> {
+  // El identificador que viajará en el push y volverá con el acuse (DT-31).
+  const acuses = new Map<string, string>(
+    uids.map((uid) => [uid, randomUUID().replace(/-/g, '').slice(0, LARGO_DE_ACUSE)]),
+  );
   // Firestore admite 500 operaciones por lote.
   for (let i = 0; i < uids.length; i += TAMANO_LOTE) {
     const lote = db.batch();
@@ -338,10 +361,17 @@ async function escribirEntregasPendientes(
         estado: 'PENDIENTE',
         intentos: 0,
         creadaEn: FieldValue.serverTimestamp(),
+        // Explícitamente nulo, no ausente: Firestore solo encuentra con
+        // `== null` los documentos donde el campo existe, y de esa consulta
+        // depende el reintento por falta de acuse.
+        mostradaEn: null,
+        reintentosPorAcuse: 0,
+        acuseId: acuses.get(uid),
       });
     }
     await lote.commit();
   }
+  return acuses;
 }
 
 /**
@@ -354,6 +384,7 @@ async function escribirEntregasPendientes(
 async function despachar(
   refOcurrencia: DocumentReference,
   mensajeId: string,
+  acuses: ReadonlyMap<string, string>,
   mensaje: {
     titulo: string;
     cuerpo: string;
@@ -383,31 +414,61 @@ async function despachar(
     const tanda = uids.slice(i, i + TAMANO_LOTE);
 
     const conTokens = await Promise.all(
-      tanda.map(async (uid) => ({
-        uid,
-        tokens: await tokensDe(uid),
-      })),
+      tanda.map(async (uid) => ({ uid, ...(await canalDe(uid)) })),
     );
+
+    // Lo que va por la vía propia, que no pasa por FCM.
+    const porWebPush = new Map<string, { ok: boolean; error?: string }>();
+    const muertasWeb: { uid: string; endpoint: string }[] = [];
+    await Promise.all(
+      conTokens.flatMap(({ uid, suscripciones }) =>
+        suscripciones.map(async (s) => {
+          const acuseId = acuses.get(uid);
+          const datos: Record<string, string> = acuseId
+            ? { ...carga, ac: armarSeña(refOcurrencia.id, uid, acuseId) }
+            : carga;
+          const r = await enviarPorWebPush(s, datos);
+          const previo = porWebPush.get(uid);
+          porWebPush.set(uid, {
+            ok: (previo?.ok ?? false) || r.ok,
+            error: r.ok ? previo?.error : (r.codigo ?? 'webpush/desconocido'),
+          });
+          if (r.muerta) {
+            muertasWeb.push({ uid, endpoint: s.endpoint });
+          }
+        }),
+      ),
+    );
+    await retirarSuscripcionesMuertas(muertasWeb);
 
     const envios: { uid: string; mensaje: TokenMessage }[] = [];
     const sinDispositivo: string[] = [];
 
-    for (const { uid, tokens } of conTokens) {
-      if (tokens.length === 0) {
+    const versionPorUid = new Map(conTokens.map((c) => [c.uid, c.version]));
+
+    for (const { uid, tokens, suscripciones } of conTokens) {
+      if (tokens.length === 0 && suscripciones.length === 0) {
         // No tiene dónde recibir. Se marca como fallido con motivo, que es lo
         // que el emisor necesita ver en el reporte: no es que FCM fallara, es
         // que esa persona nunca registró un dispositivo (RN-02).
         sinDispositivo.push(uid);
         continue;
       }
+      // La seña del acuse es de esta persona y de esta entrega: identifica
+      // cuál es la que se mostró cuando el worker conteste (DT-31).
+      const acuseId = acuses.get(uid);
+      const datos: Record<string, string> = acuseId
+        ? { ...carga, ac: armarSeña(refOcurrencia.id, uid, acuseId) }
+        : carga;
+
       for (const token of tokens) {
         envios.push({
           uid,
           mensaje: {
             token,
-            data: carga,
+            data: datos,
             webpush: {
-              headers: { Urgency: esUrgente ? 'high' : 'normal' },
+              headers: cabecerasDeEnvio(esUrgente),
               fcmOptions: { link: '/' },
             },
           },
@@ -418,15 +479,19 @@ async function despachar(
     await marcarSinDispositivo(refOcurrencia, sinDispositivo);
     fallidos += sinDispositivo.length;
 
-    if (envios.length === 0) {
+    if (envios.length === 0 && porWebPush.size === 0) {
       continue;
     }
 
-    const respuesta = await getMessaging().sendEach(envios.map((e) => e.mensaje));
+    const respuesta =
+      envios.length > 0
+        ? await getMessaging().sendEach(envios.map((e) => e.mensaje))
+        : { responses: [] as { success: boolean; error?: { code?: string } }[] };
 
     // Un destinatario puede tener varios dispositivos: le basta con que uno
-    // reciba. Se agrupa por persona antes de decidir si le llegó.
-    const porUid = new Map<string, { ok: boolean; error?: string }>();
+    // reciba. Se agrupa por persona antes de decidir si le llegó, y la vía
+    // propia cuenta igual que la de FCM.
+    const porUid = new Map<string, { ok: boolean; error?: string }>(porWebPush);
     const muertos: { uid: string; token: string }[] = [];
 
     respuesta.responses.forEach((r, indice) => {
@@ -458,6 +523,10 @@ async function despachar(
       }
       lote.update(refOcurrencia.collection('entregas').doc(uid), {
         estado: resultado.ok ? 'ENTREGADO' : 'FALLIDO',
+        // Con qué versión corría su aparato al mandárselo. Sin esto, el panel
+        // diría «su aparato no lo mostró» de un teléfono que ni siquiera sabía
+        // cómo decir que sí (DT-31).
+        versionAparato: versionPorUid.get(uid) ?? '',
         enviadoAFcmEn: FieldValue.serverTimestamp(),
         ...(resultado.ok ? { entregadoEn: FieldValue.serverTimestamp() } : {}),
         intentos: FieldValue.increment(1),
@@ -492,7 +561,7 @@ async function despachar(
  * viejo —documento identificado por el token— y el nuevo —por instalación—, el
  * mismo token puede estar en cualquiera de los dos.
  */
-async function retirarTokensMuertos(
+export async function retirarTokensMuertos(
   muertos: readonly { uid: string; token: string }[],
 ): Promise<void> {
   if (muertos.length === 0) {
@@ -531,6 +600,55 @@ async function retirarTokensMuertos(
   );
 
   logger.info('Tokens muertos retirados', { cuantos: muertos.length });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Y queda dicho en la bitácora, no solo en los registros técnicos.
+  // ──────────────────────────────────────────────────────────────────────────
+  //
+  // El 12 de septiembre de 2026 hubo que reconstruir a mano por qué una
+  // persona se había quedado sin dispositivo: el retiro solo existía en los
+  // registros del servidor. Con el asiento, la próxima vez se lee en pantalla
+  // —qué aparato, cuándo y por qué— igual que cuando lo retira la sonda.
+  await escribirAsientos(
+    muertos.map(({ uid }) =>
+      crearAsiento({
+        tipo: 'DISPOSITIVO_RETIRADO',
+        actor: actorSistema,
+        entidad: 'DISPOSITIVO',
+        entidadId: uid,
+        resumen: 'Su registro de notificaciones ya no existía al enviar un aviso',
+        datos: { motivo: 'TOKEN_RECHAZADO_AL_ENVIAR' },
+        origen: 'PLANIFICADOR',
+      }),
+    ),
+  );
+}
+
+/**
+ * Retira las suscripciones que el servicio de push declaró inexistentes.
+ *
+ * `404` y `410` son su forma de decir «esto ya no está», igual que
+ * `UNREGISTERED` en FCM. Se borra el registro entero, no solo la suscripción:
+ * un aparato sin a dónde enviar no es un canal.
+ */
+export async function retirarSuscripcionesMuertas(
+  muertas: readonly { uid: string; endpoint: string }[],
+): Promise<void> {
+  if (muertas.length === 0) {
+    return;
+  }
+  await Promise.all(
+    muertas.map(async ({ uid, endpoint }) => {
+      try {
+        const coleccion = db.collection(RUTAS.usuarios).doc(uid).collection('dispositivos');
+        const suyos = await coleccion.where('webPush.endpoint', '==', endpoint).get();
+        await Promise.all(suyos.docs.map((d) => d.ref.delete()));
+      } catch (e) {
+        logger.warn('No se pudo retirar una suscripción muerta', { uid, error: String(e) });
+      }
+    }),
+  );
+  logger.info('Suscripciones retiradas', { cuantas: muertas.length });
 }
 
 async function marcarSinDispositivo(
@@ -551,8 +669,28 @@ async function marcarSinDispositivo(
   await lote.commit();
 }
 
-/** Identificadores de notificación activos de un usuario (RF-USR-10). */
-async function tokensDe(uid: string): Promise<string[]> {
+/**
+ * Identificadores de notificación activos de un usuario (RF-USR-10).
+ *
+ * Exportada para las respuestas (DT-27), que notifican con el mismo criterio
+ * que los avisos: tener dos formas de leer los tokens es cómo se llegó a que
+ * una leyera el campo y la otra el identificador del documento.
+ */
+export async function tokensDe(uid: string): Promise<string[]> {
+  return (await canalDe(uid)).tokens;
+}
+
+/**
+ * Los tokens de una persona **y la versión de la aplicación** que corren.
+ *
+ * Van juntos porque salen de la misma lectura y se necesitan a la vez: la
+ * versión decide si de ese aparato se puede afirmar que no mostró el aviso
+ * (DT-31). Se queda con la versión más alta de sus aparatos: si uno de ellos
+ * sabe acusar, el silencio ya significa algo.
+ */
+export async function canalDe(
+  uid: string,
+): Promise<{ tokens: string[]; suscripciones: SuscripcionWeb[]; version: string }> {
   const instantanea = await db
     .collection(RUTAS.usuarios)
     .doc(uid)
@@ -579,9 +717,87 @@ async function tokensDe(uid: string): Promise<string[]> {
   // El respaldo a `d.id` cubre un documento del esquema viejo al que le
   // faltara el campo. No debería haber ninguno —`crearDispositivo` siempre lo
   // incluye— pero equivocarse aquí deja a alguien sin avisos sin decirlo.
-  return instantanea.docs
-    .map((d) => ((d.get('tokenFCM') as string | undefined) ?? d.id).trim())
-    .filter((t) => t.length > 0);
+  // Por tramos numéricos: como texto, «1.5.10» quedaba antes que «1.5.9».
+  const version = versionMasAlta(
+    instantanea.docs.map((d) => (d.get('versionApp') as string | undefined) ?? ''),
+  );
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Una sola vía por aparato, y se prefiere la propia.
+  // ──────────────────────────────────────────────────────────────────────────
+  //
+  // Un aparato puede tener las dos cosas: el token de FCM de cuando se
+  // registró y la suscripción propia que reportó después. Mandar por las dos
+  // le enseñaría la misma notificación dos veces —en iPhone no se funden
+  // aunque lleven la misma etiqueta—, así que se elige una.
+  //
+  // Se prefiere Web Push directo porque es la que el propio aparato sabe
+  // renovar sin que nadie abra la aplicación, que es el problema que se estaba
+  // resolviendo (DT-23).
+  const tokens: string[] = [];
+  const suscripciones: SuscripcionWeb[] = [];
+
+  for (const d of instantanea.docs) {
+    const web = d.get('webPush') as
+      | { endpoint?: string; p256dh?: string; auth?: string }
+      | undefined;
+    if (web?.endpoint && web.p256dh && web.auth) {
+      suscripciones.push({ endpoint: web.endpoint, p256dh: web.p256dh, auth: web.auth });
+      continue;
+    }
+    const token = ((d.get('tokenFCM') as string | undefined) ?? d.id).trim();
+    if (token.length > 0) {
+      tokens.push(token);
+    }
+  }
+
+  return { tokens, suscripciones, version };
+}
+
+/**
+ * Manda una notificación suelta a todos los aparatos de una persona.
+ *
+ * Lo usan la insistencia (DT-31), las respuestas (DT-27) y la notificación de
+ * prueba del registro. Cada aparato recibe por **su** vía —la propia si la
+ * tiene, FCM si no— y lo muerto se retira, igual que en un envío normal.
+ */
+export async function avisarAPersona(
+  uid: string,
+  datos: Record<string, string>,
+  esUrgente = false,
+): Promise<{ entregado: boolean }> {
+  const { tokens, suscripciones } = await canalDe(uid);
+  let entregado = false;
+
+  const muertasWeb: { uid: string; endpoint: string }[] = [];
+  for (const s of suscripciones) {
+    const r = await enviarPorWebPush(s, datos);
+    entregado = entregado || r.ok;
+    if (r.muerta) {
+      muertasWeb.push({ uid, endpoint: s.endpoint });
+    }
+  }
+  await retirarSuscripcionesMuertas(muertasWeb);
+
+  if (tokens.length > 0) {
+    const mensajes: TokenMessage[] = tokens.map((token) => ({
+      token,
+      data: datos,
+      webpush: { headers: cabecerasDeEnvio(esUrgente), fcmOptions: { link: '/' } },
+    }));
+    const respuesta = await getMessaging().sendEach(mensajes);
+    const muertos: { uid: string; token: string }[] = [];
+    respuesta.responses.forEach((r, i) => {
+      const token = tokens[i];
+      entregado = entregado || r.success;
+      if (!r.success && token !== undefined && esTokenMuerto(r.error?.code)) {
+        muertos.push({ uid, token });
+      }
+    });
+    await retirarTokensMuertos(muertos);
+  }
+
+  return { entregado };
 }
 
 /** Traduce los errores del dominio a los que entiende el cliente. */
@@ -689,11 +905,12 @@ async function ejecutarDespacho(
     totalDestinatarios: uids.length,
   });
 
-  await escribirEntregasPendientes(refOcurrencia, refMensaje.id, uids);
+  const acuses = await escribirEntregasPendientes(refOcurrencia, refMensaje.id, uids);
 
   const { entregados, fallidos } = await despachar(
     refOcurrencia,
     refMensaje.id,
+    acuses,
     mensaje,
     uids,
   );

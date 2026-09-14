@@ -49,6 +49,7 @@ import {
 import type { Recurrencia, TipoMensaje } from '../domain/tipos';
 import { FieldValue, RUTAS, aTimestamp, db } from '../infrastructure/firebase';
 import { escribirAsiento } from '../infrastructure/repositorios';
+import { insistirDondeNoHuboAcuse } from './insistencia';
 import { despacharMensaje } from './envio';
 import { encolar } from './programacion';
 
@@ -70,6 +71,15 @@ export const despachador = onSchedule(
   },
   async () => {
     const ahora = new Date();
+
+    // Antes de la cola: insistir donde el aviso llegó y el aparato no lo mostró
+    // (DT-31). Va aquí y no en un trabajo programado propio porque este ya
+    // corre cada minuto, y uno más costaría otra cuota en cada ambiente.
+    try {
+      await insistirDondeNoHuboAcuse(ahora);
+    } catch (e) {
+      logger.error('Fallo insistiendo en avisos sin acuse', { error: String(e) });
+    }
 
     const pendientes = await db
       .collection(RUTAS.colaDespacho)

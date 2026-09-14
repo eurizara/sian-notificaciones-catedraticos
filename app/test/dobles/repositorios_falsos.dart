@@ -19,6 +19,7 @@ import 'package:sian/infrastructure/firebase/repositorio_grupos.dart';
 import 'package:sian/infrastructure/firebase/repositorio_programacion.dart';
 import 'package:sian/domain/rol.dart';
 import 'package:sian/domain/sesion.dart';
+import 'package:sian/infrastructure/firebase/repositorio_respuestas.dart';
 
 class RepositorioSesionFalso implements RepositorioSesion {
   RepositorioSesionFalso({Sesion inicial = const SesionAnonima()})
@@ -619,5 +620,87 @@ class RepositorioProgramacionFalso extends RepositorioProgramacion {
   Future<List<DestinatarioEntrega>> detalleEntregas(String mensajeId) async {
     vecesQuePidioDetalle += 1;
     return detalle;
+  }
+}
+
+/// Doble del repositorio de respuestas (DT-27).
+///
+/// Guarda en memoria y emite al momento, como haría Firestore con la caché:
+/// lo que se envía aparece en la conversación sin esperar al servidor.
+class RepositorioRespuestasFalso extends RepositorioRespuestas {
+  RepositorioRespuestasFalso({
+    List<Hilo> hilosDelEmisor = const <Hilo>[],
+    Map<String, Hilo> hilosPorMensaje = const <String, Hilo>{},
+    Map<String, List<Turno>> turnos = const <String, List<Turno>>{},
+  }) : _hilosDelEmisor = List<Hilo>.of(hilosDelEmisor),
+       _hilosPorMensaje = Map<String, Hilo>.of(hilosPorMensaje),
+       _turnos = <String, List<Turno>>{
+         for (final MapEntry<String, List<Turno>> e in turnos.entries)
+           e.key: List<Turno>.of(e.value),
+       };
+
+  final List<Hilo> _hilosDelEmisor;
+  final Map<String, Hilo> _hilosPorMensaje;
+  final Map<String, List<Turno>> _turnos;
+
+  final List<({String mensajeId, String texto, String turnoId, String? hiloUid})>
+  enviados =
+      <({String mensajeId, String texto, String turnoId, String? hiloUid})>[];
+  final List<({String mensajeId, String? hiloUid})> leidos =
+      <({String mensajeId, String? hiloUid})>[];
+
+  /// Error que devolverá la próxima respuesta, si se configura. Se consume.
+  Exception? errorAlResponder;
+
+  /// Si se configura, la respuesta espera a que se complete: sirve para
+  /// comprobar qué pasa mientras se envía.
+  Completer<void>? esperaAlResponder;
+
+  int _siguienteId = 0;
+
+  @override
+  String nuevoIdDeTurno() => 'turno${(_siguienteId++).toString().padLeft(8, '0')}';
+
+  @override
+  Stream<Hilo?> observarHilo(String mensajeId, String uid) =>
+      Stream<Hilo?>.value(_hilosPorMensaje[mensajeId]);
+
+  @override
+  Stream<List<Turno>> observarTurnos(String mensajeId, String uid) =>
+      Stream<List<Turno>>.value(
+        _turnos['$mensajeId/$uid'] ?? const <Turno>[],
+      );
+
+  @override
+  Stream<List<Hilo>> observarHilosDelEmisor(String emisorUid) =>
+      Stream<List<Hilo>>.value(_hilosDelEmisor);
+
+  @override
+  Future<void> responder({
+    required String mensajeId,
+    required String texto,
+    required String turnoId,
+    String? hiloUid,
+  }) async {
+    enviados.add((
+      mensajeId: mensajeId,
+      texto: texto,
+      turnoId: turnoId,
+      hiloUid: hiloUid,
+    ));
+    final Completer<void>? espera = esperaAlResponder;
+    if (espera != null) {
+      await espera.future;
+    }
+    final Exception? e = errorAlResponder;
+    if (e != null) {
+      errorAlResponder = null;
+      throw e;
+    }
+  }
+
+  @override
+  Future<void> marcarLeido({required String mensajeId, String? hiloUid}) async {
+    leidos.add((mensajeId: mensajeId, hiloUid: hiloUid));
   }
 }

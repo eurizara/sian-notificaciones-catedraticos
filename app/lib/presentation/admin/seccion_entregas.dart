@@ -25,9 +25,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../application/proveedores_programacion.dart';
+import '../../application/proveedores_respuestas.dart';
 import '../../infrastructure/firebase/repositorio_programacion.dart';
+import '../../infrastructure/firebase/repositorio_respuestas.dart';
 import '../shared/buscador.dart';
 import '../shared/tema.dart';
+import 'resumen_semanal.dart';
+import 'seccion_respuestas.dart';
 import '../shared/textos.dart';
 import 'seccion_programacion.dart' show Marca, filtrarProgramados;
 
@@ -110,6 +114,14 @@ class _SeccionEntregasState extends ConsumerState<SeccionEntregas> {
         return ListView(
           padding: const EdgeInsets.all(16),
           children: <Widget>[
+            // La suma de la semana va arriba de todo: es la pregunta que se trae
+            // al entrar —«¿llegaron?»— y antes había que contestarla abriendo
+            // los reportes uno por uno (DT-07). Se calcula sobre la lista
+            // completa, no sobre la filtrada: la búsqueda no debe cambiarla.
+            TarjetaResumenSemanal(
+              resumen: calcularResumenSemanal(todos, DateTime.now()),
+            ),
+            const SizedBox(height: 16),
             if (enviados.length > 5) ...<Widget>[
               Buscador(
                 controlador: _busqueda,
@@ -268,7 +280,7 @@ class _ReporteState extends ConsumerState<_Reporte> {
                     ),
                     margin: const EdgeInsets.only(right: 8),
                     decoration: BoxDecoration(
-                      color: ColoresSian.urgente,
+                      color: PaletaSian.de(context).fondoUrgente,
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: const Text(
@@ -322,8 +334,24 @@ class _ReporteState extends ConsumerState<_Reporte> {
                     icono: Icons.image_outlined,
                     texto: Textos.llevaImagenAdjunta,
                   ),
+                // Lo que de verdad experimentó la gente (DT-31). Va junto a lo
+                // demás y no escondido: es el dato que faltaba para saber si un
+                // aviso sirvió de algo.
+                if (mensaje.acuseEsperado && mensaje.entregados > 0)
+                  Marca(
+                    icono: mensaje.entregadosSinMostrar > 0
+                        ? Icons.notifications_off_outlined
+                        : Icons.notifications_active_outlined,
+                    texto: Textos.seMostroEn(
+                      mensaje.mostrados,
+                      mensaje.entregados,
+                    ),
+                  ),
               ],
             ),
+            // Las respuestas, en el aviso al que contestan (DT-27). Solo en
+            // los avisos propios: la consulta es de los hilos de quien mira.
+            RespuestasDelAviso(mensajeId: mensaje.id),
             const SizedBox(height: 8),
 
             // Cuándo salió, no cuándo saldrá. Es la primera pregunta al abrir
@@ -393,10 +421,10 @@ class _ReporteState extends ConsumerState<_Reporte> {
               minHeight: 8,
               borderRadius: BorderRadius.circular(4),
               color: porcentaje >= 80
-                  ? ColoresSian.confirmado
+                  ? PaletaSian.de(context).confirmado
                   : porcentaje >= 40
-                  ? ColoresSian.dorado
-                  : ColoresSian.urgente,
+                  ? PaletaSian.de(context).dorado
+                  : PaletaSian.de(context).urgente,
             ),
             const SizedBox(height: 8),
 
@@ -446,7 +474,7 @@ class _ReporteState extends ConsumerState<_Reporte> {
                 Text(
                   Textos.entregasPendientes(pendientes),
                   style: tema.textTheme.bodySmall?.copyWith(
-                    color: ColoresSian.doradoTexto,
+                    color: PaletaSian.de(context).doradoTexto,
                   ),
                 ),
               ],
@@ -500,7 +528,7 @@ class _ReporteState extends ConsumerState<_Reporte> {
                   child: Text(
                     _error!,
                     style: tema.textTheme.bodySmall?.copyWith(
-                      color: ColoresSian.urgente,
+                      color: PaletaSian.de(context).urgente,
                     ),
                   ),
                 )
@@ -509,6 +537,7 @@ class _ReporteState extends ConsumerState<_Reporte> {
                   destinatarios:
                       _destinatarios ?? const <DestinatarioEntrega>[],
                   porConfirmacion: porConfirmacion,
+                  esperaAcuse: mensaje.acuseEsperado,
                 ),
           ],
         ),
@@ -522,10 +551,15 @@ class _ListaDestinatarios extends StatelessWidget {
   const _ListaDestinatarios({
     required this.destinatarios,
     required this.porConfirmacion,
+    this.esperaAcuse = false,
   });
 
   final List<DestinatarioEntrega> destinatarios;
   final bool porConfirmacion;
+
+  /// Si este aviso pidió acuse (DT-31). Sin él no se puede distinguir «no lo
+  /// abrió» de «su teléfono nunca se lo enseñó».
+  final bool esperaAcuse;
 
   @override
   Widget build(BuildContext context) {
@@ -554,16 +588,16 @@ class _ListaDestinatarios extends StatelessWidget {
         if (todoConfirmado)
           Row(
             children: <Widget>[
-              const Icon(
+              Icon(
                 Icons.verified_outlined,
                 size: 16,
-                color: ColoresSian.confirmado,
+                color: PaletaSian.de(context).confirmado,
               ),
               const SizedBox(width: 8),
               Text(
                 Textos.nadiePendiente,
                 style: tema.textTheme.bodySmall?.copyWith(
-                  color: ColoresSian.confirmado,
+                  color: PaletaSian.de(context).confirmado,
                 ),
               ),
             ],
@@ -572,12 +606,16 @@ class _ListaDestinatarios extends StatelessWidget {
         for (final DestinatarioEntrega d in destinatarios)
           Builder(
             builder: (BuildContext _) {
-              final SituacionEntrega s = situacionDe(d, porConfirmacion);
+              final SituacionEntrega s = situacionDe(
+                d,
+                porConfirmacion,
+                esperaAcuse: esperaAcuse,
+              );
               return Padding(
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Row(
                   children: <Widget>[
-                    Icon(s.icono, size: 16, color: s.color),
+                    Icon(s.icono, size: 16, color: PaletaSian.de(context).adaptar(s.color)),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -632,7 +670,11 @@ class SituacionEntrega {
 ///
 /// Se calcula aparte de la pantalla para poder comprobarlo: es la parte del
 /// reporte de la que después salen decisiones sobre personas.
-SituacionEntrega situacionDe(DestinatarioEntrega d, bool porConfirmacion) {
+SituacionEntrega situacionDe(
+  DestinatarioEntrega d,
+  bool porConfirmacion, {
+  bool esperaAcuse = false,
+}) {
   // Un fallo de entrega NO es un descuido: uno se resuelve revisando el
   // dispositivo y el otro insistiendo a la persona.
   if (d.fallo) {
@@ -650,8 +692,26 @@ SituacionEntrega situacionDe(DestinatarioEntrega d, bool porConfirmacion) {
     );
   }
   if (!d.abrio) {
-    // Ni siquiera lo ha abierto. Es lo mismo pida o no confirmación, y es el
-    // caso que conviene distinguir: puede que no le estén llegando los avisos.
+    // ────────────────────────────────────────────────────────────────────────
+    // «No lo abrió» y «su teléfono nunca se lo enseñó» no son lo mismo (DT-31).
+    // ────────────────────────────────────────────────────────────────────────
+    //
+    // Al primero se le insiste; al segundo hay que llamarlo y revisar los
+    // ajustes de su aparato, porque va a pasarle con el próximo aviso también.
+    // Antes los dos se veían igual, y por eso el 11 de septiembre no se pudo
+    // contestar «¿a quién no le avisó el teléfono?».
+    //
+    // Solo se distingue en los avisos que pidieron acuse: en los anteriores,
+    // que nadie dijera nada no significa nada.
+    // Y solo si su aparato sabía acusar: acusar a quien no tenía forma de
+    // contestar es lo que hizo el panel media hora después de estrenar esto.
+    if (esperaAcuse && d.llegoYNoSeMostro) {
+      return const SituacionEntrega(
+        etiqueta: Textos.detalleNoSeMostro,
+        icono: Icons.notifications_off_outlined,
+        color: ColoresSian.urgente,
+      );
+    }
     return const SituacionEntrega(
       etiqueta: Textos.detalleNoAbrio,
       icono: Icons.mail_outline,
@@ -672,3 +732,60 @@ SituacionEntrega situacionDe(DestinatarioEntrega d, bool porConfirmacion) {
           color: ColoresSian.confirmado,
         );
 }
+
+/// «3 respuestas · 1 sin leer», y al tocarlo, las conversaciones de ese aviso.
+///
+/// No aparece si el aviso no tiene respuestas: una línea que dice «0
+/// respuestas» en cada aviso sería ruido en el caso más común.
+class RespuestasDelAviso extends ConsumerWidget {
+  const RespuestasDelAviso({required this.mensajeId, super.key});
+
+  final String mensajeId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final List<AvisoConRespuestas> avisos =
+        ref.watch(avisosConRespuestasProvider).value ??
+        const <AvisoConRespuestas>[];
+    final AvisoConRespuestas? aviso = avisos
+        .where((AvisoConRespuestas a) => a.mensajeId == mensajeId)
+        .firstOrNull;
+    if (aviso == null) {
+      return const SizedBox.shrink();
+    }
+
+    final int sinLeer = aviso.sinLeer;
+    final String texto = sinLeer > 0
+        ? '${Textos.respuestasDeUnAviso(aviso.hilos.length)} · '
+              '${Textos.sinLeer(sinLeer)}'
+        : Textos.respuestasDeUnAviso(aviso.hilos.length);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: TextButton.icon(
+        style: TextButton.styleFrom(
+          foregroundColor: PaletaSian.de(context).primarioTexto,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          minimumSize: const Size(48, 40),
+        ),
+        onPressed: () => showModalBottomSheet<void>(
+          context: context,
+          showDragHandle: true,
+          isScrollControlled: true,
+          builder: (BuildContext _) => SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: TarjetaAvisoConRespuestas(aviso: aviso),
+            ),
+          ),
+        ),
+        icon: const Icon(Icons.forum_outlined, size: 18),
+        label: Text(
+          texto,
+          style: TextStyle(fontWeight: sinLeer > 0 ? FontWeight.w600 : null),
+        ),
+      ),
+    );
+  }
+}
+

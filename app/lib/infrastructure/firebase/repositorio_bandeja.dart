@@ -9,6 +9,7 @@ library;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../core/version.dart';
 import '../../domain/repositorios.dart';
 
 class RepositorioBandejaFirebase implements RepositorioBandeja {
@@ -147,6 +148,10 @@ class RepositorioBandejaFirebase implements RepositorioBandeja {
           estado: (datos['estado'] as String?) ?? 'PENDIENTE',
           requiereConfirmacion: mensaje['requiereConfirmacion'] == true,
           emisor: (mensaje['creadoPorNombre'] as String?) ?? '',
+          creadoPor: (mensaje['creadoPor'] as String?) ?? '',
+          esperaAcuse: mensaje['acuseEsperado'] == true,
+          mostradaEn: (datos['mostradaEn'] as Timestamp?)?.toDate(),
+          aparatoSabeAcusar: sabeAcusar(datos['versionAparato'] as String?),
           entregadoEn: (datos['entregadoEn'] as Timestamp?)?.toDate(),
           abiertoEn: (datos['abiertoEn'] as Timestamp?)?.toDate(),
           confirmadoEn: (datos['confirmadoEn'] as Timestamp?)?.toDate(),

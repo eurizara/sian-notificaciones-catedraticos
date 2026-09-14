@@ -6,3 +6,8 @@ void escucharRotacionDeSuscripcion(void Function() alRotar) {}
 
 /// Sin navegador no hay marca que leer.
 Future<bool> huboRotacionPendiente() async => false;
+
+/// Nadie muestra notificaciones fuera del navegador.
+void escucharNotificacionMostrada(
+  void Function([Map<String, String>? datos]) alMostrar,
+) {}

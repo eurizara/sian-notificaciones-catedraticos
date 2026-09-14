@@ -29,6 +29,13 @@
  *
  *   · sondaDeCanal                          DT-22, DT-18
  *   · dispositivosQueNecesitanAtencion      DT-22
+ *
+ * Mejoras de septiembre de 2026:
+ *
+ *   · responderAviso                        DT-27
+ *   · marcarHiloLeido                       DT-27
+ *   · acuseDeNotificacion                   DT-31 · el acuse del service worker
+ *   · reportarSuscripcion                   DT-23 · el canal que se repara solo
  */
 
 export { activarSesion } from './triggers/activarSesion';
@@ -41,6 +48,9 @@ export {
 } from './triggers/programacion';
 export { despachador } from './triggers/despachador';
 export { dispositivosQueNecesitanAtencion, sondaDeCanal } from './triggers/sonda';
+export { marcarHiloLeido, responderAviso } from './triggers/respuestas';
+export { acuseDeNotificacion } from './triggers/acuse';
+export { reportarSuscripcion } from './triggers/suscripcion';
 export {
   confirmarLectura,
   detalleEntregas,

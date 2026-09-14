@@ -23,9 +23,11 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/version.dart';
 import '../../infrastructure/firebase/repositorio_canal.dart';
 import '../shared/tema.dart';
 import '../shared/textos.dart';
+import '../shared/version_app.dart';
 
 final Provider<RepositorioCanal> repositorioCanalProvider =
     Provider<RepositorioCanal>((Ref ref) => RepositorioCanal());
@@ -51,6 +53,10 @@ class SeccionCanal extends ConsumerWidget {
       ),
       data: (RevisionDeCanal r) => _Contenido(
         revision: r,
+        // La publicada en este ambiente (`version.json`). Si todavía no se
+        // sabe, la de esta misma aplicación: quien mira Alcance acaba de
+        // cargarla, así que es la mejor aproximación disponible.
+        publicada: ref.watch(versionPublicadaProvider).value ?? versionSian,
         alReintentar: () => ref.invalidate(revisionDeCanalProvider),
       ),
     );
@@ -67,7 +73,7 @@ class _Fallo extends StatelessWidget {
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        const Icon(Icons.error_outline, size: 40, color: ColoresSian.urgente),
+        Icon(Icons.error_outline, size: 40, color: PaletaSian.de(context).urgente),
         const SizedBox(height: 12),
         const Text(Textos.canalFallo, textAlign: TextAlign.center),
         const SizedBox(height: 12),
@@ -82,15 +88,26 @@ class _Fallo extends StatelessWidget {
 }
 
 class _Contenido extends StatelessWidget {
-  const _Contenido({required this.revision, required this.alReintentar});
+  const _Contenido({
+    required this.revision,
+    required this.publicada,
+    required this.alReintentar,
+  });
 
   final RevisionDeCanal revision;
+  final String publicada;
   final VoidCallback alReintentar;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    final List<VersionesDePersona> atrasados = sinLaVersionPublicada(
+      revision.versiones,
+      publicada,
+    );
+
+    // Una sola lista con las dos partes: con dos listas desplazables en la
+    // misma pantalla, la de abajo quedaba sin sitio en un teléfono.
+    return ListView(
       children: <Widget>[
         Row(
           children: <Widget>[
@@ -111,14 +128,101 @@ class _Contenido extends StatelessWidget {
         if (revision.todoEnOrden)
           const _TodoEnOrden()
         else
-          Expanded(
-            child: ListView.separated(
-              itemCount: revision.personas.length,
-              separatorBuilder: (_, _) => const Divider(height: 1),
-              itemBuilder: (BuildContext context, int i) =>
-                  _Fila(persona: revision.personas[i]),
+          for (int i = 0; i < revision.personas.length; i += 1) ...<Widget>[
+            if (i > 0) const Divider(height: 1),
+            _Fila(persona: revision.personas[i]),
+          ],
+        const SizedBox(height: 24),
+        _Versiones(
+          atrasados: atrasados,
+          conAparato: revision.versiones.length,
+          publicada: publicada,
+        ),
+      ],
+    );
+  }
+}
+
+/// Quién tiene algún aparato sin la versión publicada.
+///
+/// La lista de arriba solo trae a quien tiene problemas de canal. Alguien que
+/// recibe perfectamente con una versión vieja no salía en ningún sitio, y es
+/// justo a quien hay que pedirle actualizar: las correcciones de canal y del
+/// acuse viajan con la versión.
+class _Versiones extends StatelessWidget {
+  const _Versiones({
+    required this.atrasados,
+    required this.conAparato,
+    required this.publicada,
+  });
+
+  final List<VersionesDePersona> atrasados;
+  final int conAparato;
+  final String publicada;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData tema = Theme.of(context);
+    final PaletaSian paleta = PaletaSian.de(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(Textos.canalVersionesTitulo, style: tema.textTheme.titleMedium),
+        const SizedBox(height: 8),
+        Row(
+          children: <Widget>[
+            Icon(
+              atrasados.isEmpty
+                  ? Icons.check_circle_outline
+                  : Icons.system_update_alt,
+              color: atrasados.isEmpty ? paleta.confirmado : paleta.doradoTexto,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                Textos.canalVersionesResumen(
+                  atrasados.length,
+                  conAparato,
+                  publicada,
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (atrasados.isNotEmpty) ...<Widget>[
+          const SizedBox(height: 4),
+          Text(
+            Textos.canalVersionesPedir,
+            style: tema.textTheme.bodySmall?.copyWith(
+              color: tema.colorScheme.onSurfaceVariant,
             ),
           ),
+          const SizedBox(height: 8),
+          for (int i = 0; i < atrasados.length; i += 1) ...<Widget>[
+            if (i > 0) const Divider(height: 1),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(
+                atrasados[i].nombre.isEmpty
+                    ? atrasados[i].correo
+                    : atrasados[i].nombre,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  for (final AparatoConVersion a in atrasados[i].aparatos)
+                    Text(
+                      '${Textos.nombrePlataforma(a.plataforma)} · '
+                      '${Textos.versionDeLaPersona(a.versionApp)} · '
+                      '${_desdeCuando(a.ultimaActividad)}',
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ],
       ],
     );
   }
@@ -128,13 +232,16 @@ class _TodoEnOrden extends StatelessWidget {
   const _TodoEnOrden();
 
   @override
-  Widget build(BuildContext context) => const Padding(
-    padding: EdgeInsets.symmetric(vertical: 32),
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 32),
     child: Row(
       children: <Widget>[
-        Icon(Icons.check_circle_outline, color: ColoresSian.confirmado),
-        SizedBox(width: 8),
-        Text(Textos.canalTodoEnOrden),
+        Icon(
+          Icons.check_circle_outline,
+          color: PaletaSian.de(context).confirmado,
+        ),
+        const SizedBox(width: 8),
+        const Text(Textos.canalTodoEnOrden),
       ],
     ),
   );
@@ -150,7 +257,10 @@ class _Fila extends StatelessWidget {
     final ThemeData tema = Theme.of(context);
 
     return ListTile(
-      leading: Icon(_icono(persona.estado), color: _color(persona.estado)),
+      leading: Icon(
+        _icono(persona.estado),
+        color: PaletaSian.de(context).adaptar(_color(persona.estado)),
+      ),
       title: Text(
         persona.nombre.isEmpty ? persona.correo : persona.nombre,
         style: const TextStyle(fontWeight: FontWeight.w600),
@@ -170,9 +280,27 @@ class _Fila extends StatelessWidget {
           ),
         ],
       ),
-      trailing: Text(
-        _desdeCuando(persona.ultimaActividad),
-        style: tema.textTheme.bodySmall,
+      trailing: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: <Widget>[
+          Text(
+            _desdeCuando(persona.ultimaActividad),
+            style: tema.textTheme.bodySmall,
+          ),
+          // Con qué versión está. Importa para leer bien el resto: desde C-5,
+          // el acuse de que una notificación se mostró lo manda el service
+          // worker, así que un aparato atrasado informa distinto.
+          if (persona.versionApp.isNotEmpty)
+            Text(
+              Textos.versionDeLaPersona(persona.versionApp),
+              style: tema.textTheme.bodySmall?.copyWith(
+                color: persona.versionApp == versionSian
+                    ? tema.colorScheme.onSurfaceVariant
+                    : PaletaSian.de(context).doradoTexto,
+              ),
+            ),
+        ],
       ),
       isThreeLine: true,
     );

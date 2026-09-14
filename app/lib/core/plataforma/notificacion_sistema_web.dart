@@ -20,6 +20,7 @@ import 'dart:js_interop';
 import 'package:web/web.dart' as web;
 
 import 'consola.dart';
+import 'registro_worker_web.dart';
 
 Future<bool> mostrarNotificacionDelSistema({
   required String titulo,
@@ -36,8 +37,11 @@ Future<bool> mostrarNotificacionDelSistema({
       return false;
     }
 
-    final web.ServiceWorkerRegistration registro =
-        await web.window.navigator.serviceWorker.ready.toDart;
+    final web.ServiceWorkerRegistration? registro = await registroDelWorker();
+    if (registro == null) {
+      consolaError('SIAN.notif sin worker | no se puede mostrar');
+      return false;
+    }
 
     consolaError('SIAN.notif registro | alcance=${registro.scope}');
 
@@ -47,7 +51,9 @@ Future<bool> mostrarNotificacionDelSistema({
           web.NotificationOptions(
             body: cuerpo,
             icon: '/icons/Icon-192.png',
-            badge: '/icons/Icon-192.png',
+            // Silueta sobre transparente: Android pinta la insignia solo con
+            // el canal alfa, y el icono opaco salía como un cuadrado blanco.
+            badge: '/icons/insignia-notificacion.png',
             // Misma etiqueta que usa el service worker: si las dos rutas
             // muestran el mismo aviso, se reemplazan en vez de duplicarse.
             tag: etiqueta ?? 'sian',
@@ -65,5 +71,35 @@ Future<bool> mostrarNotificacionDelSistema({
     // porque un `false` mudo es lo que impidió ver por qué no salía.
     consolaError('SIAN.notif falló | $e');
     return false;
+  }
+}
+
+/// Cierra las notificaciones del sistema que lleven esta etiqueta.
+///
+/// ────────────────────────────────────────────────────────────────────────────
+/// En Android, una notificación olvidada deja el icono marcado (DT-26).
+/// ────────────────────────────────────────────────────────────────────────────
+///
+/// El lanzador cuenta las notificaciones pendientes, no solo la insignia. Las
+/// de los avisos las cierra el service worker cuando la bandeja dice que ya se
+/// leyeron; las de las respuestas (DT-27) no pasan por la bandeja, así que se
+/// cierran aquí, al abrir la conversación que las provocó.
+///
+/// Si no se puede —sin service worker, sin permiso—, no pasa nada: quedaría
+/// una notificación de más, no una de menos.
+Future<void> cerrarNotificacionesDelSistema(String etiqueta) async {
+  try {
+    final web.ServiceWorkerRegistration? registro = await registroDelWorker();
+    if (registro == null) {
+      return;
+    }
+    final JSArray<web.Notification> abiertas = await registro
+        .getNotifications(web.GetNotificationOptions(tag: etiqueta))
+        .toDart;
+    for (final web.Notification n in abiertas.toDart) {
+      n.close();
+    }
+  } on Object catch (e) {
+    consolaError('SIAN.notif no se pudo cerrar | etiqueta=$etiqueta | $e');
   }
 }
