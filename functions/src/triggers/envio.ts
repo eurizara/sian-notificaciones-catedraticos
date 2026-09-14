@@ -49,6 +49,7 @@ import { normalizarAdjuntos } from '../domain/tipos';
 import type { Adjuntos, Destinatarios, Rol, TipoMensaje } from '../domain/tipos';
 import { FieldValue, OPCIONES_FUNCION, RUTAS, aTimestamp, db } from '../infrastructure/firebase';
 import { escribirAsiento, escribirAsientos, nombreDe } from '../infrastructure/repositorios';
+import { versionMasAlta } from '../domain/version';
 
 /** FCM admite 500 mensajes por lote. Se deja margen. */
 const TAMANO_LOTE = 400;
@@ -716,10 +717,10 @@ export async function canalDe(
   // El respaldo a `d.id` cubre un documento del esquema viejo al que le
   // faltara el campo. No debería haber ninguno —`crearDispositivo` siempre lo
   // incluye— pero equivocarse aquí deja a alguien sin avisos sin decirlo.
-  const versiones = instantanea.docs
-    .map((d) => ((d.get('versionApp') as string | undefined) ?? '').trim())
-    .filter((v) => v.length > 0)
-    .sort();
+  // Por tramos numéricos: como texto, «1.5.10» quedaba antes que «1.5.9».
+  const version = versionMasAlta(
+    instantanea.docs.map((d) => (d.get('versionApp') as string | undefined) ?? ''),
+  );
 
   // ──────────────────────────────────────────────────────────────────────────
   // Una sola vía por aparato, y se prefiere la propia.
@@ -750,7 +751,7 @@ export async function canalDe(
     }
   }
 
-  return { tokens, suscripciones, version: versiones.at(-1) ?? '' };
+  return { tokens, suscripciones, version };
 }
 
 /**
