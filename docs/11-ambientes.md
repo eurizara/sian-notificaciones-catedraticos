@@ -136,6 +136,16 @@ nadie abra la aplicación. Por ambiente hace falta:
 La privada **no se guarda en el repositorio ni en GitHub**. La pública sí, porque lo es:
 viaja a cada navegador en cada suscripción.
 
+| Ambiente | Llaves propias | Desde |
+|---|---|---|
+| Desarrollo | Sí · `VAPID_PRIVADA` con lectura para la cuenta de funciones | 12/09/2026 |
+| QA | Sí · la privada la cargó el responsable por consola; solo *Usuario con acceso a secretos* | 12/09/2026 |
+| Producción | **No todavía.** Hace falta generar el par y cargar la privada antes de liberar 1.5.6 o posterior | — |
+
+En la consola en español, el rol correcto se llama **«Usuario con acceso a secretos de Secret
+Manager»**. «Visualizador» no sirve —ve el secreto pero no lee su valor— y «Administrador» da
+permiso de sobra.
+
 Mientras un ambiente no tenga par propio, esta vía queda apagada y los avisos salen por FCM
 como siempre: desplegar sin **ninguna** de las dos llaves no rompe nada.
 

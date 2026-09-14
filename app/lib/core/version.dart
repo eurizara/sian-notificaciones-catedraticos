@@ -26,12 +26,14 @@
 /// para escribirlo en `version.json`, que es lo que el navegador consulta para
 /// saber si lo que tiene cargado es lo último publicado.
 ///
-/// Al subir la versión: cambiar el número aquí, en `pubspec.yaml`, y anotar en
-/// el documento 08 qué trae.
+/// Al subir la versión: cambiar el número aquí, en `pubspec.yaml`, anotar en el
+/// documento 08 qué trae, y escribir su sección en las notas de la versión
+/// (`web/manuales/notas/index.html`), que es lo que lee quien usa SIAN. Hay
+/// pruebas que fallan si alguno de esos sitios se queda atrás.
 library;
 
 /// La versión de este código. Ver arriba qué significa cada número.
-const String versionSian = '1.5.9';
+const String versionSian = '1.5.11';
 
 /// Desde qué versión el aparato sabe avisar de que mostró una notificación.
 ///

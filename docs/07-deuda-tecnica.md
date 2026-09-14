@@ -279,7 +279,7 @@ gratuita.
 | DT-04 | Acceso a adjuntos sin verificar destinatario | Plataforma | Media | Abierta | 0 USD |
 | DT-05 | Precisión del planificador de 60 s | Costo | Baja | Aceptada | — |
 | DT-06 | Dominio duplicado Dart / TypeScript | Conocimiento | Media | Mitigada | 0 USD |
-| DT-07 | Sin observabilidad ni alertas | Alcance | Media | **Pagada** (en desarrollo) | 0 USD |
+| DT-07 | Sin observabilidad ni alertas | Alcance | Media | **Pagada** (en desarrollo y QA) | 0 USD |
 | DT-08 | Grupos limitados a 200 miembros | Alcance | Baja | Aceptada | 0 USD |
 | DT-09 | Sin multi-idioma | Alcance | Baja | Mitigada | 0 USD |
 | DT-10 | Sin cifrado de extremo a extremo | Alcance | Baja | Aceptada | — |
@@ -293,17 +293,17 @@ gratuita.
 | DT-18 | Se acumula un token de FCM por cada ingreso en iOS | Plataforma | **Alta** | **Pagada** | 0 USD |
 | DT-19 | Entrar con Google falla en la PWA de iOS por aislamiento de almacenamiento | Plataforma | Alta | **Pagada** | 0 USD |
 | DT-20 | Instalada como aplicación, nada dice en qué ambiente se está | Conocimiento | **Media** | **Pagada** | 0 USD |
-| DT-21 | El tema oscuro está construido pero apagado, y no se puede elegir | Alcance | Baja | **Pagada** (en desarrollo) | 0 USD |
+| DT-21 | El tema oscuro está construido pero apagado, y no se puede elegir | Alcance | Baja | **Pagada** (en desarrollo y QA) | 0 USD |
 | DT-22 | Un token muerto solo se descubre cuando falla un aviso real | Alcance | **Alta** | **Pagada** | 0 USD |
-| DT-23 | El service worker no atiende `pushsubscriptionchange` | Plataforma | **Media** | **Pagada** (en desarrollo) | 0 USD |
+| DT-23 | El service worker no atiende `pushsubscriptionchange` | Plataforma | **Media** | **Pagada** (en desarrollo y QA) | 0 USD |
 | DT-24 | Un envío con algún fallo deja la pantalla igual y se manda dos veces | Conocimiento | **Alta** | **Pagada** | 0 USD |
 | DT-25 | El entorno local compila con un Flutter distinto del que despliega | Conocimiento | **Media** | **Pagada** | 0 USD |
 | DT-26 | En Android el contador del icono se queda encendido con todo leído | Plataforma | **Media** | **Pagada** | 0 USD |
 | DT-29 | Cambiar el manifiesto deja Android degradado hasta que Chrome regenera la aplicación | Plataforma | Baja | **Aceptada** | 0 USD |
 | DT-30 | Chrome puede marcar los avisos como «posible spam» y ofrecer anular la suscripción | Plataforma | **Media** | Abierta | 0 USD |
-| DT-27 | No hay forma de responder a un aviso | Alcance | Media | **Pagada** (en desarrollo) | 0 USD |
-| DT-31 | «Entregado» no significa que el aparato lo mostrara, y nadie lo mide | Alcance | **Alta** | **Pagada** (en desarrollo) | 0 USD |
-| DT-28 | El manual no se alcanza desde dentro de la aplicación | Alcance | Baja | **Pagada** (en desarrollo) | 0 USD |
+| DT-27 | No hay forma de responder a un aviso | Alcance | Media | **Pagada** (en desarrollo y QA) | 0 USD |
+| DT-31 | «Entregado» no significa que el aparato lo mostrara, y nadie lo mide | Alcance | **Alta** | **Pagada** (en desarrollo y QA) | 0 USD |
+| DT-28 | El manual no se alcanza desde dentro de la aplicación | Alcance | Baja | **Pagada** (en desarrollo y QA) | 0 USD |
 
 **Prioridad de pago recomendada, en orden:** DT-03 → DT-14 → DT-04 → DT-01.
 
@@ -934,7 +934,7 @@ minuto—, así que el segundo sigue dentro de lo gratuito.
 
 ## DT-23 — El service worker no atiende `pushsubscriptionchange`
 
-**Origen:** plataforma · **Severidad:** media · **Estado:** pagada en desarrollo (1.5.6 y 1.5.7) · **Costo:** 0 USD
+**Origen:** plataforma · **Severidad:** media · **Estado:** pagada en desarrollo y QA (1.5.6 a 1.5.11) · **Costo:** 0 USD
 
 **Se trabaja antes que DT-22.** La sonda de DT-22 informa de un problema; esto lo reduce.
 Hacerlo al revés es construir un panel para vigilar algo que se podía haber evitado.
@@ -2270,6 +2270,46 @@ para que aparezca la tarjeta con el botón de actualizar.
 Queda anotado para quien lea esto dentro de un año: **un despliegue no es una versión en las
 manos de la gente.** Entre una cosa y la otra hay un paso que depende del teléfono, y por eso
 la versión se enseña en pantalla y se reporta al servidor.
+
+### 13 de septiembre de 2026 — en Android, «se mostró» quiere decir «Chrome la aceptó»
+
+En QA, un Android con **todo concedido** —permiso del sitio delegado a la aplicación
+instalada, notificaciones de la aplicación y canal «General» activos— recibió ocho avisos,
+y el acuse los dio por mostrados entre 0 y 49 segundos. **La persona no los vio**: aparecieron
+más tarde, **todos de golpe y con la cabecera «Chrome»**. El iPhone, en paralelo, normal.
+
+Leyendo el código de Chrome para Android se ve el mecanismo completo:
+
+  1. Si el sitio tiene una aplicación instalada, Chrome **se conecta a ella** antes de
+     mostrar la notificación, para preguntarle qué navegador la respalda
+     (`ChromeWebApkHost.checkChromeBacksWebApkAsync`).
+  2. La conexión es un `bindService` **sin plazo** (`WebApkServiceConnectionManager.connect`).
+     Si Android no deja arrancar a la aplicación, las notificaciones siguientes **se encolan**
+     detrás de la misma conexión pendiente.
+  3. Cuando Chrome da la conexión por perdida (`disconnectAll`, al detenerse sus actividades)
+     *avisa a todos los que esperaban que la conexión falló*: sin respuesta de la aplicación
+     no la puede dar por respaldada, y **muestra todas las encoladas a su propio nombre**.
+
+La causa en el teléfono: **«Permitir uso en segundo plano» estaba apagado** para la
+aplicación instalada. Encendido, los dos avisos siguientes llegaron en 3 y 4 segundos, y a
+nombre de SIAN.
+
+Lo que esto cambia para quien lea el panel:
+
+  · **El acuse lo manda el worker cuando `showNotification` se resuelve**, y en este caso
+    Chrome la resolvió **antes** de ponerla en pantalla. En Android, «se mostró» significa
+    «Chrome la aceptó»; casi siempre coincide, pero no siempre. Desde la web no hay forma de
+    saber cuándo Android la pone de verdad en pantalla, así que el dato no se puede afinar.
+  · Nada de esto se arregla desde la web: pedir que no se aplique el ahorro de batería es un
+    permiso nativo, Chrome no deja abrir los ajustes del sistema desde una página, y el
+    ajuste no se puede consultar. Lo que se hizo (1.5.10) es **explicarlo**: una tarjeta en la
+    bandeja, una sola vez, para Android con la aplicación instalada y notificaciones
+    concedidas, y el paso en el manual del catedrático junto con la advertencia de no tocar
+    «Anular suscripción».
+  · Publicar SIAN en Play Store como aplicación que envuelve la web **no es una salida
+    segura**: ese tipo de aplicación también delega las notificaciones a través de una
+    conexión con la aplicación, y podría quedar igual. No se descarta ni se da por buena sin
+    comprobarlo.
 
 ### Lo que queda de esta ficha
 

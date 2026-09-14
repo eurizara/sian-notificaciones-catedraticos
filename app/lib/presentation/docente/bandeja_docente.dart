@@ -25,6 +25,7 @@ import '../../core/plataforma/rotacion.dart';
 import 'aviso_no_mostrado.dart';
 import '../shared/version_app.dart';
 import 'filtro_bandeja.dart';
+import 'guia_segundo_plano.dart';
 import 'insignia_bandeja.dart';
 import 'instructivo_ios.dart';
 import 'realce_mensaje.dart';
@@ -285,6 +286,10 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
                           // vea puede estar desactualizado.
                           const AvisoDeVersionNueva(),
                           const TarjetaNotificaciones(),
+                          // En Android, con todo concedido, los avisos se
+                          // retenían si la app no podía trabajar en segundo
+                          // plano (13/09/2026). Una vez por aparato.
+                          const GuiaSegundoPlano(),
 
                           // El canal está bien y aun así el teléfono no
                           // enseñó los avisos (DT-31). Es un problema

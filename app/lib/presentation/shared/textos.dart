@@ -376,6 +376,26 @@ abstract final class Textos {
       version.isEmpty ? 'Versión desconocida' : 'Versión $version';
   static String versionAlDia(String version) => 'Versión publicada: $version';
 
+  // --- Alcance: quién no tiene la última versión (13/09/2026) ---------------
+  static const String canalVersionesTitulo = 'Versión de la aplicación';
+  static String canalVersionesResumen(int atrasados, int conAparato, String publicada) =>
+      atrasados == 0
+      ? 'Todos los que tienen aparato están en la versión $publicada.'
+      : atrasados == 1
+      ? '1 de $conAparato personas tiene algún aparato sin la versión $publicada.'
+      : '$atrasados de $conAparato personas tienen algún aparato sin la versión $publicada.';
+  static const String canalVersionesPedir =
+      'Pídeles abrir SIAN en ese aparato y tocar «Actualizar» en la tarjeta de '
+      'versión nueva. «Versión desconocida» es un aparato que no ha abierto '
+      'SIAN en mucho tiempo; si ya no lo usa, deja de aparecer solo a los 60 '
+      'días sin actividad.';
+  static String nombrePlataforma(String plataforma) => switch (plataforma) {
+    'WEB_ANDROID' => 'Android',
+    'WEB_IOS' => 'iPhone',
+    'WEB_ESCRITORIO' => 'Computadora',
+    _ => plataforma.isEmpty ? 'Aparato' : plataforma,
+  };
+
   // --- Se mostró en el aparato (DT-31) ---------------------------------------
 
   /// «Entregado» solo dice que FCM aceptó el mensaje; esto dice que el aparato
@@ -598,6 +618,24 @@ abstract final class Textos {
       'Sin ellas no recibirás avisos ni alertas urgentes. Es un solo toque.';
   static const String notifDenegadasTitulo = 'Notificaciones bloqueadas';
   static const String notifInstalarTitulo = 'Ábrela desde la pantalla de inicio';
+
+  // --- Uso en segundo plano en Android (13/09/2026) -------------------------
+  static const String segundoPlanoTitulo =
+      'Un ajuste más para que los avisos lleguen al momento';
+  static const String segundoPlanoPorQue =
+      'Si Android no deja trabajar a SIAN en segundo plano, los avisos pueden '
+      'quedarse retenidos y aparecer tarde, todos juntos.';
+  static const String segundoPlanoPaso1 =
+      'Mantén presionado el icono de SIAN y toca «Información de la app».';
+  static const String segundoPlanoPaso2 =
+      'Entra en «Batería» o «Uso de batería de la app».';
+  static const String segundoPlanoPaso3 =
+      'Activa «Permitir uso en segundo plano». En algunos teléfonos se llama '
+      '«Sin restricciones».';
+  static const String segundoPlanoNoAnular =
+      'Si una notificación trae el botón «Anular suscripción», no lo toques: '
+      'dejarías de recibir avisos.';
+  static const String botonSegundoPlanoListo = 'Ya lo activé';
 
   /// Habla de ESTA pestaña, no del teléfono.
   ///
