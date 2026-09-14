@@ -279,7 +279,7 @@ gratuita.
 | DT-04 | Acceso a adjuntos sin verificar destinatario | Plataforma | Media | Abierta | 0 USD |
 | DT-05 | Precisión del planificador de 60 s | Costo | Baja | Aceptada | — |
 | DT-06 | Dominio duplicado Dart / TypeScript | Conocimiento | Media | Mitigada | 0 USD |
-| DT-07 | Sin observabilidad ni alertas | Alcance | Media | **Pagada** (en desarrollo) | 0 USD |
+| DT-07 | Sin observabilidad ni alertas | Alcance | Media | **Pagada** (en desarrollo y QA) | 0 USD |
 | DT-08 | Grupos limitados a 200 miembros | Alcance | Baja | Aceptada | 0 USD |
 | DT-09 | Sin multi-idioma | Alcance | Baja | Mitigada | 0 USD |
 | DT-10 | Sin cifrado de extremo a extremo | Alcance | Baja | Aceptada | — |
@@ -293,17 +293,17 @@ gratuita.
 | DT-18 | Se acumula un token de FCM por cada ingreso en iOS | Plataforma | **Alta** | **Pagada** | 0 USD |
 | DT-19 | Entrar con Google falla en la PWA de iOS por aislamiento de almacenamiento | Plataforma | Alta | **Pagada** | 0 USD |
 | DT-20 | Instalada como aplicación, nada dice en qué ambiente se está | Conocimiento | **Media** | **Pagada** | 0 USD |
-| DT-21 | El tema oscuro está construido pero apagado, y no se puede elegir | Alcance | Baja | **Pagada** (en desarrollo) | 0 USD |
+| DT-21 | El tema oscuro está construido pero apagado, y no se puede elegir | Alcance | Baja | **Pagada** (en desarrollo y QA) | 0 USD |
 | DT-22 | Un token muerto solo se descubre cuando falla un aviso real | Alcance | **Alta** | **Pagada** | 0 USD |
-| DT-23 | El service worker no atiende `pushsubscriptionchange` | Plataforma | **Media** | **Pagada** (en desarrollo) | 0 USD |
+| DT-23 | El service worker no atiende `pushsubscriptionchange` | Plataforma | **Media** | **Pagada** (en desarrollo y QA) | 0 USD |
 | DT-24 | Un envío con algún fallo deja la pantalla igual y se manda dos veces | Conocimiento | **Alta** | **Pagada** | 0 USD |
 | DT-25 | El entorno local compila con un Flutter distinto del que despliega | Conocimiento | **Media** | **Pagada** | 0 USD |
 | DT-26 | En Android el contador del icono se queda encendido con todo leído | Plataforma | **Media** | **Pagada** | 0 USD |
 | DT-29 | Cambiar el manifiesto deja Android degradado hasta que Chrome regenera la aplicación | Plataforma | Baja | **Aceptada** | 0 USD |
 | DT-30 | Chrome puede marcar los avisos como «posible spam» y ofrecer anular la suscripción | Plataforma | **Media** | Abierta | 0 USD |
-| DT-27 | No hay forma de responder a un aviso | Alcance | Media | **Pagada** (en desarrollo) | 0 USD |
-| DT-31 | «Entregado» no significa que el aparato lo mostrara, y nadie lo mide | Alcance | **Alta** | **Pagada** (en desarrollo) | 0 USD |
-| DT-28 | El manual no se alcanza desde dentro de la aplicación | Alcance | Baja | **Pagada** (en desarrollo) | 0 USD |
+| DT-27 | No hay forma de responder a un aviso | Alcance | Media | **Pagada** (en desarrollo y QA) | 0 USD |
+| DT-31 | «Entregado» no significa que el aparato lo mostrara, y nadie lo mide | Alcance | **Alta** | **Pagada** (en desarrollo y QA) | 0 USD |
+| DT-28 | El manual no se alcanza desde dentro de la aplicación | Alcance | Baja | **Pagada** (en desarrollo y QA) | 0 USD |
 
 **Prioridad de pago recomendada, en orden:** DT-03 → DT-14 → DT-04 → DT-01.
 
@@ -934,7 +934,7 @@ minuto—, así que el segundo sigue dentro de lo gratuito.
 
 ## DT-23 — El service worker no atiende `pushsubscriptionchange`
 
-**Origen:** plataforma · **Severidad:** media · **Estado:** pagada en desarrollo (1.5.6 y 1.5.7) · **Costo:** 0 USD
+**Origen:** plataforma · **Severidad:** media · **Estado:** pagada en desarrollo y QA (1.5.6 a 1.5.11) · **Costo:** 0 USD
 
 **Se trabaja antes que DT-22.** La sonda de DT-22 informa de un problema; esto lo reduce.
 Hacerlo al revés es construir un panel para vigilar algo que se podía haber evitado.

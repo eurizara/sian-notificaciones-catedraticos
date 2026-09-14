@@ -46,6 +46,56 @@ void main() {
       expect(linea!.group(1), versionSian);
     });
 
+    test('las notas de la versión tienen una sección para esta versión', () {
+      // El historial que leen catedráticos y coordinación. Si se sube el
+      // número y no se escribe qué trae, la aplicación ofrece «Actualizar» a
+      // algo que nadie ha explicado (13/09/2026).
+      final String notas = File(
+        'web/manuales/notas/index.html',
+      ).readAsStringSync();
+      expect(
+        notas,
+        contains('id="v$versionSian"'),
+        reason: 'falta la sección de $versionSian en web/manuales/notas/index.html',
+      );
+      expect(notas, contains('href="#v$versionSian"'),
+          reason: 'falta $versionSian en el índice de las notas');
+
+      // La más reciente va arriba: la primera sección de versión es esta.
+      final RegExpMatch? primera = RegExp(
+        r'<section id="v([\d.]+)">',
+      ).firstMatch(notas);
+      expect(primera?.group(1), versionSian);
+    });
+
+    test('los dos manuales enlazan a las notas de la versión', () {
+      expect(
+        File('web/manuales/index.html').readAsStringSync(),
+        contains('href="notas/"'),
+      );
+      expect(
+        File('web/manuales/catedratico/index.html').readAsStringSync(),
+        contains('href="../notas/"'),
+      );
+    });
+
+    test('los enlaces internos de los manuales llevan a algo que existe', () {
+      // Un «ver cómo» que no lleva a ningún sitio es peor que no ponerlo.
+      for (final String ruta in <String>[
+        'web/manuales/index.html',
+        'web/manuales/catedratico/index.html',
+        'web/manuales/notas/index.html',
+      ]) {
+        final String html = File(ruta).readAsStringSync();
+        final Set<String> ids = RegExp(
+          r'id="([^"]+)"',
+        ).allMatches(html).map((RegExpMatch m) => m.group(1)!).toSet();
+        for (final RegExpMatch m in RegExp(r'href="#([^"]+)"').allMatches(html)) {
+          expect(ids, contains(m.group(1)), reason: '$ruta enlaza a #${m.group(1)}');
+        }
+      }
+    });
+
     test('el sellado del despliegue lo lee de un solo sitio', () {
       // Si el guion dejara de leer `version.dart`, `version.json` publicaría
       // una versión distinta de la que la aplicación cree tener, y el aviso de

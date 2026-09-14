@@ -241,7 +241,7 @@ Hasta que las cuatro estén en producción no se empieza con las mejoras.
 | C-1 | **DT-26** · el contador se queda encendido en Android | **Corregida el 09/09.** Una notificación solo se cerraba al tocarla; quien abría desde el icono las dejaba puestas, y el lanzador de Android las cuenta. Ahora la aplicación manda al worker cuáles siguen sin leer y el worker retira las demás. **DT-17 pagada con ella**: 14 pruebas donde no había ninguna |
 | C-2 | **DT-23 → DT-22** · el canal se pierde solo | **Corregida el 09/09 y completada el 12/09.** Sonda en seco —ahora **diaria**— que valida los tokens sin entregar nada, y apartado en la pantalla de coordinación con quién no recibiría un aviso ahora mismo. El 12/09 se cerró la mitad que faltaba: el worker se vuelve a suscribir solo y reporta la suscripción, y el sistema lo despierta cada doce horas en Android instalado |
 | C-3 | **DT-18** · dispositivos arrastrados | **Corregida el 09/09.** La misma sonda retira lo que lleva más de sesenta días sin actividad, con el motivo anotado en la bitácora |
-| C-5 | ~~**DT-31** · «entregado» no es «se mostró»~~ | **Hecha el 11/09, en desarrollo.** Acuse de recibo desde el service worker, prioridad alta en todo aviso, un reintento medido y autodiagnóstico en la aplicación. Es lo único que convierte «supuestamente le llegó» en un dato |
+| C-5 | ~~**DT-31** · «entregado» no es «se mostró»~~ | **Hecha el 11/09, en desarrollo y QA.** Acuse de recibo desde el service worker, prioridad alta en todo aviso, un reintento medido y autodiagnóstico en la aplicación. Es lo único que convierte «supuestamente le llegó» en un dato |
 | C-4 | **DT-14** · correos de recuperación | **Bloqueada, y no por programación.** Exige un buzón institucional y entradas SPF/DKIM en el DNS de la UMG. Lo que sí se hizo: el aviso en pantalla ahora dice que revise la carpeta de no deseado, que es donde caen |
 
 > **DT-17 — pruebas del service worker — no es una corrección con vida propia: es la
@@ -280,7 +280,13 @@ El número vive en `app/lib/core/version.dart`, que es su única fuente: `pubspe
 que decir lo mismo —hay una prueba que falla si se separan— y el sellado del despliegue lo
 copia a `version.json`, que es contra lo que la aplicación se compara.
 
-**Al subir la versión:** cambiar el número en esos dos sitios y anotar aquí qué trae.
+**Al subir la versión:** cambiar el número en esos dos sitios, anotar aquí qué trae —el
+detalle técnico— y escribir su sección en **las notas de la versión**
+(`app/web/manuales/notas/index.html`), que es lo que leen catedráticos y coordinación. Una
+prueba falla si la versión de la aplicación no tiene su sección allí.
+
+**Dónde está cada versión (13/09/2026):** desarrollo y QA en **1.5.11**; producción todavía
+en la base del 10/09, anterior a la numeración.
 
 | Versión | Qué trae |
 |---|---|
@@ -290,12 +296,12 @@ copia a `version.json`, que es contra lo que la aplicación se compara.
 | 1.5.3 | Que llegue un acuse deja constancia de que esa persona puede acusar. Hacía falta porque el service worker se renueva en cada arranque mientras la aplicación espera a que alguien recargue: hay aparatos que acusan con la versión sin reportar |
 | 1.5.4 | El aviso de versión nueva se comprueba también al volver a la aplicación. En una PWA de iPhone, «abrirla» restaura la página sin recargarla: se podía estar usándola a diario con el paquete de la semana anterior |
 | 1.5.5 | El canal se repara solo donde se puede: el worker se vuelve a suscribir y reporta la suscripción, el sistema lo despierta cada doce horas en Android instalado, la sonda pasa a diaria y el retiro de un registro muerto deja asiento en bitácora |
-| 1.5.11 | **Alcance dice quién no tiene la última versión.** La lista de canal solo traía a quien tenía problemas para recibir; quien recibía bien con una versión vieja no salía en ningún sitio. Ahora Alcance compara cada aparato de cada destinatario con la versión publicada y lista los atrasados, aparato por aparato. De paso: el servidor elegía «la versión más reciente» ordenando como texto, y con 1.5.10 se quedaba con 1.5.9 |
-| 1.5.10 | **Guía de «Permitir uso en segundo plano» en Android.** Con ese ajuste apagado, Chrome retiene las notificaciones esperando a la aplicación instalada y las suelta tarde, de golpe y a nombre de Chrome. Desde la web no se puede cambiar ni consultar: una tarjeta en la bandeja lo explica una vez, y el manual del catedrático trae los pasos y la advertencia de no tocar «Anular suscripción» |
-| 1.5.9 | **La insignia de las notificaciones es una silueta.** Android pinta el icono pequeño usando solo el canal alfa, y los iconos de SIAN son opacos de borde a borde: salía un cuadrado blanco macizo junto al nombre y en la barra de estado. Ahora es una campana blanca sobre transparente |
-| 1.5.8 | **La suscripción propia llegaba y se tiraba.** El trigger de registro enumeraba los campos a mano y no leía `webPush`: un aparato suscrito con nuestra llave no pide token de FCM, así que llegaba vacío por las dos vías y el registro se rechazaba con un 400 —en el iPhone, «Activa las notificaciones» que no se iba nunca—. `versionApp` se perdía igual desde 1.5.2. Ahora la traducción vive en el dominio, en un solo sitio y probada |
-| 1.5.7 | **El worker se busca, no se espera.** `navigator.serviceWorker.ready` no resuelve nunca en esta aplicación —el worker de Flutter se da de baja solo y el nuestro vive en otro alcance—, y esperarlo dejó el registro del dispositivo colgado sin un solo error: ningún aparato volvió a registrarse, ni por la vía nueva ni por FCM. Ahora el registro se busca por su guion, con plazo, y si no aparece se sigue por FCM |
 | 1.5.6 | **Web Push directo con llaves propias.** El aparato se suscribe con nuestra llave VAPID y el servidor le envía sin pasar por el token de FCM, así que el service worker puede renovar el canal él solo. Conviven las dos vías: cada aparato usa la suya |
+| 1.5.7 | **El worker se busca, no se espera.** `navigator.serviceWorker.ready` no resuelve nunca en esta aplicación —el worker de Flutter se da de baja solo y el nuestro vive en otro alcance—, y esperarlo dejó el registro del dispositivo colgado sin un solo error: ningún aparato volvió a registrarse, ni por la vía nueva ni por FCM. Ahora el registro se busca por su guion, con plazo, y si no aparece se sigue por FCM |
+| 1.5.8 | **La suscripción propia llegaba y se tiraba.** El trigger de registro enumeraba los campos a mano y no leía `webPush`: un aparato suscrito con nuestra llave no pide token de FCM, así que llegaba vacío por las dos vías y el registro se rechazaba con un 400 —en el iPhone, «Activa las notificaciones» que no se iba nunca—. `versionApp` se perdía igual desde 1.5.2. Ahora la traducción vive en el dominio, en un solo sitio y probada |
+| 1.5.9 | **La insignia de las notificaciones es una silueta.** Android pinta el icono pequeño usando solo el canal alfa, y los iconos de SIAN son opacos de borde a borde: salía un cuadrado blanco macizo junto al nombre y en la barra de estado. Ahora es una campana blanca sobre transparente |
+| 1.5.10 | **Guía de «Permitir uso en segundo plano» en Android.** Con ese ajuste apagado, Chrome retiene las notificaciones esperando a la aplicación instalada y las suelta tarde, de golpe y a nombre de Chrome. Desde la web no se puede cambiar ni consultar: una tarjeta en la bandeja lo explica una vez, y el manual del catedrático trae los pasos y la advertencia de no tocar «Anular suscripción» |
+| 1.5.11 | **Alcance dice quién no tiene la última versión.** La lista de canal solo traía a quien tenía problemas para recibir; quien recibía bien con una versión vieja no salía en ningún sitio. Ahora Alcance compara cada aparato de cada destinatario con la versión publicada y lista los atrasados, aparato por aparato. De paso: el servidor elegía «la versión más reciente» ordenando como texto, y con 1.5.10 se quedaba con 1.5.9 |
 
 **Dónde se ve.** En el pie de la bandeja y del panel; cuando hay una más reciente, una
 tarjeta arriba con el botón de actualizar. Y en **Alcance**, la versión de cada persona:
@@ -308,11 +314,11 @@ Nada de esto falla: falta. Se empieza cuando las cuatro correcciones estén libe
 
 | # | Mejora | Qué aporta |
 |:---:|---|---|
-| M-1 | ~~**DT-07** · tasa de entrega en el panel~~ | **Hecha el 10/09, en desarrollo.** Tarjeta con la semana al inicio de Entregas, calculada con los contadores que ya existían |
+| M-1 | ~~**DT-07** · tasa de entrega en el panel~~ | **Hecha el 10/09, en desarrollo y QA.** Tarjeta con la semana al inicio de Entregas, calculada con los contadores que ya existían |
 | — | ~~**DT-20** · saber en qué ambiente se está~~ | **Pagada el 09/09.** Se adelantó al resto de mejoras porque hace más segura la prueba de todo lo demás. Banda en pantalla e icono marcado; producción no lleva ninguna de las dos |
-| M-3 | ~~**DT-28** · manual accesible desde la barra~~ | **Hecha el 10/09, en desarrollo.** Botón a la izquierda de recargar, abre el manual del rol en otra pestaña |
-| M-4 | ~~**DT-21** · tema oscuro y preferencia del usuario~~ | **Hecha el 10/09, en desarrollo.** Paleta oscura medida contra AA (ninguno de los colores de antes pasaba), sigue al dispositivo por omisión y se puede fijar desde la barra |
-| M-5 | ~~**DT-27** · responder a un aviso~~ | **Hecha el 11/09, en desarrollo.** El catedrático responde dentro del aviso; el emisor las ve agrupadas por aviso, con el número de las que no ha leído junto a la sección |
+| M-3 | ~~**DT-28** · manual accesible desde la barra~~ | **Hecha el 10/09, en desarrollo y QA.** Botón a la izquierda de recargar, abre el manual del rol en otra pestaña |
+| M-4 | ~~**DT-21** · tema oscuro y preferencia del usuario~~ | **Hecha el 10/09, en desarrollo y QA.** Paleta oscura medida contra AA (ninguno de los colores de antes pasaba), sigue al dispositivo por omisión y se puede fijar desde la barra |
+| M-5 | ~~**DT-27** · responder a un aviso~~ | **Hecha el 11/09, en desarrollo y QA.** El catedrático responde dentro del aviso; el emisor las ve agrupadas por aviso, con el número de las que no ha leído junto a la sección |
 
 > **Por qué las mejoras van después y no en paralelo.** Construir encima de un canal que
 > pierde gente solo multiplica el problema. Una respuesta a un aviso que nunca llegó no le
