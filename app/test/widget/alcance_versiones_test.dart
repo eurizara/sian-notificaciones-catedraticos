@@ -26,43 +26,108 @@ VersionesDePersona _persona(String nombre, List<(String, String)> aparatos) =>
     );
 
 void main() {
-  group('sinLaVersionPublicada', () {
+  group('clasificarVersiones', () {
+    AparatoConVersion ap(
+      String plataforma,
+      String version, {
+      String navegador = 'Safari',
+      String? dia,
+    }) => AparatoConVersion(
+      plataforma: plataforma,
+      versionApp: version,
+      navegador: navegador,
+      ultimaActividad: dia == null ? null : DateTime.parse('2026-$dia'),
+    );
+
+    VersionesDePersona persona(List<AparatoConVersion> aparatos) =>
+        VersionesDePersona(
+          uid: 'u',
+          nombre: 'Persona',
+          correo: 'p@umg',
+          aparatos: aparatos,
+        );
+
     test('quien tiene todo al día no aparece', () {
-      final List<VersionesDePersona> r = sinLaVersionPublicada(
+      final ClasificacionDeVersiones r = clasificarVersiones(
         <VersionesDePersona>[
-          _persona('Ana', <(String, String)>[('WEB_IOS', '1.5.10')]),
+          persona(<AparatoConVersion>[ap('WEB_IOS', '1.5.11', dia: '09-16')]),
         ],
-        '1.5.10',
+        '1.5.11',
       );
-      expect(r, isEmpty);
+      expect(r.atrasados, isEmpty);
+      expect(r.reemplazados, 0);
     });
 
-    test('va por aparato: sale solo el que está atrasado', () {
-      final List<VersionesDePersona> r = sinLaVersionPublicada(
+    test('registros viejos del MISMO teléfono no la hacen atrasada', () {
+      // El caso de producción del 16/09/2026: un iPhone al día y tres
+      // registros de instalaciones de finales de agosto.
+      final ClasificacionDeVersiones r = clasificarVersiones(
         <VersionesDePersona>[
-          _persona('Ana', <(String, String)>[
-            ('WEB_ANDROID', '1.5.10'),
-            ('WEB_ESCRITORIO', '1.5.4'),
+          persona(<AparatoConVersion>[
+            ap('WEB_IOS', '1.5.11', dia: '09-16'),
+            ap('WEB_IOS', '', dia: '08-27'),
+            ap('WEB_IOS', '', dia: '08-28'),
+            ap('WEB_IOS', '', dia: '08-28'),
           ]),
         ],
-        '1.5.10',
+        '1.5.11',
       );
-      expect(r, hasLength(1));
-      expect(r.single.aparatos.map((AparatoConVersion a) => a.plataforma), <String>[
-        'WEB_ESCRITORIO',
-      ]);
+      expect(r.atrasados, isEmpty);
+      expect(r.reemplazados, 3);
     });
 
-    test('una versión desconocida cuenta como no actualizada', () {
-      // Ese aparato no ha abierto SIAN desde que se guarda la versión: no
-      // puede estar al día.
-      final List<VersionesDePersona> r = sinLaVersionPublicada(
+    test('otro navegador en el mismo teléfono sí cuenta como atrasado', () {
+      // Firefox y Chrome son dos canales: el de Firefox puede seguir en uso.
+      final ClasificacionDeVersiones r = clasificarVersiones(
         <VersionesDePersona>[
-          _persona('Ana', <(String, String)>[('WEB_IOS', '')]),
+          persona(<AparatoConVersion>[
+            ap('WEB_ANDROID', '1.5.11', navegador: 'Chrome', dia: '09-14'),
+            ap('WEB_ANDROID', '', navegador: 'Firefox', dia: '08-28'),
+          ]),
         ],
-        '1.5.10',
+        '1.5.11',
       );
-      expect(r, hasLength(1));
+      expect(r.reemplazados, 0);
+      expect(r.atrasados.single.aparatos.single.navegador, 'Firefox');
+    });
+
+    test('otra plataforma sí cuenta: el teléfono al día no tapa la computadora', () {
+      final ClasificacionDeVersiones r = clasificarVersiones(
+        <VersionesDePersona>[
+          persona(<AparatoConVersion>[
+            ap('WEB_ANDROID', '1.5.11', navegador: 'Chrome', dia: '09-14'),
+            ap('WEB_ESCRITORIO', '1.5.4', navegador: 'Chrome', dia: '08-20'),
+          ]),
+        ],
+        '1.5.11',
+      );
+      expect(r.atrasados.single.aparatos.single.plataforma, 'WEB_ESCRITORIO');
+    });
+
+    test('un atrasado MÁS reciente que el actualizado no es un resto: es otro aparato', () {
+      // Dos iPhone, o un iPhone y un iPad: el que se usó después sigue vivo.
+      final ClasificacionDeVersiones r = clasificarVersiones(
+        <VersionesDePersona>[
+          persona(<AparatoConVersion>[
+            ap('WEB_IOS', '1.5.11', dia: '09-10'),
+            ap('WEB_IOS', '1.5.9', dia: '09-15'),
+          ]),
+        ],
+        '1.5.11',
+      );
+      expect(r.reemplazados, 0);
+      expect(r.atrasados, hasLength(1));
+    });
+
+    test('una versión desconocida sin nada al día cuenta como atrasada', () {
+      final ClasificacionDeVersiones r = clasificarVersiones(
+        <VersionesDePersona>[
+          persona(<AparatoConVersion>[ap('WEB_IOS', '', dia: '08-28')]),
+        ],
+        '1.5.11',
+      );
+      expect(r.atrasados, hasLength(1));
+      expect(r.reemplazados, 0);
     });
   });
 
@@ -115,6 +180,43 @@ void main() {
       expect(find.text('Ana'), findsNothing);
       expect(find.textContaining('Android · Versión 1.5.9'), findsOneWidget);
       expect(find.textContaining('Computadora · Versión desconocida'), findsOneWidget);
+    });
+
+    testWidgets('los registros reemplazados se dicen aparte y no cuentan', (
+      WidgetTester tester,
+    ) async {
+      await montar(
+        tester,
+        RevisionDeCanal(
+          total: 0,
+          catedraticos: 1,
+          personas: const <PersonaSinCanal>[],
+          versiones: <VersionesDePersona>[
+            VersionesDePersona(
+              uid: 'e',
+              nombre: 'Ezequiel',
+              correo: 'e@umg',
+              aparatos: <AparatoConVersion>[
+                AparatoConVersion(
+                  plataforma: 'WEB_IOS',
+                  navegador: 'Safari',
+                  versionApp: '1.5.10',
+                  ultimaActividad: DateTime.parse('2026-09-16'),
+                ),
+                AparatoConVersion(
+                  plataforma: 'WEB_IOS',
+                  navegador: 'Safari',
+                  versionApp: '',
+                  ultimaActividad: DateTime.parse('2026-08-27'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+      expect(find.text(Textos.canalVersionesResumen(0, 1, '1.5.10')), findsOneWidget);
+      expect(find.text(Textos.canalVersionesReemplazados(1)), findsOneWidget);
+      expect(find.text('Ezequiel'), findsNothing);
     });
 
     testWidgets('si todos están al día, lo dice y no lista a nadie', (
