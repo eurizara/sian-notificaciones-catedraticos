@@ -389,6 +389,11 @@ abstract final class Textos {
       'versión nueva. «Versión desconocida» es un aparato que no ha abierto '
       'SIAN en mucho tiempo; si ya no lo usa, deja de aparecer solo a los 60 '
       'días sin actividad.';
+  static String canalVersionesReemplazados(int n) => n == 1
+      ? 'Además hay 1 registro de una instalación anterior de un aparato que ya '
+            'se actualizó. No hay que pedir nada: se retira solo a los 60 días.'
+      : 'Además hay $n registros de instalaciones anteriores de aparatos que ya '
+            'se actualizaron. No hay que pedir nada: se retiran solos a los 60 días.';
   static String nombrePlataforma(String plataforma) => switch (plataforma) {
     'WEB_ANDROID' => 'Android',
     'WEB_IOS' => 'iPhone',

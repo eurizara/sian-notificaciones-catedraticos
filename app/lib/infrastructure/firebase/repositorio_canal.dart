@@ -80,11 +80,16 @@ class AparatoConVersion {
   const AparatoConVersion({
     required this.plataforma,
     required this.versionApp,
+    this.navegador = '',
     this.ultimaActividad,
   });
 
   /// `WEB_ANDROID`, `WEB_IOS` o `WEB_ESCRITORIO`.
   final String plataforma;
+
+  /// «Safari», «Chrome», «Firefox»… En un mismo teléfono, dos navegadores son
+  /// dos canales distintos.
+  final String navegador;
 
   /// Vacía si el aparato no ha abierto SIAN desde que el servidor la guarda
   /// (1.5.8): no se sabe qué corre, y por eso cuenta como no actualizado.
@@ -117,6 +122,7 @@ class VersionesDePersona {
             if (a is Map<Object?, Object?>)
               AparatoConVersion(
                 plataforma: (a['plataforma'] as String?) ?? '',
+                navegador: ((a['navegador'] as String?) ?? '').trim(),
                 versionApp: ((a['versionApp'] as String?) ?? '').trim(),
                 ultimaActividad: DateTime.tryParse(
                   (a['ultimaActividad'] as String?) ?? '',
@@ -126,29 +132,90 @@ class VersionesDePersona {
       );
 }
 
-/// Quiénes tienen algún aparato sin la versión publicada, con solo esos
-/// aparatos.
+/// Cómo quedan las versiones de los destinatarios frente a la publicada.
+class ClasificacionDeVersiones {
+  const ClasificacionDeVersiones({
+    required this.atrasados,
+    required this.reemplazados,
+  });
+
+  /// Quiénes tienen algún aparato de verdad sin la versión publicada, con solo
+  /// esos aparatos. Es a quien hay que pedirle actualizar.
+  final List<VersionesDePersona> atrasados;
+
+  /// Cuántos registros viejos hay de aparatos que ya se actualizaron.
+  final int reemplazados;
+}
+
+/// Separa los aparatos atrasados de los registros que ya fueron reemplazados.
 ///
-/// Va por aparato: alguien puede tener el teléfono al día y la computadora
-/// atrasada, y lo que hay que pedirle es abrir SIAN en la computadora. Una
-/// versión vacía cuenta como no actualizada: ese aparato no ha abierto SIAN
-/// desde que se guarda la versión, así que no puede estar al día.
-List<VersionesDePersona> sinLaVersionPublicada(
+/// ────────────────────────────────────────────────────────────────────────────
+/// Por qué no basta con comparar la versión (16/09/2026)
+/// ────────────────────────────────────────────────────────────────────────────
+///
+/// Reinstalar la aplicación deja el registro de la instalación anterior. En
+/// producción, 5 de las 15 personas que ya estaban en 1.5.11 salían como
+/// atrasadas por registros de finales de agosto de su **mismo** teléfono: el
+/// coordinador veía «iPhone · Versión desconocida» tres veces para alguien con
+/// el iPhone al día. No se retiran solos hasta los 60 días sin actividad.
+///
+/// Un aparato atrasado cuenta como **reemplazado** si la misma persona tiene
+/// otro en la versión publicada, de la **misma plataforma y el mismo
+/// navegador**, con actividad más reciente. El navegador importa: Firefox y
+/// Chrome en un mismo Android son dos canales, y el de Firefox sí puede estar
+/// atrasado. Es una suposición razonable, no una certeza —un iPad y un iPhone
+/// con Safari no se distinguen—, así que solo cambia cómo se muestra: no se
+/// borra nada.
+ClasificacionDeVersiones clasificarVersiones(
   List<VersionesDePersona> personas,
   String publicada,
-) => <VersionesDePersona>[
-  for (final VersionesDePersona p in personas)
-    if (p.aparatos.any((AparatoConVersion a) => a.versionApp != publicada))
-      VersionesDePersona(
-        uid: p.uid,
-        nombre: p.nombre,
-        correo: p.correo,
-        aparatos: <AparatoConVersion>[
-          for (final AparatoConVersion a in p.aparatos)
-            if (a.versionApp != publicada) a,
-        ],
-      ),
-];
+) {
+  final List<VersionesDePersona> atrasados = <VersionesDePersona>[];
+  int reemplazados = 0;
+
+  for (final VersionesDePersona p in personas) {
+    final List<AparatoConVersion> alDia = <AparatoConVersion>[
+      for (final AparatoConVersion a in p.aparatos)
+        if (a.versionApp == publicada) a,
+    ];
+    final List<AparatoConVersion> deVerdad = <AparatoConVersion>[];
+
+    for (final AparatoConVersion a in p.aparatos) {
+      if (a.versionApp == publicada) {
+        continue;
+      }
+      final bool loReemplazo = alDia.any(
+        (AparatoConVersion b) =>
+            b.plataforma == a.plataforma &&
+            b.navegador.toLowerCase() == a.navegador.toLowerCase() &&
+            b.ultimaActividad != null &&
+            (a.ultimaActividad == null ||
+                b.ultimaActividad!.isAfter(a.ultimaActividad!)),
+      );
+      if (loReemplazo) {
+        reemplazados += 1;
+      } else {
+        deVerdad.add(a);
+      }
+    }
+
+    if (deVerdad.isNotEmpty) {
+      atrasados.add(
+        VersionesDePersona(
+          uid: p.uid,
+          nombre: p.nombre,
+          correo: p.correo,
+          aparatos: deVerdad,
+        ),
+      );
+    }
+  }
+
+  return ClasificacionDeVersiones(
+    atrasados: atrasados,
+    reemplazados: reemplazados,
+  );
+}
 
 class RevisionDeCanal {
   const RevisionDeCanal({

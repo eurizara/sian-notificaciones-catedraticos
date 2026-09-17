@@ -91,12 +91,11 @@ solo se verifica desplegando a `dev` (documento 06, etapa D.5).
 | 1.5 | Mejoras M-1 a M-5: la semana de un vistazo, distintivo de ambiente, manual en la barra, tema oscuro y responder a un aviso | Hecho |
 | — | **Desplegado en https://sian-umg-bdm-dev.web.app** | En línea |
 | — | **Manuales de usuario publicados** | En línea |
-| 1.5 | Web Push directo con llaves VAPID propias, canal que se repara solo, guía de Android y versiones en Alcance (1.5.5–1.5.11) | En QA |
-| — | **Notas de la versión dentro de los manuales** | En QA |
+| 1.5 | Web Push directo con llaves VAPID propias, canal que se repara solo, guía de Android y versiones en Alcance (1.5.5–1.5.11) | En producción |
+| — | **Notas de la versión dentro de los manuales** | En producción |
 | 2.x | Pruebas con catedráticos voluntarios | Siguiente |
 
-**Versión:** 1.5.11 en desarrollo y QA; producción sigue en la base del 10/09, anterior a la
-numeración. La aplicación enseña su versión en el pie y avisa cuando hay una más reciente.
+**Versión:** 1.5.11 en producción y QA (liberada el 13/09/2026); 1.5.12 en desarrollo. La aplicación enseña su versión en el pie y avisa cuando hay una más reciente.
 Qué trae cada una, para quien usa SIAN, está en las **notas de la versión**
 (`/manuales/notas/`); el detalle técnico y el esquema, en el documento 08.
 

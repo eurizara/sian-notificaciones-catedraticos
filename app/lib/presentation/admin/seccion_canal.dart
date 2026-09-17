@@ -100,7 +100,7 @@ class _Contenido extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<VersionesDePersona> atrasados = sinLaVersionPublicada(
+    final ClasificacionDeVersiones versiones = clasificarVersiones(
       revision.versiones,
       publicada,
     );
@@ -134,7 +134,8 @@ class _Contenido extends StatelessWidget {
           ],
         const SizedBox(height: 24),
         _Versiones(
-          atrasados: atrasados,
+          atrasados: versiones.atrasados,
+          reemplazados: versiones.reemplazados,
           conAparato: revision.versiones.length,
           publicada: publicada,
         ),
@@ -152,11 +153,13 @@ class _Contenido extends StatelessWidget {
 class _Versiones extends StatelessWidget {
   const _Versiones({
     required this.atrasados,
+    required this.reemplazados,
     required this.conAparato,
     required this.publicada,
   });
 
   final List<VersionesDePersona> atrasados;
+  final int reemplazados;
   final int conAparato;
   final String publicada;
 
@@ -190,6 +193,18 @@ class _Versiones extends StatelessWidget {
             ),
           ],
         ),
+        // Registros de instalaciones anteriores de aparatos que ya están al
+        // día. Se dicen, para que no parezca que desaparecieron, pero no se
+        // cuentan como gente a la que pedirle nada.
+        if (reemplazados > 0) ...<Widget>[
+          const SizedBox(height: 4),
+          Text(
+            Textos.canalVersionesReemplazados(reemplazados),
+            style: tema.textTheme.bodySmall?.copyWith(
+              color: tema.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
         if (atrasados.isNotEmpty) ...<Widget>[
           const SizedBox(height: 4),
           Text(
