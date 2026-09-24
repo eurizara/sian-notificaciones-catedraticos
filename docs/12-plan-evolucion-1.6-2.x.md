@@ -17,6 +17,7 @@ el documento 01.
 | # | Qué | Tamaño | Riesgo | Toca datos | Versión propuesta |
 |---|-----|:---:|:---:|:---:|:---:|
 | **U-0** | **Pasar las funciones de Node.js 20 a 22** — Google retira Node 20 el **30/10/2026** | S | Medio | No | **1.5.13 (urgente)** |
+| **C-6** | **Tocar una notificación abre el aviso o la respuesta que la originó** (corrección, DT-35) | M | Medio | No | **1.6, lo primero** |
 | U-1 | Copiar el título o el mensaje | S | Bajo | No | 1.6 |
 | U-2 | Enlaces (URL) que se abren al tocarlos | S | Bajo | No | 1.6 |
 | U-3 | Descargar las imágenes de un aviso | S–M | Bajo | No | 1.6 |
@@ -117,6 +118,47 @@ corrección posterior al 30/10, por urgente que fuera, quedaría bloqueada.
 
 Todas son **solo de la aplicación**: no cambian datos ni reglas, salvo lo indicado en U-6 y
 U-7. Cada una va en su propio PR.
+
+### C-6 · Tocar una notificación abre lo que la originó · RF-ENT-07 · DT-35
+
+**Es una corrección, y por eso va primero en la 1.6.** Reportada el 24/09/2026 probando en
+QA: la notificación de una **respuesta** abre la bandeja en «Sin leer», y no la respuesta ni
+el aviso respondido. **Pasa igual en iPhone y en Android**: en Android pareció funcionar solo
+mientras el aviso seguía sin leer, porque aparecía en ese filtro.
+
+**La causa son dos fallos** (detalle en DT-35):
+
+1. La notificación de una respuesta **no lleva el identificador del aviso**, así que el
+   worker no sabe a dónde ir.
+2. **La aplicación nunca lee la dirección con la que se abre.** Afecta también a los avisos
+   normales, aunque ahí no se nota porque el aviso nuevo sale arriba de «Sin leer».
+
+**Criterio de aceptación, fijado por el responsable:** al abrir la notificación de una
+respuesta se llega **a esa respuesta**, sin importar en qué filtro esté el aviso («Sin
+leer», «Sin confirmar» o «Leídos») ni en qué pantalla se haya quedado la aplicación.
+
+**Qué hace cada notificación al tocarla, después de corregirla:**
+
+| Notificación | A quién le llega | Se abre en |
+|---|---|---|
+| Aviso nuevo | Catedrático | El detalle de **ese aviso** |
+| Respuesta de un catedrático | Quien envió el aviso | **Respuestas**, con ese aviso desplegado |
+| Respuesta de quien envió el aviso | Catedrático | **La conversación** dentro de ese aviso |
+| Recordatorio del aparato, prueba | Cualquiera | La bandeja, como hoy |
+
+**Cómo, sin romper nada**
+
+- **Servidor:** añade `mensajeId` y el destino a la notificación de respuesta. Una
+  aplicación vieja lo ignora.
+- **Worker:** una decisión pura con sus pruebas. Con la app abierta, **la trae al frente sin
+  recargarla** y le dice qué abrir. Sin la app abierta, la abre con el destino como
+  parámetro de la dirección.
+- **Aplicación:** lee ese parámetro al arrancar y escucha el aviso del worker mientras está
+  abierta.
+
+**Riesgo:** medio. Toca el worker, que es lo que entrega las notificaciones. Por eso lleva
+pruebas de la decisión, y el guion en iPhone y Android con la app cerrada, en segundo plano y
+abierta.
 
 ### U-1 · Copiar el título o el mensaje · RF-MSG-15
 
@@ -410,7 +452,8 @@ grupo.
 ```
 1.5.13  ── urgente, antes del 20/10 ──  Node 22 · respaldos · presupuestos
    │
-1.6.x   ── mejoras de uso ──  U-1 copiar · U-2 enlaces · U-4 tabulador · U-5 manual oscuro
+1.6.x   ── mejoras de uso ──  C-6 la notificación abre lo que la originó (primero: corrección)
+   │                          U-1 copiar · U-2 enlaces · U-4 tabulador · U-5 manual oscuro
    │                          U-3 descargar · U-6 personas · U-7 Alcance
    │                          S-4 App Check (observación) · S-5 fallos del cliente · S-8 · S-9
    │

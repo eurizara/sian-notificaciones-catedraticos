@@ -707,6 +707,20 @@ recorrió solo con coordinación fue la que dejó pasar el defecto más caro del
 
 ---
 
+## Probar que la notificación abre lo que la originó (C-6, DT-35)
+
+Cada paso se prueba con la app **cerrada**, **en segundo plano** y **abierta en otra
+pantalla**, en iPhone y en Android.
+
+| # | Paso | Qué debe ocurrir |
+|---|------|------------------|
+| C6-1 | Tocar la notificación de un aviso nuevo | Se abre **el detalle de ese aviso** |
+| C6-2 | Como catedrático, responder un aviso. Quien lo envió toca la notificación de la respuesta | Se abre **Respuestas**, con ese aviso desplegado y la respuesta a la vista |
+| C6-2b | Repetir C6-2 y C6-3 con el aviso en **«Sin confirmar»** y en **«Leídos»**, y con la app dejada en otra pantalla (por ejemplo, Alcance o el filtro «Todos») | Lleva **a esa respuesta** en todos los casos, sin importar el filtro del aviso ni la pantalla de partida. Es el caso que delató el fallo |
+| C6-3 | Quien envió el aviso contesta. El catedrático toca esa notificación | Se abre **la conversación** dentro de ese aviso |
+| C6-4 | Con la app abierta redactando algo, tocar una notificación | La app pasa al frente y abre el destino **sin recargarse** |
+| C6-5 | Tocar la notificación de prueba del registro del aparato | Abre la bandeja, como antes |
+
 ## Probar el mantenimiento de 1.5.13
 
 | # | Paso | Qué debe ocurrir |
