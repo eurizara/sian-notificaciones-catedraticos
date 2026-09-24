@@ -303,6 +303,10 @@ gratuita.
 | DT-30 | Chrome puede marcar los avisos como «posible spam» y ofrecer anular la suscripción | Plataforma | **Media** | Abierta | 0 USD |
 | DT-27 | No hay forma de responder a un aviso | Alcance | Media | **Pagada** (en desarrollo y QA) | 0 USD |
 | DT-31 | «Entregado» no significa que el aparato lo mostrara, y nadie lo mide | Alcance | **Alta** | **Pagada** (en desarrollo y QA) | 0 USD |
+| DT-32 | Las funciones corren en Node.js 20, que Google retira el 30/10/2026 | Plataforma | **Alta** | **Pagada** en desarrollo (1.5.13) · a producción antes del 20/10 | 0 USD |
+| DT-33 | Sin App Check: las funciones aceptan llamadas de fuera de la aplicación | Plataforma | Media | Abierta | 0 USD |
+| DT-34 | Un fallo en el aparato no deja rastro en el servidor | Conocimiento | Media | Abierta | 0 USD |
+| DT-35 | Tocar una notificación no abre el aviso ni la respuesta: siempre cae en la bandeja | Alcance | **Media** | Abierta · **corrección C-6** | 0 USD |
 | DT-28 | El manual no se alcanza desde dentro de la aplicación | Alcance | Baja | **Pagada** (en desarrollo y QA) | 0 USD |
 
 **Prioridad de pago recomendada, en orden:** DT-03 → DT-14 → DT-04 → DT-01.
@@ -2318,4 +2322,124 @@ Lo que esto cambia para quien lea el panel:
   · **Cerrar la brecha de aparatos no es código** y sigue pendiente: tres personas sin
     ningún dispositivo, cuatro con la aplicación sin instalar en el celular, una solo en
     computadora.
+
+---
+
+## DT-32 — Las funciones corren en Node.js 20, que Google retira el 30/10/2026
+
+**Origen:** plataforma · **Severidad:** alta · **Estado:** pagada en desarrollo el
+23/09/2026 (1.5.13); falta llegar a producción antes del 20/10 · **Costo:** 0 USD
+
+Las 25 funciones usaban `nodejs20` (`firebase.json`, y `node-version: '20'` en los flujos de
+CI). Según el calendario oficial de Cloud Run functions, Node.js 20 quedó **obsoleto el
+30/04/2026** y se **retira el 30/10/2026**. Desde esa fecha, Google no deja crear ni actualizar
+funciones con ese runtime: cualquier corrección quedaría bloqueada.
+
+**Pago:** pasar a `nodejs22` (retiro: 31/10/2027) en la versión 1.5.13, y tenerlo en
+producción **antes del 20/10/2026**. Detalle en el documento 12, sección 3.
+
+**Lo que se hizo (1.5.13):** `nodejs22` en `firebase.json`, Node 22 en los cinco trabajos de
+CI y despliegue, y `@types/node` 22. Las 371 pruebas del dominio, las 38 de reglas y el cifrado
+de `web-push` se comprobaron en Node 22.
+
+**Para que no se repita:** `functions/test/unidad/runtime.test.ts` falla si el runtime y el
+Node de la CI no coinciden, y **90 días antes** de que Google retire el runtime en uso. Con
+Node 20 habría fallado desde el 1 de agosto. Con Node 22 fallará hacia el 2 de agosto de 2027.
+
+## DT-33 — Sin App Check: las funciones aceptan llamadas de fuera de la aplicación
+
+**Origen:** plataforma · **Severidad:** media · **Estado:** abierta · **Costo:** 0 USD
+
+Cada llamada registrada en producción dice `"verifications": {"app": "MISSING", "auth":
+"VALID"}`. La sesión sí se verifica, pero no que la llamada venga de la aplicación. Cualquiera
+que tenga la configuración pública del proyecto y una cuenta válida puede llamar a las
+funciones con un guion propio.
+
+**Pago:** App Check con reCAPTCHA, primero **en modo observación** (solo mide) para
+comprobar que todas las llamadas legítimas —incluidas las de iPhone instalado— lo traen;
+después, exigido. Antes de encenderlo, verificar la cuota gratuita de reCAPTCHA. Documento
+12, S-4.
+
+## DT-34 — Un fallo en el aparato no deja rastro en el servidor
+
+**Origen:** conocimiento · **Severidad:** media · **Estado:** abierta · **Costo:** 0 USD
+
+El 12/09/2026 el registro de dispositivos se colgó en **todos** los aparatos
+(`serviceWorker.ready` no resolvía), y el servidor **no registró un solo error**. Se supo
+porque un aviso de prueba no llegó. Lo mismo pasó con el 400 del registro de la suscripción
+propia: solo se vio buscando en los registros de peticiones.
+
+Los fallos que ocurren en el aparato solo llegan a su consola, que nadie ve.
+
+**Pago:** un punto de reporte mínimo en el servidor. Recibe solo qué falló, la versión y la
+plataforma, sin datos personales, con límite de frecuencia por aparato. Además, un contador
+en Alcance: «N aparatos reportaron fallos en las últimas 24 h». Documento 12, S-5.
+
+## DT-35 — Tocar una notificación no abre el aviso ni la respuesta: siempre cae en la bandeja
+
+**Origen:** alcance · **Severidad:** media · **Estado:** abierta, se paga como la corrección
+**C-6** en la iteración 1.6 · **Costo:** 0 USD
+
+**Reportado por el responsable el 24/09/2026, probando en QA:** al tocar la notificación de una
+**respuesta** a un aviso, la aplicación abre la bandeja en «Sin leer» y no la respuesta ni el
+aviso respondido. **Pasa igual en iPhone y en Android.** En Android pareció funcionar al
+principio solo porque el aviso respondido seguía sin leer, y por eso aparecía en «Sin leer»;
+cuando ya estaba leído, tampoco llevaba a él (aclarado por el responsable el mismo día).
+
+**Incumple un requisito aprobado:** RF-ENT-07, «al abrir la notificación, la aplicación
+muestra el mensaje completo con sus adjuntos».
+
+### Por qué pasa: son dos fallos, y el segundo afecta a todas las notificaciones
+
+1. **La notificación de una respuesta no dice de qué aviso es.** El servidor
+   (`triggers/respuestas.ts`, función `notificar`) manda `tipo: 'RESPUESTA'`, título, cuerpo y
+   una etiqueta (`respuestas-{mensajeId}` para quien envió el aviso, `respuesta-{mensajeId}`
+   para el catedrático), pero **no el campo `mensajeId`**. El service worker arma el destino
+   con ese campo (`data: { mensajeId: datos.mensajeId || '' }`), lo encuentra vacío y abre
+   `/`, la bandeja.
+
+2. **La aplicación no lee la dirección con la que se abre.** Para los avisos normales, el
+   worker sí abre `/mensajes/{mensajeId}`. Pero en la aplicación **no hay nada que lea esa
+   ruta**: el hosting la reescribe a `index.html`, y Flutter arranca en la bandeja como
+   siempre. Tampoco se atiende la apertura de una notificación con la aplicación ya abierta.
+
+Con los avisos no se notaba, porque el aviso nuevo aparece arriba de «Sin leer». Con las
+respuestas es evidente: la respuesta no está en la bandeja, sino dentro del aviso (para el
+catedrático) o en la sección **Respuestas** del panel (para quien envió el aviso).
+
+### Un tercer detalle, que condiciona el arreglo
+
+El worker de notificaciones vive en `/firebase-cloud-messaging-push-scope` y **no controla la
+ventana de la aplicación** (el mismo hecho que causó el fallo de la 1.5.7).
+`WindowClient.navigate()` solo funciona sobre ventanas que el worker controla, así que el
+`ventana.navigate(destino)` actual no puede funcionar en SIAN: falla sin decir nada, porque
+no se espera su promesa. El arreglo no puede depender de él. Con la ventana abierta, el
+worker le avisa por mensaje (`postMessage`, que sí llega a una ventana no controlada del
+mismo origen) y la app navega. Sin ventana, se abre con el destino en la dirección.
+
+### Criterio de aceptación (fijado por el responsable el 24/09/2026)
+
+> Al abrir la notificación de una respuesta, se llega **a esa respuesta**, sin importar en qué
+> filtro esté el aviso —«Sin leer», «Sin confirmar» o «Leídos»— ni la pantalla en que se haya
+> quedado la aplicación.
+
+### Cómo se paga (C-6)
+
+- **Servidor:** la notificación de una respuesta lleva `mensajeId` y a quién va dirigida:
+  `destino: 'EMISOR'` (se abre en Respuestas) o `destino: 'CATEDRATICO'` (se abre en la
+  conversación del aviso).
+- **Service worker:** una decisión pura en `sw-decisiones.js`, `destinoDeNotificacion(datos)`,
+  con sus pruebas, que devuelve a dónde ir: el aviso, sus respuestas o la conversación.
+  - Con la aplicación **ya abierta**, se le avisa por mensaje (`sian:abrir`) y se trae al
+    frente, **sin recargarla**. No se usa `navigate()`: no funciona sobre una ventana que el
+    worker no controla, que es el caso de SIAN.
+  - Sin ventana abierta, se abre con el destino en la dirección, como parámetro
+    (`/?aviso={id}`, `/?respuestas={id}`): la reescritura del hosting lo conserva.
+- **Aplicación:** al arrancar lee ese parámetro, y mientras está abierta escucha
+  `sian:abrir`. Abre el aviso (y su conversación si es una respuesta), o la sección
+  **Respuestas** con ese aviso desplegado. Marcar como abierto sigue el camino de siempre.
+- **Pruebas:** la decisión del worker con `node --test`; la carga del servidor con las
+  respuestas; de widget, que la app abierta con `?aviso=X` muestra ese aviso. Y el guion
+  del documento 09 en aparatos reales (C6-1 a C6-5), porque iOS y Android no reaccionan igual
+  a una notificación tocada.
 

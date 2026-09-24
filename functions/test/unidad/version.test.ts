@@ -60,34 +60,34 @@ describe('resumirVersiones', () => {
 
   it('va por aparato: el teléfono al día y la computadora atrasada se ven por separado', () => {
     const r = resumirVersiones(personas, [
-      { uid: 'a', plataforma: 'WEB_ANDROID', versionApp: '1.5.10', ultimaActividad: hace },
-      { uid: 'a', plataforma: 'WEB_ESCRITORIO', versionApp: '1.5.4', ultimaActividad: null },
+      { uid: 'a', plataforma: 'WEB_ANDROID', navegador: 'Chrome', versionApp: '1.5.10', ultimaActividad: hace },
+      { uid: 'a', plataforma: 'WEB_ESCRITORIO', navegador: 'Chrome', versionApp: '1.5.4', ultimaActividad: null },
     ]);
     expect(r).toHaveLength(1);
     expect(r[0]!.aparatos).toEqual([
-      { plataforma: 'WEB_ANDROID', versionApp: '1.5.10', ultimaActividad: hace.toISOString() },
-      { plataforma: 'WEB_ESCRITORIO', versionApp: '1.5.4', ultimaActividad: null },
+      { plataforma: 'WEB_ANDROID', navegador: 'Chrome', versionApp: '1.5.10', ultimaActividad: hace.toISOString() },
+      { plataforma: 'WEB_ESCRITORIO', navegador: 'Chrome', versionApp: '1.5.4', ultimaActividad: null },
     ]);
   });
 
   it('quien no tiene aparatos no aparece: eso lo dice la lista de canal', () => {
     const r = resumirVersiones(personas, [
-      { uid: 'b', plataforma: 'WEB_IOS', versionApp: '1.5.9', ultimaActividad: hace },
+      { uid: 'b', plataforma: 'WEB_IOS', navegador: 'Safari', versionApp: '1.5.9', ultimaActividad: hace },
     ]);
     expect(r.map((p) => p.uid)).toEqual(['b']);
   });
 
   it('aparatos de alguien que no es destinatario no se cuelan', () => {
     const r = resumirVersiones(personas, [
-      { uid: 'x', plataforma: 'WEB_IOS', versionApp: '1.0.0', ultimaActividad: hace },
+      { uid: 'x', plataforma: 'WEB_IOS', navegador: 'Safari', versionApp: '1.0.0', ultimaActividad: hace },
     ]);
     expect(r).toEqual([]);
   });
 
   it('ordenado por nombre, y la versión vacía se conserva como vacía', () => {
     const r = resumirVersiones(personas, [
-      { uid: 'b', plataforma: 'WEB_IOS', versionApp: ' ', ultimaActividad: hace },
-      { uid: 'a', plataforma: 'WEB_IOS', versionApp: '1.5.10', ultimaActividad: hace },
+      { uid: 'b', plataforma: 'WEB_IOS', navegador: 'Safari', versionApp: ' ', ultimaActividad: hace },
+      { uid: 'a', plataforma: 'WEB_IOS', navegador: 'Safari', versionApp: '1.5.10', ultimaActividad: hace },
     ]);
     expect(r.map((p) => p.nombre)).toEqual(['Ana', 'Zoila']);
     expect(r[1]!.aparatos[0]!.versionApp).toBe('');

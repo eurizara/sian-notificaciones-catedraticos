@@ -707,6 +707,30 @@ recorrió solo con coordinación fue la que dejó pasar el defecto más caro del
 
 ---
 
+## Probar que la notificación abre lo que la originó (C-6, DT-35)
+
+Cada paso se prueba con la app **cerrada**, **en segundo plano** y **abierta en otra
+pantalla**, en iPhone y en Android.
+
+| # | Paso | Qué debe ocurrir |
+|---|------|------------------|
+| C6-1 | Tocar la notificación de un aviso nuevo | Se abre **el detalle de ese aviso** |
+| C6-2 | Como catedrático, responder un aviso. Quien lo envió toca la notificación de la respuesta | Se abre **Respuestas**, con ese aviso desplegado y la respuesta a la vista |
+| C6-2b | Repetir C6-2 y C6-3 con el aviso en **«Sin confirmar»** y en **«Leídos»**, y con la app dejada en otra pantalla (por ejemplo, Alcance o el filtro «Todos») | Lleva **a esa respuesta** en todos los casos, sin importar el filtro del aviso ni la pantalla de partida. Es el caso que delató el fallo |
+| C6-3 | Quien envió el aviso contesta. El catedrático toca esa notificación | Se abre **la conversación** dentro de ese aviso |
+| C6-4 | Con la app abierta redactando algo, tocar una notificación | La app pasa al frente y abre el destino **sin recargarse** |
+| C6-5 | Tocar la notificación de prueba del registro del aparato | Abre la bandeja, como antes |
+
+## Probar el mantenimiento de 1.5.13
+
+| # | Paso | Qué debe ocurrir |
+|---|------|------------------|
+| N-1 | Tras desplegar, revisar el runtime de las funciones del ambiente | Las 25 en **nodejs22** |
+| N-2 | Mandar un aviso a un iPhone y a un Android con la app en 1.5.13 | Llega por Web Push directo en segundos, igual que antes: el cifrado cambió de Node, no de comportamiento |
+| N-3 | Responder un aviso y ver Alcance | Funcionan igual |
+| N-4 | `python3 scripts/configurar-respaldos.py <proyecto> --revisar` | Todo «ya está» |
+| N-5 | Después del primer domingo, restaurar un respaldo de desarrollo en una base nueva (documento 11) | Los documentos de la base restaurada coinciden con los de ese día. Borrar la base temporal al terminar |
+
 ## Probar la versión a la vista
 
 | # | Paso | Qué debe ocurrir |
@@ -718,6 +742,7 @@ recorrió solo con coordinación fue la que dejó pasar el defecto más caro del
 | V-5 | Entra como coordinación a **Alcance** | Cada persona de la lista muestra su versión; las que no coinciden con la publicada van en dorado |
 | V-6 | En **Alcance**, baja hasta **Versión de la aplicación** | Dice cuántas personas tienen algún aparato sin la versión publicada y lista cada aparato atrasado con su versión y última actividad. Quien está al día no sale |
 | V-7 | Actualiza uno de esos aparatos y recarga Alcance | Ese aparato desaparece de la lista |
+| V-7b | Reinstala la app en un aparato ya actualizado (queda el registro anterior) y recarga Alcance | La persona **no** sale como atrasada; debajo del resumen aparece «Además hay 1 registro de una instalación anterior…» |
 | V-8 | Abre el manual → **Notas de la versión** | La primera sección es la versión que dice el pie de la bandeja, marcada **Actual**; los dos manuales enlazan a esta página |
 
 ## Probar que el canal se repara solo (DT-23)

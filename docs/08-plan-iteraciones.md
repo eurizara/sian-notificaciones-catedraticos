@@ -285,8 +285,8 @@ detalle técnico— y escribir su sección en **las notas de la versión**
 (`app/web/manuales/notas/index.html`), que es lo que leen catedráticos y coordinación. Una
 prueba falla si la versión de la aplicación no tiene su sección allí.
 
-**Dónde está cada versión (13/09/2026):** desarrollo y QA en **1.5.11**; producción todavía
-en la base del 10/09, anterior a la numeración.
+**Dónde está cada versión (16/09/2026):** producción y QA en **1.5.11** —liberada el 13/09 a
+las 23:48—; desarrollo en **1.5.12**.
 
 | Versión | Qué trae |
 |---|---|
@@ -302,6 +302,8 @@ en la base del 10/09, anterior a la numeración.
 | 1.5.9 | **La insignia de las notificaciones es una silueta.** Android pinta el icono pequeño usando solo el canal alfa, y los iconos de SIAN son opacos de borde a borde: salía un cuadrado blanco macizo junto al nombre y en la barra de estado. Ahora es una campana blanca sobre transparente |
 | 1.5.10 | **Guía de «Permitir uso en segundo plano» en Android.** Con ese ajuste apagado, Chrome retiene las notificaciones esperando a la aplicación instalada y las suelta tarde, de golpe y a nombre de Chrome. Desde la web no se puede cambiar ni consultar: una tarjeta en la bandeja lo explica una vez, y el manual del catedrático trae los pasos y la advertencia de no tocar «Anular suscripción» |
 | 1.5.11 | **Alcance dice quién no tiene la última versión.** La lista de canal solo traía a quien tenía problemas para recibir; quien recibía bien con una versión vieja no salía en ningún sitio. Ahora Alcance compara cada aparato de cada destinatario con la versión publicada y lista los atrasados, aparato por aparato. De paso: el servidor elegía «la versión más reciente» ordenando como texto, y con 1.5.10 se quedaba con 1.5.9 |
+| 1.5.12 | **Alcance no confunde reinstalar con estar atrasado.** Reinstalar la app deja el registro anterior, y en producción 5 de las 15 personas ya actualizadas salían como atrasadas por registros de agosto de su mismo teléfono. Un aparato atrasado cuenta como reemplazado si la persona tiene otro en la versión publicada, de la misma plataforma y navegador y con actividad más reciente; se indica aparte y no se borra nada |
+| 1.5.13 | **Mantenimiento con fecha límite.** Las funciones pasan de Node.js 20 —que Google retira el 30/10/2026— a Node.js 22, con una prueba que avisa 90 días antes del próximo retiro (DT-32). **Respaldos programados de Firestore** en los tres ambientes, que no existían: producción diario (7 días) y semanal (12 semanas). Se verificó que el techo de gasto de 10 USD cubre los tres proyectos |
 
 **Dónde se ve.** En el pie de la bandeja y del panel; cuando hay una más reciente, una
 tarjeta arriba con el botón de actualizar. Y en **Alcance**, la versión de cada persona:
@@ -446,6 +448,17 @@ sin incidencias de severidad alta.
 ## Fase 4 — Evolución continua
 
 Ritmo sugerido: iteraciones de dos semanas.
+
+### Propuesta en análisis: 1.5.13, 1.6, 2.0 y 2.1 (23/09/2026)
+
+Lo pedido el 23/09 —copiar, enlaces, descargar imágenes, tabulador, manual oscuro, envío a
+personas concretas, mejoras de Alcance, **varias sedes** y **repositorio de archivos**—, más
+lo encontrado al revisar el código, está analizado en el
+[documento 12](12-plan-evolucion-1.6-2.x.md), con la estrategia para hacerlo sin romper nada.
+**No hay nada aplicado.**
+
+Lo único con fecha: **las funciones deben pasar a Node.js 22 antes del 30/10/2026** (DT-32).
+Se propone liberarlo solo, como 1.5.13, antes que cualquier otra cosa.
 
 ### Cartera de mejoras candidatas
 
