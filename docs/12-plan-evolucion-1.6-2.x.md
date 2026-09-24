@@ -1,7 +1,8 @@
 # 12 · Plan de evolución: iteraciones 1.6, 2.0 y 2.1
 
-**Estado:** propuesta, **nada aplicado todavía**. Escrito el 23 de septiembre de 2026 sobre
-lo que hay en `develop` (1.5.12), `qa` y `main` (1.5.11).
+**Estado:** **aprobado** por el responsable el 23/09/2026, con todas las recomendaciones de la
+sección 10. En curso: **1.5.13** (en desarrollo). Escrito sobre lo que había en `develop`
+(1.5.12), `qa` y `main` (1.5.11).
 
 **Qué es este documento.** Recoge lo que pidió el responsable del proyecto el 23/09/2026 y
 lo que se encontró al revisar el código para pedirlo. Para cada punto explica qué hay hoy, qué
@@ -432,7 +433,18 @@ grupo.
 
 ---
 
-## 10. Lo que hace falta decidir
+## 10. Decisiones (aprobadas el 23/09/2026)
+
+El responsable aprobó todas las recomendaciones:
+
+- **Numeración:** 1.5.13 → 1.6 → 2.0 → 2.1 / 2.2.
+- **Un rol por sede:** una persona puede ser coordinadora en una sede y catedrática en otra.
+- **Descargas del repositorio por enlace temporal** (10 minutos), con registro en la bitácora.
+- **Límites del repositorio:** 25 MB por archivo y 2 GB por sede.
+- **Mensajes de hasta 1000 caracteres**, con resumen en la notificación.
+- **Correos y teléfonos tocables**, además de las direcciones web.
+
+Lo que se preguntaba, para referencia:
 
 1. **La numeración** (sección 1): 1.5.13 / 1.6 / 2.0 / 2.1, o dejarlo todo en 1.5.x.
 2. **Roles por sede** (sección 6): ¿una persona puede ser coordinadora en una sede y

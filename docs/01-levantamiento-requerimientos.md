@@ -326,7 +326,7 @@ sobre el control de confirmación. Abrir un mensaje nunca lo marca como confirma
 
 ### 3.9 Propuestos para las iteraciones 1.6, 2.0 y 2.1 (en análisis)
 
-Pedidos el 23 de septiembre de 2026. **No están aprobados ni implementados**: el análisis, el
+Pedidos y **aprobados** el 23 de septiembre de 2026; **todavía no implementados**: el análisis, el
 orden y la estrategia están en el [documento 12](12-plan-evolucion-1.6-2.x.md). Cuando se
 aprueben, pasan a su módulo y a la matriz de trazabilidad.
 

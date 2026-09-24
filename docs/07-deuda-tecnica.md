@@ -303,7 +303,7 @@ gratuita.
 | DT-30 | Chrome puede marcar los avisos como «posible spam» y ofrecer anular la suscripción | Plataforma | **Media** | Abierta | 0 USD |
 | DT-27 | No hay forma de responder a un aviso | Alcance | Media | **Pagada** (en desarrollo y QA) | 0 USD |
 | DT-31 | «Entregado» no significa que el aparato lo mostrara, y nadie lo mide | Alcance | **Alta** | **Pagada** (en desarrollo y QA) | 0 USD |
-| DT-32 | Las funciones corren en Node.js 20, que Google retira el 30/10/2026 | Plataforma | **Alta** | Abierta · **fecha límite** | 0 USD |
+| DT-32 | Las funciones corren en Node.js 20, que Google retira el 30/10/2026 | Plataforma | **Alta** | **Pagada** en desarrollo (1.5.13) · a producción antes del 20/10 | 0 USD |
 | DT-33 | Sin App Check: las funciones aceptan llamadas de fuera de la aplicación | Plataforma | Media | Abierta | 0 USD |
 | DT-34 | Un fallo en el aparato no deja rastro en el servidor | Conocimiento | Media | Abierta | 0 USD |
 | DT-28 | El manual no se alcanza desde dentro de la aplicación | Alcance | Baja | **Pagada** (en desarrollo y QA) | 0 USD |
@@ -2326,16 +2326,24 @@ Lo que esto cambia para quien lea el panel:
 
 ## DT-32 — Las funciones corren en Node.js 20, que Google retira el 30/10/2026
 
-**Origen:** plataforma · **Severidad:** alta · **Estado:** abierta, con fecha límite ·
-**Costo:** 0 USD
+**Origen:** plataforma · **Severidad:** alta · **Estado:** pagada en desarrollo el
+23/09/2026 (1.5.13); falta llegar a producción antes del 20/10 · **Costo:** 0 USD
 
-Las 25 funciones usan `nodejs20` (`firebase.json`, y `node-version: '20'` en los flujos de
+Las 25 funciones usaban `nodejs20` (`firebase.json`, y `node-version: '20'` en los flujos de
 CI). Según el calendario oficial de Cloud Run functions, Node.js 20 quedó **obsoleto el
 30/04/2026** y se **retira el 30/10/2026**. Desde esa fecha, Google no deja crear ni actualizar
 funciones con ese runtime: cualquier corrección quedaría bloqueada.
 
 **Pago:** pasar a `nodejs22` (retiro: 31/10/2027) en la versión 1.5.13, y tenerlo en
 producción **antes del 20/10/2026**. Detalle en el documento 12, sección 3.
+
+**Lo que se hizo (1.5.13):** `nodejs22` en `firebase.json`, Node 22 en los cinco trabajos de
+CI y despliegue, y `@types/node` 22. Las 371 pruebas del dominio, las 38 de reglas y el cifrado
+de `web-push` se comprobaron en Node 22.
+
+**Para que no se repita:** `functions/test/unidad/runtime.test.ts` falla si el runtime y el
+Node de la CI no coinciden, y **90 días antes** de que Google retire el runtime en uso. Con
+Node 20 habría fallado desde el 1 de agosto. Con Node 22 fallará hacia el 2 de agosto de 2027.
 
 ## DT-33 — Sin App Check: las funciones aceptan llamadas de fuera de la aplicación
 

@@ -28,7 +28,7 @@
     "@firebase/rules-unit-testing": "^5.0.1",
     "@types/jest": "^30.0.0",
     "@types/luxon": "^3.7.3",
-    "@types/node": "^20.19.43",
+    "@types/node": "^22.20.4",
     "@types/web-push": "^3.6.4",
     "@typescript-eslint/eslint-plugin": "^8.65.0",
     "@typescript-eslint/parser": "^8.65.0",

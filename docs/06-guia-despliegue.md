@@ -441,7 +441,7 @@ cd ..
     "indexes": "firestore.indexes.json"
   },
   "storage": { "rules": "storage.rules" },
-  "functions": [{ "source": "functions", "codebase": "default", "runtime": "nodejs20" }]
+  "functions": [{ "source": "functions", "codebase": "default", "runtime": "nodejs22" }]
 }
 ```
 
