@@ -120,6 +120,7 @@ continua corren en cada solicitud de incorporación.
 | 09 | [Guion de pruebas](docs/09-guion-de-pruebas.md) | Qué probar en cada ronda, paso a paso, con su alcance y lo que queda fuera |
 | 10 | [Especificación de casos de uso](docs/10-casos-de-uso.md) | Los doce casos de uso en formato extendido ISO/IEC/IEEE 29148: actores, precondiciones, garantías, flujos principales, alternativos y de excepción, y trazabilidad a requisitos |
 | 11 | [Ambientes](docs/11-ambientes.md) | Los tres ambientes: proyectos, URL, quién tiene acceso, configuración por ambiente, costo real medido y cómo se promueve un cambio |
+| 12 | [Plan de evolución 1.6 · 2.0 · 2.1](docs/12-plan-evolucion-1.6-2.x.md) | **Propuesta en análisis:** mejoras de uso, varias sedes, repositorio de archivos, y lo urgente (Node.js 22 antes del 30/10/2026) |
 
 ---
 

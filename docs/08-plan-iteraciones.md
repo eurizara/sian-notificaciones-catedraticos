@@ -448,6 +448,17 @@ sin incidencias de severidad alta.
 
 Ritmo sugerido: iteraciones de dos semanas.
 
+### Propuesta en análisis: 1.5.13, 1.6, 2.0 y 2.1 (23/09/2026)
+
+Lo pedido el 23/09 —copiar, enlaces, descargar imágenes, tabulador, manual oscuro, envío a
+personas concretas, mejoras de Alcance, **varias sedes** y **repositorio de archivos**—, más
+lo encontrado al revisar el código, está analizado en el
+[documento 12](12-plan-evolucion-1.6-2.x.md), con la estrategia para hacerlo sin romper nada.
+**No hay nada aplicado.**
+
+Lo único con fecha: **las funciones deben pasar a Node.js 22 antes del 30/10/2026** (DT-32).
+Se propone liberarlo solo, como 1.5.13, antes que cualquier otra cosa.
+
 ### Cartera de mejoras candidatas
 
 | Prioridad | Mejora | Origen |
