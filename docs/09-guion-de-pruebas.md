@@ -707,6 +707,16 @@ recorrió solo con coordinación fue la que dejó pasar el defecto más caro del
 
 ---
 
+## Probar el mantenimiento de 1.5.13
+
+| # | Paso | Qué debe ocurrir |
+|---|------|------------------|
+| N-1 | Tras desplegar, revisar el runtime de las funciones del ambiente | Las 25 en **nodejs22** |
+| N-2 | Mandar un aviso a un iPhone y a un Android con la app en 1.5.13 | Llega por Web Push directo en segundos, igual que antes: el cifrado cambió de Node, no de comportamiento |
+| N-3 | Responder un aviso y ver Alcance | Funcionan igual |
+| N-4 | `python3 scripts/configurar-respaldos.py <proyecto> --revisar` | Todo «ya está» |
+| N-5 | Después del primer domingo, restaurar un respaldo de desarrollo en una base nueva (documento 11) | Los documentos de la base restaurada coinciden con los de ese día. Borrar la base temporal al terminar |
+
 ## Probar la versión a la vista
 
 | # | Paso | Qué debe ocurrir |
@@ -718,6 +728,7 @@ recorrió solo con coordinación fue la que dejó pasar el defecto más caro del
 | V-5 | Entra como coordinación a **Alcance** | Cada persona de la lista muestra su versión; las que no coinciden con la publicada van en dorado |
 | V-6 | En **Alcance**, baja hasta **Versión de la aplicación** | Dice cuántas personas tienen algún aparato sin la versión publicada y lista cada aparato atrasado con su versión y última actividad. Quien está al día no sale |
 | V-7 | Actualiza uno de esos aparatos y recarga Alcance | Ese aparato desaparece de la lista |
+| V-7b | Reinstala la app en un aparato ya actualizado (queda el registro anterior) y recarga Alcance | La persona **no** sale como atrasada; debajo del resumen aparece «Además hay 1 registro de una instalación anterior…» |
 | V-8 | Abre el manual → **Notas de la versión** | La primera sección es la versión que dice el pie de la bandeja, marcada **Actual**; los dos manuales enlazan a esta página |
 
 ## Probar que el canal se repara solo (DT-23)

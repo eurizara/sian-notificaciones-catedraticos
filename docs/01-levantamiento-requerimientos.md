@@ -324,6 +324,35 @@ sobre el control de confirmación. Abrir un mensaje nunca lo marca como confirma
 | RF-ADM-04 | El panel presenta un tablero con métricas: mensajes enviados, tasa de entrega y tasa de confirmación | B |
 | RF-ADM-05 | El sistema notifica al emisor cuando un envío termina con fallos por encima de un umbral | P |
 
+### 3.9 Propuestos para las iteraciones 1.6, 2.0 y 2.1 (en análisis)
+
+Pedidos y **aprobados** el 23 de septiembre de 2026; **todavía no implementados**: el análisis, el
+orden y la estrategia están en el [documento 12](12-plan-evolucion-1.6-2.x.md). Cuando se
+aprueben, pasan a su módulo y a la matriz de trazabilidad.
+
+| ID | Requisito propuesto | Prioridad | Iteración |
+|----|-----------|:---:|:---:|
+| RF-MSG-15 | El destinatario puede copiar el título y el mensaje de un aviso | D | 1.6 |
+| RF-MSG-16 | Las direcciones web (`http`, `https`, `www.`) del mensaje se muestran como enlaces que se abren en otra pestaña; ningún otro esquema se vuelve enlace | D | 1.6 |
+| RF-MSG-17 | El destinatario puede descargar las imágenes de un aviso; en iPhone, mediante «Guardar imagen» | D | 1.6 |
+| RF-USR-06 | *(ya aprobado)* Dirigir un mensaje a una selección individual de personas: **falta la pantalla**, el servidor ya lo soporta | D | 1.6 |
+| RF-ADM-06 | La coordinación puede retirar desde Alcance un registro de aparato, y queda en la bitácora | D | 1.6 |
+| RF-SED-01 | El sistema admite varias sedes; cada mensaje, grupo, carpeta y entrada de bitácora pertenece a una | D | 2.0 |
+| RF-SED-02 | Una persona puede pertenecer a varias sedes, con un rol en cada una | D | 2.0 |
+| RF-SED-03 | «Enviar a todos» significa todos los destinatarios de la sede elegida | D | 2.0 |
+| RF-SED-04 | Quien pertenece a más de una sede elige en cuál trabaja; con una sola, no se le pregunta | D | 2.0 |
+| RF-SED-05 | Una persona no ve ni modifica nada de una sede a la que no pertenece | D | 2.0 |
+| RF-SED-06 | La administración general crea sedes y asigna a sus coordinadores | D | 2.0 |
+| RF-REP-01 | Coordinación y administración crean, renombran y borran carpetas, hasta dos niveles | D | 2.1 |
+| RF-REP-02 | Coordinación y administración suben archivos de tipos permitidos, de hasta 25 MB | D | 2.1 |
+| RF-REP-03 | Cada sede tiene un cupo de almacenamiento (2 GB por omisión) que no se puede superar | D | 2.1 |
+| RF-REP-04 | El acceso a una carpeta se concede por grupos | D | 2.1 |
+| RF-REP-05 | El catedrático ve y descarga solo las carpetas de sus grupos | D | 2.2 |
+| RF-REP-06 | La descarga se hace con un enlace que caduca, y queda en la bitácora | D | 2.2 |
+| RF-REP-07 | No se aceptan ejecutables ni archivos comprimidos | D | 2.1 |
+| RNF-23 | Los formularios se recorren con el tabulador en el orden en que se leen, y al revés con Mayús+Tab | D | 1.6 |
+| RNF-24 | Los manuales siguen la apariencia elegida en la aplicación, o la del dispositivo si no se eligió ninguna, con contraste AA en los dos modos | D | 1.6 |
+
 ---
 
 ## 4. Requisitos no funcionales

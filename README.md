@@ -28,7 +28,7 @@ un catedrático y los servicios de Google.
 |---|---|---|
 | **Interfaz** | Flutter 3.44 · Dart 3.12, compilado a web | Una sola base de código para celular y computadora, instalable sin pasar por App Store ni Play Store |
 | **Estado** | Riverpod 3 | Inyección de dependencias: es lo que permite probar cada pantalla sin levantar Firebase |
-| **Servidor** | Cloud Functions v2 · Node 20 · TypeScript 5.9 | Todo lo que no puede confiarse al navegador. **25 funciones desplegadas** |
+| **Servidor** | Cloud Functions v2 · Node 22 · TypeScript 5.9 | Todo lo que no puede confiarse al navegador. **25 funciones desplegadas** |
 | **Base de datos** | Cloud Firestore, modo Native — **NoSQL documental** | Lectura directa desde el navegador con reglas por documento, y bandeja que se actualiza sola |
 | **Identidad** | Firebase Authentication + *custom claims* | El rol viaja firmado dentro del token, no se consulta a la base al decidir permisos |
 | **Notificaciones** | Firebase Cloud Messaging | El aviso que suena con la aplicación cerrada |
@@ -62,7 +62,7 @@ ejecuta ahora mismo y cómo comprobar que coincide con esta rama, en
 
 ## Empezar en cinco minutos
 
-Requiere Git, Node.js 20 y Java 17 (documento 06, etapa A).
+Requiere Git, Node.js 22 y Java 17 (documento 06, etapa A).
 
 ```bash
 bash scripts/bootstrap.sh   # comprueba herramientas e instala dependencias
@@ -91,12 +91,11 @@ solo se verifica desplegando a `dev` (documento 06, etapa D.5).
 | 1.5 | Mejoras M-1 a M-5: la semana de un vistazo, distintivo de ambiente, manual en la barra, tema oscuro y responder a un aviso | Hecho |
 | — | **Desplegado en https://sian-umg-bdm-dev.web.app** | En línea |
 | — | **Manuales de usuario publicados** | En línea |
-| 1.5 | Web Push directo con llaves VAPID propias, canal que se repara solo, guía de Android y versiones en Alcance (1.5.5–1.5.11) | En QA |
-| — | **Notas de la versión dentro de los manuales** | En QA |
+| 1.5 | Web Push directo con llaves VAPID propias, canal que se repara solo, guía de Android y versiones en Alcance (1.5.5–1.5.11) | En producción |
+| — | **Notas de la versión dentro de los manuales** | En producción |
 | 2.x | Pruebas con catedráticos voluntarios | Siguiente |
 
-**Versión:** 1.5.11 en desarrollo y QA; producción sigue en la base del 10/09, anterior a la
-numeración. La aplicación enseña su versión en el pie y avisa cuando hay una más reciente.
+**Versión:** 1.5.11 en producción y QA (liberada el 13/09/2026); 1.5.12 en desarrollo. La aplicación enseña su versión en el pie y avisa cuando hay una más reciente.
 Qué trae cada una, para quien usa SIAN, está en las **notas de la versión**
 (`/manuales/notas/`); el detalle técnico y el esquema, en el documento 08.
 
@@ -121,6 +120,7 @@ continua corren en cada solicitud de incorporación.
 | 09 | [Guion de pruebas](docs/09-guion-de-pruebas.md) | Qué probar en cada ronda, paso a paso, con su alcance y lo que queda fuera |
 | 10 | [Especificación de casos de uso](docs/10-casos-de-uso.md) | Los doce casos de uso en formato extendido ISO/IEC/IEEE 29148: actores, precondiciones, garantías, flujos principales, alternativos y de excepción, y trazabilidad a requisitos |
 | 11 | [Ambientes](docs/11-ambientes.md) | Los tres ambientes: proyectos, URL, quién tiene acceso, configuración por ambiente, costo real medido y cómo se promueve un cambio |
+| 12 | [Plan de evolución 1.6 · 2.0 · 2.1](docs/12-plan-evolucion-1.6-2.x.md) | **Propuesta en análisis:** mejoras de uso, varias sedes, repositorio de archivos, y lo urgente (Node.js 22 antes del 30/10/2026) |
 
 ---
 

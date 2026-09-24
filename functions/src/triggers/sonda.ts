@@ -83,6 +83,7 @@ interface DispositivoLeido extends DispositivoAEvaluar {
   readonly esPWAInstalada: boolean;
   readonly permisoNotificacion: string;
   readonly plataforma: string;
+  readonly navegador: string;
   readonly versionApp: string;
 
   /**
@@ -113,6 +114,7 @@ async function leerDispositivos(): Promise<DispositivoLeido[]> {
     esPWAInstalada: d.get('esPWAInstalada') === true,
     permisoNotificacion: (d.get('permisoNotificacion') as string | undefined) ?? 'pendiente',
     plataforma: (d.get('plataforma') as string | undefined) ?? '',
+    navegador: (d.get('navegador') as string | undefined) ?? '',
     versionApp: (d.get('versionApp') as string | undefined) ?? '',
     tieneWebPush: Boolean(
       (d.get('webPush') as { endpoint?: string } | undefined)?.endpoint,

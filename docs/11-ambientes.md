@@ -162,6 +162,31 @@ como siempre: desplegar sin **ninguna** de las dos llaves no rompe nada.
 > firma de todos los envíos. `functions/test/unidad/vapid.test.ts` falla si no coinciden o
 > si una tiene mal la forma.
 
+**Respaldos de Firestore (desde 1.5.13).** Hasta el 23/09/2026 no había ninguno, en ningún
+ambiente. Los configura `scripts/configurar-respaldos.py`, que es idempotente y con
+`--revisar` solo lee:
+
+| Ambiente | Programa | Retención |
+|---|---|---|
+| Producción | diario + semanal (domingo) | 7 días + 12 semanas |
+| QA | semanal (domingo) | 4 semanas |
+| Desarrollo | semanal (domingo) | 4 semanas |
+
+Firestore no hace respaldos al momento: el primero sale en la fecha del programa.
+
+**Cómo se restaura.** Nunca encima de la base `(default)`:
+
+  1. Ver los respaldos: `GET https://firestore.googleapis.com/v1/projects/<proyecto>/locations/us-central1/backups`.
+  2. Restaurar en una base **nueva**: `POST https://firestore.googleapis.com/v1/projects/<proyecto>/databases:restore`
+     con `{"databaseId": "restauracion-AAAAMMDD", "backup": "<nombre del respaldo>"}`.
+  3. Leer de esa base lo que haga falta y copiarlo a `(default)` con un guion revisado.
+  4. Borrar la base temporal al terminar: mientras exista, se paga su almacenamiento.
+
+**Gasto.** La cuenta de facturación tiene un **techo de 10 USD al mes para los tres
+proyectos**, con avisos por correo a los administradores de facturación al 50, 90 y 100 %, y
+uno de 1 USD solo para desarrollo. Recomendado: uno propio para producción, para saber de qué
+proyecto viene un aviso.
+
 **El proveedor de Google.** Se habilita en Authentication → Sign-in method → Google.
 Ese clic crea el cliente OAuth; la API no lo crea sola. Sin él, el botón «Entrar con
 Google» aparece en pantalla y falla al pulsarlo.

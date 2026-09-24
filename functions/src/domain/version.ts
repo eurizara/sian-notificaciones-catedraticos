@@ -56,6 +56,8 @@ export interface PersonaConAparatos {
 export interface AparatoConVersion {
   readonly uid: string;
   readonly plataforma: string;
+  /** «Safari», «Chrome», «Firefox»… Distingue un navegador de otro en el mismo teléfono. */
+  readonly navegador: string;
   readonly versionApp: string;
   readonly ultimaActividad: Date | null;
 }
@@ -66,6 +68,7 @@ export interface VersionesDePersona {
   readonly correo: string;
   readonly aparatos: readonly {
     readonly plataforma: string;
+    readonly navegador: string;
     readonly versionApp: string;
     readonly ultimaActividad: string | null;
   }[];
@@ -101,6 +104,7 @@ export function resumirVersiones(
       correo: p.correo,
       aparatos: (porUid.get(p.uid) ?? []).map((a) => ({
         plataforma: a.plataforma,
+        navegador: a.navegador.trim(),
         versionApp: a.versionApp.trim(),
         ultimaActividad: a.ultimaActividad?.toISOString() ?? null,
       })),
