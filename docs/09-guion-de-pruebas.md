@@ -716,10 +716,10 @@ pantalla**, en iPhone y en Android.
 |---|------|------------------|
 | C6-1 | Tocar la notificación de un aviso nuevo | Se abre **el detalle de ese aviso** |
 | C6-2 | Como catedrático, responder un aviso. Quien lo envió toca la notificación de la respuesta | Se abre **Respuestas**, con ese aviso desplegado y la respuesta a la vista |
+| C6-2b | Repetir C6-2 y C6-3 con el aviso **ya leído** | Igual: lleva al aviso aunque ya no esté en «Sin leer». Es el caso que delató el fallo |
 | C6-3 | Quien envió el aviso contesta. El catedrático toca esa notificación | Se abre **la conversación** dentro de ese aviso |
 | C6-4 | Con la app abierta redactando algo, tocar una notificación | La app pasa al frente y abre el destino **sin recargarse** |
 | C6-5 | Tocar la notificación de prueba del registro del aparato | Abre la bandeja, como antes |
-| C6-0 | **Antes de corregir**, en Android: dejar SIAN en Alcance o cerrarla desde recientes, y tocar la notificación de una respuesta | Confirma la hipótesis de DT-35 si **no** lleva a la respuesta |
 
 ## Probar el mantenimiento de 1.5.13
 
