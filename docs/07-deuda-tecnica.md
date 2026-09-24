@@ -2382,8 +2382,9 @@ en Alcance: «N aparatos reportaron fallos en las últimas 24 h». Documento 12,
 
 **Reportado por el responsable el 24/09/2026, probando en QA:** al tocar la notificación de una
 **respuesta** a un aviso, la aplicación abre la bandeja en «Sin leer» y no la respuesta ni el
-aviso respondido. **En iPhone falla; en Android funciona bien.** Ver abajo por qué la
-diferencia no significa que Android esté resuelto.
+aviso respondido. **Pasa igual en iPhone y en Android.** En Android pareció funcionar al
+principio solo porque el aviso respondido seguía sin leer, y por eso aparecía en «Sin leer»;
+cuando ya estaba leído, tampoco llevaba a él (aclarado por el responsable el mismo día).
 
 **Incumple un requisito aprobado:** RF-ENT-07, «al abrir la notificación, la aplicación
 muestra el mensaje completo con sus adjuntos».
@@ -2406,27 +2407,21 @@ Con los avisos no se notaba, porque el aviso nuevo aparece arriba de «Sin leer�
 respuestas es evidente: la respuesta no está en la bandeja, sino dentro del aviso (para el
 catedrático) o en la sección **Respuestas** del panel (para quien envió el aviso).
 
-### Por qué en Android parece funcionar y en iPhone no (hipótesis, a comprobar)
+### Un tercer detalle, que condiciona el arreglo
 
 El worker de notificaciones vive en `/firebase-cloud-messaging-push-scope` y **no controla la
-ventana de la aplicación**: es el mismo hecho que causó el fallo de la 1.5.7. Y
-`WindowClient.navigate()` solo funciona sobre ventanas que el worker controla. Así que el
-`ventana.navigate(destino)` actual **falla sin decir nada** (no se espera su promesa), y lo
-único que ocurre es `ventana.focus()`: **la app vuelve al frente tal como estaba**.
+ventana de la aplicación** (el mismo hecho que causó el fallo de la 1.5.7).
+`WindowClient.navigate()` solo funciona sobre ventanas que el worker controla, así que el
+`ventana.navigate(destino)` actual no puede funcionar en SIAN: falla sin decir nada, porque
+no se espera su promesa. El arreglo no puede depender de él. Con la ventana abierta, el
+worker le avisa por mensaje (`postMessage`, que sí llega a una ventana no controlada del
+mismo origen) y la app navega. Sin ventana, se abre con el destino en la dirección.
 
-- **Android** conserva la ventana y el worker la encuentra: la app reaparece donde se dejó.
-  Si se estaba en el aviso o en Respuestas, parece que la notificación llevó ahí.
-- **iPhone** normalmente no entrega al worker la ventana de una PWA suspendida. El worker no
-  encuentra ninguna, abre una nueva en `/` y la app arranca en «Sin leer».
+### Criterio de aceptación (fijado por el responsable el 24/09/2026)
 
-**Cómo comprobarlo:** en Android, cerrar SIAN desde recientes (o dejarla en otra pantalla,
-como Alcance) y tocar la notificación de una respuesta. Si la hipótesis es correcta, también
-cae en la bandeja, o se queda donde estaba.
-
-**Consecuencia para el arreglo:** no se puede depender de `navigate()`. Con la ventana
-abierta, el worker le avisa por mensaje (`postMessage`, que sí llega a una ventana no
-controlada del mismo origen) y la app navega. Sin ventana, se abre con el destino en la
-dirección.
+> Al abrir la notificación de una respuesta, se llega **a esa respuesta**, sin importar en qué
+> filtro esté el aviso —«Sin leer», «Sin confirmar» o «Leídos»— ni la pantalla en que se haya
+> quedado la aplicación.
 
 ### Cómo se paga (C-6)
 

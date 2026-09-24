@@ -122,13 +122,9 @@ U-7. Cada una va en su propio PR.
 ### C-6 · Tocar una notificación abre lo que la originó · RF-ENT-07 · DT-35
 
 **Es una corrección, y por eso va primero en la 1.6.** Reportada el 24/09/2026 probando en
-QA: **en iPhone**, la notificación de una **respuesta** abre la bandeja en «Sin leer», y no la
-respuesta ni el aviso respondido. En Android funciona.
-
-Probablemente Android solo **trae la app al frente donde estaba**: el intento de navegar del
-worker falla sin decir nada, porque no controla la ventana. Si ya se estaba en el aviso,
-parece correcto. Antes de corregir se confirma en Android con la app cerrada desde recientes
-(DT-35).
+QA: la notificación de una **respuesta** abre la bandeja en «Sin leer», y no la respuesta ni
+el aviso respondido. **Pasa igual en iPhone y en Android**: en Android pareció funcionar solo
+mientras el aviso seguía sin leer, porque aparecía en ese filtro.
 
 **La causa son dos fallos** (detalle en DT-35):
 
@@ -136,6 +132,10 @@ parece correcto. Antes de corregir se confirma en Android con la app cerrada des
    worker no sabe a dónde ir.
 2. **La aplicación nunca lee la dirección con la que se abre.** Afecta también a los avisos
    normales, aunque ahí no se nota porque el aviso nuevo sale arriba de «Sin leer».
+
+**Criterio de aceptación, fijado por el responsable:** al abrir la notificación de una
+respuesta se llega **a esa respuesta**, sin importar en qué filtro esté el aviso («Sin
+leer», «Sin confirmar» o «Leídos») ni en qué pantalla se haya quedado la aplicación.
 
 **Qué hace cada notificación al tocarla, después de corregirla:**
 
