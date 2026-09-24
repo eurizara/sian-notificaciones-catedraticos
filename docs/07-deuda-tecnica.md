@@ -306,6 +306,7 @@ gratuita.
 | DT-32 | Las funciones corren en Node.js 20, que Google retira el 30/10/2026 | Plataforma | **Alta** | **Pagada** en desarrollo (1.5.13) · a producción antes del 20/10 | 0 USD |
 | DT-33 | Sin App Check: las funciones aceptan llamadas de fuera de la aplicación | Plataforma | Media | Abierta | 0 USD |
 | DT-34 | Un fallo en el aparato no deja rastro en el servidor | Conocimiento | Media | Abierta | 0 USD |
+| DT-35 | Tocar una notificación no abre el aviso ni la respuesta: siempre cae en la bandeja | Alcance | **Media** | Abierta · **corrección C-6** | 0 USD |
 | DT-28 | El manual no se alcanza desde dentro de la aplicación | Alcance | Baja | **Pagada** (en desarrollo y QA) | 0 USD |
 
 **Prioridad de pago recomendada, en orden:** DT-03 → DT-14 → DT-04 → DT-01.
@@ -2373,4 +2374,77 @@ Los fallos que ocurren en el aparato solo llegan a su consola, que nadie ve.
 **Pago:** un punto de reporte mínimo en el servidor. Recibe solo qué falló, la versión y la
 plataforma, sin datos personales, con límite de frecuencia por aparato. Además, un contador
 en Alcance: «N aparatos reportaron fallos en las últimas 24 h». Documento 12, S-5.
+
+## DT-35 — Tocar una notificación no abre el aviso ni la respuesta: siempre cae en la bandeja
+
+**Origen:** alcance · **Severidad:** media · **Estado:** abierta, se paga como la corrección
+**C-6** en la iteración 1.6 · **Costo:** 0 USD
+
+**Reportado por el responsable el 24/09/2026, probando en QA:** al tocar la notificación de una
+**respuesta** a un aviso, la aplicación abre la bandeja en «Sin leer» y no la respuesta ni el
+aviso respondido. **En iPhone falla; en Android funciona bien.** Ver abajo por qué la
+diferencia no significa que Android esté resuelto.
+
+**Incumple un requisito aprobado:** RF-ENT-07, «al abrir la notificación, la aplicación
+muestra el mensaje completo con sus adjuntos».
+
+### Por qué pasa: son dos fallos, y el segundo afecta a todas las notificaciones
+
+1. **La notificación de una respuesta no dice de qué aviso es.** El servidor
+   (`triggers/respuestas.ts`, función `notificar`) manda `tipo: 'RESPUESTA'`, título, cuerpo y
+   una etiqueta (`respuestas-{mensajeId}` para quien envió el aviso, `respuesta-{mensajeId}`
+   para el catedrático), pero **no el campo `mensajeId`**. El service worker arma el destino
+   con ese campo (`data: { mensajeId: datos.mensajeId || '' }`), lo encuentra vacío y abre
+   `/`, la bandeja.
+
+2. **La aplicación no lee la dirección con la que se abre.** Para los avisos normales, el
+   worker sí abre `/mensajes/{mensajeId}`. Pero en la aplicación **no hay nada que lea esa
+   ruta**: el hosting la reescribe a `index.html`, y Flutter arranca en la bandeja como
+   siempre. Tampoco se atiende la apertura de una notificación con la aplicación ya abierta.
+
+Con los avisos no se notaba, porque el aviso nuevo aparece arriba de «Sin leer». Con las
+respuestas es evidente: la respuesta no está en la bandeja, sino dentro del aviso (para el
+catedrático) o en la sección **Respuestas** del panel (para quien envió el aviso).
+
+### Por qué en Android parece funcionar y en iPhone no (hipótesis, a comprobar)
+
+El worker de notificaciones vive en `/firebase-cloud-messaging-push-scope` y **no controla la
+ventana de la aplicación**: es el mismo hecho que causó el fallo de la 1.5.7. Y
+`WindowClient.navigate()` solo funciona sobre ventanas que el worker controla. Así que el
+`ventana.navigate(destino)` actual **falla sin decir nada** (no se espera su promesa), y lo
+único que ocurre es `ventana.focus()`: **la app vuelve al frente tal como estaba**.
+
+- **Android** conserva la ventana y el worker la encuentra: la app reaparece donde se dejó.
+  Si se estaba en el aviso o en Respuestas, parece que la notificación llevó ahí.
+- **iPhone** normalmente no entrega al worker la ventana de una PWA suspendida. El worker no
+  encuentra ninguna, abre una nueva en `/` y la app arranca en «Sin leer».
+
+**Cómo comprobarlo:** en Android, cerrar SIAN desde recientes (o dejarla en otra pantalla,
+como Alcance) y tocar la notificación de una respuesta. Si la hipótesis es correcta, también
+cae en la bandeja, o se queda donde estaba.
+
+**Consecuencia para el arreglo:** no se puede depender de `navigate()`. Con la ventana
+abierta, el worker le avisa por mensaje (`postMessage`, que sí llega a una ventana no
+controlada del mismo origen) y la app navega. Sin ventana, se abre con el destino en la
+dirección.
+
+### Cómo se paga (C-6)
+
+- **Servidor:** la notificación de una respuesta lleva `mensajeId` y a quién va dirigida:
+  `destino: 'EMISOR'` (se abre en Respuestas) o `destino: 'CATEDRATICO'` (se abre en la
+  conversación del aviso).
+- **Service worker:** una decisión pura en `sw-decisiones.js`, `destinoDeNotificacion(datos)`,
+  con sus pruebas, que devuelve a dónde ir: el aviso, sus respuestas o la conversación.
+  - Con la aplicación **ya abierta**, se le avisa por mensaje (`sian:abrir`) y se trae al
+    frente, **sin recargarla**. No se usa `navigate()`: no funciona sobre una ventana que el
+    worker no controla, que es el caso de SIAN.
+  - Sin ventana abierta, se abre con el destino en la dirección, como parámetro
+    (`/?aviso={id}`, `/?respuestas={id}`): la reescritura del hosting lo conserva.
+- **Aplicación:** al arrancar lee ese parámetro, y mientras está abierta escucha
+  `sian:abrir`. Abre el aviso (y su conversación si es una respuesta), o la sección
+  **Respuestas** con ese aviso desplegado. Marcar como abierto sigue el camino de siempre.
+- **Pruebas:** la decisión del worker con `node --test`; la carga del servidor con las
+  respuestas; de widget, que la app abierta con `?aviso=X` muestra ese aviso. Y el guion
+  del documento 09 en aparatos reales (C6-1 a C6-5), porque iOS y Android no reaccionan igual
+  a una notificación tocada.
 
