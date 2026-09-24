@@ -28,7 +28,7 @@ un catedrático y los servicios de Google.
 |---|---|---|
 | **Interfaz** | Flutter 3.44 · Dart 3.12, compilado a web | Una sola base de código para celular y computadora, instalable sin pasar por App Store ni Play Store |
 | **Estado** | Riverpod 3 | Inyección de dependencias: es lo que permite probar cada pantalla sin levantar Firebase |
-| **Servidor** | Cloud Functions v2 · Node 20 · TypeScript 5.9 | Todo lo que no puede confiarse al navegador. **25 funciones desplegadas** |
+| **Servidor** | Cloud Functions v2 · Node 22 · TypeScript 5.9 | Todo lo que no puede confiarse al navegador. **25 funciones desplegadas** |
 | **Base de datos** | Cloud Firestore, modo Native — **NoSQL documental** | Lectura directa desde el navegador con reglas por documento, y bandeja que se actualiza sola |
 | **Identidad** | Firebase Authentication + *custom claims* | El rol viaja firmado dentro del token, no se consulta a la base al decidir permisos |
 | **Notificaciones** | Firebase Cloud Messaging | El aviso que suena con la aplicación cerrada |
@@ -62,7 +62,7 @@ ejecuta ahora mismo y cómo comprobar que coincide con esta rama, en
 
 ## Empezar en cinco minutos
 
-Requiere Git, Node.js 20 y Java 17 (documento 06, etapa A).
+Requiere Git, Node.js 22 y Java 17 (documento 06, etapa A).
 
 ```bash
 bash scripts/bootstrap.sh   # comprueba herramientas e instala dependencias

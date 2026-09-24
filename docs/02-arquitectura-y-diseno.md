@@ -122,7 +122,7 @@ flowchart LR
         A["Authentication<br/>identidad + claims"]
         D[("Firestore<br/>base de datos")]
         S["Cloud Storage<br/>voz e imágenes"]
-        C["Cloud Functions<br/>Node 20 · TypeScript"]
+        C["Cloud Functions<br/>Node 22 · TypeScript"]
         M["Cloud Messaging<br/>FCM"]
         Q["Cloud Scheduler<br/>cada minuto"]
     end
@@ -193,7 +193,7 @@ por lo que falta:
 
 | | |
 |---|---|
-| **Qué es** | Cloud Functions de segunda generación, **Node.js 20**, escritas en **TypeScript 5.9** |
+| **Qué es** | Cloud Functions de segunda generación, **Node.js 22**, escritas en **TypeScript 5.9** |
 | **Para qué aquí** | Todo lo que no puede confiarse al navegador: crear mensajes, resolver destinatarios, despachar notificaciones, confirmar lecturas, administrar usuarios y roles |
 | **Dónde vive** | `functions/src/` |
 | **Cuántas hay** | 19 desplegadas y activas |
@@ -494,7 +494,7 @@ El código fuente vive en un solo sitio, y es GitHub.
 | Lo que ve el usuario | Qué se ejecuta | Compilado desde | Fuente en el repositorio |
 |---|---|---|---|
 | El sitio web | Archivos estáticos servidos por Hosting | `flutter build web --release` | `app/lib/` y `app/web/` |
-| Las 25 Functions | JavaScript de Node 20 | `npm run build` (TypeScript → JavaScript) | `functions/src/` |
+| Las 25 Functions | JavaScript de Node 22 | `npm run build` (TypeScript → JavaScript) | `functions/src/` |
 | Las reglas de seguridad | Se ejecutan tal cual, sin compilar | — | `firestore.rules`, `storage.rules` |
 | El manual | HTML estático | Se copia sin tocar | `app/web/manuales/` |
 
@@ -581,7 +581,7 @@ git clone https://github.com/eurizara/sian-notificaciones-catedraticos.git
 cd sian && ./scripts/bootstrap.sh
 ```
 
-Hace falta Flutter 3.44 o superior, Node 20 y la herramienta `firebase-tools`.
+Hace falta Flutter 3.44 o superior, Node 22 y la herramienta `firebase-tools`.
 El guion comprueba las versiones antes de empezar y dice qué falta, en vez de
 fallar a mitad con un error del compilador.
 

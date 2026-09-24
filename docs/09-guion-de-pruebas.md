@@ -707,6 +707,16 @@ recorrió solo con coordinación fue la que dejó pasar el defecto más caro del
 
 ---
 
+## Probar el mantenimiento de 1.5.13
+
+| # | Paso | Qué debe ocurrir |
+|---|------|------------------|
+| N-1 | Tras desplegar, revisar el runtime de las funciones del ambiente | Las 25 en **nodejs22** |
+| N-2 | Mandar un aviso a un iPhone y a un Android con la app en 1.5.13 | Llega por Web Push directo en segundos, igual que antes: el cifrado cambió de Node, no de comportamiento |
+| N-3 | Responder un aviso y ver Alcance | Funcionan igual |
+| N-4 | `python3 scripts/configurar-respaldos.py <proyecto> --revisar` | Todo «ya está» |
+| N-5 | Después del primer domingo, restaurar un respaldo de desarrollo en una base nueva (documento 11) | Los documentos de la base restaurada coinciden con los de ese día. Borrar la base temporal al terminar |
+
 ## Probar la versión a la vista
 
 | # | Paso | Qué debe ocurrir |

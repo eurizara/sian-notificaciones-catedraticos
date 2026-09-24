@@ -1,6 +1,6 @@
 # ADR-010 · Repositorio de archivos con acceso por grupos y descarga por enlace temporal
 
-**Estado:** Propuesta
+**Estado:** Aceptada el 23 de septiembre de 2026 (implementación pendiente)
 **Fecha:** 23 de septiembre de 2026
 **Decide:** responsable del proyecto
 
