@@ -19,6 +19,8 @@ como archivo ADR está pendiente.
 | ADR-006 | Nota de voz por grabación del emisor, sin texto a voz | Aceptada | pendiente |
 | ADR-007 | Tres proyectos de Firebase separados por ambiente | Aceptada | pendiente |
 | ADR-008 | Lista blanca de correos en lugar de funciones de bloqueo de Identity Platform | Aceptada | pendiente |
+| ADR-009 | Varias sedes en un solo proyecto, con los datos separados por sede | **Propuesta** | [ADR-009](ADR-009-multisede.md) |
+| ADR-010 | Repositorio de archivos con acceso por grupos y descarga por enlace temporal | **Propuesta** | [ADR-010](ADR-010-repositorio-archivos.md) |
 
 ## Plantilla
 
