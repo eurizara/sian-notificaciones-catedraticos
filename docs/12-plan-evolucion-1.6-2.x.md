@@ -133,6 +133,10 @@ mientras el aviso seguía sin leer, porque aparecía en ese filtro.
 2. **La aplicación nunca lee la dirección con la que se abre.** Afecta también a los avisos
    normales, aunque ahí no se nota porque el aviso nuevo sale arriba de «Sin leer».
 
+**Criterio de aceptación, fijado por el responsable:** al abrir la notificación de una
+respuesta se llega **a esa respuesta**, sin importar en qué filtro esté el aviso («Sin
+leer», «Sin confirmar» o «Leídos») ni en qué pantalla se haya quedado la aplicación.
+
 **Qué hace cada notificación al tocarla, después de corregirla:**
 
 | Notificación | A quién le llega | Se abre en |

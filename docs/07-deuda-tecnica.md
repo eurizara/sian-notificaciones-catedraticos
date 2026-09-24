@@ -2417,6 +2417,12 @@ no se espera su promesa. El arreglo no puede depender de él. Con la ventana abi
 worker le avisa por mensaje (`postMessage`, que sí llega a una ventana no controlada del
 mismo origen) y la app navega. Sin ventana, se abre con el destino en la dirección.
 
+### Criterio de aceptación (fijado por el responsable el 24/09/2026)
+
+> Al abrir la notificación de una respuesta, se llega **a esa respuesta**, sin importar en qué
+> filtro esté el aviso —«Sin leer», «Sin confirmar» o «Leídos»— ni la pantalla en que se haya
+> quedado la aplicación.
+
 ### Cómo se paga (C-6)
 
 - **Servidor:** la notificación de una respuesta lleva `mensajeId` y a quién va dirigida:
