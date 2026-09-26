@@ -352,6 +352,27 @@ Colección de nivel raíz. **Ningún cliente puede leerla ni escribirla.**
 | `prioridad` | number | Las urgentes se procesan primero dentro del mismo lote |
 | `creadoEn` | timestamp | |
 
+### 2.8b `fallos_aparato/{AAAAMMDD_aparato_tipo}` (DT-34, desde 1.6.10)
+
+Colección de nivel raíz. **Ningún cliente puede leerla ni escribirla**: la escribe la
+función HTTP `reportarFallo` y la lee `dispositivosQueNecesitanAtencion` para Alcance. Un
+documento por aparato, tipo de fallo y día (UTC); el mismo fallo repetido suma en él, como
+mucho una vez por minuto.
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `que` | string | `arranque` · `registro-dispositivo` · `suscripcion-propia` · `worker` · `notificacion` · `app-check` · `no-controlado` |
+| `aparato` | string | Identificador **al azar** que genera la aplicación y guarda en el navegador. No está ligado a ninguna cuenta |
+| `plataforma` | string | `WEB_IOS` · `WEB_ANDROID` · `WEB_ESCRITORIO` · `OTRA` |
+| `version` | string | Versión de la aplicación, o vacío |
+| `detalle` | string | Detalle técnico del último, **limpio** de correos, números largos, claves y rutas de direcciones; hasta 200 caracteres |
+| `dia` | string | `AAAAMMDD` |
+| `veces` | number | |
+| `primero`, `ultimo` | timestamp | |
+
+`fallos_por_dia/{AAAAMMDD}` lleva `documentos`, el contador que pone el tope de 500
+documentos nuevos al día.
+
 ### 2.9 `bitacora/{eventoId}`
 
 Colección de nivel raíz, **inmutable** (RF-BIT-03).
@@ -641,3 +662,4 @@ Advertencias que deben vigilarse:
 | Tokens de dispositivo inactivos | 90 días sin actividad | Function programada semanal, aprovechando el mismo job del despachador |
 | Adjuntos | Mientras exista el mensaje (RN-09) | Sin depuración automática |
 | Mensajes y entregas | Permanente | Sin depuración automática |
+| Fallos reportados por los aparatos (`fallos_aparato`, `fallos_por_dia`) | 30 días | La sonda diaria de canal los borra |

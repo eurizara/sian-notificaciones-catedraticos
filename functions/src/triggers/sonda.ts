@@ -60,6 +60,7 @@ import {
 import { resumirVersiones, versionMasAlta } from '../domain/version';
 import { crearAsiento } from '../domain/bitacora';
 import type { Rol } from '../domain/tipos';
+import { fallosDeLasUltimas24Horas, olvidarFallosViejos } from './fallos';
 import { OPCIONES_LLAMABLE, RUTAS, db } from '../infrastructure/firebase';
 import { escribirAsiento } from '../infrastructure/repositorios';
 
@@ -276,6 +277,18 @@ export const sondaDeCanal = onSchedule(
   },
   async () => {
     const ahora = new Date();
+
+    // Los fallos reportados por los aparatos se olvidan a los 30 días (DT-34).
+    // Va primero: que no haya dispositivos no quita que haya fallos viejos.
+    try {
+      const olvidados = await olvidarFallosViejos(ahora);
+      if (olvidados > 0) {
+        logger.info('Sonda de canal: fallos de aparatos olvidados', { olvidados });
+      }
+    } catch (e) {
+      logger.error('Sonda de canal: no se pudieron olvidar los fallos viejos', { error: String(e) });
+    }
+
     const dispositivos = await leerDispositivos();
 
     if (dispositivos.length === 0) {
@@ -494,8 +507,11 @@ export const dispositivosQueNecesitanAtencion = onCall(OPCIONES_LLAMABLE, async 
   // Cuesta una validación en seco por dispositivo: no se entrega nada, el
   // teléfono no se entera, y es la diferencia entre una pantalla que informa y
   // una que tranquiliza sin motivo.
-  const muertos = await tokensMuertos(dispositivos, memoriaDeValidacion);
-  const falloElUltimo = await personasConElUltimoEnvioFallido();
+  const [muertos, falloElUltimo, fallos] = await Promise.all([
+    tokensMuertos(dispositivos, memoriaDeValidacion),
+    personasConElUltimoEnvioFallido(),
+    fallosDeLasUltimas24Horas(ahora),
+  ]);
 
   const porUid = new Map<string, DispositivoLeido[]>();
   for (const d of dispositivos) {
@@ -597,6 +613,9 @@ export const dispositivosQueNecesitanAtencion = onCall(OPCIONES_LLAMABLE, async 
         })),
       dispositivos,
     ),
+    // Lo que los aparatos reportaron que les falló (DT-34): sin nombres, solo
+    // cuántos, de qué tipo, en qué plataforma y versión.
+    fallos,
   };
 });
 

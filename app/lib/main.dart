@@ -8,10 +8,14 @@
 /// llegan en la iteración 1.2.
 library;
 
+import 'dart:ui' show PlatformDispatcher;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/ambiente.dart';
+import 'core/entorno.dart';
+import 'core/fallos.dart';
 import 'core/plataforma/actualizar_worker.dart';
 import 'firebase_options.dart';
 import 'infrastructure/firebase/inicializacion.dart';
@@ -27,7 +31,26 @@ import 'presentation/shared/apertura.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Los fallos del aparato llegan al servidor (DT-34). Se configura ANTES que
+  // Firebase: si Firebase no arranca, es justo lo que más interesa saber.
+  ReporteDeFallos.configurar(
+    proyecto: DefaultFirebaseOptions.currentPlatform.projectId,
+    usaEmulador: Entorno.usaEmulador,
+  );
+  FlutterError.onError = (FlutterErrorDetails detalle) {
+    FlutterError.presentError(detalle);
+    ReporteDeFallos.reportar(TipoDeFallo.noControlado, detalle.exception);
+  };
+  PlatformDispatcher.instance.onError = (Object error, StackTrace _) {
+    ReporteDeFallos.reportar(TipoDeFallo.noControlado, error);
+    // Falso: que siga su curso normal y aparezca en la consola como siempre.
+    return false;
+  };
+
   final ResultadoArranque arranque = await inicializarFirebase();
+  if (!arranque.correcto) {
+    ReporteDeFallos.reportar(TipoDeFallo.arranque, arranque.detalle);
+  }
 
   // Comprueba si hay un service worker nuevo, en cada arranque.
   //
