@@ -312,7 +312,7 @@ Salen de revisar el código y los registros de producción, no de una lista gen�
 | **S-4** | **App Check** (DT-33) | Los registros de producción dicen `"app": "MISSING"` en cada llamada: cualquiera con la configuración pública del proyecto puede llamar a las funciones fuera de la app. Se enciende primero **en modo observación** (solo mide), y cuando todas las llamadas legítimas lo traigan, se exige | 1.6 — **preparado en desarrollo, 1.6.9**; falta el alta en la consola (documento 11) |
 | **S-5** | **Fallos del cliente que nadie ve** (DT-34) | El 12/09 el registro de dispositivos se colgó en todos los aparatos y **el servidor no registró ni un error**: se supo porque un aviso no llegó. Propuesta: un punto de reporte mínimo (qué falló, versión, plataforma; nada personal), con límite de frecuencia, y un contador visible en Alcance | 1.6 — **hecho en desarrollo, 1.6.10** |
 | S-6 | **Adjuntos legibles por cualquier usuario activo** (DT-04, ya registrada) | La regla de Storage deja a cualquier catedrático activo leer cualquier adjunto si conoce la ruta. El riesgo es bajo, porque las rutas son aleatorias, pero el repositorio **no puede heredar esto**. Se corrige con el mismo mecanismo que el repositorio (sección 7) | 2.1 |
-| S-7 | **Carga inicial para catedráticos** | El paquete de la app incluye todo el panel de administración, que un catedrático nunca abre. Medir primero el tamaño y el tiempo de carga en un iPhone real; si vale la pena, cargar el panel solo cuando se abre (carga diferida) | 1.6, si la medición lo justifica |
+| S-7 | **Carga inicial para catedráticos** | El paquete de la app incluye todo el panel de administración, que un catedrático nunca abre. Medir primero el tamaño y el tiempo de carga en un iPhone real; si vale la pena, cargar el panel solo cuando se abre (carga diferida) | 1.6 — **medido y hecho en desarrollo, 1.6.11**: ver «Medición de la carga inicial» |
 | S-8 | **Actualización de dependencias mensual** | Hoy se actualizan cuando algo falla. Un PR mensual automático, con la CI decidiendo | 1.6 |
 | S-9 | **Procedimiento para rotar las llaves VAPID** | Si una privada se filtrara, hoy no hay pasos escritos para cambiarla sin dejar a los aparatos sin canal. Solo documentación | 1.6 |
 
@@ -505,3 +505,37 @@ Lo que se preguntaba, para referencia:
 - Calendario de runtimes de Cloud Run functions: <https://docs.cloud.google.com/functions/docs/runtime-support>
 - Precios de Firebase (cuota gratuita de Storage por región): <https://firebase.google.com/pricing>
 - Reglas de Storage que consultan Firestore (costo y límite de dos documentos): <https://firebase.google.com/docs/storage/security/rules-conditions>
+
+---
+
+## Medición de la carga inicial (S-7, 25/09/2026)
+
+Medido en desarrollo con la 1.6.10, en bytes transferidos (comprimidos con brotli):
+
+| Qué | Tamaño | Antes de 1.6.11 |
+|---|---:|---|
+| CanvasKit (motor de dibujo, desde `gstatic.com`) | 2,27 MB | Caché de un año en el CDN de Google: solo la primera vez y al actualizar Flutter |
+| `main.dart.js` (todo el código de SIAN) | 820 KB | **Sin caché: en cada apertura** |
+| Escudo y cuatro tipografías Urbanist | ~350 KB | **Sin caché: en cada apertura** (Hosting no contesta 304 a lo servido sin caché) |
+| Arranque, `index.html`, manifiestos, `version.json` | ~40 KB | En cada apertura, y así debe seguir |
+
+**Carga diferida del panel de coordinación: no se hace.** Compilada de prueba, sacaba 81 KB
+de los 820 (~10 %) del paquete de un catedrático, a cambio de una pantalla de espera más para
+coordinación y de un punto de fallo nuevo (la parte diferida puede no llegar). Lo que pesaba no
+era el tamaño, sino **repetir la descarga en cada apertura**.
+
+**Lo que sí se hizo (1.6.11):**
+
+- `scripts/huella-paquete.sh` renombra el paquete con la huella de su contenido
+  (`main.<12 hex>.dart.js`) y apunta el arranque a él; Hosting lo guarda un año
+  (`immutable`). Si el contenido cambia, cambia el nombre: nunca se corre código viejo.
+- El escudo y las tipografías propias (`/assets/assets/**`) se guardan una semana. Si alguno
+  cambia, **cambia de nombre**: `cargaInicial.test.ts` guarda su huella y falla si no.
+- Lo que Flutter regenera con el mismo nombre (fuente de iconos, manifiestos) sigue
+  revalidándose, por la misma razón que antes.
+
+Resultado, comprobado con el emulador de Hosting: la segunda apertura ya no pide ni el
+paquete ni el escudo ni las tipografías. De ~1,2 MB por apertura se pasa a ~40 KB, salvo la
+primera después de cada despliegue. **Falta la medición en un iPhone real**, que la hace el
+responsable: abrir SIAN instalada dos veces seguidas (con buena señal y con datos móviles) y
+comparar con la 1.6.10.

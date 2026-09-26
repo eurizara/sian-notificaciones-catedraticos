@@ -364,6 +364,12 @@ Se corrigió con dos cosas:
 publica, con el árbol, el commit, la rama y si se compiló desde una copia limpia. La
 comparación lo lee de cada ambiente y lo pone en la primera fila.
 
+**La huella del paquete (desde 1.6.11).** Después de sellar, `scripts/huella-paquete.sh`
+renombra `main.dart.js` a `main.<huella>.dart.js` y apunta `flutter_bootstrap.js` a él, para
+que Hosting pueda guardarlo un año. Si una versión nueva de Flutter cambia el formato del
+arranque, el guion falla y el despliegue se detiene antes de publicar: es preferible a una
+aplicación en blanco. `comparar-ambientes.py` lee el nombre del arranque.
+
 > **Se compara el árbol, no el commit.** La primera versión comparaba commits y daba
 > «DIFIERE» con los tres ambientes corriendo exactamente el mismo código: promover por
 > `develop → qa → main` crea un commit de fusión distinto en cada rama aunque el contenido

@@ -33,10 +33,30 @@
         ]
       },
       {
-        "//": "assets/ NO lleva huella de contenido, y su contenido SÍ cambia. El caso que lo demostró: la fuente de iconos se recorta en cada compilación para dejar solo los iconos que la aplicación usa, y se sirve siempre como assets/fonts/MaterialIcons-Regular.otf. Al añadir el botón de recargar, quien ya tenía la fuente anterior guardada seguía usándola durante una semana: el botón existía, respondía y mostraba su ayuda emergente, pero su icono NO SE DIBUJABA. Un fallo así no da ningún error y parece que la función no se desplegó. Se revalida siempre: son 1,5 MB de archivos pequeños y una revalidación sin cambios responde 304 sin cuerpo.",
-        "source": "**/assets/**",
+        "//": "Lo que Flutter genera en cada compilación con el mismo nombre aunque cambie: se revalida siempre. El caso que lo demostró: la fuente de iconos se recorta en cada compilación y se sirve siempre como assets/fonts/MaterialIcons-Regular.otf; quien tenía guardada la anterior siguió una semana sin ver el icono del botón nuevo. Cubre los archivos sueltos de assets/ (manifiestos, NOTICES) y todas sus carpetas menos assets/assets/. Ojo: medido el 25/09/2026, Hosting NO contesta 304 a lo servido sin caché; se descarga entero cada vez, por eso aquí solo va lo que de verdad cambia.",
+        "source": "/assets/!(assets)",
         "headers": [
           { "key": "Cache-Control", "value": "no-cache" }
+        ]
+      },
+      {
+        "source": "/assets/!(assets)/**",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache" }
+        ]
+      },
+      {
+        "//": "El escudo y las tipografías propias (app/assets). No cambian nunca, y se descargaban enteros, unos 350 KB, en cada apertura (S-7). Una semana. Si alguno cambia, cambia de NOMBRE: lo vigila functions/test/unidad/cargaInicial.test.ts.",
+        "source": "/assets/assets/**",
+        "headers": [
+          { "key": "Cache-Control", "value": "public, max-age=604800" }
+        ]
+      },
+      {
+        "//": "El paquete de la aplicación con la huella de su contenido en el nombre (scripts/huella-paquete.sh). Si el contenido cambia, cambia el nombre: se guarda un año sin riesgo de correr código viejo. Sin huella eran 820 KB en cada apertura (S-7).",
+        "source": "/main.*.dart.js",
+        "headers": [
+          { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
         ]
       },
       {
