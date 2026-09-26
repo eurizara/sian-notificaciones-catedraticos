@@ -333,7 +333,11 @@ class RepositorioDispositivos {
   EstadoPermiso _traducir(AuthorizationStatus estado) => switch (estado) {
     AuthorizationStatus.authorized ||
     AuthorizationStatus.provisional => EstadoPermiso.concedido,
-    AuthorizationStatus.denied => EstadoPermiso.denegado,
+    // `deniedPermanently` llegó con firebase_messaging 16.7 (actualización
+    // mensual de 09/2026): el sistema ya no volverá a preguntar. Para SIAN es
+    // lo mismo que denegado: la salida está en los ajustes del aparato.
+    AuthorizationStatus.denied ||
+    AuthorizationStatus.deniedPermanently => EstadoPermiso.denegado,
     AuthorizationStatus.notDetermined => EstadoPermiso.pendiente,
   };
 }
