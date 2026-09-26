@@ -16,6 +16,9 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/proveedores_dispositivos.dart';
+import '../../core/navegador.dart';
+import '../../core/plataforma/descarga.dart';
 import '../../infrastructure/firebase/repositorio_adjuntos.dart';
 import '../shared/tema.dart';
 import '../shared/textos.dart';
@@ -185,22 +188,7 @@ class _ImagenCargada extends ConsumerWidget {
         // ampliarlo, y ahí sí a tamaño completo y con zoom.
         onTap: () => showDialog<void>(
           context: context,
-          builder: (BuildContext c) => Dialog(
-            insetPadding: const EdgeInsets.all(12),
-            child: Stack(
-              children: <Widget>[
-                InteractiveViewer(child: Image.network(u)),
-                Positioned(
-                  right: 4,
-                  top: 4,
-                  child: IconButton.filledTonal(
-                    onPressed: () => Navigator.of(c).pop(),
-                    icon: const Icon(Icons.close),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          builder: (BuildContext c) => ImagenAmpliada(url: u, ruta: ruta),
         ),
         child: Stack(
           fit: StackFit.expand,
@@ -248,3 +236,95 @@ class _ImagenCargada extends ConsumerWidget {
     );
   }
 }
+
+/// La imagen a pantalla completa, con zoom y con **Guardar** (U-3).
+///
+/// La imagen se prepara al abrirse y no al tocar Guardar: en iPhone, Safari
+/// solo abre el menú Compartir en el mismo gesto que lo pide, y bajarla después
+/// del toque lo haría fallar. El botón se habilita cuando está lista.
+class ImagenAmpliada extends ConsumerStatefulWidget {
+  const ImagenAmpliada({required this.url, required this.ruta, super.key});
+
+  final String url;
+
+  /// La ruta en Storage; su último tramo da el nombre del archivo.
+  final String ruta;
+
+  @override
+  ConsumerState<ImagenAmpliada> createState() => _ImagenAmpliadaState();
+}
+
+class _ImagenAmpliadaState extends ConsumerState<ImagenAmpliada> {
+  ImagenPreparada? _lista;
+
+  @override
+  void initState() {
+    super.initState();
+    final String nombre = widget.ruta.split('/').last.isEmpty
+        ? 'imagen-sian'
+        : widget.ruta.split('/').last;
+    prepararImagen(widget.url, nombre).then((ImagenPreparada? i) {
+      if (mounted) {
+        setState(() => _lista = i);
+      }
+    });
+  }
+
+  Future<void> _guardar() async {
+    final ImagenPreparada? imagen = _lista;
+    if (imagen == null) {
+      return;
+    }
+    // En iPhone, «Guardar imagen» vive en el menú Compartir.
+    final bool compartir =
+        ref.read(repositorioDispositivosProvider).entorno.plataforma ==
+        PlataformaWeb.ios;
+    final bool ok = await guardarImagen(imagen, compartir: compartir);
+    if (!ok && mounted && !compartir) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(Textos.imagenNoSeGuardo)),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Dialog(
+    insetPadding: const EdgeInsets.all(12),
+    child: Stack(
+      children: <Widget>[
+        InteractiveViewer(
+          child: Image.network(
+            widget.url,
+            errorBuilder: (BuildContext _, Object _, StackTrace? _) =>
+                const Padding(
+                  padding: EdgeInsets.all(48),
+                  child: Text(Textos.detalleErrorAdjunto, textAlign: TextAlign.center),
+                ),
+          ),
+        ),
+        Positioned(
+          right: 4,
+          top: 4,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              IconButton.filledTonal(
+                tooltip: _lista == null
+                    ? Textos.guardandoImagen
+                    : Textos.guardarImagen,
+                onPressed: _lista == null ? null : _guardar,
+                icon: const Icon(Icons.download),
+              ),
+              const SizedBox(width: 4),
+              IconButton.filledTonal(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(Icons.close),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+

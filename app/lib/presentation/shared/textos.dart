@@ -624,6 +624,12 @@ abstract final class Textos {
   static const String notifDenegadasTitulo = 'Notificaciones bloqueadas';
   static const String notifInstalarTitulo = 'Ábrela desde la pantalla de inicio';
 
+  // --- Guardar una imagen (U-3) ----------------------------------------------
+  static const String guardarImagen = 'Guardar imagen';
+  static const String guardandoImagen = 'Preparando la imagen…';
+  static const String imagenNoSeGuardo =
+      'No se pudo guardar la imagen. Inténtalo de nuevo.';
+
   // --- Copiar un aviso (U-1) --------------------------------------------------
   static const String botonCopiar = 'Copiar';
   static const String copiarTodo = 'Copiar título y mensaje';
