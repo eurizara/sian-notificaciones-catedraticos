@@ -22,6 +22,7 @@ import 'presentation/shared/enrutador.dart';
 import 'presentation/shared/pantalla_estado.dart';
 import 'presentation/shared/tema.dart';
 import 'presentation/shared/textos.dart';
+import 'presentation/shared/apertura.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -74,12 +75,15 @@ class AplicacionSian extends ConsumerWidget {
       // La banda de ambiente envuelve TODO, incluida la pantalla de ingreso y la
       // de diagnóstico, que no tienen barra donde ponerla (DT-20). En producción
       // `BandaAmbiente` devuelve el hijo tal cual: ni un widget de más.
-      builder: (BuildContext context, Widget? hijo) => VigilanteDeVersion(
-        child: BandaAmbiente(
-          ambiente: ambienteDe(
-            DefaultFirebaseOptions.currentPlatform.projectId,
+      builder: (BuildContext context, Widget? hijo) => EscuchaDeAperturas(
+        // Tocar una notificación lleva a lo que la originó (C-6).
+        child: VigilanteDeVersion(
+          child: BandaAmbiente(
+            ambiente: ambienteDe(
+              DefaultFirebaseOptions.currentPlatform.projectId,
+            ),
+            hijo: hijo ?? const SizedBox.shrink(),
           ),
-          hijo: hijo ?? const SizedBox.shrink(),
         ),
       ),
       // Si Firebase no arrancó no hay sesión que resolver, así que se muestra

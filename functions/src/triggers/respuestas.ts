@@ -31,10 +31,11 @@ import { ErrorAutorizacion, ErrorDominio } from '../domain/errores';
 import {
   avisoAlCatedratico,
   avisoAlEmisor,
+  datosDeAvisoDeRespuesta,
   debeAvisarAlEmisor,
   decidirLado,
-  type LadoHilo,
   normalizarRespuesta,
+  type LadoHilo,
   vistaPrevia,
 } from '../domain/respuesta';
 import type { Rol } from '../domain/tipos';
@@ -229,19 +230,29 @@ export const responderAviso = onCall(OPCIONES_FUNCION, async (peticion) => {
     try {
       if (hecho.lado === 'CATEDRATICO' && hecho.avisarAlEmisor) {
         const sinLeer = await sinLeerDelEmisor(mensajeId);
-        await notificar(hecho.creadoPor, {
-          ...avisoAlEmisor({ nombre: miNombre, tituloAviso: hecho.tituloAviso, texto, sinLeer }),
-          etiqueta: `respuestas-${mensajeId}`,
-        });
-      } else if (hecho.lado === 'EMISOR') {
-        await notificar(hecho.hiloUid, {
-          ...avisoAlCatedratico({
-            nombreEmisor: hecho.nombreEmisor || miNombre,
-            tituloAviso: hecho.tituloAviso,
-            texto,
+        await avisarAPersona(
+          hecho.creadoPor,
+          datosDeAvisoDeRespuesta({
+            ...avisoAlEmisor({ nombre: miNombre, tituloAviso: hecho.tituloAviso, texto, sinLeer }),
+            para: 'EMISOR',
+            avisoId: mensajeId,
+            hiloUid: hecho.hiloUid,
           }),
-          etiqueta: `respuesta-${mensajeId}`,
-        });
+        );
+      } else if (hecho.lado === 'EMISOR') {
+        await avisarAPersona(
+          hecho.hiloUid,
+          datosDeAvisoDeRespuesta({
+            ...avisoAlCatedratico({
+              nombreEmisor: hecho.nombreEmisor || miNombre,
+              tituloAviso: hecho.tituloAviso,
+              texto,
+            }),
+            para: 'CATEDRATICO',
+            avisoId: mensajeId,
+            hiloUid: hecho.hiloUid,
+          }),
+        );
       }
     } catch (e) {
       logger.warn('La respuesta se guardó pero no se pudo notificar', {
@@ -314,26 +325,4 @@ async function sinLeerDelEmisor(mensajeId: string): Promise<number> {
   );
 }
 
-/**
- * Notifica a todos los dispositivos de una persona.
- *
- * **Sin `mensajeId`**, a propósito. El service worker cuenta para la insignia y
- * cierra al leer las notificaciones que lo llevan; una respuesta no es un
- * aviso sin leer de la bandeja, y contarla desajustaría el número del icono,
- * que ya costó dos correcciones. La `etiqueta` agrupa las de un mismo aviso.
- *
- * Quien no tiene dispositivo no recibe nada, y no pasa nada: la respuesta está
- * guardada y la ve al abrir la aplicación.
- */
-async function notificar(
-  uid: string,
-  aviso: { titulo: string; cuerpo: string; etiqueta: string },
-): Promise<void> {
-  await avisarAPersona(uid, {
-    tipo: 'RESPUESTA',
-    titulo: aviso.titulo,
-    cuerpo: aviso.cuerpo,
-    etiqueta: aviso.etiqueta,
-  });
-}
 

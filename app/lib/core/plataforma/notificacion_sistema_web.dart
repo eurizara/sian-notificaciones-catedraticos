@@ -27,6 +27,7 @@ Future<bool> mostrarNotificacionDelSistema({
   required String cuerpo,
   required bool urgente,
   String? etiqueta,
+  Map<String, String> datos = const <String, String>{},
 }) async {
   try {
     // Sin permiso concedido no se intenta: pedirlo aquí sería pedirlo sin que
@@ -59,6 +60,10 @@ Future<bool> mostrarNotificacionDelSistema({
             tag: etiqueta ?? 'sian',
             // Una alerta urgente no se descarta sola: exige un gesto.
             requireInteraction: urgente,
+            // Los mismos datos que usa el worker: con ellos decide a dónde
+            // lleva tocarla (C-6). Sin esto, esta copia —que reemplaza a la del
+            // worker por llevar la misma etiqueta— dejaba en la bandeja.
+            data: datos.jsify(),
           ),
         )
         .toDart;

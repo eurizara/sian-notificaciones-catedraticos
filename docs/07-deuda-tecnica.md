@@ -306,7 +306,7 @@ gratuita.
 | DT-32 | Las funciones corren en Node.js 20, que Google retira el 30/10/2026 | Plataforma | **Alta** | **Pagada** en desarrollo (1.5.13) · a producción antes del 20/10 | 0 USD |
 | DT-33 | Sin App Check: las funciones aceptan llamadas de fuera de la aplicación | Plataforma | Media | Abierta | 0 USD |
 | DT-34 | Un fallo en el aparato no deja rastro en el servidor | Conocimiento | Media | Abierta | 0 USD |
-| DT-35 | Tocar una notificación no abre el aviso ni la respuesta: siempre cae en la bandeja | Alcance | **Media** | Abierta · **corrección C-6** | 0 USD |
+| DT-35 | Tocar una notificación no abre el aviso ni la respuesta: siempre cae en la bandeja | Alcance | **Media** | **Pagada** en desarrollo (1.6.0) | 0 USD |
 | DT-28 | El manual no se alcanza desde dentro de la aplicación | Alcance | Baja | **Pagada** (en desarrollo y QA) | 0 USD |
 
 **Prioridad de pago recomendada, en orden:** DT-03 → DT-14 → DT-04 → DT-01.
@@ -2377,8 +2377,8 @@ en Alcance: «N aparatos reportaron fallos en las últimas 24 h». Documento 12,
 
 ## DT-35 — Tocar una notificación no abre el aviso ni la respuesta: siempre cae en la bandeja
 
-**Origen:** alcance · **Severidad:** media · **Estado:** abierta, se paga como la corrección
-**C-6** en la iteración 1.6 · **Costo:** 0 USD
+**Origen:** alcance · **Severidad:** media · **Estado:** pagada en desarrollo el 25/09/2026
+como la corrección **C-6** (1.6.0) · **Costo:** 0 USD
 
 **Reportado por el responsable el 24/09/2026, probando en QA:** al tocar la notificación de una
 **respuesta** a un aviso, la aplicación abre la bandeja en «Sin leer» y no la respuesta ni el
@@ -2442,4 +2442,19 @@ mismo origen) y la app navega. Sin ventana, se abre con el destino en la direcci
   respuestas; de widget, que la app abierta con `?aviso=X` muestra ese aviso. Y el guion
   del documento 09 en aparatos reales (C6-1 a C6-5), porque iOS y Android no reaccionan igual
   a una notificación tocada.
+
+### Lo que se hizo (1.6.0)
+
+- **Servidor:** `datosDeAvisoDeRespuesta` (dominio, con pruebas) arma la notificación de una
+  respuesta con `avisoId`, `hiloUid` y `para`, y **sin `mensajeId`**.
+- **Worker:** `destinoDeNotificacion` en `sw-decisiones.js` (7 pruebas) decide el destino y lo
+  guarda en la notificación. Al tocarla: con la app abierta, `postMessage` con
+  `sian:abrir`; sin ella, `openWindow` con `/?abrir=…`. Se retiró `navigate()`.
+- **Aplicación:** `presentation/shared/apertura.dart` guarda el destino pendiente —de la
+  dirección o del mensaje del worker— hasta que lo atiende la bandeja (despliega el aviso,
+  primero en la lista, aunque esté en otro filtro o haya una búsqueda escrita) o la sección
+  Respuestas (abre esa conversación). El panel cambia de sección solo. 14 pruebas.
+- **Un caso que no estaba en el diagnóstico:** con la app abierta, la app muestra su propia
+  copia de la notificación, que reemplaza a la del worker. Esa copia no llevaba datos, así que
+  tocarla también dejaba en la bandeja. Ahora lleva los mismos que usa el worker.
 
