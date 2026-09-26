@@ -4,10 +4,11 @@
  */
 
 import {
-  MensajeFactory,
-  exigeDobleConfirmacion,
-  prioridadDeDespacho,
   type EntradaMensaje,
+  exigeDobleConfirmacion,
+  MensajeFactory,
+  prioridadDeDespacho,
+  resumenParaNotificacion,
 } from '../../src/domain/mensaje';
 import { LIMITES, type Adjunto } from '../../src/domain/tipos';
 import type { ErrorDominio } from '../../src/domain/errores';
@@ -335,7 +336,7 @@ describe('Coherencia de la programación', () => {
 describe('Invariantes básicas', () => {
   it('RF-MSG-06 · aplica los límites de título y cuerpo', () => {
     esperarCodigo(() => crear({ titulo: 'a'.repeat(81) }), 'TITULO_MUY_LARGO');
-    esperarCodigo(() => crear({ cuerpo: 'a'.repeat(501) }), 'CUERPO_MUY_LARGO');
+    esperarCodigo(() => crear({ cuerpo: 'a'.repeat(1001) }), 'CUERPO_MUY_LARGO');
   });
 
   it('RF-BIT-02 · exige saber quién creó el mensaje', () => {
@@ -360,3 +361,29 @@ describe('RN-06 y prioridad de despacho', () => {
     expect(prioridadDeDespacho('URGENTE')).toBeGreaterThan(prioridadDeDespacho('INFORMATIVO'));
   });
 });
+
+describe('resumenParaNotificacion · mensajes de hasta 1000 caracteres (1.6)', () => {
+  it('un cuerpo corto viaja entero', () => {
+    expect(resumenParaNotificacion('Mañana hay clases normales.')).toBe('Mañana hay clases normales.');
+  });
+
+  it('uno largo se corta en una palabra y dice que hay más', () => {
+    const cuerpo = 'palabra '.repeat(200).trim();
+    const r = resumenParaNotificacion(cuerpo, 50);
+    expect(r.endsWith('…')).toBe(true);
+    expect([...r].length).toBeLessThanOrEqual(51);
+    expect(r).not.toMatch(/ …$/);
+    expect(r.replace('…', '').split(' ').every((p) => p === 'palabra')).toBe(true);
+  });
+
+  it('cuenta caracteres, no bytes: las tildes no acortan de más', () => {
+    const r = resumenParaNotificacion('á'.repeat(300), 240);
+    expect([...r.replace('…', '')]).toHaveLength(240);
+  });
+
+  it('1000 caracteres con tildes quedan muy lejos del límite de 4 KB del push', () => {
+    const r = resumenParaNotificacion('ñ'.repeat(1000));
+    expect(Buffer.byteLength(r, 'utf8')).toBeLessThan(1024);
+  });
+});
+

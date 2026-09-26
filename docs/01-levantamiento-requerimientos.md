@@ -148,7 +148,7 @@ se le crea perfil, y el intento queda registrado en la bitácora.
 | RF-MSG-03 | El emisor puede adjuntar una nota de voz grabada desde el propio panel | D |
 | RF-MSG-04 | El emisor puede adjuntar una imagen | D |
 | RF-MSG-05 | El sistema admite mensajes mixtos (texto + voz, texto + imagen, o los tres) | D |
-| RF-MSG-06 | El sistema valida que el título no exceda 80 caracteres y el cuerpo 500 caracteres | D |
+| RF-MSG-06 | El sistema valida que el título no exceda 80 caracteres y el cuerpo 1000 caracteres (500 hasta la 1.6); la notificación lleva un resumen de 240 y la bandeja el texto completo | D |
 | RF-MSG-07 | El sistema valida que la nota de voz no exceda 60 segundos ni 2 MB | D |
 | RF-MSG-08 | El sistema valida que la imagen no exceda 5 MB y sea JPEG, PNG o WebP | D |
 | RF-MSG-09 | El sistema comprime la imagen del lado del cliente antes de subirla | B |

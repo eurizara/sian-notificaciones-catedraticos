@@ -703,7 +703,8 @@ abstract final class Textos {
 
   // --- Composición y envío (ronda 4, iteración 1.3) --------------------------
   static const int limiteTitulo = 80;
-  static const int limiteCuerpo = 500;
+  /// Desde 1.6: la notificación lleva un resumen y la bandeja el texto entero.
+  static const int limiteCuerpo = 1000;
 
   static const String redactarTitulo = 'Redactar aviso';
   static const String etiquetaTituloMensaje = 'Título';

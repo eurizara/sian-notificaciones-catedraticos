@@ -172,11 +172,11 @@ void main() {
       expect(campo.controller!.text.length, Textos.limiteTitulo);
     });
 
-    testWidgets('el cuerpo no deja pasar de 500', (WidgetTester tester) async {
+    testWidgets('el cuerpo no deja pasar de 1000', (WidgetTester tester) async {
       await tester.pumpWidget(montar());
       await asentar(tester);
 
-      await escribir(tester, 'titulo', 'y' * 900);
+      await escribir(tester, 'titulo', 'y' * 1200);
 
       final TextFormField campo = tester.widget<TextFormField>(
         find.widgetWithText(TextFormField, Textos.etiquetaCuerpoMensaje),

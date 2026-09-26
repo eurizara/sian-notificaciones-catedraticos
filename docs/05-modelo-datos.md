@@ -211,7 +211,7 @@ El identificador del documento es el UID de Firebase Authentication.
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | `titulo` | string | Máximo 80 caracteres (RF-MSG-06) |
-| `cuerpo` | string | Máximo 500 caracteres |
+| `cuerpo` | string | Máximo 1000 caracteres (500 hasta la 1.6). En la notificación viaja un resumen de 240 |
 | `tipo` | string | `INFORMATIVO` · `URGENTE` |
 | `formato` | array de string | Combinación de `TEXTO`, `VOZ`, `IMAGEN` |
 | `adjuntos` | map | `{ audio: {ruta, bytes, duracionSeg}, imagen: {ruta, bytes, ancho, alto} }` |

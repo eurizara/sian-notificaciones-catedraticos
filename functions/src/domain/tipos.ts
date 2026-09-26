@@ -224,7 +224,14 @@ export const LIMITES = {
   /** RF-MSG-06 */
   TITULO_MAX: 80,
   /** RF-MSG-06 */
-  CUERPO_MAX: 500,
+  CUERPO_MAX: 1000,
+  /**
+   * Cuánto del cuerpo viaja en la notificación (1.6). El cuerpo completo se lee
+   * en la bandeja; en la pantalla del teléfono no cabe mucho más, y así la carga
+   * del push queda muy lejos de su límite de 4 KB aunque el mensaje tenga 1000
+   * caracteres con tildes.
+   */
+  CUERPO_EN_NOTIFICACION: 240,
   /** RF-MSG-07 */
   AUDIO_MAX_SEGUNDOS: 60,
   /** RF-MSG-07 */

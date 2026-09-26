@@ -45,7 +45,11 @@ import { actorSistema, crearAsiento } from '../domain/bitacora';
 import { esIdentificadorDeInstalacion, esTokenMuerto } from '../domain/dispositivo';
 import { exigirPermiso, type Sujeto } from '../domain/autorizacion';
 import { ErrorAutorizacion, ErrorDominio, esDocumentoYaExistente } from '../domain/errores';
-import { MensajeFactory, type Mensaje } from '../domain/mensaje';
+import {
+  type Mensaje,
+  MensajeFactory,
+  resumenParaNotificacion,
+} from '../domain/mensaje';
 import { normalizarAdjuntos } from '../domain/tipos';
 import type { Adjuntos, Destinatarios, Rol, TipoMensaje } from '../domain/tipos';
 import { FieldValue, OPCIONES_FUNCION, RUTAS, aTimestamp, db } from '../infrastructure/firebase';
@@ -433,7 +437,9 @@ async function despachar(
   const carga: Record<string, string> = {
     tipo: mensaje.tipo,
     titulo: mensaje.titulo,
-    cuerpo: mensaje.cuerpo,
+    // Un resumen: el texto completo, hasta 1000 caracteres, se lee en la
+    // bandeja.
+    cuerpo: resumenParaNotificacion(mensaje.cuerpo),
     mensajeId,
     // Para que la notificación pueda decir «lleva nota de voz» sin abrir nada.
     formato: mensaje.formato.join(','),

@@ -335,7 +335,7 @@ notificaciones: sin dispositivo registrado no hay a dónde entregar (RN-02).
 
 | # | Acción | Resultado esperado |
 |---|---|---|
-| 4.1 | En **Mensajes**, escribe un título muy largo | Se corta a los 80 caracteres y el contador lo dice. Igual el cuerpo a los 500 (RF-MSG-06) |
+| 4.1 | En **Mensajes**, escribe un título muy largo | Se corta a los 80 caracteres y el contador lo dice. Igual el cuerpo a los 1000 (RF-MSG-06) |
 | 4.2 | Pulsa **Enviar ahora** con el formulario vacío | Avisa de lo que falta y **no llega ni a contar** destinatarios |
 | 4.3 | Redacta un aviso informativo a **todos los catedráticos** y pulsa enviar | Antes de nada muestra el **conteo exacto**: «llegará a N personas» (RF-USR-07) |
 | 4.4 | Si hay cuentas desactivadas, míralo en ese mismo diálogo | Dice **cuántas quedan fuera y por qué**. «43 de 45» sin motivo no ayudaría a nadie |
