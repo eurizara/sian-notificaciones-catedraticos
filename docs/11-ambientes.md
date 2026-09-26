@@ -162,6 +162,78 @@ como siempre: desplegar sin **ninguna** de las dos llaves no rompe nada.
 > firma de todos los envíos. `functions/test/unidad/vapid.test.ts` falla si no coinciden o
 > si una tiene mal la forma.
 
+**Rotar las llaves VAPID (S-9, desde 1.6.12).** Cambiar el par de un ambiente. **No es
+rutinario**: se hace si la privada pudo filtrarse (se pegó donde no debía, o alguien que la
+tuvo ya no está en el proyecto). Con la privada **y** las suscripciones —que están en
+Firestore, protegidas por las reglas— alguien podría mandar notificaciones a los aparatos de
+ese ambiente. Solo con la privada, no.
+
+*Lo que cuesta.* Cada suscripción queda atada a la pública con la que se hizo. Desde que el
+servidor firma con la nueva, **un aparato no recibe notificaciones hasta que abra SIAN una
+vez**: al abrir, la aplicación ve que su suscripción es de otra llave, la retira, se suscribe
+con la nueva y se registra de nuevo, sola (`suscripcion_web.dart`, `_mismaLlave`). Los avisos
+de ese intervalo no se pierden: están en la bandeja. El servidor no guarda la llave anterior,
+así que no hay forma de cubrir ese intervalo sin programar una transición con dos llaves;
+si algún día se necesita rotar sin ese costo, es la mejora que hay que hacer.
+
+*Pasos, por ambiente y en el orden de siempre (desarrollo → QA → producción).* Fuera del
+horario de clases y sin avisos programados en la hora siguiente:
+
+  1. **Preparar el cambio de la pública.** Quien desarrolla deja listo, con la CI en verde y
+     **sin fusionar**, el pull request que cambia la pública en `functions/src/infrastructure/vapid.ts`
+     y en el `--dart-define=SIAN_VAPID_PROPIA` de ese ambiente en `deploy.yml`.
+     `vapid.test.ts` comprueba que coincidan.
+  2. **El responsable genera el par**, en su computadora:
+     `node -e "console.log(JSON.stringify(require('web-push').generateVAPIDKeys()))"` desde
+     `functions/`. Pasa **solo la pública** a quien desarrolla; la privada no se pega en
+     ningún chat, documento ni repositorio.
+  3. **El responsable carga la privada** en la consola de Google Cloud → Secret Manager →
+     `VAPID_PRIVADA` → **Nueva versión**. Sin desactivar la anterior todavía. Las funciones
+     leen `latest`, pero cada instancia guarda la llave en memoria: hasta el despliegue del
+     paso 4 conviven instancias con la vieja y con la nueva, y las nuevas fallan al firmar.
+     Por eso el paso 4 va **inmediatamente** después.
+  4. **Se fusiona el pull request** del paso 1 y se espera el despliegue (unos 10 minutos;
+     en producción, con la aprobación del responsable). Todas las instancias arrancan con
+     la privada nueva y la pública nueva.
+  5. **Pedir a todos que abran SIAN una vez**, por un canal que no sea SIAN (correo,
+     WhatsApp de coordinación): una notificación de SIAN no les llegaría. En Alcance se ve
+     quién ya volvió a registrarse (su última actividad).
+  6. **Comprobar** con los aparatos propios: abrir SIAN, mandarse un aviso de prueba, que
+     llegue.
+  7. **A la semana, destruir la versión vieja** del secreto: Secret Manager →
+     `VAPID_PRIVADA` → versiones → la anterior → **Destruir**. No antes: si hubiera que
+     volver atrás por un error del paso 4, es lo único que lo permite.
+  8. Anotar la fecha en la tabla de arriba.
+
+*Si algo sale mal en el paso 4* (el despliegue falla, o los envíos salen `SIN_LLAVES`):
+revertir el pull request y, en Secret Manager, abrir la versión **anterior** →
+*Ver el valor del secreto* → copiarlo en una **Nueva versión**. **No** desactivar la nueva:
+`latest` es siempre la versión creada más recientemente, y si está desactivada las funciones
+no leen ninguna y el ambiente se queda sin Web Push. Si la rotación era por una filtración,
+no se vuelve atrás: se corrige el despliegue y se sigue, porque la llave vieja ya no es de
+fiar.
+
+**Actualizar dependencias (S-8, desde 1.6.12).** El día 1 de cada mes,
+`.github/workflows/actualizar-dependencias.yml` sube lo que admiten los rangos declarados
+—menores y parches— de las funciones, la raíz y la aplicación, en **un solo** pull request
+contra `develop`, y lanza la integración continua sobre él. Se puede lanzar a mano desde
+*Actions → Actualización mensual de dependencias → Run workflow*.
+
+  - **CI en verde:** se fusiona y sigue el camino de siempre hacia QA y producción.
+  - **CI en rojo:** el pull request dice qué cambió; se busca el paquete culpable, se fija
+    su versión en el rango y se vuelve a lanzar.
+  - **Versiones mayores:** no se suben solas, porque cambian la API. La descripción del pull
+    request las lista; cada una se decide y se hace a mano, en su propio cambio.
+
+Mientras el repositorio no permita que las acciones abran pull requests (*Settings →
+Actions → General → «Allow GitHub Actions to create and approve pull requests»*, hoy
+desactivado), el flujo deja la rama lista, con la CI ya lanzada, y abre un **issue** con el
+enlace para crear el pull request con un clic. Activarlo es decisión del responsable: da a
+los flujos permiso para abrir pull requests, no para fusionarlos.
+
+Dependabot se queda solo con las acciones de GitHub: en npm y pub no había abierto nada
+desde que se configuró, y dos mecanismos para lo mismo acaban en pull requests duplicados.
+
 **Respaldos de Firestore (desde 1.5.13).** Hasta el 23/09/2026 no había ninguno, en ningún
 ambiente. Los configura `scripts/configurar-respaldos.py`, que es idempotente y con
 `--revisar` solo lee:

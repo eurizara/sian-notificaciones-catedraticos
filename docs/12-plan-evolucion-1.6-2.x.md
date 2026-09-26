@@ -313,8 +313,8 @@ Salen de revisar el código y los registros de producción, no de una lista gen�
 | **S-5** | **Fallos del cliente que nadie ve** (DT-34) | El 12/09 el registro de dispositivos se colgó en todos los aparatos y **el servidor no registró ni un error**: se supo porque un aviso no llegó. Propuesta: un punto de reporte mínimo (qué falló, versión, plataforma; nada personal), con límite de frecuencia, y un contador visible en Alcance | 1.6 — **hecho en desarrollo, 1.6.10** |
 | S-6 | **Adjuntos legibles por cualquier usuario activo** (DT-04, ya registrada) | La regla de Storage deja a cualquier catedrático activo leer cualquier adjunto si conoce la ruta. El riesgo es bajo, porque las rutas son aleatorias, pero el repositorio **no puede heredar esto**. Se corrige con el mismo mecanismo que el repositorio (sección 7) | 2.1 |
 | S-7 | **Carga inicial para catedráticos** | El paquete de la app incluye todo el panel de administración, que un catedrático nunca abre. Medir primero el tamaño y el tiempo de carga en un iPhone real; si vale la pena, cargar el panel solo cuando se abre (carga diferida) | 1.6 — **medido y hecho en desarrollo, 1.6.11**: ver «Medición de la carga inicial» |
-| S-8 | **Actualización de dependencias mensual** | Hoy se actualizan cuando algo falla. Un PR mensual automático, con la CI decidiendo | 1.6 |
-| S-9 | **Procedimiento para rotar las llaves VAPID** | Si una privada se filtrara, hoy no hay pasos escritos para cambiarla sin dejar a los aparatos sin canal. Solo documentación | 1.6 |
+| S-8 | **Actualización de dependencias mensual** | Hoy se actualizan cuando algo falla. Un PR mensual automático, con la CI decidiendo | 1.6 — **hecho en desarrollo, 1.6.12** |
+| S-9 | **Procedimiento para rotar las llaves VAPID** | Si una privada se filtrara, hoy no hay pasos escritos para cambiarla sin dejar a los aparatos sin canal. Solo documentación | 1.6 — **escrito, 1.6.12** (documento 11) |
 
 ---
 
