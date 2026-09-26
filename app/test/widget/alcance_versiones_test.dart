@@ -25,6 +25,21 @@ VersionesDePersona _persona(String nombre, List<(String, String)> aparatos) =>
       ],
     );
 
+/// Las listas de Alcance arrancan plegadas (26/09/2026): se despliegan para
+/// poder mirar dentro.
+Future<void> desplegarListas(WidgetTester tester) async {
+  for (final String clave in <String>[
+    'desplegable-canal',
+    'desplegable-versiones',
+  ]) {
+    final Finder f = find.byKey(Key(clave));
+    if (f.evaluate().isNotEmpty) {
+      await tester.tap(f);
+      await tester.pumpAndSettle();
+    }
+  }
+}
+
 void main() {
   group('clasificarVersiones', () {
     AparatoConVersion ap(
@@ -153,7 +168,61 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      await desplegarListas(tester);
     }
+
+    testWidgets('las dos listas arrancan plegadas, con cuántas personas hay', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(900, 1600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            revisionDeCanalProvider.overrideWith(
+              (Ref ref) async => RevisionDeCanal(
+                total: 1,
+                catedraticos: 3,
+                personas: const <PersonaSinCanal>[
+                  PersonaSinCanal(
+                    uid: 'd',
+                    nombre: 'Dora',
+                    correo: 'd@umg',
+                    estado: EstadoCanal.sinDispositivo,
+                  ),
+                ],
+                versiones: <VersionesDePersona>[
+                  _persona('Beto', <(String, String)>[
+                    ('WEB_ANDROID', '1.5.9'),
+                  ]),
+                ],
+              ),
+            ),
+            versionPublicadaProvider.overrideWith((Ref ref) async => '1.5.10'),
+          ],
+          child: MaterialApp(
+            theme: TemaSian.claro(),
+            home: const Scaffold(body: SeccionCanal()),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(Textos.canalVerPersonas(1)), findsOneWidget);
+      expect(find.text(Textos.canalVerAtrasados(1)), findsOneWidget);
+      expect(find.text('Dora'), findsNothing);
+      expect(find.text('Beto'), findsNothing);
+      // El resumen sigue a la vista sin desplegar nada.
+      expect(
+        find.text(Textos.canalVersionesResumen(1, 1, '1.5.10')),
+        findsOneWidget,
+      );
+
+      await desplegarListas(tester);
+      expect(find.text('Dora'), findsOneWidget);
+      expect(find.text('Beto'), findsOneWidget);
+    });
 
     testWidgets('lista a quien tiene un aparato atrasado, con qué aparato y versión', (
       WidgetTester tester,

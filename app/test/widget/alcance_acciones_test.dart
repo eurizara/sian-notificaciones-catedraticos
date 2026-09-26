@@ -73,6 +73,21 @@ final RevisionDeCanal revision = RevisionDeCanal(
   ],
 );
 
+/// Las listas de Alcance arrancan plegadas (26/09/2026): se despliegan para
+/// poder mirar dentro.
+Future<void> desplegarListas(WidgetTester tester) async {
+  for (final String clave in <String>[
+    'desplegable-canal',
+    'desplegable-versiones',
+  ]) {
+    final Finder f = find.byKey(Key(clave));
+    if (f.evaluate().isNotEmpty) {
+      await tester.tap(f);
+      await tester.pumpAndSettle();
+    }
+  }
+}
+
 void main() {
   late _CanalFalso canal;
   setUp(() => canal = _CanalFalso());
@@ -104,6 +119,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await desplegarListas(tester);
     return c;
   }
 
