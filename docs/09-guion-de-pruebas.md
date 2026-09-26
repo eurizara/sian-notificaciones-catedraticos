@@ -751,6 +751,18 @@ Solo en un ambiente donde ya se dio de alta la clave (documento 11, «App Check�
 | CI-3 | En Chrome de la computadora, herramientas de desarrollo → Red, recargar dos veces | En la segunda, `main.<huella>.dart.js`, el escudo y las Urbanist salen «(memory cache)» o «(disk cache)» |
 | CI-4 | Publicar una versión nueva y pulsar «Actualizar» | Se carga la nueva: el nombre del paquete cambió |
 
+## Probar las plantillas de avisos (RF-MSG-14, 1.6.13)
+
+| # | Paso | Qué debe ocurrir |
+|---|------|------------------|
+| PL-1 | Como coordinación, Mensajes → **Usar plantilla** | Aparecen las seis incluidas, con buscador |
+| PL-2 | Elegir «Simulacro de evacuación» y pulsar enviar sin tocar nada | No deja: «Complete lo que está entre corchetes: [día], [hora]» |
+| PL-3 | Completar el día y la hora y enviar a sí mismo | Sale y llega como cualquier aviso, con confirmación de lectura |
+| PL-4 | Escribir algo, pulsar **Guardar como plantilla**, darle nombre | «Plantilla … guardada»; aparece en **Guardadas** para otra cuenta de coordinación o administración |
+| PL-5 | Con texto escrito, elegir una plantilla | Pregunta si reemplazar; «Cancelar» deja lo escrito |
+| PL-6 | Como administradora **sin** permiso de urgentes, abrir la lista | No aparece «Evacuación inmediata» |
+| PL-7 | Borrar una plantilla guardada | Pide confirmación y desaparece para todos |
+
 ## Probar el mantenimiento de 1.5.13
 
 | # | Paso | Qué debe ocurrir |

@@ -34,6 +34,8 @@ import 'adjuntos_mensaje.dart';
 import 'programador.dart';
 import '../shared/tema.dart';
 import 'borrador_prefijado.dart';
+import 'plantillas.dart';
+import '../../infrastructure/firebase/repositorio_plantillas.dart';
 import '../shared/textos.dart';
 
 final Provider<RepositorioEnvio> repositorioEnvioProvider =
@@ -107,6 +109,11 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
 
   bool _urgente = false;
   bool _requiereConfirmacion = false;
+
+  /// Lo que traía entre corchetes la plantilla cargada (RF-MSG-14). Mientras
+  /// quede alguno en el texto, no se deja enviar: un simulacro «el [día] a las
+  /// [hora]» no le sirve a nadie.
+  Set<String> _marcadores = <String>{};
   ModoDestino _modo = ModoDestino.todos;
   final Set<String> _gruposElegidos = <String>{};
 
@@ -436,6 +443,7 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
   void _limpiar() {
     _titulo.clear();
     _cuerpo.clear();
+    _marcadores = <String>{};
     // Se suelta el identificador: lo que venga después es un mensaje nuevo y
     // tiene derecho a su propio sitio, aunque el texto sea idéntico. Sin esto,
     // repetir un aviso a propósito quedaría bloqueado para siempre (DT-24).
@@ -506,6 +514,68 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
       botonConfirmar: Textos.botonConfirmarUrgente,
       peligroso: true,
     );
+  }
+
+  /// Nulo si no queda nada de la plantilla por completar en [texto].
+  String? _sinCompletar(String texto) {
+    final List<String> faltan = <String>[
+      for (final String m in _marcadores)
+        if (texto.contains(m)) m,
+    ];
+    return faltan.isEmpty ? null : Textos.plantillaFaltan(faltan);
+  }
+
+  Future<void> _usarPlantilla({required bool puedeUrgentes}) async {
+    final Plantilla? p = await elegirPlantilla(context, puedeUrgentes: puedeUrgentes);
+    if (p == null || !mounted) {
+      return;
+    }
+    final bool hayTexto =
+        _titulo.text.trim().isNotEmpty || _cuerpo.text.trim().isNotEmpty;
+    if (hayTexto &&
+        !await _dialogo(
+          titulo: Textos.plantillaReemplazarTitulo,
+          contenido: const Text(Textos.plantillaReemplazarDetalle),
+          botonConfirmar: Textos.plantillaReemplazar,
+          peligroso: false,
+        )) {
+      return;
+    }
+    setState(() {
+      _titulo.text = p.titulo;
+      _cuerpo.text = p.cuerpo;
+      _urgente = p.urgente && puedeUrgentes;
+      _requiereConfirmacion = p.requiereConfirmacion;
+      _marcadores = marcadoresDe('${p.titulo}\n${p.cuerpo}');
+    });
+  }
+
+  Future<void> _guardarPlantilla() async {
+    final String? nombre = await pedirNombreDePlantilla(context);
+    if (nombre == null || !mounted) {
+      return;
+    }
+    final ScaffoldMessengerState avisos = ScaffoldMessenger.of(context);
+    try {
+      await ref
+          .read(repositorioPlantillasProvider)
+          .guardar(
+            Plantilla(
+              nombre: nombre,
+              titulo: _titulo.text,
+              cuerpo: _cuerpo.text,
+              urgente: _urgente,
+              requiereConfirmacion: _requiereConfirmacion,
+            ),
+          );
+      avisos.showSnackBar(
+        SnackBar(content: Text(Textos.plantillaGuardada(nombre))),
+      );
+    } on Object {
+      avisos.showSnackBar(
+        const SnackBar(content: Text(Textos.plantillaNoSeGuardo)),
+      );
+    }
   }
 
   Future<bool> _dialogo({
@@ -581,6 +651,26 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: <Widget>[
+                    OutlinedButton.icon(
+                      onPressed: () => _usarPlantilla(puedeUrgentes: puedeUrgentes),
+                      icon: const Icon(Icons.description_outlined),
+                      label: const Text(Textos.plantillaUsar),
+                    ),
+                    TextButton.icon(
+                      onPressed:
+                          _titulo.text.trim().isEmpty || _cuerpo.text.trim().isEmpty
+                          ? null
+                          : _guardarPlantilla,
+                      icon: const Icon(Icons.bookmark_add_outlined),
+                      label: const Text(Textos.plantillaGuardar),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 20),
 
                 TextFormField(
@@ -601,7 +691,7 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
                   ),
                   validator: (String? v) => (v ?? '').trim().isEmpty
                       ? Textos.validacionTituloObligatorio
-                      : null,
+                      : _sinCompletar(v ?? ''),
                 ),
                 const SizedBox(height: 16),
 
@@ -623,7 +713,7 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
                   ),
                   validator: (String? v) => (v ?? '').trim().isEmpty
                       ? Textos.validacionCuerpoObligatorio
-                      : null,
+                      : _sinCompletar(v ?? ''),
                 ),
                 const SizedBox(height: 24),
 

@@ -429,6 +429,27 @@ de usuarios, que sí mueve las dos (RF-USR-02).
 > la comprobación de `decidirActivacion` que rechaza a quien intenta usar una invitación que
 > otro ya consumió. La regla vive ahora en `decidirCarga`, en el dominio, con sus pruebas.
 
+### 2.10b `plantillas/{plantillaId}` (RF-MSG-14, desde 1.6.13)
+
+Textos de avisos frecuentes, compartidos entre quienes emiten. **No son avisos**: no llegan a
+nadie hasta que alguien los carga en el formulario, los revisa y los envía, y el envío pasa por
+la validación de siempre en el servidor. Por eso los escribe el cliente directamente, con las
+reglas poniendo los mismos límites que a un aviso. Leen, crean, editan y borran el
+coordinador y la administradora activos (`esEmisor()`); nadie más.
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `nombre` | string | 1 a 60 caracteres. Cómo se reconoce en la lista |
+| `titulo` | string | Hasta 80 |
+| `cuerpo` | string | Hasta 1000 |
+| `urgente` | bool | Solo se ofrece a quien puede emitir urgentes |
+| `requiereConfirmacion` | bool | |
+| `creadaPor` | string | uid; al crear, solo el propio. No se cambia al editar |
+| `actualizadaEn` | timestamp | Hora del servidor (`request.time`) |
+
+Las **predefinidas** (recordatorio de actualizar, de responder, simulacro, suspensión, reunión,
+evacuación inmediata) no están aquí: vienen en el código (`presentation/admin/plantillas.dart`).
+
 ### 2.11 `configuracion/institucional`
 
 Documento único con los parámetros globales.
