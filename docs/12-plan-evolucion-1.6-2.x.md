@@ -18,8 +18,8 @@ el documento 01.
 |---|-----|:---:|:---:|:---:|:---:|
 | **U-0** | **Pasar las funciones de Node.js 20 a 22** — Google retira Node 20 el **30/10/2026** | S | Medio | No | **1.5.13 (urgente)** |
 | **C-6** | **Tocar una notificación abre el aviso o la respuesta que la originó** (corrección, DT-35) | M | Medio | No | **1.6.0 — hecho en desarrollo** |
-| U-1 | Copiar el título o el mensaje | S | Bajo | No | 1.6 |
-| U-2 | Enlaces (URL) que se abren al tocarlos | S | Bajo | No | 1.6 |
+| U-1 | Copiar el título o el mensaje | S | Bajo | No | **1.6.2 — hecho en desarrollo** |
+| U-2 | Enlaces (URL) que se abren al tocarlos | S | Bajo | No | **1.6.2 — hecho en desarrollo** |
 | U-3 | Descargar las imágenes de un aviso | S–M | Bajo | No | 1.6 |
 | U-4 | El tabulador recorre el formulario de redactar en orden | S | Bajo | No | 1.6 |
 | U-5 | El manual sigue el modo claro/oscuro | S | Bajo | No | 1.6 |
