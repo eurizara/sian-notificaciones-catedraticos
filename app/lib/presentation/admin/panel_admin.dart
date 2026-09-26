@@ -17,6 +17,7 @@ import '../../application/proveedores_respuestas.dart';
 import '../../domain/rol.dart';
 import '../../domain/sesion.dart';
 import '../shared/apertura.dart';
+import 'borrador_prefijado.dart';
 import '../shared/barra_sesion.dart';
 import 'seccion_bitacora.dart';
 import 'seccion_entregas.dart';
@@ -267,6 +268,23 @@ class _PanelAdminState extends ConsumerState<PanelAdmin> {
   /// está sentado frente a un escritorio.
   static const double _anchoMinimoParaMenuLateral = 700;
 
+  /// Alcance preparó un aviso (1.6): se pasa a Mensajes para terminarlo.
+  void _llevarARedactarSiHayBorrador(List<SeccionAdmin> visibles) {
+    if (ref.watch(borradorPrefijadoProvider) == null) {
+      return;
+    }
+    final int destino = visibles.indexWhere(
+      (SeccionAdmin s) => s.etiqueta == Textos.seccionMensajes,
+    );
+    if (destino >= 0 && _indice != destino) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() => _indice = destino);
+        }
+      });
+    }
+  }
+
   /// Tocar una notificación lleva a su sección (C-6, DT-35).
   ///
   /// El panel solo elige la sección; la sección abre lo concreto y da el
@@ -315,6 +333,7 @@ class _PanelAdminState extends ConsumerState<PanelAdmin> {
     }
 
     _llevarADestinoDeNotificacion(visibles);
+    _llevarARedactarSiHayBorrador(visibles);
 
     final int indice = _indice.clamp(0, visibles.length - 1);
     final SeccionAdmin actual = visibles[indice];

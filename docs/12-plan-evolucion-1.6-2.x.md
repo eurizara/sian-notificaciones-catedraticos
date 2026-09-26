@@ -24,7 +24,7 @@ el documento 01.
 | U-4 | El tabulador recorre el formulario de redactar en orden | S | Bajo | No | **1.6.4 — hecho en desarrollo** |
 | U-5 | El manual sigue el modo claro/oscuro | S | Bajo | No | **1.6.5 — hecho en desarrollo** |
 | U-6 | Enviar a personas concretas (1 a n) | M | Bajo | No | **1.6.6 — hecho en desarrollo** |
-| U-7 | Mejoras de Alcance | M | Bajo | Sí (retiros) | 1.6 |
+| U-7 | Mejoras de Alcance | M | Bajo | Sí (retiros) | **1.6.8 — hecho en desarrollo** |
 | S-1..S-5 | Rendimiento, estabilidad y seguridad | varía | — | — | 1.5.13 y 1.6 |
 | **SED** | **Varias sedes; una persona en más de una** | **L** | **Alto** | **Sí (migración)** | **2.0** |
 | **REP** | **Repositorio de archivos por carpetas y grupos** | **L** | Medio | Sí (nuevo) | **2.1** (administración) · **2.2** (catedrático) |

@@ -23,11 +23,15 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/proveedores_sesion.dart';
 import '../../core/version.dart';
+import '../../domain/sesion.dart';
 import '../../infrastructure/firebase/repositorio_canal.dart';
+import '../../infrastructure/firebase/repositorio_envio.dart';
 import '../shared/tema.dart';
 import '../shared/textos.dart';
 import '../shared/version_app.dart';
+import 'borrador_prefijado.dart';
 
 final Provider<RepositorioCanal> repositorioCanalProvider =
     Provider<RepositorioCanal>((Ref ref) => RepositorioCanal());
@@ -134,8 +138,7 @@ class _Contenido extends StatelessWidget {
           ],
         const SizedBox(height: 24),
         _Versiones(
-          atrasados: versiones.atrasados,
-          reemplazados: versiones.reemplazados,
+          clasificacion: versiones,
           conAparato: revision.versiones.length,
           publicada: publicada,
         ),
@@ -150,23 +153,119 @@ class _Contenido extends StatelessWidget {
 /// recibe perfectamente con una versión vieja no salía en ningún sitio, y es
 /// justo a quien hay que pedirle actualizar: las correcciones de canal y del
 /// acuse viajan con la versión.
-class _Versiones extends StatelessWidget {
+class _Versiones extends ConsumerStatefulWidget {
   const _Versiones({
-    required this.atrasados,
-    required this.reemplazados,
+    required this.clasificacion,
     required this.conAparato,
     required this.publicada,
   });
 
-  final List<VersionesDePersona> atrasados;
-  final int reemplazados;
+  final ClasificacionDeVersiones clasificacion;
   final int conAparato;
   final String publicada;
+
+  @override
+  ConsumerState<_Versiones> createState() => _VersionesState();
+}
+
+class _VersionesState extends ConsumerState<_Versiones> {
+  bool _verReemplazados = false;
+
+  /// Retira un registro, con confirmación (1.6). Solo coordinación: el mismo
+  /// permiso que administrar usuarios. Queda en la bitácora.
+  Future<void> _retirar(VersionesDePersona persona, AparatoConVersion a) async {
+    final String aparato = Textos.nombrePlataforma(a.plataforma);
+    final String quien = persona.nombre.isEmpty ? persona.correo : persona.nombre;
+    final bool? si = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext c) => AlertDialog(
+        title: const Text(Textos.retirarTitulo),
+        content: Text(Textos.retirarDetalle(aparato, quien)),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(c).pop(false),
+            child: const Text(Textos.botonCancelar),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(c).pop(true),
+            child: const Text(Textos.botonRetirar),
+          ),
+        ],
+      ),
+    );
+    if (si != true || !mounted) {
+      return;
+    }
+    try {
+      await ref
+          .read(repositorioCanalProvider)
+          .retirar(uid: persona.uid, dispositivoId: a.id);
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text(Textos.registroRetirado)));
+      ref.invalidate(revisionDeCanalProvider);
+    } on Object {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(Textos.registroNoRetirado)),
+        );
+      }
+    }
+  }
+
+  /// Prepara el recordatorio para quien sigue atrasado y pasa a redactarlo.
+  void _recordar() {
+    ref
+        .read(borradorPrefijadoProvider.notifier)
+        .preparar(
+          BorradorPrefijado(
+            personas: <PersonaDestinataria>[
+              for (final VersionesDePersona p in widget.clasificacion.atrasados)
+                PersonaDestinataria(uid: p.uid, nombre: p.nombre, correo: p.correo),
+            ],
+            titulo: Textos.recordatorioTitulo,
+            cuerpo: Textos.recordatorioCuerpo(widget.publicada),
+          ),
+        );
+  }
+
+  Widget _lineaDeAparato(
+    VersionesDePersona persona,
+    AparatoConVersion a, {
+    required bool puedeRetirar,
+  }) => Row(
+    children: <Widget>[
+      Expanded(
+        child: Text(
+          '${Textos.nombrePlataforma(a.plataforma)} · '
+          '${Textos.versionDeLaPersona(a.versionApp)} · '
+          '${_desdeCuando(a.ultimaActividad)}',
+        ),
+      ),
+      if (puedeRetirar && a.id.isNotEmpty)
+        IconButton(
+          tooltip: Textos.retirarRegistro,
+          visualDensity: VisualDensity.compact,
+          icon: const Icon(Icons.delete_outline, size: 20),
+          onPressed: () => _retirar(persona, a),
+        ),
+    ],
+  );
 
   @override
   Widget build(BuildContext context) {
     final ThemeData tema = Theme.of(context);
     final PaletaSian paleta = PaletaSian.de(context);
+    final List<VersionesDePersona> atrasados = widget.clasificacion.atrasados;
+    final int reemplazados = widget.clasificacion.reemplazados;
+    final Sesion sesion = ref.watch(sesionActualProvider);
+    final bool puedeRetirar =
+        sesion is SesionActiva && sesion.usuario.rol.administraUsuarios;
+    final bool puedeRecordar =
+        sesion is SesionActiva && sesion.usuario.rol.esEmisor;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -186,8 +285,8 @@ class _Versiones extends StatelessWidget {
               child: Text(
                 Textos.canalVersionesResumen(
                   atrasados.length,
-                  conAparato,
-                  publicada,
+                  widget.conAparato,
+                  widget.publicada,
                 ),
               ),
             ),
@@ -195,7 +294,8 @@ class _Versiones extends StatelessWidget {
         ),
         // Registros de instalaciones anteriores de aparatos que ya están al
         // día. Se dicen, para que no parezca que desaparecieron, pero no se
-        // cuentan como gente a la que pedirle nada.
+        // cuentan como gente a la que pedirle nada. Coordinación puede verlos
+        // y retirarlos; si no, se retiran solos a los 14 días.
         if (reemplazados > 0) ...<Widget>[
           const SizedBox(height: 4),
           Text(
@@ -204,6 +304,38 @@ class _Versiones extends StatelessWidget {
               color: tema.colorScheme.onSurfaceVariant,
             ),
           ),
+          if (puedeRetirar)
+            TextButton(
+              onPressed: () =>
+                  setState(() => _verReemplazados = !_verReemplazados),
+              child: Text(
+                _verReemplazados
+                    ? Textos.ocultarReemplazados
+                    : Textos.verReemplazados,
+              ),
+            ),
+          if (puedeRetirar && _verReemplazados)
+            for (final ({VersionesDePersona persona, AparatoConVersion aparato})
+                r in widget.clasificacion.registrosReemplazados)
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      r.persona.nombre.isEmpty
+                          ? r.persona.correo
+                          : r.persona.nombre,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    _lineaDeAparato(
+                      r.persona,
+                      r.aparato,
+                      puedeRetirar: puedeRetirar,
+                    ),
+                  ],
+                ),
+              ),
         ],
         if (atrasados.isNotEmpty) ...<Widget>[
           const SizedBox(height: 4),
@@ -213,6 +345,14 @@ class _Versiones extends StatelessWidget {
               color: tema.colorScheme.onSurfaceVariant,
             ),
           ),
+          if (puedeRecordar) ...<Widget>[
+            const SizedBox(height: 8),
+            FilledButton.tonalIcon(
+              onPressed: _recordar,
+              icon: const Icon(Icons.campaign_outlined),
+              label: Text(Textos.botonRecordarVersion(atrasados.length)),
+            ),
+          ],
           const SizedBox(height: 8),
           for (int i = 0; i < atrasados.length; i += 1) ...<Widget>[
             if (i > 0) const Divider(height: 1),
@@ -228,11 +368,7 @@ class _Versiones extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   for (final AparatoConVersion a in atrasados[i].aparatos)
-                    Text(
-                      '${Textos.nombrePlataforma(a.plataforma)} · '
-                      '${Textos.versionDeLaPersona(a.versionApp)} · '
-                      '${_desdeCuando(a.ultimaActividad)}',
-                    ),
+                    _lineaDeAparato(atrasados[i], a, puedeRetirar: puedeRetirar),
                 ],
               ),
             ),

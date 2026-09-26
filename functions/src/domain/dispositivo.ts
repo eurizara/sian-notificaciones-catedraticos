@@ -281,7 +281,11 @@ export interface DispositivoAEvaluar {
 }
 
 /** Qué hacer con un dispositivo después de mirarlo. */
-export type DecisionDeSonda = 'conservar' | 'retirar-por-muerto' | 'retirar-por-inactivo';
+export type DecisionDeSonda =
+  | 'conservar'
+  | 'retirar-por-muerto'
+  | 'retirar-por-inactivo'
+  | 'retirar-por-reemplazado';
 
 /**
  * ¿Qué se hace con este dispositivo?
@@ -485,3 +489,96 @@ export const GRAVEDAD_DE_CANAL: Record<EstadoDeCanal, number> = {
   'reenganchado-sin-comprobar': 6,
   'al-dia': 7,
 };
+
+// --- Registros de reinstalaciones anteriores (1.6, Alcance) ------------------
+
+/**
+ * Días sin uso tras los cuales un registro reemplazado se retira solo.
+ *
+ * Reinstalar la aplicación deja el registro anterior. En producción, el
+ * 16/09/2026, 5 de 15 personas ya actualizadas salían como atrasadas por
+ * registros de su mismo teléfono, y hubo que borrar nueve a mano. Con 60 días
+ * se iban solos, pero dos meses de ruido en Alcance es demasiado; 14 bastan
+ * para que no se retire el de alguien que simplemente no abrió en una semana.
+ */
+export const DIAS_PARA_RETIRO_POR_REEMPLAZO = 14;
+
+/** Lo que hace falta de un dispositivo para saber si otro lo reemplazó. */
+export interface DispositivoComparable {
+  readonly id: string;
+  readonly uid: string;
+  readonly plataforma: string;
+  readonly navegador: string;
+  readonly ultimaActividad: Date | null;
+}
+
+/**
+ * Los registros que otro más reciente de la misma persona reemplazó.
+ *
+ * Mismo usuario, **misma plataforma y mismo navegador**: el navegador importa,
+ * porque Chrome y Firefox en un mismo Android son dos canales. De cada grupo se
+ * conserva el usado más recientemente; los demás se retiran si llevan más de
+ * {@link DIAS_PARA_RETIRO_POR_REEMPLAZO} días sin uso. Sin fecha de actividad no
+ * se decide nada: una incógnita no es una prueba.
+ *
+ * Si alguien tuviera de verdad dos iPhone con Safari y dejara uno quieto dos
+ * semanas, ese se retiraría; al abrir SIAN en él se registra otra vez.
+ */
+export function reemplazadosPorOtro(
+  dispositivos: readonly DispositivoComparable[],
+  ahora: Date,
+  dias: number = DIAS_PARA_RETIRO_POR_REEMPLAZO,
+): Set<string> {
+  const grupos = new Map<string, DispositivoComparable[]>();
+  for (const d of dispositivos) {
+    if (d.ultimaActividad === null) {
+      continue;
+    }
+    const clave = `${d.uid}|${d.plataforma}|${d.navegador.trim().toLowerCase()}`;
+    const lista = grupos.get(clave) ?? [];
+    lista.push(d);
+    grupos.set(clave, lista);
+  }
+
+  const limite = ahora.getTime() - dias * 86_400_000;
+  const retirar = new Set<string>();
+  for (const lista of grupos.values()) {
+    if (lista.length < 2) {
+      continue;
+    }
+    const ordenados = [...lista].sort(
+      (a, b) => b.ultimaActividad!.getTime() - a.ultimaActividad!.getTime(),
+    );
+    for (const viejo of ordenados.slice(1)) {
+      if (viejo.ultimaActividad!.getTime() < limite) {
+        retirar.add(viejo.id);
+      }
+    }
+  }
+  return retirar;
+}
+
+// --- Validación de tokens en memoria (1.6, Alcance) --------------------------
+
+/** Cuánto vale lo que FCM dijo de un token antes de volver a preguntar. */
+export const MINUTOS_DE_VALIDACION_EN_MEMORIA = 10;
+
+/**
+ * Qué tokens hay que volver a validar contra FCM.
+ *
+ * Alcance validaba todos en cada visita: con varias sedes serán muchos más, y
+ * entre dos visitas seguidas un token no cambia. Solo se preguntan los que no
+ * se preguntaron hace menos de {@link MINUTOS_DE_VALIDACION_EN_MEMORIA} minutos.
+ */
+export function tokensPorValidar(
+  tokens: readonly string[],
+  memoria: ReadonlyMap<string, { muerto: boolean; en: number }>,
+  ahora: number,
+  minutos: number = MINUTOS_DE_VALIDACION_EN_MEMORIA,
+): string[] {
+  return tokens.filter((t) => {
+    const visto = memoria.get(t);
+    return visto === undefined || ahora - visto.en > minutos * 60_000;
+  });
+}
+

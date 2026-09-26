@@ -743,6 +743,9 @@ pantalla**, en iPhone y en Android.
 | V-6 | En **Alcance**, baja hasta **Versión de la aplicación** | Dice cuántas personas tienen algún aparato sin la versión publicada y lista cada aparato atrasado con su versión y última actividad. Quien está al día no sale |
 | V-7 | Actualiza uno de esos aparatos y recarga Alcance | Ese aparato desaparece de la lista |
 | V-7b | Reinstala la app en un aparato ya actualizado (queda el registro anterior) y recarga Alcance | La persona **no** sale como atrasada; debajo del resumen aparece «Además hay 1 registro de una instalación anterior…» |
+| V-9 | Como coordinación, en Alcance → «Versión de la aplicación», toca la papelera de un aparato y confirma | Desaparece de la lista; en la bitácora queda «Retirado desde Alcance» con tu nombre. La administradora no ve la papelera |
+| V-10 | Toca **Enviar recordatorio a estas N personas** | Se abre Mensajes en «Personas concretas» con esas personas y el texto sugerido, que se puede cambiar |
+| V-11 | Deja un registro viejo de reinstalación sin tocar 14 días (o simúlalo en desarrollo) | La sonda diaria lo retira con «Retirado por una instalación más reciente del mismo aparato» |
 | V-8 | Abre el manual → **Notas de la versión** | La primera sección es la versión que dice el pie de la bandeja, marcada **Actual**; los dos manuales enlazan a esta página |
 
 ## Probar que el canal se repara solo (DT-23)

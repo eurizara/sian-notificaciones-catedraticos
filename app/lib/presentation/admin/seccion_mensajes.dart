@@ -33,6 +33,7 @@ import '../../infrastructure/firebase/repositorio_envio.dart';
 import 'adjuntos_mensaje.dart';
 import 'programador.dart';
 import '../shared/tema.dart';
+import 'borrador_prefijado.dart';
 import '../shared/textos.dart';
 
 final Provider<RepositorioEnvio> repositorioEnvioProvider =
@@ -144,12 +145,42 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
     // Los contadores tienen que moverse mientras se escribe, no al validar.
     _titulo.addListener(_repintar);
     _cuerpo.addListener(_repintar);
+    // Alcance pudo haber dejado un aviso preparado antes de abrir esta sección.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _tomarBorrador());
   }
 
   void _repintar() {
     if (mounted) {
       setState(() {});
     }
+  }
+
+  /// Recoge el aviso que preparó otra sección (1.6): las personas, y el texto
+  /// sugerido solo si el formulario está vacío —nunca pisa lo escrito—.
+  void _tomarBorrador() {
+    if (!mounted) {
+      return;
+    }
+    final BorradorPrefijado? b = ref
+        .read(borradorPrefijadoProvider.notifier)
+        .tomar();
+    if (b == null) {
+      return;
+    }
+    setState(() {
+      _modo = ModoDestino.personas;
+      _personasElegidas
+        ..clear()
+        ..addEntries(<MapEntry<String, PersonaDestinataria>>[
+          for (final PersonaDestinataria p in b.personas) MapEntry(p.uid, p),
+        ]);
+      if (_titulo.text.trim().isEmpty && b.titulo.isNotEmpty) {
+        _titulo.text = b.titulo;
+      }
+      if (_cuerpo.text.trim().isEmpty && b.cuerpo.isNotEmpty) {
+        _cuerpo.text = b.cuerpo;
+      }
+    });
   }
 
   @override
@@ -514,6 +545,15 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
 
   @override
   Widget build(BuildContext context) {
+    // Si la sección ya estaba abierta cuando Alcance preparó el aviso.
+    ref.listen<BorradorPrefijado?>(borradorPrefijadoProvider, (
+      BorradorPrefijado? _,
+      BorradorPrefijado? nuevo,
+    ) {
+      if (nuevo != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _tomarBorrador());
+      }
+    });
     final Sesion sesion = ref.watch(sesionActualProvider);
     // Se consulta la MATRIZ, no la bandera suelta: el coordinador puede
     // siempre, y la bandera existe para que él decida qué administradoras

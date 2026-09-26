@@ -80,9 +80,13 @@ class AparatoConVersion {
   const AparatoConVersion({
     required this.plataforma,
     required this.versionApp,
+    this.id = '',
     this.navegador = '',
     this.ultimaActividad,
   });
+
+  /// El documento del dispositivo: lo que hace falta para retirarlo.
+  final String id;
 
   /// `WEB_ANDROID`, `WEB_IOS` o `WEB_ESCRITORIO`.
   final String plataforma;
@@ -121,6 +125,7 @@ class VersionesDePersona {
               in (m['aparatos'] as List<Object?>? ?? <Object?>[]))
             if (a is Map<Object?, Object?>)
               AparatoConVersion(
+                id: (a['id'] as String?) ?? '',
                 plataforma: (a['plataforma'] as String?) ?? '',
                 navegador: ((a['navegador'] as String?) ?? '').trim(),
                 versionApp: ((a['versionApp'] as String?) ?? '').trim(),
@@ -136,15 +141,20 @@ class VersionesDePersona {
 class ClasificacionDeVersiones {
   const ClasificacionDeVersiones({
     required this.atrasados,
-    required this.reemplazados,
+    required this.registrosReemplazados,
   });
+
+  /// Cuántos registros viejos hay de aparatos que ya se actualizaron.
+  int get reemplazados => registrosReemplazados.length;
+
+  /// Cuáles, con de quién son: para poder retirarlos desde Alcance.
+  final List<({VersionesDePersona persona, AparatoConVersion aparato})>
+  registrosReemplazados;
 
   /// Quiénes tienen algún aparato de verdad sin la versión publicada, con solo
   /// esos aparatos. Es a quien hay que pedirle actualizar.
   final List<VersionesDePersona> atrasados;
 
-  /// Cuántos registros viejos hay de aparatos que ya se actualizaron.
-  final int reemplazados;
 }
 
 /// Separa los aparatos atrasados de los registros que ya fueron reemplazados.
@@ -171,7 +181,8 @@ ClasificacionDeVersiones clasificarVersiones(
   String publicada,
 ) {
   final List<VersionesDePersona> atrasados = <VersionesDePersona>[];
-  int reemplazados = 0;
+  final List<({VersionesDePersona persona, AparatoConVersion aparato})>
+  reemplazados = <({VersionesDePersona persona, AparatoConVersion aparato})>[];
 
   for (final VersionesDePersona p in personas) {
     final List<AparatoConVersion> alDia = <AparatoConVersion>[
@@ -193,7 +204,7 @@ ClasificacionDeVersiones clasificarVersiones(
                 b.ultimaActividad!.isAfter(a.ultimaActividad!)),
       );
       if (loReemplazo) {
-        reemplazados += 1;
+        reemplazados.add((persona: p, aparato: a));
       } else {
         deVerdad.add(a);
       }
@@ -213,7 +224,7 @@ ClasificacionDeVersiones clasificarVersiones(
 
   return ClasificacionDeVersiones(
     atrasados: atrasados,
-    reemplazados: reemplazados,
+    registrosReemplazados: reemplazados,
   );
 }
 
@@ -248,6 +259,14 @@ class RepositorioCanal {
   final FirebaseFunctions? _dadas;
   late final FirebaseFunctions _fn =
       _dadas ?? FirebaseFunctions.instanceFor(region: 'us-central1');
+
+  /// Retira un registro de aparato (1.6). Solo coordinación; queda en la
+  /// bitácora. Si el aparato sigue en uso, se registra solo al abrir SIAN.
+  Future<void> retirar({required String uid, required String dispositivoId}) =>
+      _fn.httpsCallable('retirarDispositivo').call<Object?>(<String, Object?>{
+        'uid': uid,
+        'dispositivoId': dispositivoId,
+      });
 
   Future<RevisionDeCanal> revisar() async {
     final HttpsCallableResult<Object?> r = await _fn
