@@ -718,6 +718,26 @@ abstract final class Textos {
   static const String etiquetaDestinatarios = 'Destinatarios';
   static const String destinatariosTodos = 'Todos los catedráticos';
   static const String destinatariosGrupos = 'Grupos concretos';
+  static const String destinatariosPersonas = 'Personas concretas';
+  static const String buscarPersona = 'Buscar por nombre o correo';
+  static const String personasSinCoincidencias = 'Nadie coincide con esa búsqueda.';
+  static const String personasCargando = 'Cargando personas…';
+  static const String personasFallo =
+      'No se pudo cargar la lista de personas. Vuelve a intentarlo.';
+  static const String validacionElijePersona = 'Elige al menos una persona.';
+  static String quitarPersona(String nombre) => 'Quitar a $nombre';
+
+  /// En la confirmación de un envío individual: A QUIÉN va, con nombres.
+  /// Equivocarse de persona es el error caro de este modo.
+  static String confirmarPara(List<String> nombres) {
+    const int maximo = 12;
+    if (nombres.length <= maximo) {
+      return 'Va a: ${nombres.join(', ')}.';
+    }
+    final int resto = nombres.length - maximo;
+    return 'Va a: ${nombres.take(maximo).join(', ')} y $resto '
+        '${resto == 1 ? 'persona' : 'personas'} más.';
+  }
   static const String exigirConfirmacion = 'Exigir confirmación de lectura';
   static const String exigirConfirmacionDetalle =
       'El catedrático tendrá que confirmar que lo leyó. Deja constancia con valor probatorio.';

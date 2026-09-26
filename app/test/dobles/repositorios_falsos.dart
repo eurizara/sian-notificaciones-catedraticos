@@ -431,9 +431,18 @@ class RepositorioAdjuntosFalso extends RepositorioAdjuntos {
 }
 
 class RepositorioEnvioFalso extends RepositorioEnvio {
-  RepositorioEnvioFalso({this.conteo = 3});
+  RepositorioEnvioFalso({this.conteo = 3, this.personasDisponibles = const <PersonaDestinataria>[]});
 
   final int conteo;
+
+  /// Lo que devolvería `personasDestinatarias` (U-6).
+  final List<PersonaDestinataria> personasDisponibles;
+
+  /// Los destinatarios del último conteo, para comprobar a quién iba.
+  Destinatarios? ultimosDestinatarios;
+
+  @override
+  Future<List<PersonaDestinataria>> personas() async => personasDisponibles;
 
   Map<String, int> motivos = <String, int>{};
   int excluidos = 0;
@@ -466,6 +475,7 @@ class RepositorioEnvioFalso extends RepositorioEnvio {
   @override
   Future<ConteoDestinatarios> contar(Destinatarios destinatarios) async {
     vecesQueConto += 1;
+    ultimosDestinatarios = destinatarios;
     return ConteoDestinatarios(
       total: conteo,
       excluidos: excluidos,

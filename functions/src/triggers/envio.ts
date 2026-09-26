@@ -31,9 +31,10 @@ import type { DocumentReference } from 'firebase-admin/firestore';
 import { getMessaging, type TokenMessage } from 'firebase-admin/messaging';
 
 import {
-  resolverDestinatarios,
   type CandidatoDestinatario,
   type GrupoResuelto,
+  personasElegibles,
+  resolverDestinatarios,
 } from '../application/resolverDestinatarios';
 import { LARGO_DE_ACUSE, armarSeña, cabecerasDeEnvio } from '../domain/acuse';
 import {
@@ -154,6 +155,37 @@ export const contarDestinatarios = onCall(OPCIONES_FUNCION, async (peticion) => 
         acc[e.motivo] = (acc[e.motivo] ?? 0) + 1;
         return acc;
       }, {}),
+    };
+  } catch (e) {
+    throw traducirError(e);
+  }
+});
+
+/**
+ * Las personas que se pueden elegir en un envío individual (U-6, RF-USR-06).
+ *
+ * Por función y no leyendo `usuarios` desde la app: las reglas solo dejan leer
+ * la lista a coordinación y auditoría, y la administradora también redacta.
+ * Abrir las reglas le daría el perfil entero de todos; esto le da solo nombre y
+ * correo de quien puede recibir, con el mismo permiso que redactar.
+ */
+export const personasDestinatarias = onCall(OPCIONES_FUNCION, async (peticion) => {
+  const sujeto = sujetoDe(peticion);
+  try {
+    exigirPermiso(sujeto, 'CREAR_AVISO_INFORMATIVO');
+    const instantanea = await db.collection(RUTAS.usuarios).get();
+    return {
+      personas: personasElegibles(
+        instantanea.docs.map((d) => ({
+          uid: d.id,
+          nombre: (d.get('nombre') as string | undefined) ?? '',
+          correo: (d.get('correo') as string | undefined) ?? '',
+          activo: d.get('activo') === true,
+          rol: (d.get('rol') as Rol | undefined) ?? 'CATEDRATICO',
+          recibeAvisos: d.get('recibeAvisos') as boolean | undefined,
+        })),
+        sujeto.uid,
+      ),
     };
   } catch (e) {
     throw traducirError(e);
