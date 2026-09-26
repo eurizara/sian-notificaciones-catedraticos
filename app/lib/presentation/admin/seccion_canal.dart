@@ -142,6 +142,60 @@ class _Contenido extends StatelessWidget {
           conAparato: revision.versiones.length,
           publicada: publicada,
         ),
+        const SizedBox(height: 24),
+        _Fallos(fallos: revision.fallos),
+      ],
+    );
+  }
+}
+
+/// Lo que los aparatos reportaron que les falló en las últimas 24 h (DT-34).
+///
+/// El 12/09/2026 el registro se colgó en todos los aparatos y nadie lo supo
+/// hasta que un aviso no llegó. Esto es lo que habría avisado antes.
+class _Fallos extends StatelessWidget {
+  const _Fallos({required this.fallos});
+
+  final FallosDeAparatos fallos;
+
+  @override
+  Widget build(BuildContext context) {
+    final TextTheme texto = Theme.of(context).textTheme;
+    final PaletaSian paleta = PaletaSian.de(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(Textos.canalFallosTitulo, style: texto.titleMedium),
+        const SizedBox(height: 4),
+        Text(Textos.canalFallosResumen(fallos.aparatos)),
+        if (fallos.porTipo.isNotEmpty) ...<Widget>[
+          const SizedBox(height: 8),
+          for (final TipoDeFallosResumido t in fallos.porTipo)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.report_gmailerrorred, color: paleta.urgente),
+              title: Text(Textos.nombreFallo(t.que)),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(Textos.canalFalloCuenta(t.aparatos, t.veces)),
+                  Text(
+                    <String>[
+                      t.plataformas.map(Textos.nombrePlataforma).join(', '),
+                      if (t.versiones.isNotEmpty) t.versiones.join(', '),
+                    ].join(' · '),
+                  ),
+                  if (t.ultimoDetalle.isNotEmpty)
+                    SelectableText(
+                      t.ultimoDetalle,
+                      style: texto.bodySmall?.copyWith(fontFamily: 'monospace'),
+                    ),
+                ],
+              ),
+            ),
+        ],
+        const SizedBox(height: 4),
+        Text(Textos.canalFallosNota, style: texto.bodySmall),
       ],
     );
   }

@@ -51,6 +51,7 @@ export { dispositivosQueNecesitanAtencion, retirarDispositivo, sondaDeCanal } fr
 export { marcarHiloLeido, responderAviso } from './triggers/respuestas';
 export { acuseDeNotificacion } from './triggers/acuse';
 export { reportarSuscripcion } from './triggers/suscripcion';
+export { reportarFallo } from './triggers/fallos';
 export {
   confirmarLectura,
   detalleEntregas,

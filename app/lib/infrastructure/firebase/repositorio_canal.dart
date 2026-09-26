@@ -228,13 +228,91 @@ ClasificacionDeVersiones clasificarVersiones(
   );
 }
 
+/// Un tipo de fallo reportado por los aparatos en las últimas 24 h (DT-34).
+class TipoDeFallosResumido {
+  const TipoDeFallosResumido({
+    required this.que,
+    required this.aparatos,
+    required this.veces,
+    required this.plataformas,
+    required this.versiones,
+    required this.ultimoDetalle,
+  });
+
+  factory TipoDeFallosResumido.desdeMapa(Map<Object?, Object?> m) =>
+      TipoDeFallosResumido(
+        que: m['que'] as String? ?? '',
+        aparatos: (m['aparatos'] as num?)?.toInt() ?? 0,
+        veces: (m['veces'] as num?)?.toInt() ?? 0,
+        plataformas: <String>[
+          for (final Object? p in m['plataformas'] as List<Object?>? ?? <Object?>[])
+            if (p is String) p,
+        ],
+        versiones: <String>[
+          for (final Object? v in m['versiones'] as List<Object?>? ?? <Object?>[])
+            if (v is String) v,
+        ],
+        ultimoDetalle: m['ultimoDetalle'] as String? ?? '',
+      );
+
+  /// La clave del tipo, como la manda el aparato (`registro-dispositivo`…).
+  final String que;
+  final int aparatos;
+  final int veces;
+  final List<String> plataformas;
+  final List<String> versiones;
+
+  /// El detalle técnico del más reciente, ya limpio de datos personales.
+  final String ultimoDetalle;
+}
+
+/// Lo que los aparatos reportaron que les falló en las últimas 24 h (DT-34).
+///
+/// Sin nombres: el reporte no sabe de quién es el aparato.
+class FallosDeAparatos {
+  const FallosDeAparatos({
+    required this.aparatos,
+    required this.reportes,
+    required this.porTipo,
+  });
+
+  /// Una función anterior a 1.6.10 no lo manda: se lee como «ninguno».
+  factory FallosDeAparatos.desdeMapa(Object? m) {
+    if (m is! Map<Object?, Object?>) {
+      return ninguno;
+    }
+    return FallosDeAparatos(
+      aparatos: (m['aparatos'] as num?)?.toInt() ?? 0,
+      reportes: (m['reportes'] as num?)?.toInt() ?? 0,
+      porTipo: <TipoDeFallosResumido>[
+        for (final Object? t in m['porTipo'] as List<Object?>? ?? <Object?>[])
+          if (t is Map<Object?, Object?>) TipoDeFallosResumido.desdeMapa(t),
+      ],
+    );
+  }
+
+  static const FallosDeAparatos ninguno = FallosDeAparatos(
+    aparatos: 0,
+    reportes: 0,
+    porTipo: <TipoDeFallosResumido>[],
+  );
+
+  final int aparatos;
+  final int reportes;
+  final List<TipoDeFallosResumido> porTipo;
+}
+
 class RevisionDeCanal {
   const RevisionDeCanal({
     required this.total,
     required this.catedraticos,
     required this.personas,
     this.versiones = const <VersionesDePersona>[],
+    this.fallos = FallosDeAparatos.ninguno,
   });
+
+  /// Lo que reportaron los aparatos en las últimas 24 h (DT-34).
+  final FallosDeAparatos fallos;
 
   /// Cada destinatario con aparatos, y la versión de cada aparato.
   final List<VersionesDePersona> versiones;
@@ -288,6 +366,7 @@ class RepositorioCanal {
             in (datos['versiones'] as List<Object?>? ?? <Object?>[]))
           if (v is Map<Object?, Object?>) VersionesDePersona.desdeMapa(v),
       ],
+      fallos: FallosDeAparatos.desdeMapa(datos['fallos']),
     );
   }
 }

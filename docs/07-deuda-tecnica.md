@@ -305,7 +305,7 @@ gratuita.
 | DT-31 | «Entregado» no significa que el aparato lo mostrara, y nadie lo mide | Alcance | **Alta** | **Pagada** (en desarrollo y QA) | 0 USD |
 | DT-32 | Las funciones corren en Node.js 20, que Google retira el 30/10/2026 | Plataforma | **Alta** | **Pagada** en desarrollo (1.5.13) · a producción antes del 20/10 | 0 USD |
 | DT-33 | Sin App Check: las funciones aceptan llamadas de fuera de la aplicación | Plataforma | Media | **En pago**: observación preparada en desarrollo (1.6.9); falta darla de alta en la consola y exigirla | 0 USD |
-| DT-34 | Un fallo en el aparato no deja rastro en el servidor | Conocimiento | Media | Abierta | 0 USD |
+| DT-34 | Un fallo en el aparato no deja rastro en el servidor | Conocimiento | Media | **Pagada** en desarrollo (1.6.10) | 0 USD |
 | DT-35 | Tocar una notificación no abre el aviso ni la respuesta: siempre cae en la bandeja | Alcance | **Media** | **Pagada** en desarrollo (1.6.0) | 0 USD |
 | DT-28 | El manual no se alcanza desde dentro de la aplicación | Alcance | Baja | **Pagada** (en desarrollo y QA) | 0 USD |
 
@@ -2380,6 +2380,14 @@ Los fallos que ocurren en el aparato solo llegan a su consola, que nadie ve.
 **Pago:** un punto de reporte mínimo en el servidor. Recibe solo qué falló, la versión y la
 plataforma, sin datos personales, con límite de frecuencia por aparato. Además, un contador
 en Alcance: «N aparatos reportaron fallos en las últimas 24 h». Documento 12, S-5.
+
+**Pagada en desarrollo (1.6.10).** Función HTTP `reportarFallo` (sin sesión, porque lo que
+más interesa es lo que falla antes de que Firebase arranque), con tipos de una lista cerrada,
+identificador de aparato al azar y el detalle limpio **en el aparato y otra vez en el
+servidor**. Tope: una escritura por minuto por aparato y tipo, 500 documentos nuevos al día,
+30 días de retención. La aplicación reporta siete sitios: arranque, registro del aparato,
+suscripción directa sin respuesta, registro del worker, notificación con la app abierta,
+App Check y los errores no atrapados. Alcance muestra el resumen de las últimas 24 horas.
 
 ## DT-35 — Tocar una notificación no abre el aviso ni la respuesta: siempre cae en la bandeja
 

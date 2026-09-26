@@ -424,6 +424,35 @@ abstract final class Textos {
       '4. Toque Responder debajo de este aviso y escriba: «Listo, $version».\n\n'
       'Si ya lo hizo antes, solo responda. Gracias.';
 
+  // --- Fallos reportados por los aparatos (DT-34) --------------------------
+
+  static const String canalFallosTitulo = 'Fallos reportados por los aparatos';
+
+  static String canalFallosResumen(int aparatos) => switch (aparatos) {
+    0 => 'Ningún aparato reportó fallos en las últimas 24 horas.',
+    1 => '1 aparato reportó fallos en las últimas 24 horas.',
+    _ => '$aparatos aparatos reportaron fallos en las últimas 24 horas.',
+  };
+
+  static const String canalFallosNota =
+      'Sin nombres: solo qué falló, en qué tipo de aparato y en qué versión. '
+      'Se conservan 30 días.';
+
+  static String canalFalloCuenta(int aparatos, int veces) =>
+      '$aparatos ${aparatos == 1 ? 'aparato' : 'aparatos'} · '
+      '$veces ${veces == 1 ? 'vez' : 'veces'}';
+
+  static String nombreFallo(String clave) => switch (clave) {
+    'arranque' => 'La aplicación no pudo arrancar',
+    'registro-dispositivo' => 'El registro para recibir avisos',
+    'suscripcion-propia' => 'La vía directa de avisos no respondió (se usó la otra)',
+    'worker' => 'El servicio de notificaciones del aparato',
+    'notificacion' => 'Mostrar una notificación con la app abierta',
+    'app-check' => 'La comprobación de la aplicación (App Check)',
+    'no-controlado' => 'Un error inesperado',
+    _ => clave,
+  };
+
   static String nombrePlataforma(String plataforma) => switch (plataforma) {
     'WEB_ANDROID' => 'Android',
     'WEB_IOS' => 'iPhone',

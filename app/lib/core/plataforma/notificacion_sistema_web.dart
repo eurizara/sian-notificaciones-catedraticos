@@ -19,6 +19,7 @@ import 'dart:js_interop';
 
 import 'package:web/web.dart' as web;
 
+import '../fallos.dart';
 import 'consola.dart';
 import 'registro_worker_web.dart';
 
@@ -75,6 +76,7 @@ Future<bool> mostrarNotificacionDelSistema({
     // dentro de la pantalla sigue siendo el respaldo. Pero sí se deja dicho,
     // porque un `false` mudo es lo que impidió ver por qué no salía.
     consolaError('SIAN.notif falló | $e');
+    ReporteDeFallos.reportar(TipoDeFallo.notificacion, e);
     return false;
   }
 }

@@ -64,6 +64,9 @@ export const RUTAS = {
   bitacora: 'bitacora',
   colaDespacho: 'cola_despacho',
   configuracion: 'configuracion',
+  // Fallos que reportan los aparatos (DT-34). Solo las funciones leen y escriben.
+  fallos: 'fallos_aparato',
+  fallosPorDia: 'fallos_por_dia',
 } as const;
 
 export const DOC_CONFIGURACION = `${RUTAS.configuracion}/institucional`;

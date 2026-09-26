@@ -12,6 +12,7 @@ library;
 
 import 'package:firebase_app_check/firebase_app_check.dart';
 
+import '../../core/fallos.dart';
 import '../../core/plataforma/consola.dart';
 
 /// ¿Hay que encender App Check en este arranque?
@@ -40,6 +41,7 @@ Future<bool> activarAppCheck({
     return true;
   } on Object catch (e) {
     consolaError('App Check no se pudo encender: $e');
+    ReporteDeFallos.reportar(TipoDeFallo.appCheck, e);
     return false;
   }
 }

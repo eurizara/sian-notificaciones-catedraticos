@@ -732,6 +732,16 @@ Solo en un ambiente donde ya se dio de alta la clave (documento 11, «App Check�
 | AC-3 | En el Explorador de registros, filtrar las llamadas de los últimos 30 minutos por `jsonPayload.verifications.app` | Las de los pasos anteriores dicen **`VALID`**; las de aparatos en una versión anterior a 1.6.9, `MISSING` |
 | AC-4 | Abrir la app con reCAPTCHA bloqueado (por ejemplo, con un bloqueador de anuncios en la computadora) | Arranca y funciona; esas llamadas dicen `MISSING`. Así se ve en la observación qué se quedaría fuera al exigirlo |
 
+## Probar el reporte de fallos del aparato (DT-34, 1.6.10)
+
+| # | Paso | Qué debe ocurrir |
+|---|------|------------------|
+| RF-1 | Abrir Alcance sin haber provocado nada | «Ningún aparato reportó fallos en las últimas 24 horas.» (o los reales, si los hay) |
+| RF-2 | En Chrome de la computadora: herramientas de desarrollo → **Red** → bloquear solicitudes con el patrón `*registrarDispositivo*`; recargar SIAN y tocar «Activar notificaciones». Quitar el bloqueo y recargar Alcance | Aparece «El registro para recibir avisos», con **Computadora** y la versión 1.6.10. El reporte sale aunque el registro falle: va a otra función |
+| RF-3 | Leer el detalle del fallo en Alcance | No contiene correos, nombres ni números largos |
+| RF-4 | Provocar el mismo fallo tres veces seguidas | Cuenta **una** vez: el aparato no insiste antes de 10 minutos |
+| RF-5 | En la consola de Firestore, mirar `fallos_aparato` | Documentos con `aparato` al azar, sin uid ni correo |
+
 ## Probar el mantenimiento de 1.5.13
 
 | # | Paso | Qué debe ocurrir |

@@ -107,6 +107,7 @@ beforeEach(async () => {
 
     await setDoc(doc(db, 'bitacora', 'b-1'), { tipo: 'MENSAJE_CREADO', actorUid: UID.administradora });
     await setDoc(doc(db, 'cola_despacho', 'c-1'), { mensajeId: 'm-1', estado: 'PENDIENTE' });
+    await setDoc(doc(db, 'fallos_aparato', 'f-1'), { que: 'worker', veces: 1 });
     await setDoc(doc(db, 'invitaciones', 'nuevo@umg.edu.gt'), { rolAsignado: 'CATEDRATICO' });
     await setDoc(doc(db, 'configuracion', 'institucional'), { zonaHoraria: 'America/Guatemala' });
   });
@@ -436,6 +437,20 @@ describe('Cola de despacho', () => {
       const db = contexto(uid, rol);
       await assertFails(getDoc(doc(db, 'cola_despacho', 'c-1')));
       await assertFails(setDoc(doc(db, 'cola_despacho', 'c-2'), { estado: 'PENDIENTE' }));
+    }
+  });
+});
+
+describe('Fallos de los aparatos (DT-34)', () => {
+  it('solo las funciones los leen y escriben: ningún rol, ni sin sesión', async () => {
+    for (const db of [
+      entorno.unauthenticatedContext().firestore(),
+      contexto(UID.coordinador, 'COORDINADOR'),
+      contexto(UID.catedratico, 'CATEDRATICO'),
+    ]) {
+      await assertFails(getDoc(doc(db, 'fallos_aparato', 'f-1')));
+      await assertFails(setDoc(doc(db, 'fallos_aparato', 'f-2'), { que: 'worker' }));
+      await assertFails(setDoc(doc(db, 'fallos_por_dia', '20260926'), { documentos: 0 }));
     }
   });
 });
