@@ -65,6 +65,7 @@
 
   <h2>Crear avisos</h2>
   <a href="#crear">Todas las opciones</a>
+  <a href="#plantillas">Plantillas</a>
 
   <h2>Según su rol</h2>
   <a href="catedratico/">Catedrático · guía aparte</a>
@@ -482,15 +483,33 @@
     <tr><td><strong>Cuándo sale</strong></td><td>Ahora · En una fecha · Repetido</td></tr>
     <tr><td><strong>Qué lleva</strong></td><td>Solo texto · Notas de voz · Imágenes</td></tr>
     <tr><td><strong>Cuánto pesa</strong></td><td>Informativo · Urgente</td></tr>
-    <tr><td><strong>A quién</strong></td><td>Todos · Grupos concretos</td></tr>
+    <tr><td><strong>A quién</strong></td><td>Todos · Grupos concretos · Personas concretas</td></tr>
   </table>
   </div>
 
   <p>Y una casilla aparte: si <strong>exige confirmación de lectura</strong>.</p>
 
+  <h3 id="plantillas">Empezar desde una plantilla</h3>
+  <p>Arriba del formulario, <strong>Usar plantilla</strong> abre una lista con
+  avisos frecuentes ya escritos: recordatorio de actualizar SIAN, recordatorio
+  de responder, simulacro, suspensión de clases, reunión. Al elegir una se
+  llenan el título, el mensaje y la casilla de confirmación; nada sale hasta
+  que usted lo revise y pulse enviar.</p>
+  <ul>
+    <li><strong>Lo que va entre corchetes</strong>, como <code>[día]</code> o
+        <code>[hora]</code>, hay que completarlo: SIAN no deja enviar mientras
+        quede alguno.</li>
+    <li><strong>Guardar como plantilla</strong> guarda lo que tiene escrito con
+        el nombre que usted elija. La ven todos los que envían avisos, y
+        cualquiera de ellos la puede borrar desde la misma lista.</li>
+    <li>Las plantillas <strong>urgentes</strong> solo aparecen a quien puede
+        enviar urgentes.</li>
+  </ul>
+
   <h3>1 · Qué dice</h3>
   <p>El <strong>título</strong> admite hasta 80 caracteres y el
-  <strong>mensaje</strong> hasta 500. El contador se mueve mientras usted
+  <strong>mensaje</strong> hasta 1000. En la notificación del teléfono se ve un
+  resumen de las primeras líneas; el texto completo, en la bandeja. El contador se mueve mientras usted
   escribe y no lo deja pasarse: es mejor enterarse ahí que perder el texto al
   intentar enviarlo.</p>
 
@@ -602,6 +621,8 @@
     <li><strong>Grupos concretos:</strong> uno o varios de los grupos que haya
     armado. Quien esté en dos grupos recibe el aviso <strong>una sola
     vez</strong>.</li>
+    <li><strong>Personas concretas:</strong> una o varias personas, buscándolas
+    por nombre o correo. La confirmación antes de enviar dice sus nombres.</li>
   </ul>
 
   <h3>La casilla de confirmación</h3>
@@ -1137,6 +1158,14 @@
   <p>Importa aunque la persona reciba bien: las correcciones de las
   notificaciones llegan con las versiones. Qué trae cada una está en las
   <a href="notas/">notas de la versión</a>.</p>
+
+  <h3 id="alcance-fallos">Fallos reportados por los aparatos</h3>
+  <p>Al final de Alcance se ve cuántos aparatos informaron que algo les falló
+  en las últimas 24 horas: por ejemplo, el registro para recibir avisos. Se
+  agrupa por tipo, con el tipo de aparato y la versión. No dice de quién es
+  cada aparato: el reporte no lleva nombres ni correos. Sirve para enterarse
+  de un problema antes de que alguien diga «no me llegó»; si un mismo fallo
+  aparece en muchos aparatos, avise a quien mantiene SIAN.</p>
 </section>
 
 <section id="coordinador">

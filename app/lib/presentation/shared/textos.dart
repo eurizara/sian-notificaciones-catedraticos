@@ -424,6 +424,44 @@ abstract final class Textos {
       '4. Toque Responder debajo de este aviso y escriba: «Listo, $version».\n\n'
       'Si ya lo hizo antes, solo responda. Gracias.';
 
+  // --- Plantillas de avisos (RF-MSG-14) ------------------------------------
+
+  static const String plantillaUsar = 'Usar plantilla';
+  static const String plantillaGuardar = 'Guardar como plantilla';
+  static const String plantillaElegirTitulo = 'Plantillas';
+  static const String plantillaBuscar = 'Buscar plantilla';
+  static const String plantillaPropias = 'Guardadas';
+  static const String plantillaPredefinidas = 'Incluidas en SIAN';
+  static const String plantillaSinResultados = 'Ninguna plantilla coincide.';
+  static const String plantillaReemplazarTitulo = '¿Reemplazar lo escrito?';
+  static const String plantillaReemplazarDetalle =
+      'La plantilla reemplaza el título y el mensaje que ya escribió.';
+  static const String plantillaReemplazar = 'Reemplazar';
+  static const String plantillaSinCompletar =
+      'Complete lo que está entre corchetes';
+
+  static String plantillaFaltan(List<String> marcadores) =>
+      '$plantillaSinCompletar: ${marcadores.join(', ')}';
+
+  static const String plantillaNombre = 'Nombre de la plantilla';
+  static const String plantillaNombreAyuda =
+      'Así la reconocerán en la lista. La verán todos los que envían avisos.';
+  static const String plantillaGuardarConfirmar = 'Guardar';
+
+  static String plantillaGuardada(String nombre) =>
+      'Plantilla «$nombre» guardada.';
+
+  static const String plantillaNoSeGuardo =
+      'No se pudo guardar la plantilla. Intente de nuevo.';
+  static const String plantillaBorrar = 'Borrar plantilla';
+  static const String plantillaBorrarTitulo = '¿Borrar la plantilla?';
+
+  static String plantillaBorrarDetalle(String nombre) =>
+      'Se borra «$nombre» para todos los que envían avisos. Los avisos ya '
+      'enviados con ella no cambian.';
+
+  static const String plantillaBorrarConfirmar = 'Borrar';
+
   // --- Fallos reportados por los aparatos (DT-34) --------------------------
 
   static const String canalFallosTitulo = 'Fallos reportados por los aparatos';
