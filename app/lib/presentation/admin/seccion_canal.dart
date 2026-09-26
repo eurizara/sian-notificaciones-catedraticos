@@ -132,10 +132,16 @@ class _Contenido extends StatelessWidget {
         if (revision.todoEnOrden)
           const _TodoEnOrden()
         else
-          for (int i = 0; i < revision.personas.length; i += 1) ...<Widget>[
-            if (i > 0) const Divider(height: 1),
-            _Fila(persona: revision.personas[i]),
-          ],
+          _Desplegable(
+            clave: const Key('desplegable-canal'),
+            titulo: Textos.canalVerPersonas(revision.personas.length),
+            hijos: <Widget>[
+              for (int i = 0; i < revision.personas.length; i += 1) ...<Widget>[
+                if (i > 0) const Divider(height: 1),
+                _Fila(persona: revision.personas[i]),
+              ],
+            ],
+          ),
         const SizedBox(height: 24),
         _Versiones(
           clasificacion: versiones,
@@ -408,6 +414,10 @@ class _VersionesState extends ConsumerState<_Versiones> {
             ),
           ],
           const SizedBox(height: 8),
+          _Desplegable(
+            clave: const Key('desplegable-versiones'),
+            titulo: Textos.canalVerAtrasados(atrasados.length),
+            hijos: <Widget>[
           for (int i = 0; i < atrasados.length; i += 1) ...<Widget>[
             if (i > 0) const Divider(height: 1),
             ListTile(
@@ -427,10 +437,50 @@ class _VersionesState extends ConsumerState<_Versiones> {
               ),
             ),
           ],
+            ],
+          ),
         ],
       ],
     );
   }
+}
+
+/// Una lista plegada bajo un encabezado con su número (26/09/2026).
+///
+/// Con veinte personas en cada lista, Alcance era una pantalla larguísima
+/// donde lo importante —los resúmenes y el botón de recordar— quedaba
+/// perdido entre nombres. Plegadas, se ve de un vistazo cuántas hay en cada
+/// una, y se abre solo la que interesa.
+class _Desplegable extends StatelessWidget {
+  const _Desplegable({
+    required this.clave,
+    required this.titulo,
+    required this.hijos,
+  });
+
+  final Key clave;
+  final String titulo;
+  final List<Widget> hijos;
+
+  @override
+  Widget build(BuildContext context) => Card(
+    margin: EdgeInsets.zero,
+    child: Theme(
+      // Sin las líneas que ExpansionTile pone arriba y abajo al abrirse: la
+      // tarjeta ya marca el borde.
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        key: clave,
+        title: Text(
+          titulo,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+        expandedCrossAxisAlignment: CrossAxisAlignment.start,
+        children: hijos,
+      ),
+    ),
+  );
 }
 
 class _TodoEnOrden extends StatelessWidget {

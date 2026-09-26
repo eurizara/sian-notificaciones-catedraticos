@@ -464,6 +464,14 @@ abstract final class Textos {
 
   // --- Fallos reportados por los aparatos (DT-34) --------------------------
 
+  /// Encabezados de las listas plegables de Alcance.
+  static String canalVerPersonas(int n) =>
+      n == 1 ? 'Ver a la persona' : 'Ver a las $n personas';
+
+  static String canalVerAtrasados(int n) => n == 1
+      ? 'Ver a la persona con una versión anterior'
+      : 'Ver a las $n personas con una versión anterior';
+
   static const String canalFallosTitulo = 'Fallos reportados por los aparatos';
 
   static String canalFallosResumen(int aparatos) => switch (aparatos) {

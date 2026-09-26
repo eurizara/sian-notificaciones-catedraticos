@@ -26,15 +26,58 @@ import '../../domain/sesion.dart';
 import '../../infrastructure/firebase/repositorio_respuestas.dart';
 import '../docente/tarjeta_notificaciones.dart';
 import '../shared/apertura.dart';
+import '../shared/buscador.dart';
 import '../shared/conversacion.dart';
 import '../shared/tema.dart';
 import '../shared/textos.dart';
 
-class SeccionRespuestas extends ConsumerWidget {
+/// Cuántas conversaciones se muestran de una vez; «Ver más» suma otras tantas.
+const int conversacionesPorPagina = 10;
+
+/// Los avisos, con como mucho [n] conversaciones entre todos.
+///
+/// Se cuentan conversaciones y no avisos: un aviso respondido por treinta
+/// personas llenaba solo la pantalla. Si el corte cae en medio de un aviso,
+/// ese aviso se muestra con las que caben, y el resto llega con «Ver más».
+List<AvisoConRespuestas> primerasConversaciones(
+  List<AvisoConRespuestas> avisos,
+  int n,
+) {
+  final List<AvisoConRespuestas> r = <AvisoConRespuestas>[];
+  int quedan = n;
+  for (final AvisoConRespuestas a in avisos) {
+    if (quedan <= 0) {
+      break;
+    }
+    r.add(
+      a.hilos.length <= quedan
+          ? a
+          : AvisoConRespuestas(
+              mensajeId: a.mensajeId,
+              tituloAviso: a.tituloAviso,
+              hilos: a.hilos.take(quedan).toList(),
+            ),
+    );
+    quedan -= a.hilos.length;
+  }
+  return r;
+}
+
+int totalDeConversaciones(List<AvisoConRespuestas> avisos) =>
+    avisos.fold(0, (int t, AvisoConRespuestas a) => t + a.hilos.length);
+
+class SeccionRespuestas extends ConsumerStatefulWidget {
   const SeccionRespuestas({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SeccionRespuestas> createState() => _SeccionRespuestasState();
+}
+
+class _SeccionRespuestasState extends ConsumerState<SeccionRespuestas> {
+  int _visibles = conversacionesPorPagina;
+
+  @override
+  Widget build(BuildContext context) {
     final Sesion sesion = ref.watch(sesionActualProvider);
     final AsyncValue<List<AvisoConRespuestas>> avisos = ref.watch(
       avisosConRespuestasProvider,
@@ -72,8 +115,20 @@ class SeccionRespuestas extends ConsumerWidget {
           data: (List<AvisoConRespuestas> lista) => lista.isEmpty
               ? <Widget>[const _Vacio()]
               : <Widget>[
-                  for (final AvisoConRespuestas a in lista)
+                  for (final AvisoConRespuestas a in primerasConversaciones(
+                    lista,
+                    _visibles,
+                  ))
                     TarjetaAvisoConRespuestas(aviso: a),
+                  VerMas(
+                    mostrados: totalDeConversaciones(lista) < _visibles
+                        ? totalDeConversaciones(lista)
+                        : _visibles,
+                    total: totalDeConversaciones(lista),
+                    alPulsar: () => setState(
+                      () => _visibles += conversacionesPorPagina,
+                    ),
+                  ),
                 ],
           loading: () => <Widget>[
             const Padding(

@@ -764,6 +764,14 @@ Solo en un ambiente donde ya se dio de alta la clave (documento 11, «App Check�
 | PL-6 | Como administradora **sin** permiso de urgentes, abrir la lista | No aparece «Evacuación inmediata» |
 | PL-7 | Borrar una plantilla guardada | Pide confirmación y desaparece para todos |
 
+## Probar las listas cortas (1.6.16)
+
+| # | Paso | Qué debe ocurrir |
+|---|------|------------------|
+| LC-1 | Abrir **Respuestas** con más de 10 conversaciones | Se ven 10 y «Mostrando 10 de N»; «Ver más» trae 10 más |
+| LC-2 | Abrir **Alcance** | Las dos listas aparecen plegadas con su número; el resumen y «Enviar recordatorio» se ven sin desplegar |
+| LC-3 | Tocar cada encabezado | Se abre la lista; retirar un registro sigue funcionando |
+
 ## Probar el mantenimiento de 1.5.13
 
 | # | Paso | Qué debe ocurrir |
