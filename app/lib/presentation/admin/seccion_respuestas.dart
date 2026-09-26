@@ -92,7 +92,28 @@ class _SeccionRespuestasState extends ConsumerState<SeccionRespuestas> {
 
     _abrirConversacionPedida(context, ref, avisos);
 
-    return ListView(
+    // ──────────────────────────────────────────────────────────────────────
+    // La tarjeta de notificaciones va FUERA de la lista, como en la bandeja.
+    // ──────────────────────────────────────────────────────────────────────
+    //
+    // Dentro, al volver a la cima la lista la destruía y la recreaba; su
+    // `initState` vuelve a consultar el permiso y al responder cambia de alto.
+    // Ese salto justo arriba empujaba la vista y el desplazamiento se quedaba
+    // atrapado. Pasó en la bandeja en agosto de 2026 (2acf262) y volvió a pasar
+    // aquí el 26/09/2026: esta pantalla se hizo después y repitió el patrón.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        if (necesitaTarjeta)
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: TarjetaNotificaciones(
+              detallePendiente: Textos.respuestasNotifPendienteDetalle,
+              detalleActivo: Textos.respuestasNotifActivasDetalle,
+            ),
+          ),
+        Expanded(
+          child: ListView(
       padding: const EdgeInsets.all(16),
       children: <Widget>[
         Text(Textos.seccionRespuestasTitulo, style: tema.textTheme.titleLarge),
@@ -104,13 +125,6 @@ class _SeccionRespuestasState extends ConsumerState<SeccionRespuestas> {
           ),
         ),
         const SizedBox(height: 16),
-        if (necesitaTarjeta) ...<Widget>[
-          const TarjetaNotificaciones(
-            detallePendiente: Textos.respuestasNotifPendienteDetalle,
-            detalleActivo: Textos.respuestasNotifActivasDetalle,
-          ),
-          const SizedBox(height: 8),
-        ],
         ...avisos.when(
           data: (List<AvisoConRespuestas> lista) => lista.isEmpty
               ? <Widget>[const _Vacio()]
@@ -142,6 +156,9 @@ class _SeccionRespuestasState extends ConsumerState<SeccionRespuestas> {
               child: Text(Textos.respuestasFallo),
             ),
           ],
+        ),
+      ],
+          ),
         ),
       ],
     );
@@ -220,21 +237,29 @@ class TarjetaAvisoConRespuestas extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData tema = Theme.of(context);
     final int sinLeer = aviso.sinLeer;
+    // Plegable, con quién respondió dentro (26/09/2026). Arranca abierto solo
+    // si hay algo sin leer: es lo único que pide atención.
+    //
+    // La clave de página NO es decoración. La lista recrea lo que sale de la
+    // pantalla; sin ella, un aviso que se había abierto volvía plegado al
+    // regresar, cambiaba de alto, y el desplazamiento se trababa (es la misma
+    // familia de fallo que la tarjeta de notificaciones, arriba).
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Text(
+      child: Theme(
+        data: tema.copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          key: PageStorageKey<String>('respuestas-${aviso.mensajeId}'),
+          initiallyExpanded: sinLeer > 0,
+          tilePadding: const EdgeInsets.fromLTRB(16, 6, 12, 6),
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+          title: Text(
               aviso.tituloAviso,
               style: tema.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 2),
-            Text(
+          subtitle: Text(
               sinLeer > 0
                   ? '${Textos.conversaciones(aviso.hilos.length)} · '
                         '${Textos.sinLeer(sinLeer)}'
@@ -246,8 +271,17 @@ class TarjetaAvisoConRespuestas extends StatelessWidget {
                 fontWeight: sinLeer > 0 ? FontWeight.w600 : null,
               ),
             ),
-            const SizedBox(height: 4),
-            for (final Hilo h in aviso.hilos) FilaDeHilo(hilo: h),
+          children: <Widget>[
+            // Clave propia para lo de dentro: si no, lo que guardara un
+            // desplazamiento interno chocaría con el «abierto» del desplegable.
+            Column(
+              key: PageStorageKey<String>(
+                'respuestas-${aviso.mensajeId}-contenido',
+              ),
+              children: <Widget>[
+                for (final Hilo h in aviso.hilos) FilaDeHilo(hilo: h),
+              ],
+            ),
           ],
         ),
       ),

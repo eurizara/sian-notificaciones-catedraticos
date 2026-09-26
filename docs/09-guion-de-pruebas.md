@@ -771,6 +771,8 @@ Solo en un ambiente donde ya se dio de alta la clave (documento 11, «App Check�
 | LC-1 | Abrir **Respuestas** con más de 10 conversaciones | Se ven 10 y «Mostrando 10 de N»; «Ver más» trae 10 más |
 | LC-2 | Abrir **Alcance** | Las dos listas aparecen plegadas con su número; el resumen y «Enviar recordatorio» se ven sin desplegar |
 | LC-3 | Tocar cada encabezado | Se abre la lista; retirar un registro sigue funcionando |
+| LC-4 | En **Respuestas**, en el teléfono, bajar hasta el final y volver a subir varias veces, con avisos abiertos y plegados | El desplazamiento no se traba en ningún punto, tampoco al llegar arriba; lo abierto sigue abierto (1.6.17) |
+| LC-5 | En Respuestas, tocar el título de un aviso | Se pliega o despliega; los que tienen algo sin leer arrancan abiertos |
 
 ## Probar el mantenimiento de 1.5.13
 

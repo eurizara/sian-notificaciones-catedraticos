@@ -31,8 +31,9 @@ Future<void> desplegarListas(WidgetTester tester) async {
   for (final String clave in <String>[
     'desplegable-canal',
     'desplegable-versiones',
+    'desplegable-fallos',
   ]) {
-    final Finder f = find.byKey(Key(clave));
+    final Finder f = find.byKey(PageStorageKey<String>(clave));
     if (f.evaluate().isNotEmpty) {
       await tester.tap(f);
       await tester.pumpAndSettle();

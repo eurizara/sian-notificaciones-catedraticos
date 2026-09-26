@@ -133,7 +133,7 @@ class _Contenido extends StatelessWidget {
           const _TodoEnOrden()
         else
           _Desplegable(
-            clave: const Key('desplegable-canal'),
+            id: 'desplegable-canal',
             titulo: Textos.canalVerPersonas(revision.personas.length),
             hijos: <Widget>[
               for (int i = 0; i < revision.personas.length; i += 1) ...<Widget>[
@@ -176,6 +176,10 @@ class _Fallos extends StatelessWidget {
         Text(Textos.canalFallosResumen(fallos.aparatos)),
         if (fallos.porTipo.isNotEmpty) ...<Widget>[
           const SizedBox(height: 8),
+          _Desplegable(
+            id: 'desplegable-fallos',
+            titulo: Textos.canalVerFallos(fallos.porTipo.length),
+            hijos: <Widget>[
           for (final TipoDeFallosResumido t in fallos.porTipo)
             ListTile(
               contentPadding: EdgeInsets.zero,
@@ -199,6 +203,8 @@ class _Fallos extends StatelessWidget {
                 ],
               ),
             ),
+            ],
+          ),
         ],
         const SizedBox(height: 4),
         Text(Textos.canalFallosNota, style: texto.bodySmall),
@@ -415,7 +421,7 @@ class _VersionesState extends ConsumerState<_Versiones> {
           ],
           const SizedBox(height: 8),
           _Desplegable(
-            clave: const Key('desplegable-versiones'),
+            id: 'desplegable-versiones',
             titulo: Textos.canalVerAtrasados(atrasados.length),
             hijos: <Widget>[
           for (int i = 0; i < atrasados.length; i += 1) ...<Widget>[
@@ -447,18 +453,29 @@ class _VersionesState extends ConsumerState<_Versiones> {
 
 /// Una lista plegada bajo un encabezado con su número (26/09/2026).
 ///
+/// [id] da nombre a dos claves de página, y las dos hacen falta:
+///
+///   · La del desplegable recuerda si estaba abierto. La lista recrea lo que
+///     sale de la pantalla; sin ella, una lista abierta volvía plegada al
+///     regresar, cambiaba de alto y trababa el desplazamiento.
+///   · La del contenido separa lo que guarda lo de dentro. Un texto
+///     seleccionable tiene su propio desplazamiento y guarda su posición con
+///     las claves de sus antepasados: sin una propia, escribía en el mismo
+///     sitio donde el desplegable guarda «abierto», y al desplegarse fallaba
+///     (se vio en las pruebas de los fallos de aparatos, 26/09/2026).
+///
 /// Con veinte personas en cada lista, Alcance era una pantalla larguísima
 /// donde lo importante —los resúmenes y el botón de recordar— quedaba
 /// perdido entre nombres. Plegadas, se ve de un vistazo cuántas hay en cada
 /// una, y se abre solo la que interesa.
 class _Desplegable extends StatelessWidget {
   const _Desplegable({
-    required this.clave,
+    required this.id,
     required this.titulo,
     required this.hijos,
   });
 
-  final Key clave;
+  final String id;
   final String titulo;
   final List<Widget> hijos;
 
@@ -470,14 +487,20 @@ class _Desplegable extends StatelessWidget {
       // tarjeta ya marca el borde.
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
       child: ExpansionTile(
-        key: clave,
+        key: PageStorageKey<String>(id),
         title: Text(
           titulo,
           style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
         expandedCrossAxisAlignment: CrossAxisAlignment.start,
-        children: hijos,
+        children: <Widget>[
+          Column(
+            key: PageStorageKey<String>('$id-contenido'),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: hijos,
+          ),
+        ],
       ),
     ),
   );

@@ -468,6 +468,9 @@ abstract final class Textos {
   static String canalVerPersonas(int n) =>
       n == 1 ? 'Ver a la persona' : 'Ver a las $n personas';
 
+  static String canalVerFallos(int n) =>
+      n == 1 ? 'Ver el tipo de fallo' : 'Ver los $n tipos de fallo';
+
   static String canalVerAtrasados(int n) => n == 1
       ? 'Ver a la persona con una versión anterior'
       : 'Ver a las $n personas con una versión anterior';
