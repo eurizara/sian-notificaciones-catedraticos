@@ -35,6 +35,23 @@ export const OPCIONES_FUNCION = {
   maxInstances: 10,
 } as const;
 
+/**
+ * ¿Se rechaza la llamada que no trae un token válido de App Check? (DT-33)
+ *
+ * Todavía no: primero se **observa**. Con esto en `false`, cada llamada queda
+ * en el registro con `"verifications": {"app": "VALID" | "MISSING" | "INVALID"}`
+ * y nadie queda fuera. Se cambia a `true` solo cuando, durante al menos una
+ * semana, todas las llamadas legítimas digan `VALID` — el procedimiento está en
+ * el documento 11, «App Check».
+ */
+export const EXIGIR_APP_CHECK = false;
+
+/** Opciones de toda función llamable desde la aplicación. */
+export const OPCIONES_LLAMABLE = {
+  ...OPCIONES_FUNCION,
+  enforceAppCheck: EXIGIR_APP_CHECK,
+} as const;
+
 // ---------------------------------------------------------------------------
 // Rutas de las colecciones (documento 05, sección 2)
 // ---------------------------------------------------------------------------

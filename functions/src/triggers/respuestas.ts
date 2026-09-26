@@ -39,7 +39,7 @@ import {
   vistaPrevia,
 } from '../domain/respuesta';
 import type { Rol } from '../domain/tipos';
-import { FieldValue, OPCIONES_FUNCION, RUTAS, Timestamp, db } from '../infrastructure/firebase';
+import { FieldValue, OPCIONES_LLAMABLE, RUTAS, Timestamp, db } from '../infrastructure/firebase';
 import { escribirAsiento, nombreDe } from '../infrastructure/repositorios';
 import { avisarAPersona } from './envio';
 
@@ -74,7 +74,7 @@ function traducir(e: unknown, contexto: Record<string, unknown>, mensaje: string
  * quien emitió el aviso contesta en el hilo de un destinatario que ya
  * escribió. `decidirLado` es quien dice cuál de los dos casos es, o ninguno.
  */
-export const responderAviso = onCall(OPCIONES_FUNCION, async (peticion) => {
+export const responderAviso = onCall(OPCIONES_LLAMABLE, async (peticion) => {
   if (!peticion.auth) {
     throw new HttpsError('unauthenticated', 'Hay que iniciar sesión.');
   }
@@ -273,7 +273,7 @@ export const responderAviso = onCall(OPCIONES_FUNCION, async (peticion) => {
  * Cada lado pone a cero SU contador, nunca el del otro: que el emisor abra la
  * conversación no puede hacer creer al catedrático que ya leyó la respuesta.
  */
-export const marcarHiloLeido = onCall(OPCIONES_FUNCION, async (peticion) => {
+export const marcarHiloLeido = onCall(OPCIONES_LLAMABLE, async (peticion) => {
   if (!peticion.auth) {
     throw new HttpsError('unauthenticated', 'Hay que iniciar sesión.');
   }

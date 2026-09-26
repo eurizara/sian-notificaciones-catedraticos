@@ -36,6 +36,12 @@ abstract final class Entorno {
     'SIAN_VAPID_PROPIA',
   );
 
+  /// Clave de sitio de reCAPTCHA Enterprise para App Check (DT-33).
+  ///
+  /// Pública por diseño, como la VAPID. Vacía en los ambientes donde App Check
+  /// todavía no está dado de alta, y entonces la aplicación no lo enciende.
+  static const String claveAppCheck = String.fromEnvironment('SIAN_APP_CHECK');
+
   /// Zona horaria institucional (RF-ADM-01, RN-05).
   ///
   /// Toda fecha se almacena en UTC y se presenta en esta zona. El valor real

@@ -52,7 +52,7 @@ import {
 } from '../domain/mensaje';
 import { normalizarAdjuntos } from '../domain/tipos';
 import type { Adjuntos, Destinatarios, Rol, TipoMensaje } from '../domain/tipos';
-import { FieldValue, OPCIONES_FUNCION, RUTAS, aTimestamp, db } from '../infrastructure/firebase';
+import { FieldValue, OPCIONES_LLAMABLE, RUTAS, aTimestamp, db } from '../infrastructure/firebase';
 import { escribirAsiento, escribirAsientos, nombreDe } from '../infrastructure/repositorios';
 import { versionMasAlta } from '../domain/version';
 
@@ -135,7 +135,7 @@ async function leerPadron(
  * la única oportunidad de detectar que el grupo elegido no era el que se creía.
  * Después ya no hay vuelta atrás: RN-03 lo impide.
  */
-export const contarDestinatarios = onCall(OPCIONES_FUNCION, async (peticion) => {
+export const contarDestinatarios = onCall(OPCIONES_LLAMABLE, async (peticion) => {
   const sujeto = sujetoDe(peticion);
 
   try {
@@ -173,7 +173,7 @@ export const contarDestinatarios = onCall(OPCIONES_FUNCION, async (peticion) => 
  * Abrir las reglas le daría el perfil entero de todos; esto le da solo nombre y
  * correo de quien puede recibir, con el mismo permiso que redactar.
  */
-export const personasDestinatarias = onCall(OPCIONES_FUNCION, async (peticion) => {
+export const personasDestinatarias = onCall(OPCIONES_LLAMABLE, async (peticion) => {
   const sujeto = sujetoDe(peticion);
   try {
     exigirPermiso(sujeto, 'CREAR_AVISO_INFORMATIVO');
@@ -203,7 +203,7 @@ export const personasDestinatarias = onCall(OPCIONES_FUNCION, async (peticion) =
  * despachado por un fallo intermedio es exactamente el estado ambiguo que
  * RN-03 quiere evitar. Aquí, o hay mensaje con entregas, o no hay nada.
  */
-export const enviarInmediato = onCall(OPCIONES_FUNCION, async (peticion) => {
+export const enviarInmediato = onCall(OPCIONES_LLAMABLE, async (peticion) => {
   const sujeto = sujetoDe(peticion);
   const datos = peticion.data as PeticionEnvio;
   const correo = (peticion.auth?.token.email as string | undefined) ?? '';
