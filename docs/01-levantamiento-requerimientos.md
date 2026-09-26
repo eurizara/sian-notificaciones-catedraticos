@@ -156,7 +156,7 @@ se le crea perfil, y el intento queda registrado en la bitácora.
 | RF-MSG-11 | El emisor puede previsualizar cómo se verá la notificación antes de enviar | B |
 | RF-MSG-12 | El emisor puede marcar el mensaje como **requiere confirmación de lectura** | D |
 | RF-MSG-13 | El sistema exige una segunda confirmación explícita antes de enviar una alerta urgente | D |
-| RF-MSG-14 | El emisor puede usar plantillas predefinidas para mensajes frecuentes, como simulacros | P |
+| RF-MSG-14 | El emisor puede usar plantillas predefinidas para mensajes frecuentes, como simulacros. **Implementado en 1.6.13** (predefinidas y propias) | P |
 
 **Criterio de aceptación de RF-MSG-13:** al pulsar «Enviar» en un mensaje clasificado como
 Urgente, el sistema presenta un diálogo que muestra el conteo exacto de destinatarios y

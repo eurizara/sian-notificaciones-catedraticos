@@ -441,7 +441,7 @@ grupo.
 | Propuesta | Por qué |
 |---|---|
 | **Mensajes de hasta 1000 caracteres** (hoy 500) — **hecho en desarrollo, 1.6.7** | El aviso de actualización de 1.5.11 no cupo a la primera. Se puede ampliar sin riesgo si la **notificación** lleva un resumen (primeros ~250 caracteres) y la **bandeja** el texto completo: así la carga del push sigue lejos del límite de 4 KB |
-| **Plantillas de avisos** (RF-MSG-14, ya en la cartera) | Los recordatorios de actualizar y responder son siempre parecidos |
+| **Plantillas de avisos** (RF-MSG-14, ya en la cartera) — **hecho en desarrollo, 1.6.13** | Los recordatorios de actualizar y responder son siempre parecidos |
 | **Recordatorio automático a quien no confirma** (RF-CNF-09, ya en la cartera) | Combina con U-7c |
 | **Canal de respaldo por SMS o WhatsApp** | Aplazado por decisión del responsable. Sigue siendo lo único que cubre a quien no abre la app; se retoma cuando se decida |
 
