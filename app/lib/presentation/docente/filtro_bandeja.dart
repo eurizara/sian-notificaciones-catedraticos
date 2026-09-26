@@ -22,6 +22,13 @@
 /// pestañas es lo que hay. Antes no, y un contador que no cuadra es un
 /// contador en el que nadie vuelve a confiar.
 ///
+/// **Una respuesta nueva lo devuelve a SIN LEER** (26/09/2026). Si quien
+/// emitió el aviso contesta y el catedrático no lo ha leído, el aviso está en
+/// «Sin leer» aunque ya se hubiera leído o confirmado: tocar la notificación
+/// de la respuesta abría la bandeja ahí —así sigue pasando en iPhone— y la
+/// respuesta no aparecía. La entrega no cambia; al leer la conversación, el
+/// aviso vuelve a su etapa. Sigue estando en una sola.
+///
 /// Lo urgente queda fuera de este reparto a propósito. Una alerta urgente sin
 /// confirmar se anuncia **por encima del filtro**, en la cabecera fija, porque
 /// es lo único de esta pantalla que no puede quedar detrás de una pestaña.
@@ -53,6 +60,12 @@ enum EtapaBandeja {
 
 /// En qué etapa está este mensaje. **Devuelve una sola.**
 EtapaBandeja etapaDe(MensajeRecibido m) {
+  // Una respuesta sin leer manda sobre todo lo demás, salvo que el aviso ni
+  // siquiera haya llegado.
+  if (m.tieneRespuestaNueva &&
+      <String>{'ENTREGADO', 'ABIERTO', 'CONFIRMADO'}.contains(m.estado)) {
+    return EtapaBandeja.sinLeer;
+  }
   // Confirmado primero: es el final del camino, y desde ahí no se vuelve.
   if (m.estaConfirmado) {
     return EtapaBandeja.leido;
@@ -101,3 +114,4 @@ List<MensajeRecibido> aplicarFiltro(
 /// es exactamente lo que un contador evita.
 int contarEn(FiltroBandeja filtro, List<MensajeRecibido> mensajes) =>
     mensajes.where((MensajeRecibido m) => entraEn(filtro, m)).length;
+

@@ -67,6 +67,7 @@ class MensajeRecibido {
     this.abiertoEn,
     this.confirmadoEn,
     this.adjuntos = const <AdjuntoRecibido>[],
+    this.respuestasSinLeer = 0,
   });
 
   final String mensajeId;
@@ -125,6 +126,37 @@ class MensajeRecibido {
   /// Separarlos por tipo obligaría a inventar un orden al mostrarlos.
   final List<AdjuntoRecibido> adjuntos;
 
+  /// Respuestas de quien emitió el aviso que este catedrático todavía no leyó
+  /// (el `sinLeerCatedratico` de su conversación, DT-27).
+  ///
+  /// Mientras sea mayor que cero, el aviso vuelve a «Sin leer» aunque ya se
+  /// hubiera leído o confirmado: si no, la respuesta se perdía de vista. No
+  /// toca la entrega —lectura y confirmación son constancia— y se va sola en
+  /// cuanto se lee la conversación.
+  final int respuestasSinLeer;
+
+  bool get tieneRespuestaNueva => respuestasSinLeer > 0;
+
+  /// La misma entrega con otra cuenta de respuestas sin leer.
+  MensajeRecibido conRespuestas(int n) => MensajeRecibido(
+    mensajeId: mensajeId,
+    titulo: titulo,
+    cuerpo: cuerpo,
+    tipo: tipo,
+    estado: estado,
+    requiereConfirmacion: requiereConfirmacion,
+    emisor: emisor,
+    creadoPor: creadoPor,
+    esperaAcuse: esperaAcuse,
+    aparatoSabeAcusar: aparatoSabeAcusar,
+    mostradaEn: mostradaEn,
+    entregadoEn: entregadoEn,
+    abiertoEn: abiertoEn,
+    confirmadoEn: confirmadoEn,
+    adjuntos: adjuntos,
+    respuestasSinLeer: n,
+  );
+
   bool get llevaVoz => adjuntos.any((AdjuntoRecibido a) => a.esVoz);
   bool get llevaImagen => adjuntos.any((AdjuntoRecibido a) => !a.esVoz);
   bool get llevaAdjuntos => adjuntos.isNotEmpty;
@@ -166,3 +198,17 @@ class AdjuntoRecibido {
 
   bool get esVoz => tipo == 'AUDIO';
 }
+
+/// Pone a cada aviso la cuenta de respuestas sin leer de su conversación.
+///
+/// `porAviso` va de identificador de mensaje a cuenta; lo que no aparece ahí
+/// no tiene respuestas pendientes.
+List<MensajeRecibido> conRespuestasSinLeer(
+  List<MensajeRecibido> mensajes,
+  Map<String, int> porAviso,
+) => <MensajeRecibido>[
+  for (final MensajeRecibido m in mensajes)
+    (porAviso[m.mensajeId] ?? 0) == m.respuestasSinLeer
+        ? m
+        : m.conRespuestas(porAviso[m.mensajeId] ?? 0),
+];

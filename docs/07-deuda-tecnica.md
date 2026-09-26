@@ -2492,3 +2492,10 @@ tarde, al descongelarse la app, cuando el guardado ya se abrió.
 Si aun así falla en iPhone, el siguiente paso es DT-34 (reporte de fallos del aparato), para
 ver qué hace iOS en vez de deducirlo.
 
+**Mitigación en 1.6.15 (26/09/2026).** Probada la 1.6.x, en iPhone tocar la notificación de
+una respuesta **sigue** abriendo la bandeja en «Sin leer». Mientras se encuentra por qué la
+entrega del destino no llega a la aplicación en iOS, el aviso respondido **vuelve a «Sin
+leer»** para quien recibió la respuesta, con una marca que lo explica: ahí es justo donde cae
+la aplicación. La entrega no se toca. Queda abierto entender el fallo de iOS.
+
+

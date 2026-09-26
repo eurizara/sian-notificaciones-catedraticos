@@ -324,6 +324,28 @@ describe('DT-27 · respuestas: una conversación de dos', () => {
     );
   });
 
+  it('el catedrático reúne sus respuestas sin leer, y solo las suyas (1.6.15)', async () => {
+    const db = contexto(UID.catedratico, 'CATEDRATICO');
+    await assertSucceeds(
+      getDocs(
+        query(
+          collectionGroup(db, 'hilos'),
+          where('uid', '==', UID.catedratico),
+          where('sinLeerCatedratico', '>', 0),
+        ),
+      ),
+    );
+    await assertFails(
+      getDocs(
+        query(
+          collectionGroup(db, 'hilos'),
+          where('uid', '==', UID.otroCatedratico),
+          where('sinLeerCatedratico', '>', 0),
+        ),
+      ),
+    );
+  });
+
   it('una consulta de hilos que no filtra por uno mismo se rechaza entera', async () => {
     const coordinador = contexto(UID.coordinador, 'COORDINADOR');
     await assertFails(getDocs(collectionGroup(coordinador, 'hilos')));
