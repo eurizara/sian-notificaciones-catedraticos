@@ -48,12 +48,14 @@ import { getMessaging, type TokenMessage } from 'firebase-admin/messaging';
 import { exigirPermiso, recibeAvisos, type Sujeto } from '../domain/autorizacion';
 import {
   decidirSobreDispositivo,
-  esTokenMuerto,
-  estadoDeCanal,
-  GRAVEDAD_DE_CANAL,
   type DecisionDeSonda,
   type DispositivoAEvaluar,
+  estadoDeCanal,
   type EstadoDeCanal,
+  esTokenMuerto,
+  GRAVEDAD_DE_CANAL,
+  reemplazadosPorOtro,
+  tokensPorValidar,
 } from '../domain/dispositivo';
 import { resumirVersiones, versionMasAlta } from '../domain/version';
 import { crearAsiento } from '../domain/bitacora';
@@ -129,8 +131,34 @@ async function leerDispositivos(): Promise<DispositivoLeido[]> {
  * otra clase —la red, una cuota— no cuenta como muerte: retirar por eso sería
  * dejar sin avisos a alguien por un problema nuestro.
  */
-async function tokensMuertos(dispositivos: readonly DispositivoLeido[]): Promise<Set<string>> {
+async function tokensMuertos(
+  todos: readonly DispositivoLeido[],
+  memoria?: Map<string, { muerto: boolean; en: number }>,
+): Promise<Set<string>> {
   const muertos = new Set<string>();
+
+  // Lo que va por Web Push directo no tiene token de FCM: validarlo era
+  // mandarle a Google un token vacío por cada aparato ya migrado (1.6).
+  const conToken = todos.filter((d) => !d.tieneWebPush && d.tokenFCM.length > 0);
+
+  // En Alcance, lo validado hace pocos minutos no se vuelve a preguntar.
+  let dispositivos = conToken;
+  if (memoria) {
+    const ahora = Date.now();
+    const pendientes = new Set(
+      tokensPorValidar(
+        conToken.map((d) => d.tokenFCM),
+        memoria,
+        ahora,
+      ),
+    );
+    for (const d of conToken) {
+      if (!pendientes.has(d.tokenFCM) && memoria.get(d.tokenFCM)?.muerto) {
+        muertos.add(d.tokenFCM);
+      }
+    }
+    dispositivos = conToken.filter((d) => pendientes.has(d.tokenFCM));
+  }
 
   for (let i = 0; i < dispositivos.length; i += TAMANO_LOTE) {
     const lote = dispositivos.slice(i, i + TAMANO_LOTE);
@@ -142,11 +170,17 @@ async function tokensMuertos(dispositivos: readonly DispositivoLeido[]): Promise
     // El `true` es todo el asunto: modo de validación, no se entrega nada.
     const respuesta = await getMessaging().sendEach(mensajes, true);
 
+    const ahora = Date.now();
     respuesta.responses.forEach((r, indice) => {
       const dispositivo = lote[indice];
-      if (dispositivo && !r.success && esTokenMuerto(r.error?.code)) {
+      if (!dispositivo) {
+        return;
+      }
+      const muerto = !r.success && esTokenMuerto(r.error?.code);
+      if (muerto) {
         muertos.add(dispositivo.tokenFCM);
       }
+      memoria?.set(dispositivo.tokenFCM, { muerto, en: ahora });
     });
   }
 
@@ -157,6 +191,34 @@ async function tokensMuertos(dispositivos: readonly DispositivoLeido[]): Promise
 async function retirar(
   dispositivo: DispositivoLeido,
   decision: Exclude<DecisionDeSonda, 'conservar'>,
+): Promise<void> {
+  await retirarRegistro(dispositivo, decision, {
+    uid: 'sistema',
+    correo: 'sonda@sian',
+    rol: 'SISTEMA',
+  });
+}
+
+/** Resumen de la bitácora para cada motivo de retiro. */
+function resumenDeRetiro(motivo: string, plataforma: string): string {
+  switch (motivo) {
+    case 'retirar-por-muerto':
+      return `Retirado por token muerto (${plataforma})`;
+    case 'retirar-por-inactivo':
+      return `Retirado por inactividad (${plataforma})`;
+    case 'retirar-por-reemplazado':
+      return `Retirado por una instalación más reciente del mismo aparato (${plataforma})`;
+    default:
+      return `Retirado desde Alcance (${plataforma})`;
+  }
+}
+
+/** Borra el registro y lo deja en la bitácora con quién y por qué. */
+async function retirarRegistro(
+  dispositivo: Pick<DispositivoLeido, 'uid' | 'id' | 'plataforma' | 'ultimaActividad'>,
+  motivo: string,
+  actor: { uid: string; correo: string; rol: string },
+  nota?: string,
 ): Promise<void> {
   await db
     .collection(RUTAS.usuarios)
@@ -171,16 +233,14 @@ async function retirar(
       // Quien retira no es una persona: es la sonda. El rol SISTEMA existe
       // justamente para que la bitácora no tenga que inventar un responsable
       // humano en las acciones automáticas.
-      actor: { uid: 'sistema', correo: 'sonda@sian', rol: 'SISTEMA' },
+      actor: actor as { uid: string; correo: string; rol: Rol | 'SISTEMA' },
       entidad: 'DISPOSITIVO',
       entidadId: dispositivo.id,
-      resumen:
-        decision === 'retirar-por-muerto'
-          ? `Retirado por token muerto (${dispositivo.plataforma})`
-          : `Retirado por inactividad (${dispositivo.plataforma})`,
+      resumen: resumenDeRetiro(motivo, dispositivo.plataforma),
       datos: {
         uid: dispositivo.uid,
-        motivo: decision,
+        motivo,
+        ...(nota ? { nota } : {}),
         ultimaActividad: dispositivo.ultimaActividad?.toISOString() ?? null,
       },
     }),
@@ -224,16 +284,21 @@ export const sondaDeCanal = onSchedule(
     }
 
     const muertos = await tokensMuertos(dispositivos);
+    const reemplazados = reemplazadosPorOtro(dispositivos, ahora);
 
     let porMuerto = 0;
     let porInactivo = 0;
+    let porReemplazado = 0;
 
     for (const dispositivo of dispositivos) {
-      const decision = decidirSobreDispositivo(
+      let decision = decidirSobreDispositivo(
         dispositivo,
         dispositivo.tieneWebPush || !muertos.has(dispositivo.tokenFCM),
         ahora,
       );
+      if (decision === 'conservar' && reemplazados.has(dispositivo.id)) {
+        decision = 'retirar-por-reemplazado';
+      }
       if (decision === 'conservar') {
         continue;
       }
@@ -242,6 +307,8 @@ export const sondaDeCanal = onSchedule(
         await retirar(dispositivo, decision);
         if (decision === 'retirar-por-muerto') {
           porMuerto += 1;
+        } else if (decision === 'retirar-por-reemplazado') {
+          porReemplazado += 1;
         } else {
           porInactivo += 1;
         }
@@ -258,6 +325,7 @@ export const sondaDeCanal = onSchedule(
     logger.info('Sonda de canal completada', {
       revisados: dispositivos.length,
       retiradosPorMuerto: porMuerto,
+      retiradosPorReemplazo: porReemplazado,
       retiradosPorInactividad: porInactivo,
       quedan: dispositivos.length - porMuerto - porInactivo,
     });
@@ -388,6 +456,14 @@ function sujetoDe(peticion: {
  * Se excluye a quien está al día: una lista que incluye a todos es una lista que
  * nadie repasa.
  */
+/**
+ * Lo que FCM dijo de cada token en las últimas visitas a Alcance (1.6).
+ *
+ * Vive lo que viva la instancia: si se recicla, se vuelve a preguntar todo,
+ * que es lo que se hacía siempre. Nunca se usa para retirar nada.
+ */
+const memoriaDeValidacion = new Map<string, { muerto: boolean; en: number }>();
+
 export const dispositivosQueNecesitanAtencion = onCall(OPCIONES_FUNCION, async (peticion) => {
   const sujeto = sujetoDe(peticion);
   // Quien puede ver esto es quien puede hacer algo con ello: los mismos que
@@ -418,7 +494,7 @@ export const dispositivosQueNecesitanAtencion = onCall(OPCIONES_FUNCION, async (
   // Cuesta una validación en seco por dispositivo: no se entrega nada, el
   // teléfono no se entera, y es la diferencia entre una pantalla que informa y
   // una que tranquiliza sin motivo.
-  const muertos = await tokensMuertos(dispositivos);
+  const muertos = await tokensMuertos(dispositivos, memoriaDeValidacion);
   const falloElUltimo = await personasConElUltimoEnvioFallido();
 
   const porUid = new Map<string, DispositivoLeido[]>();
@@ -522,4 +598,53 @@ export const dispositivosQueNecesitanAtencion = onCall(OPCIONES_FUNCION, async (
       dispositivos,
     ),
   };
+});
+
+/**
+ * Retira un registro de aparato desde Alcance (1.6).
+ *
+ * El 16/09/2026 hubo que borrar a mano, con guiones, nueve registros viejos de
+ * producción que hacían aparecer como atrasadas a personas que ya habían
+ * actualizado. Esto lo pone en manos de coordinación, con un botón, y deja en la
+ * bitácora quién lo hizo. Si el aparato sigue en uso, se registra de nuevo solo
+ * la próxima vez que se abra SIAN en él.
+ */
+export const retirarDispositivo = onCall(OPCIONES_FUNCION, async (peticion) => {
+  const sujeto = sujetoDe(peticion);
+  exigirPermiso(sujeto, 'ADMINISTRAR_USUARIOS');
+
+  const datos = (peticion.data ?? {}) as { uid?: unknown; dispositivoId?: unknown; nota?: unknown };
+  const valido = (v: unknown): v is string =>
+    typeof v === 'string' && /^[A-Za-z0-9_:.-]{1,200}$/.test(v);
+  if (!valido(datos.uid) || !valido(datos.dispositivoId)) {
+    throw new HttpsError('invalid-argument', 'Aparato no válido.');
+  }
+
+  const ref = db
+    .collection(RUTAS.usuarios)
+    .doc(datos.uid)
+    .collection('dispositivos')
+    .doc(datos.dispositivoId);
+  const doc = await ref.get();
+  if (!doc.exists) {
+    // Ya no está: quien lo pidió ve lo mismo que si se hubiera retirado.
+    return { retirado: false };
+  }
+
+  await retirarRegistro(
+    {
+      uid: datos.uid,
+      id: datos.dispositivoId,
+      plataforma: (doc.get('plataforma') as string | undefined) ?? '',
+      ultimaActividad: aFecha(doc.get('ultimaActividad')),
+    },
+    'retirar-desde-alcance',
+    {
+      uid: sujeto.uid,
+      correo: (peticion.auth?.token.email as string | undefined) ?? '',
+      rol: sujeto.rol,
+    },
+    typeof datos.nota === 'string' ? datos.nota.slice(0, 200) : undefined,
+  );
+  return { retirado: true };
 });

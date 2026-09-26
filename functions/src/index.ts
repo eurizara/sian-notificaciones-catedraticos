@@ -47,7 +47,7 @@ export {
   vistaPreviaOcurrencias,
 } from './triggers/programacion';
 export { despachador } from './triggers/despachador';
-export { dispositivosQueNecesitanAtencion, sondaDeCanal } from './triggers/sonda';
+export { dispositivosQueNecesitanAtencion, retirarDispositivo, sondaDeCanal } from './triggers/sonda';
 export { marcarHiloLeido, responderAviso } from './triggers/respuestas';
 export { acuseDeNotificacion } from './triggers/acuse';
 export { reportarSuscripcion } from './triggers/suscripcion';

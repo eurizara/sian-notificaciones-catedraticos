@@ -394,6 +394,36 @@ abstract final class Textos {
             'se actualizó. No hay que pedir nada: se retira solo a los 60 días.'
       : 'Además hay $n registros de instalaciones anteriores de aparatos que ya '
             'se actualizaron. No hay que pedir nada: se retiran solos a los 60 días.';
+  // --- Alcance: retirar y recordar (1.6) --------------------------------------
+  static String botonRecordarVersion(int n) => n == 1
+      ? 'Enviar recordatorio a esta persona'
+      : 'Enviar recordatorio a estas $n personas';
+  static const String retirarRegistro = 'Retirar este registro';
+  static const String retirarTitulo = '¿Retirar este registro?';
+  static String retirarDetalle(String aparato, String persona) =>
+      'Se retirará el registro de $aparato de $persona. Si todavía lo usa, se '
+      'registrará solo la próxima vez que abra SIAN en él. Queda en la bitácora.';
+  static const String botonRetirar = 'Retirar';
+  static const String registroRetirado = 'Registro retirado.';
+  static const String registroNoRetirado =
+      'No se pudo retirar el registro. Inténtalo de nuevo.';
+  static const String verReemplazados = 'Ver y retirar';
+  static const String ocultarReemplazados = 'Ocultar';
+
+  /// El recordatorio sugerido. Cabe en 500 caracteres aunque el límite ya sea
+  /// de 1000: se lee entero en la notificación de un iPhone.
+  static const String recordatorioTitulo =
+      'Verifique su versión de SIAN y responda este aviso';
+  static String recordatorioCuerpo(String version) =>
+      'Le pedimos confirmar que su SIAN está al día:\n\n'
+      '1. Baje hasta el final de sus mensajes: debe decir SIAN $version.\n\n'
+      '2. Si dice otra versión o no aparece, toque Recargar (flecha circular, '
+      'arriba) y vuelva a revisar.\n\n'
+      '3. Si usa Android con la app instalada y le aparece la tarjeta «Un ajuste '
+      'más…», siga sus pasos.\n\n'
+      '4. Toque Responder debajo de este aviso y escriba: «Listo, $version».\n\n'
+      'Si ya lo hizo antes, solo responda. Gracias.';
+
   static String nombrePlataforma(String plataforma) => switch (plataforma) {
     'WEB_ANDROID' => 'Android',
     'WEB_IOS' => 'iPhone',
