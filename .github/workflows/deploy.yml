@@ -173,6 +173,13 @@ jobs:
         if: hashFiles('app/pubspec.yaml') != ''
         run: bash scripts/sellar-version.sh app/build/web
 
+      # El paquete lleva la huella de su contenido en el nombre para poder
+      # guardarse en caché: sin ella se descargaba entero en cada apertura
+      # (S-7). Si Flutter cambia el formato del arranque, falla aquí.
+      - name: Poner huella al paquete
+        if: hashFiles('app/pubspec.yaml') != ''
+        run: bash scripts/huella-paquete.sh app/build/web
+
       - name: Desplegar Hosting
         if: hashFiles('app/pubspec.yaml') != ''
         uses: FirebaseExtended/action-hosting-deploy@v0
@@ -338,6 +345,13 @@ jobs:
         if: hashFiles('app/pubspec.yaml') != ''
         run: bash scripts/sellar-version.sh app/build/web
 
+      # El paquete lleva la huella de su contenido en el nombre para poder
+      # guardarse en caché: sin ella se descargaba entero en cada apertura
+      # (S-7). Si Flutter cambia el formato del arranque, falla aquí.
+      - name: Poner huella al paquete
+        if: hashFiles('app/pubspec.yaml') != ''
+        run: bash scripts/huella-paquete.sh app/build/web
+
       - name: Desplegar Hosting
         if: hashFiles('app/pubspec.yaml') != ''
         uses: FirebaseExtended/action-hosting-deploy@v0
@@ -497,6 +511,13 @@ jobs:
       - name: Sellar la versión en lo que se publica
         if: hashFiles('app/pubspec.yaml') != ''
         run: bash scripts/sellar-version.sh app/build/web
+
+      # El paquete lleva la huella de su contenido en el nombre para poder
+      # guardarse en caché: sin ella se descargaba entero en cada apertura
+      # (S-7). Si Flutter cambia el formato del arranque, falla aquí.
+      - name: Poner huella al paquete
+        if: hashFiles('app/pubspec.yaml') != ''
+        run: bash scripts/huella-paquete.sh app/build/web
 
       - name: Desplegar Hosting
         if: hashFiles('app/pubspec.yaml') != ''

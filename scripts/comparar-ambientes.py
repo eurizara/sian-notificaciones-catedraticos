@@ -33,6 +33,7 @@ verdad.
 """
 
 import json
+import re
 import os
 import subprocess
 import sys
@@ -83,7 +84,11 @@ def publico(url: str) -> str:
 def retrato(proyecto: str, numero: str) -> dict:
     """Todo lo que debería ser idéntico entre ambientes."""
     sitio = f"https://{proyecto}.web.app"
-    paquete = publico(f"{sitio}/main.dart.js")
+    # Desde 1.6.11 el paquete lleva la huella de su contenido en el nombre
+    # (scripts/huella-paquete.sh): se lee del arranque cuál es.
+    arranque = publico(f"{sitio}/flutter_bootstrap.js")
+    nombre = re.search(r'"mainJsPath":"([^"]+)"', arranque)
+    paquete = publico(f"{sitio}/{nombre.group(1) if nombre else 'main.dart.js'}")
     worker = publico(f"{sitio}/firebase-messaging-sw.js")
     config = publico(f"{sitio}/firebase-config.js")
 

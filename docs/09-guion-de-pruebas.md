@@ -742,6 +742,15 @@ Solo en un ambiente donde ya se dio de alta la clave (documento 11, «App Check�
 | RF-4 | Provocar el mismo fallo tres veces seguidas | Cuenta **una** vez: el aparato no insiste antes de 10 minutos |
 | RF-5 | En la consola de Firestore, mirar `fallos_aparato` | Documentos con `aparato` al azar, sin uid ni correo |
 
+## Probar la carga inicial (S-7, 1.6.11)
+
+| # | Paso | Qué debe ocurrir |
+|---|------|------------------|
+| CI-1 | Tras desplegar, abrir `https://<proyecto>.web.app/version.json` | Dice 1.6.11 |
+| CI-2 | Abrir SIAN instalada en el iPhone, cerrarla del todo y volver a abrirla | Abre igual o más rápido que la 1.6.10; todo se ve bien (escudo, letra, iconos) |
+| CI-3 | En Chrome de la computadora, herramientas de desarrollo → Red, recargar dos veces | En la segunda, `main.<huella>.dart.js`, el escudo y las Urbanist salen «(memory cache)» o «(disk cache)» |
+| CI-4 | Publicar una versión nueva y pulsar «Actualizar» | Se carga la nueva: el nombre del paquete cambió |
+
 ## Probar el mantenimiento de 1.5.13
 
 | # | Paso | Qué debe ocurrir |
