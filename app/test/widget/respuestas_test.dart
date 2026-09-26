@@ -389,6 +389,9 @@ void main() {
     ) async {
       // El emisor sí dice en qué hilo escribe: tiene uno por persona.
       await montar(tester, hilos: <Hilo>[hilo()]);
+      // Sin nada por leer, el aviso arranca plegado (26/09/2026).
+      await tester.tap(find.text('Reunión del viernes'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Ana López'));
       await tester.pumpAndSettle();
 
@@ -410,6 +413,15 @@ void main() {
         // entera de una respuesta al abrir el panel.
         await montar(tester, recibeAvisos: false);
         expect(find.byType(TarjetaNotificaciones), findsOneWidget);
+        // Y FUERA de la lista: dentro cambiaba de alto al volver a la cima y
+        // trababa el desplazamiento (bandeja en agosto, aquí el 26/09/2026).
+        expect(
+          find.descendant(
+            of: find.byType(ListView),
+            matching: find.byType(TarjetaNotificaciones),
+          ),
+          findsNothing,
+        );
       },
     );
 

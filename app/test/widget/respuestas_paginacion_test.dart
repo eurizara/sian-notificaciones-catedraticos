@@ -84,6 +84,11 @@ void main() {
     );
     await tester.pump();
     await tester.pump();
+    // Sin nada por leer, los avisos arrancan plegados: se abren para contar.
+    for (final String t in <String>['Aviso a', 'Aviso b']) {
+      await tester.tap(find.text(t));
+      await tester.pumpAndSettle();
+    }
 
     expect(find.byType(FilaDeHilo), findsNWidgets(10));
     expect(find.text(Textos.mostrandoDe(10, 15)), findsOneWidget);
@@ -92,5 +97,52 @@ void main() {
     await tester.pump();
     expect(find.byType(FilaDeHilo), findsNWidgets(15));
     expect(find.text(Textos.verMas), findsNothing);
+  });
+
+  testWidgets('un aviso abierto sigue abierto al alejarse y volver', (
+    WidgetTester tester,
+  ) async {
+    // La lista recrea lo que sale de la pantalla. Sin clave de página, el
+    // aviso volvía plegado, cambiaba de alto y el desplazamiento se trababa.
+    final RepositorioSesionFalso sesion = RepositorioSesionFalso(
+      inicial: SesionActiva(usuarioDePrueba(rol: Rol.coordinador)),
+    );
+    addTearDown(sesion.cerrar);
+    tester.view.physicalSize = const Size(900, 700);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          repositorioSesionProvider.overrideWithValue(sesion),
+          avisosConRespuestasProvider.overrideWith(
+            (Ref ref) => Stream<List<AvisoConRespuestas>>.value(
+              <AvisoConRespuestas>[
+                for (int i = 0; i < 10; i += 1) aviso('$i', 1),
+              ],
+            ),
+          ),
+        ],
+        child: MaterialApp(
+          theme: TemaSian.claro(),
+          home: const Scaffold(body: SeccionRespuestas()),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    await tester.tap(find.text('Aviso 0'));
+    await tester.pumpAndSettle();
+    expect(find.text('Persona 01'), findsOneWidget);
+
+    // Lejos, hasta que el primero deje de existir, y de vuelta arriba.
+    await tester.drag(find.byType(ListView), const Offset(0, -3000));
+    await tester.pumpAndSettle();
+    expect(find.text('Aviso 0'), findsNothing);
+    await tester.drag(find.byType(ListView), const Offset(0, 3000));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Persona 01'), findsOneWidget);
   });
 }

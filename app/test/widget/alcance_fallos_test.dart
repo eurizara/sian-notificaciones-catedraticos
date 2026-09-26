@@ -105,6 +105,10 @@ void main() {
     );
 
     expect(find.text(Textos.canalFallosResumen(3)), findsOneWidget);
+    // El detalle por tipo va plegado, como las otras listas de Alcance.
+    expect(find.text(Textos.nombreFallo('registro-dispositivo')), findsNothing);
+    await tester.tap(find.text(Textos.canalVerFallos(2)));
+    await tester.pumpAndSettle();
     expect(find.text(Textos.nombreFallo('registro-dispositivo')), findsOneWidget);
     expect(find.text(Textos.canalFalloCuenta(2, 5)), findsOneWidget);
     expect(find.text('Android, iPhone · 1.6.9, 1.6.10'), findsOneWidget);
