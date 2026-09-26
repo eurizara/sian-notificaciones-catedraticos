@@ -40,17 +40,17 @@ describe('Titulo · RF-MSG-06', () => {
 });
 
 describe('Cuerpo · RF-MSG-06', () => {
-  it('admite 500 caracteres y rechaza 501', () => {
-    expect(Cuerpo.crear('x'.repeat(500)).valor).toHaveLength(500);
-    expect(() => Cuerpo.crear('x'.repeat(501))).toThrow(ErrorValidacion);
+  it('admite 1000 caracteres y rechaza 1001 (desde 1.6; antes eran 500)', () => {
+    expect(Cuerpo.crear('x'.repeat(1000)).valor).toHaveLength(1000);
+    expect(() => Cuerpo.crear('x'.repeat(1001))).toThrow(ErrorValidacion);
   });
 
   it('informa la longitud y el máximo en el detalle del error', () => {
     try {
-      Cuerpo.crear('x'.repeat(600));
+      Cuerpo.crear('x'.repeat(1100));
       throw new Error('debió lanzar');
     } catch (e) {
-      expect((e as ErrorValidacion).detalle).toMatchObject({ longitud: 600, maximo: 500 });
+      expect((e as ErrorValidacion).detalle).toMatchObject({ longitud: 1100, maximo: 1000 });
     }
   });
 });
