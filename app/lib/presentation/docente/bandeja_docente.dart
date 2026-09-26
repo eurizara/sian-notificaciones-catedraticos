@@ -24,6 +24,7 @@ import 'aviso_en_primer_plano.dart';
 import '../../core/plataforma/rotacion.dart';
 import 'aviso_no_mostrado.dart';
 import '../shared/version_app.dart';
+import 'copiar_aviso.dart';
 import 'filtro_bandeja.dart';
 import 'guia_segundo_plano.dart';
 import 'insignia_bandeja.dart';
@@ -34,6 +35,7 @@ import 'reproductor_adjuntos.dart';
 import 'tarjeta_notificaciones.dart';
 import '../shared/apertura.dart';
 import '../shared/tema.dart';
+import '../shared/texto_con_enlaces.dart';
 import '../shared/textos.dart';
 
 final Provider<RepositorioBandeja> repositorioBandejaProvider =
@@ -902,7 +904,15 @@ class _FilaState extends ConsumerState<_Fila> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
-                            Text(mensaje.cuerpo),
+                            // Seleccionable y con enlaces tocables (U-1, U-2).
+                            TextoConEnlaces(mensaje.cuerpo),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: BotonCopiarAviso(
+                                titulo: mensaje.titulo,
+                                cuerpo: mensaje.cuerpo,
+                              ),
+                            ),
 
                             // RF-ENT-08 y RF-ENT-09. Van bajo el texto y no tras un
                             // botón: una nota de voz que hay que buscar es una nota

@@ -624,6 +624,13 @@ abstract final class Textos {
   static const String notifDenegadasTitulo = 'Notificaciones bloqueadas';
   static const String notifInstalarTitulo = 'Ábrela desde la pantalla de inicio';
 
+  // --- Copiar un aviso (U-1) --------------------------------------------------
+  static const String botonCopiar = 'Copiar';
+  static const String copiarTodo = 'Copiar título y mensaje';
+  static const String copiarTitulo = 'Copiar solo el título';
+  static const String copiarMensaje = 'Copiar solo el mensaje';
+  static const String copiado = 'Copiado';
+
   // --- Uso en segundo plano en Android (13/09/2026) -------------------------
   static const String segundoPlanoTitulo =
       'Un ajuste más para que los avisos lleguen al momento';
