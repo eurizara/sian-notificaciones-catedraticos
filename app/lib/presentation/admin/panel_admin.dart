@@ -16,6 +16,7 @@ import '../../application/proveedores_respuestas.dart';
 
 import '../../domain/rol.dart';
 import '../../domain/sesion.dart';
+import '../shared/apertura.dart';
 import '../shared/barra_sesion.dart';
 import 'seccion_bitacora.dart';
 import 'seccion_entregas.dart';
@@ -266,6 +267,38 @@ class _PanelAdminState extends ConsumerState<PanelAdmin> {
   /// está sentado frente a un escritorio.
   static const double _anchoMinimoParaMenuLateral = 700;
 
+  /// Tocar una notificación lleva a su sección (C-6, DT-35).
+  ///
+  /// El panel solo elige la sección; la sección abre lo concreto y da el
+  /// pedido por atendido:
+  ///
+  ///   · una **respuesta** de un catedrático → **Respuestas**, que abre esa
+  ///     conversación;
+  ///   · un **aviso** → **Mis mensajes**, si esta persona también los recibe.
+  ///     Si no los recibe, no hay dónde mostrarlo y se descarta.
+  void _llevarADestinoDeNotificacion(List<SeccionAdmin> visibles) {
+    final DestinoApertura? pendiente = ref.watch(aperturaPendienteProvider);
+    if (pendiente == null) {
+      return;
+    }
+    final String etiqueta = pendiente.tipo == TipoApertura.hilo
+        ? Textos.seccionRespuestas
+        : Textos.seccionMisMensajes;
+    final int destino = visibles.indexWhere(
+      (SeccionAdmin s) => s.etiqueta == etiqueta,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || ref.read(aperturaPendienteProvider) != pendiente) {
+        return;
+      }
+      if (destino < 0) {
+        ref.read(aperturaPendienteProvider.notifier).consumir();
+      } else if (_indice != destino) {
+        setState(() => _indice = destino);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final List<SeccionAdmin> visibles = seccionesParaUsuario(widget.usuario);
@@ -280,6 +313,8 @@ class _PanelAdminState extends ConsumerState<PanelAdmin> {
         body: const Center(child: Text(Textos.sinSeccionesDisponibles)),
       );
     }
+
+    _llevarADestinoDeNotificacion(visibles);
 
     final int indice = _indice.clamp(0, visibles.length - 1);
     final SeccionAdmin actual = visibles[indice];

@@ -1,7 +1,7 @@
 # 12 · Plan de evolución: iteraciones 1.6, 2.0 y 2.1
 
 **Estado:** **aprobado** por el responsable el 23/09/2026, con todas las recomendaciones de la
-sección 10. En curso: **1.5.13** (en desarrollo). Escrito sobre lo que había en `develop`
+sección 10. **1.5.13 en producción** desde el 24/09. En curso: **1.6** (C-6 hecha en desarrollo como 1.6.0). Escrito sobre lo que había en `develop`
 (1.5.12), `qa` y `main` (1.5.11).
 
 **Qué es este documento.** Recoge lo que pidió el responsable del proyecto el 23/09/2026 y
@@ -17,7 +17,7 @@ el documento 01.
 | # | Qué | Tamaño | Riesgo | Toca datos | Versión propuesta |
 |---|-----|:---:|:---:|:---:|:---:|
 | **U-0** | **Pasar las funciones de Node.js 20 a 22** — Google retira Node 20 el **30/10/2026** | S | Medio | No | **1.5.13 (urgente)** |
-| **C-6** | **Tocar una notificación abre el aviso o la respuesta que la originó** (corrección, DT-35) | M | Medio | No | **1.6, lo primero** |
+| **C-6** | **Tocar una notificación abre el aviso o la respuesta que la originó** (corrección, DT-35) | M | Medio | No | **1.6.0 — hecho en desarrollo** |
 | U-1 | Copiar el título o el mensaje | S | Bajo | No | 1.6 |
 | U-2 | Enlaces (URL) que se abren al tocarlos | S | Bajo | No | 1.6 |
 | U-3 | Descargar las imágenes de un aviso | S–M | Bajo | No | 1.6 |

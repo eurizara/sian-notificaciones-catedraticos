@@ -236,6 +236,53 @@
     };
   }
 
+
+  /**
+   * ¿A dónde lleva una notificación al tocarla? (C-6, DT-35)
+   *
+   * ───────────────────────────────────────────────────────────────────────────
+   * Antes todas caían en la bandeja, en «Sin leer».
+   * ───────────────────────────────────────────────────────────────────────────
+   *
+   * El worker abría `/mensajes/{id}`, pero la aplicación nunca leyó esa ruta; y
+   * las respuestas ni siquiera decían de qué aviso eran. Con el aviso sin leer
+   * no se notaba, porque salía arriba. Con el aviso ya leído, no había forma de
+   * llegar a la respuesta desde la notificación (24/09/2026).
+   *
+   * Devuelve qué abrir y la dirección para abrirlo cuando no hay ventana:
+   *
+   *   · un aviso            → `aviso`, con su id
+   *   · una respuesta, a quien envió el aviso → `hilo`: esa conversación
+   *   · una respuesta, al catedrático → `aviso`: su conversación está dentro
+   *   · lo demás (la prueba del registro, un recordatorio) → la bandeja
+   *
+   * Los identificadores terminan en la dirección y en la aplicación: lo que no
+   * tiene forma de identificador de Firestore se descarta y se va a la bandeja.
+   *
+   * @param {Record<string, string>|null|undefined} datos los de la notificación.
+   * @returns {{abrir: 'aviso'|'hilo'|'bandeja', aviso?: string, hilo?: string, ruta: string}}
+   */
+  function destinoDeNotificacion(datos) {
+    const d = datos || {};
+    const valido = (v) => typeof v === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(v);
+
+    if (d.tipo === 'RESPUESTA' && valido(d.avisoId)) {
+      if (d.para === 'EMISOR' && valido(d.hiloUid)) {
+        return {
+          abrir: 'hilo',
+          aviso: d.avisoId,
+          hilo: d.hiloUid,
+          ruta: `/?abrir=hilo&aviso=${d.avisoId}&hilo=${d.hiloUid}`,
+        };
+      }
+      return { abrir: 'aviso', aviso: d.avisoId, ruta: `/?abrir=aviso&aviso=${d.avisoId}` };
+    }
+    if (valido(d.mensajeId)) {
+      return { abrir: 'aviso', aviso: d.mensajeId, ruta: `/?abrir=aviso&aviso=${d.mensajeId}` };
+    }
+    return { abrir: 'bandeja', ruta: '/' };
+  }
+
   const api = {
     notificacionesACerrar,
     decidirCuenta,
@@ -246,6 +293,7 @@
     cuerpoDeAcuse,
     direccionDeSuscripcion,
     cuerpoDeSuscripcion,
+    destinoDeNotificacion,
   };
 
   if (typeof module !== 'undefined' && module.exports) {

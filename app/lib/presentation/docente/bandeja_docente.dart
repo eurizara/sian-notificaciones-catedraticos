@@ -32,6 +32,7 @@ import 'realce_mensaje.dart';
 import 'respuesta_al_aviso.dart';
 import 'reproductor_adjuntos.dart';
 import 'tarjeta_notificaciones.dart';
+import '../shared/apertura.dart';
 import '../shared/tema.dart';
 import '../shared/textos.dart';
 
@@ -112,6 +113,17 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
   /// leídos: se queda ahí hasta que uno se va.
   final Set<String> _retenidos = <String>{};
 
+  /// El aviso que se abrió desde una notificación (C-6): va primero en la
+  /// lista, esté en el filtro que esté, hasta que se cambie de pestaña.
+  ///
+  /// Primero y no «desplazarse hasta él»: la lista solo construye las filas que
+  /// están en pantalla, y uno que estuviera en la página tres no tendría fila
+  /// que desplegar.
+  String? _enfocado;
+
+  /// El aviso que falta desplegar. Se limpia cuando la fila se despliega.
+  String? _porDesplegar;
+
   /// Controla el desplazamiento para poder volver arriba de un toque.
   final ScrollController _scroll = ScrollController();
   bool _lejosDelInicio = false;
@@ -172,6 +184,34 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
       _visibles = _porPagina;
       // Cambiar de pestaña es haber terminado con lo que se estaba mirando.
       _retenidos.clear();
+      _enfocado = null;
+    });
+    if (_scroll.hasClients) {
+      _scroll.jumpTo(0);
+    }
+  }
+
+  /// Atiende el destino de una notificación tocada (C-6, DT-35).
+  ///
+  /// **Esté en el filtro que esté**: es el criterio que fijó el responsable el
+  /// 24/09/2026, porque justo con el aviso ya leído no había forma de llegar a
+  /// la respuesta. Se retiene, se pone primero, se despliega y se sube a él.
+  void _atenderApertura(DestinoApertura destino, List<MensajeRecibido> todos) {
+    ref.read(aperturaPendienteProvider.notifier).consumir();
+    if (!todos.any((MensajeRecibido m) => m.mensajeId == destino.avisoId)) {
+      // Fuera de lo cargado (muy antiguo, o ya no le corresponde): se queda en
+      // la bandeja, que es lo que había.
+      return;
+    }
+    // Una búsqueda escrita podría esconderlo. Limpiarla suelta los retenidos,
+    // así que va antes de retenerlo.
+    if (_busqueda.text.isNotEmpty) {
+      _busqueda.clear();
+    }
+    setState(() {
+      _retenidos.add(destino.avisoId);
+      _enfocado = destino.avisoId;
+      _porDesplegar = destino.avisoId;
     });
     if (_scroll.hasClients) {
       _scroll.jumpTo(0);
@@ -242,6 +282,23 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (Object e, StackTrace _) => _Error(detalle: e.toString()),
               data: (List<MensajeRecibido> todos) {
+                // Un aviso abierto desde una notificación. La bandeja atiende
+                // avisos; una conversación la atiende el panel, salvo que esta
+                // bandeja sea la aplicación entera (el catedrático).
+                final DestinoApertura? pendiente = ref.watch(
+                  aperturaPendienteProvider,
+                );
+                if (pendiente != null &&
+                    (pendiente.tipo == TipoApertura.aviso ||
+                        widget.conBarraPropia)) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted &&
+                        ref.read(aperturaPendienteProvider) == pendiente) {
+                      _atenderApertura(pendiente, todos);
+                    }
+                  });
+                }
+
                 final List<MensajeRecibido> filtrados = filtrarMensajes(
                   todos
                       .where(
@@ -252,6 +309,15 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
                       .toList(),
                   _busqueda.text,
                 );
+                // El abierto desde una notificación va primero.
+                final int posEnfocado = _enfocado == null
+                    ? -1
+                    : filtrados.indexWhere(
+                        (MensajeRecibido m) => m.mensajeId == _enfocado,
+                      );
+                if (posEnfocado > 0) {
+                  filtrados.insert(0, filtrados.removeAt(posEnfocado));
+                }
 
                 // Sobre TODOS, nunca sobre lo filtrado: una urgente sin
                 // confirmar no puede desaparecer porque se esté mirando otra
@@ -353,8 +419,13 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
                             ...filasDeMensajes(
                               context,
                               pagina,
-                              alDesplegar: (String id) =>
-                                  setState(() => _retenidos.add(id)),
+                              desplegar: _porDesplegar,
+                              alDesplegar: (String id) => setState(() {
+                                _retenidos.add(id);
+                                if (_porDesplegar == id) {
+                                  _porDesplegar = null;
+                                }
+                              }),
                             ),
 
                           VerMas(
@@ -411,6 +482,7 @@ List<Widget> filasDeMensajes(
   BuildContext context,
   List<MensajeRecibido> mensajes, {
   ValueChanged<String>? alDesplegar,
+  String? desplegar,
 }) {
   return <Widget>[
     for (final MensajeRecibido mensaje in mensajes)
@@ -418,6 +490,7 @@ List<Widget> filasDeMensajes(
         key: ValueKey<String>(mensaje.mensajeId),
         mensaje: mensaje,
         alDesplegar: alDesplegar,
+        desplegarAhora: mensaje.mensajeId == desplegar,
       ),
     if (Entorno.usaEmulador)
       const Padding(
@@ -428,9 +501,17 @@ List<Widget> filasDeMensajes(
 }
 
 class _Fila extends ConsumerStatefulWidget {
-  const _Fila({required this.mensaje, this.alDesplegar, super.key});
+  const _Fila({
+    required this.mensaje,
+    this.alDesplegar,
+    this.desplegarAhora = false,
+    super.key,
+  });
 
   final MensajeRecibido mensaje;
+
+  /// Se abrió desde una notificación: se despliega sola (C-6).
+  final bool desplegarAhora;
 
   /// Avisa a la bandeja de que esta fila se abrió, para que no se la lleve por
   /// delante el filtro mientras se está leyendo.
@@ -488,6 +569,9 @@ class _FilaState extends ConsumerState<_Fila> {
   @override
   void initState() {
     super.initState();
+    if (widget.desplegarAhora) {
+      _desplegarDesdeNotificacion();
+    }
     // Un urgente sin confirmar nace desplegado, así que se abre de entrada:
     // su contenido sí está delante de la persona desde el primer momento.
     if (_desplegado) {
@@ -500,6 +584,31 @@ class _FilaState extends ConsumerState<_Fila> {
         }
       });
     }
+  }
+
+  @override
+  void didUpdateWidget(_Fila anterior) {
+    super.didUpdateWidget(anterior);
+    if (widget.desplegarAhora && !anterior.desplegarAhora) {
+      _desplegarDesdeNotificacion();
+    }
+  }
+
+  /// Desplegar porque se tocó su notificación, no porque se tocó la fila.
+  ///
+  /// Si ya estaba desplegada no se pliega: se avisa igual, para que la bandeja
+  /// dé el pedido por atendido.
+  void _desplegarDesdeNotificacion() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      if (!_desplegado) {
+        setState(() => _desplegado = true);
+      }
+      _marcarAbierto();
+      widget.alDesplegar?.call(widget.mensaje.mensajeId);
+    });
   }
 
   bool _yaMarcado = false;

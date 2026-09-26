@@ -198,3 +198,44 @@ export function avisoAlCatedratico(entrada: {
     cuerpo: `Sobre «${entrada.tituloAviso}»: ${vistaPrevia(entrada.texto)}`,
   };
 }
+
+/**
+ * Los datos que viajan en la notificación de una respuesta.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * A dónde lleva al tocarla (C-6, DT-35)
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * Antes solo llevaba título, cuerpo y etiqueta, y al tocarla la aplicación caía
+ * en «Sin leer». Se reportó el 24/09/2026: si el aviso respondido ya estaba
+ * leído, no había forma de llegar a la respuesta desde la notificación.
+ *
+ * Ahora dice de qué aviso es (`avisoId`), de qué conversación (`hiloUid`) y
+ * para quién es (`para`): quien envió el aviso abre esa conversación; el
+ * catedrático abre el aviso, que es donde está su conversación.
+ *
+ * **Sigue sin llevar `mensajeId`, y tiene que seguir así.** El service worker
+ * cuenta para la insignia y cierra al leer las notificaciones que lo llevan:
+ * una respuesta no es un aviso de la bandeja, y contarla desajustaría el número
+ * del icono. Por eso el aviso viaja en un campo propio.
+ */
+export function datosDeAvisoDeRespuesta(entrada: {
+  para: 'EMISOR' | 'CATEDRATICO';
+  avisoId: string;
+  hiloUid: string;
+  titulo: string;
+  cuerpo: string;
+}): Record<string, string> {
+  const etiqueta =
+    entrada.para === 'EMISOR' ? `respuestas-${entrada.avisoId}` : `respuesta-${entrada.avisoId}`;
+  return {
+    tipo: 'RESPUESTA',
+    titulo: entrada.titulo,
+    cuerpo: entrada.cuerpo,
+    etiqueta,
+    avisoId: entrada.avisoId,
+    hiloUid: entrada.hiloUid,
+    para: entrada.para,
+  };
+}
+

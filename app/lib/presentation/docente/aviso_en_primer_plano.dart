@@ -93,6 +93,19 @@ class _AvisoEnPrimerPlanoState extends ConsumerState<AvisoEnPrimerPlano> {
         // Una respuesta (DT-27) no lleva `mensajeId`, sino su propia
         // etiqueta: la misma que usa el service worker, para reemplazarse.
         etiqueta: datos['mensajeId'] ?? datos['etiqueta'],
+        // Para que tocarla lleve a lo que la originó (C-6). Solo lo que el
+        // worker usa para decidirlo: `mensajeId` únicamente si es un aviso,
+        // porque de él dependen el contador del icono y su cierre.
+        datos: <String, String>{
+          for (final String clave in const <String>[
+            'mensajeId',
+            'tipo',
+            'avisoId',
+            'hiloUid',
+            'para',
+          ])
+            if ((datos[clave] ?? '').isNotEmpty) clave: datos[clave]!,
+        },
       ),
     );
 

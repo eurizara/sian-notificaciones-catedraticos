@@ -16,6 +16,7 @@ import {
   MINUTOS_ENTRE_AVISOS_AL_EMISOR,
   avisoAlCatedratico,
   avisoAlEmisor,
+  datosDeAvisoDeRespuesta,
   debeAvisarAlEmisor,
   decidirLado,
   normalizarRespuesta,
@@ -224,3 +225,39 @@ describe('vistaPrevia', () => {
     expect(vista).not.toMatch(/pala…$/);
   });
 });
+
+describe('datosDeAvisoDeRespuesta · tocar la notificación lleva a la respuesta (C-6)', () => {
+  const base = { avisoId: 'm-1', hiloUid: 'cat-1', titulo: 'T', cuerpo: 'C' };
+
+  it('a quien envió el aviso: dice de qué aviso y de qué conversación', () => {
+    // Sin esto, tocarla dejaba en «Sin leer» (24/09/2026).
+    expect(datosDeAvisoDeRespuesta({ ...base, para: 'EMISOR' })).toMatchObject({
+      tipo: 'RESPUESTA',
+      avisoId: 'm-1',
+      hiloUid: 'cat-1',
+      para: 'EMISOR',
+      etiqueta: 'respuestas-m-1',
+    });
+  });
+
+  it('al catedrático: dice de qué aviso, que es donde está su conversación', () => {
+    expect(datosDeAvisoDeRespuesta({ ...base, para: 'CATEDRATICO' })).toMatchObject({
+      avisoId: 'm-1',
+      para: 'CATEDRATICO',
+      etiqueta: 'respuesta-m-1',
+    });
+  });
+
+  it('NUNCA lleva mensajeId: el worker lo contaría en la insignia y la cerraría sola', () => {
+    for (const para of ['EMISOR', 'CATEDRATICO'] as const) {
+      expect(datosDeAvisoDeRespuesta({ ...base, para })).not.toHaveProperty('mensajeId');
+    }
+  });
+
+  it('todo es texto: los datos de una notificación push solo admiten cadenas', () => {
+    for (const v of Object.values(datosDeAvisoDeRespuesta({ ...base, para: 'EMISOR' }))) {
+      expect(typeof v).toBe('string');
+    }
+  });
+});
+

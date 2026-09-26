@@ -25,6 +25,7 @@ import '../../core/plataforma/notificacion_sistema.dart';
 import '../../domain/sesion.dart';
 import '../../infrastructure/firebase/repositorio_respuestas.dart';
 import '../docente/tarjeta_notificaciones.dart';
+import '../shared/apertura.dart';
 import '../shared/conversacion.dart';
 import '../shared/tema.dart';
 import '../shared/textos.dart';
@@ -45,6 +46,8 @@ class SeccionRespuestas extends ConsumerWidget {
     // es este: aquí es donde se echa de menos enterarse.
     final bool necesitaTarjeta =
         sesion is SesionActiva && !sesion.usuario.recibeAvisos;
+
+    _abrirConversacionPedida(context, ref, avisos);
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -88,6 +91,49 @@ class SeccionRespuestas extends ConsumerWidget {
       ],
     );
   }
+}
+
+/// Tocar la notificación de una respuesta abre ESA conversación (C-6, DT-35).
+///
+/// Antes dejaba en la bandeja, y con el aviso ya leído no había forma de
+/// llegar a la respuesta. Se abre la conversación con esa persona, que es
+/// donde está lo que se respondió, esté el aviso donde esté.
+void _abrirConversacionPedida(
+  BuildContext context,
+  WidgetRef ref,
+  AsyncValue<List<AvisoConRespuestas>> avisos,
+) {
+  final DestinoApertura? pendiente = ref.watch(aperturaPendienteProvider);
+  final List<AvisoConRespuestas>? lista = avisos.value;
+  if (pendiente == null ||
+      pendiente.tipo != TipoApertura.hilo ||
+      lista == null) {
+    return;
+  }
+  Hilo? hilo;
+  for (final AvisoConRespuestas a in lista) {
+    for (final Hilo h in a.hilos) {
+      if (h.mensajeId == pendiente.avisoId && h.uid == pendiente.hiloUid) {
+        hilo = h;
+      }
+    }
+  }
+  final Hilo? encontrado = hilo;
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (!context.mounted || ref.read(aperturaPendienteProvider) != pendiente) {
+      return;
+    }
+    // Se da por atendido ANTES de abrir: si no, cada reconstrucción de esta
+    // sección volvería a abrir la misma conversación encima.
+    ref.read(aperturaPendienteProvider.notifier).consumir();
+    if (encontrado != null) {
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (BuildContext _) => PantallaHilo(hilo: encontrado),
+        ),
+      );
+    }
+  });
 }
 
 class _Vacio extends StatelessWidget {
