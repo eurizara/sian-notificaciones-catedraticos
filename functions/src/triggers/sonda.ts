@@ -60,7 +60,7 @@ import {
 import { resumirVersiones, versionMasAlta } from '../domain/version';
 import { crearAsiento } from '../domain/bitacora';
 import type { Rol } from '../domain/tipos';
-import { OPCIONES_FUNCION, RUTAS, db } from '../infrastructure/firebase';
+import { OPCIONES_LLAMABLE, RUTAS, db } from '../infrastructure/firebase';
 import { escribirAsiento } from '../infrastructure/repositorios';
 
 const ZONA_INSTITUCIONAL = 'America/Guatemala';
@@ -464,7 +464,7 @@ function sujetoDe(peticion: {
  */
 const memoriaDeValidacion = new Map<string, { muerto: boolean; en: number }>();
 
-export const dispositivosQueNecesitanAtencion = onCall(OPCIONES_FUNCION, async (peticion) => {
+export const dispositivosQueNecesitanAtencion = onCall(OPCIONES_LLAMABLE, async (peticion) => {
   const sujeto = sujetoDe(peticion);
   // Quien puede ver esto es quien puede hacer algo con ello: los mismos que
   // emiten avisos. Es información sobre terceros y no se reparte de más.
@@ -609,7 +609,7 @@ export const dispositivosQueNecesitanAtencion = onCall(OPCIONES_FUNCION, async (
  * bitácora quién lo hizo. Si el aparato sigue en uso, se registra de nuevo solo
  * la próxima vez que se abra SIAN en él.
  */
-export const retirarDispositivo = onCall(OPCIONES_FUNCION, async (peticion) => {
+export const retirarDispositivo = onCall(OPCIONES_LLAMABLE, async (peticion) => {
   const sujeto = sujetoDe(peticion);
   exigirPermiso(sujeto, 'ADMINISTRAR_USUARIOS');
 

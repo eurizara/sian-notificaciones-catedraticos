@@ -182,6 +182,53 @@ Firestore no hace respaldos al momento: el primero sale en la fecha del programa
   3. Leer de esa base lo que haga falta y copiarlo a `(default)` con un guion revisado.
   4. Borrar la base temporal al terminar: mientras exista, se paga su almacenamiento.
 
+**App Check (desde 1.6.9, DT-33).** Comprueba que una llamada a las funciones sale de la
+aplicación y no de un guion con la configuración pública del proyecto. Va en **dos pasos**, y
+el segundo no se da hasta que el primero lo justifique.
+
+*Paso 1 — observar (una vez por ambiente; lo hace el responsable en la consola):*
+
+  1. Google Cloud → proyecto del ambiente → **Seguridad → reCAPTCHA** → habilitar la API si
+     la pide → **Crear clave**: tipo *Sitio web*, dominios `<proyecto>.web.app` y
+     `<proyecto>.firebaseapp.com`, **sin** desafío de casilla. Copiar el **ID de la clave**:
+     es pública, como la VAPID. reCAPTCHA Enterprise no tiene clave secreta.
+  2. Consola de Firebase → **App Check → Aplicaciones** → la aplicación web → *reCAPTCHA
+     Enterprise* → pegar el ID → **vigencia del token: 1 día** (con la de una hora se gasta
+     24 veces más cuota).
+  3. **No** pulsar *Aplicar* en ningún producto (Firestore, Storage, Authentication): eso es
+     el paso 2.
+  4. Guardar el ID como variable del repositorio: `gh variable set DEV_APP_CHECK_KEY`
+     (o `QA_…`, `PROD_…`). El siguiente despliegue del ambiente ya lo enciende.
+
+Cuota: reCAPTCHA cobra por evaluación, con un tramo gratuito mensual (10 000 al consultarlo
+en septiembre de 2026; confirmarlo en su página de precios antes de encenderlo en
+producción). Con tokens de un día, cada aparato hace como mucho una evaluación diaria: unos
+150 aparatos en producción son ~4 500 al mes.
+
+*Cómo se observa.* Cada llamada deja en el registro de la función el resultado de las
+verificaciones. En el Explorador de registros:
+
+```
+resource.type="cloud_run_revision"
+jsonPayload.verifications.app=("MISSING" OR "INVALID")
+```
+
+`VALID` es la aplicación con token; `MISSING`, una llamada sin él (una versión anterior a
+1.6.9, o reCAPTCHA que no cargó); `INVALID`, un token falso o de otro proyecto. App Check →
+*APIs* muestra además las proporciones de Firestore y Storage.
+
+*Paso 2 — exigir.* Solo cuando, durante al menos **una semana**, no haya `MISSING` ni
+`INVALID` de personas reales, y Alcance diga que nadie sigue en una versión anterior a
+1.6.9 (esas no mandan token y quedarían fuera sin aviso). Entonces:
+`EXIGIR_APP_CHECK = true` en `functions/src/infrastructure/firebase.ts` (la prueba
+`appCheck.test.ts` pide actualizarla a propósito), y después, si se quiere, *Aplicar* en
+Firestore y Storage desde la consola. Las dos rutas HTTP del service worker —`acuse` y la
+renovación de la suscripción— quedan fuera: el worker no puede obtener un token.
+
+*Si algo sale mal.* Con App Check solo observado, nada: la aplicación arranca aunque
+reCAPTCHA no cargue. Ya exigido, se vuelve atrás con `EXIGIR_APP_CHECK = false` y un
+despliegue, o quitando *Aplicar* en la consola, que tiene efecto en minutos.
+
 **Gasto.** La cuenta de facturación tiene un **techo de 10 USD al mes para los tres
 proyectos**, con avisos por correo a los administradores de facturación al 50, 90 y 100 %, y
 uno de 1 USD solo para desarrollo. Recomendado: uno propio para producción, para saber de qué

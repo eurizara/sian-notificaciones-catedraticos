@@ -97,8 +97,14 @@ jobs:
           # suscripción— y su pareja privada vive en Secret Manager del
           # proyecto. Los ambientes sin par propio la dejan vacía y siguen
           # usando FCM como siempre.
+          #
+          # SIAN_APP_CHECK es la clave de sitio de reCAPTCHA Enterprise para App
+          # Check (DT-33). También es pública, y vive en las variables del
+          # repositorio (no en secretos) para poder darla de alta sin tocar
+          # código. Vacía, la aplicación no enciende App Check.
           flutter build web --release \
             --dart-define=FIREBASE_VAPID_KEY=${{ secrets.DEV_VAPID_KEY }} \
+            --dart-define=SIAN_APP_CHECK=${{ vars.DEV_APP_CHECK_KEY }} \
             --dart-define=SIAN_VAPID_PROPIA=BKXdY3qydUGq6byS_W9cUwy3ysqlpThNqh-HhxtkrUgXeuWfK2dk0WhGwT8fxrHbW-OJVFaJjp3AfUYVIS2czNU \
             --dart-define=USE_EMULATOR=false
 
@@ -263,6 +269,7 @@ jobs:
           # functions/src/infrastructure/vapid.ts: vapid.test.ts lo comprueba.
           flutter build web --release \
             --dart-define=FIREBASE_VAPID_KEY=${{ secrets.QA_VAPID_KEY }} \
+            --dart-define=SIAN_APP_CHECK=${{ vars.QA_APP_CHECK_KEY }} \
             --dart-define=SIAN_VAPID_PROPIA=BJdWvY3LzFBl35JW1fVXtJDFfLO5C_VuEM8kTWciWoXkvXXSIst65N2rrZ9MLb_BAxO-m8oTBf4aOjg6A4-lcKE \
             --dart-define=USE_EMULATOR=false
 
@@ -422,6 +429,7 @@ jobs:
           # lectura para la cuenta de funciones. Idéntica a la de vapid.ts.
           flutter build web --release \
             --dart-define=FIREBASE_VAPID_KEY=${{ secrets.PROD_VAPID_KEY }} \
+            --dart-define=SIAN_APP_CHECK=${{ vars.PROD_APP_CHECK_KEY }} \
             --dart-define=SIAN_VAPID_PROPIA=BJtdI-ItSgEHd-MDTUpzg1K2Lbq50J7jwCfPOrJpcn4U9LSotJH9ehu1W2_qC87fSal78OvYxwAut0GuXkzFzW0 \
             --dart-define=USE_EMULATOR=false
 

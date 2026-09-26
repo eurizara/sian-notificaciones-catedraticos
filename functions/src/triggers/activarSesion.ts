@@ -20,7 +20,7 @@ import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { logger } from 'firebase-functions/v2';
 
 import { decidirActivacion } from '../application/activarSesion';
-import { OPCIONES_FUNCION, auth } from '../infrastructure/firebase';
+import { OPCIONES_LLAMABLE, auth } from '../infrastructure/firebase';
 import {
   buscarInvitacion,
   buscarPerfil,
@@ -38,7 +38,7 @@ export interface RespuestaActivacion {
   readonly nombre: string;
 }
 
-export const activarSesion = onCall(OPCIONES_FUNCION, async (peticion) => {
+export const activarSesion = onCall(OPCIONES_LLAMABLE, async (peticion) => {
   const auth0 = peticion.auth;
   if (!auth0) {
     throw new HttpsError('unauthenticated', 'Hay que autenticarse antes de activar la sesión.');

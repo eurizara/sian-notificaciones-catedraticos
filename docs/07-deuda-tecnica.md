@@ -304,7 +304,7 @@ gratuita.
 | DT-27 | No hay forma de responder a un aviso | Alcance | Media | **Pagada** (en desarrollo y QA) | 0 USD |
 | DT-31 | «Entregado» no significa que el aparato lo mostrara, y nadie lo mide | Alcance | **Alta** | **Pagada** (en desarrollo y QA) | 0 USD |
 | DT-32 | Las funciones corren en Node.js 20, que Google retira el 30/10/2026 | Plataforma | **Alta** | **Pagada** en desarrollo (1.5.13) · a producción antes del 20/10 | 0 USD |
-| DT-33 | Sin App Check: las funciones aceptan llamadas de fuera de la aplicación | Plataforma | Media | Abierta | 0 USD |
+| DT-33 | Sin App Check: las funciones aceptan llamadas de fuera de la aplicación | Plataforma | Media | **En pago**: observación preparada en desarrollo (1.6.9); falta darla de alta en la consola y exigirla | 0 USD |
 | DT-34 | Un fallo en el aparato no deja rastro en el servidor | Conocimiento | Media | Abierta | 0 USD |
 | DT-35 | Tocar una notificación no abre el aviso ni la respuesta: siempre cae en la bandeja | Alcance | **Media** | **Pagada** en desarrollo (1.6.0) | 0 USD |
 | DT-28 | El manual no se alcanza desde dentro de la aplicación | Alcance | Baja | **Pagada** (en desarrollo y QA) | 0 USD |
@@ -2359,6 +2359,12 @@ funciones con un guion propio.
 comprobar que todas las llamadas legítimas —incluidas las de iPhone instalado— lo traen;
 después, exigido. Antes de encenderlo, verificar la cuota gratuita de reCAPTCHA. Documento
 12, S-4.
+
+**Avance (1.6.9, en desarrollo).** La aplicación enciende App Check con reCAPTCHA
+Enterprise cuando el ambiente trae la clave de sitio, y las funciones llamables comparten
+una sola llave para exigirlo (`EXIGIR_APP_CHECK`, hoy `false`). Falta: crear la clave y
+registrar la aplicación en la consola de cada ambiente, observar una semana y exigir.
+Procedimiento en el documento 11, «App Check».
 
 ## DT-34 — Un fallo en el aparato no deja rastro en el servidor
 

@@ -721,6 +721,17 @@ pantalla**, en iPhone y en Android.
 | C6-4 | Con la app abierta redactando algo, tocar una notificación | La app pasa al frente y abre el destino **sin recargarse** |
 | C6-5 | Tocar la notificación de prueba del registro del aparato | Abre la bandeja, como antes |
 
+## Probar App Check en modo observación (DT-33, 1.6.9)
+
+Solo en un ambiente donde ya se dio de alta la clave (documento 11, «App Check»).
+
+| # | Paso | Qué debe ocurrir |
+|---|------|------------------|
+| AC-1 | Abrir la app instalada en iPhone y en Android, y en la computadora; entrar y mirar la bandeja | Todo igual que antes: ningún aviso, ninguna demora nueva |
+| AC-2 | Enviar un aviso, responderlo y abrir Alcance | Funciona igual |
+| AC-3 | En el Explorador de registros, filtrar las llamadas de los últimos 30 minutos por `jsonPayload.verifications.app` | Las de los pasos anteriores dicen **`VALID`**; las de aparatos en una versión anterior a 1.6.9, `MISSING` |
+| AC-4 | Abrir la app con reCAPTCHA bloqueado (por ejemplo, con un bloqueador de anuncios en la computadora) | Arranca y funciona; esas llamadas dicen `MISSING`. Así se ve en la observación qué se quedaría fuera al exigirlo |
+
 ## Probar el mantenimiento de 1.5.13
 
 | # | Paso | Qué debe ocurrir |
