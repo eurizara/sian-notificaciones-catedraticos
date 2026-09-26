@@ -386,49 +386,63 @@ class _PanelAdminState extends ConsumerState<PanelAdmin> {
                   // 390 píxeles de alto, y sin esto el menú se desbordaba por
                   // abajo: las últimas entradas quedaban fuera de la pantalla y
                   // no había forma de llegar a ellas.
-                  LayoutBuilder(
-                    builder: (BuildContext _, BoxConstraints limites) =>
-                        SingleChildScrollView(
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              minHeight: limites.maxHeight,
-                            ),
-                            child: IntrinsicHeight(
-                              child: NavigationRail(
-                                selectedIndex: indice,
-                                onDestinationSelected: (int i) =>
-                                    setState(() => _indice = i),
-                                labelType: NavigationRailLabelType.all,
-                                // Al pie del menú, que es donde se mira cuando
-                                // preguntan qué versión se tiene. Va en el
-                                // hueco que el propio menú reserva para esto:
-                                // una columna alrededor deja al menú sin altura
-                                // que ocupar dentro de la zona desplazable.
-                                trailing: const Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: 8),
-                                  child: SelloDeVersion(),
-                                ),
-                                destinations: <NavigationRailDestination>[
-                                  for (final SeccionAdmin s in visibles)
-                                    NavigationRailDestination(
-                                      icon: _IconoConContador(
-                                        icono: s.icono,
-                                        cuenta: cuentaDe(s),
-                                      ),
-                                      label: Text(s.etiqueta),
+                  // ──────────────────────────────────────────────────────
+                  // EL MENÚ Y EL CONTENIDO, CADA UNO SU GRUPO DE FOCO (U-4).
+                  // ──────────────────────────────────────────────────────
+                  //
+                  // Sin grupos, Flutter ordena el tabulador por renglones de
+                  // pantalla, y el menú comparte renglones con el formulario:
+                  // desde «Título», Tab saltaba a tres opciones del menú,
+                  // volvía a «Mensaje» y saltaba otra vez al menú. Se reportó
+                  // el 23/09/2026 al redactar. Con grupos, Tab recorre todo
+                  // uno antes de pasar al otro, en todas las secciones.
+                  FocusTraversalGroup(
+                    child: LayoutBuilder(
+                      builder: (BuildContext _, BoxConstraints limites) =>
+                          SingleChildScrollView(
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                minHeight: limites.maxHeight,
+                              ),
+                              child: IntrinsicHeight(
+                                child: NavigationRail(
+                                  selectedIndex: indice,
+                                  onDestinationSelected: (int i) =>
+                                      setState(() => _indice = i),
+                                  labelType: NavigationRailLabelType.all,
+                                  // Al pie del menú, que es donde se mira cuando
+                                  // preguntan qué versión se tiene. Va en el
+                                  // hueco que el propio menú reserva para esto:
+                                  // una columna alrededor deja al menú sin altura
+                                  // que ocupar dentro de la zona desplazable.
+                                  trailing: const Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 8,
                                     ),
-                                ],
+                                    child: SelloDeVersion(),
+                                  ),
+                                  destinations: <NavigationRailDestination>[
+                                    for (final SeccionAdmin s in visibles)
+                                      NavigationRailDestination(
+                                        icon: _IconoConContador(
+                                          icono: s.icono,
+                                          cuenta: cuentaDe(s),
+                                        ),
+                                        label: Text(s.etiqueta),
+                                      ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
-                        ),
+                    ),
                   ),
                   const VerticalDivider(width: 1),
-                  Expanded(child: contenido),
+                  Expanded(child: FocusTraversalGroup(child: contenido)),
                 ],
               ),
             )
-          : conAvisoDeVersion(contenido),
+          : conAvisoDeVersion(FocusTraversalGroup(child: contenido)),
     );
   }
 }
