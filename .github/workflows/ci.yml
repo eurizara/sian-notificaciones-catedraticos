@@ -18,6 +18,9 @@ on:
     branches: [main, qa, develop, 'feature/**', 'release/**', 'hotfix/**']
   pull_request:
     branches: [main, qa, develop]
+  # Lo lanza la actualización mensual de dependencias sobre su rama: lo que se
+  # empuja con el token de un flujo no dispara otros flujos por sí solo.
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
