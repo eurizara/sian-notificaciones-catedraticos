@@ -170,3 +170,32 @@ export function resolverDestinatarios(
 
   return { uids, excluidos };
 }
+
+/** Una persona que se puede elegir como destinataria (U-6). */
+export interface PersonaElegible {
+  readonly uid: string;
+  readonly nombre: string;
+  readonly correo: string;
+}
+
+/**
+ * A quién se puede mandar un aviso individual (U-6, RF-USR-06).
+ *
+ * **El mismo criterio que `resolverDestinatarios`**: activo, que reciba
+ * avisos, y que no sea quien escribe. Si el selector ofreciera a alguien que
+ * el envío luego descarta, el aviso llegaría a menos gente de la que se ve en
+ * pantalla, que es justo lo que la confirmación con nombres quiere evitar.
+ *
+ * Solo nombre y correo: es lo que hace falta para elegir, y no expone el
+ * resto del perfil a quien redacta.
+ */
+export function personasElegibles(
+  usuarios: readonly (CandidatoDestinatario & { nombre?: string; correo?: string })[],
+  autor: string,
+): PersonaElegible[] {
+  return usuarios
+    .filter((u) => u.uid !== autor && u.activo && recibeAvisos(u.rol, u.recibeAvisos))
+    .map((u) => ({ uid: u.uid, nombre: (u.nombre ?? '').trim(), correo: (u.correo ?? '').trim() }))
+    .sort((a, b) => (a.nombre || a.correo).localeCompare(b.nombre || b.correo, 'es'));
+}
+

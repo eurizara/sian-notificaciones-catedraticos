@@ -40,7 +40,7 @@
 
 export { activarSesion } from './triggers/activarSesion';
 export { registrarDispositivo } from './triggers/dispositivos';
-export { contarDestinatarios, enviarInmediato } from './triggers/envio';
+export { contarDestinatarios, enviarInmediato, personasDestinatarias } from './triggers/envio';
 export {
   cambiarProgramacion,
   programarMensaje,

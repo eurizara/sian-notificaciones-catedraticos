@@ -70,6 +70,22 @@ class ResultadoEnvio {
   bool get huboFallos => fallidos > 0;
 }
 
+/// Una persona que se puede elegir en un envío individual (U-6).
+class PersonaDestinataria {
+  const PersonaDestinataria({
+    required this.uid,
+    required this.nombre,
+    required this.correo,
+  });
+
+  final String uid;
+  final String nombre;
+  final String correo;
+
+  /// Lo que se enseña: el nombre, o el correo si no tiene.
+  String get visible => nombre.isEmpty ? correo : nombre;
+}
+
 class RepositorioEnvio {
   RepositorioEnvio({FirebaseFunctions? functions}) : _functionsDado = functions;
 
@@ -85,6 +101,27 @@ class RepositorioEnvio {
   /// de la **misma** función que luego resuelve el envío. Uno calculado en el
   /// cliente que difiriera del real sería peor que no contar, porque daría
   /// confianza falsa justo antes de un acto irreversible.
+  /// A quién se puede elegir en un envío individual (U-6).
+  ///
+  /// Lo decide el servidor con el mismo criterio que el envío: activo, que
+  /// reciba avisos y que no sea quien escribe.
+  Future<List<PersonaDestinataria>> personas() async {
+    final HttpsCallableResult<Object?> r = await _fn
+        .httpsCallable('personasDestinatarias')
+        .call<Object?>();
+    final Map<Object?, Object?> d =
+        (r.data as Map<Object?, Object?>?) ?? <Object?, Object?>{};
+    return <PersonaDestinataria>[
+      for (final Object? p in (d['personas'] as List<Object?>? ?? <Object?>[]))
+        if (p is Map<Object?, Object?>)
+          PersonaDestinataria(
+            uid: (p['uid'] as String?) ?? '',
+            nombre: (p['nombre'] as String?) ?? '',
+            correo: (p['correo'] as String?) ?? '',
+          ),
+    ];
+  }
+
   Future<ConteoDestinatarios> contar(Destinatarios destinatarios) async {
     final HttpsCallableResult<Object?> r = await _fn
         .httpsCallable('contarDestinatarios')

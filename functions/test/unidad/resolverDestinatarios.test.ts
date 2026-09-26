@@ -13,6 +13,7 @@
 
 import { recibeAvisos, recibePorOmision } from '../../src/domain/autorizacion';
 import {
+  personasElegibles,
   resolverDestinatarios,
   type CandidatoDestinatario,
   type GrupoResuelto,
@@ -242,3 +243,52 @@ describe('el conteo previo dice la verdad', () => {
     expect(conteo.uids).toHaveLength(2);
   });
 });
+
+describe('personasElegibles · a quién se puede elegir en un envío individual (U-6)', () => {
+  const u = (uid: string, nombre: string, extra: Record<string, unknown> = {}) => ({
+    uid,
+    nombre,
+    correo: `${uid}@umg`,
+    activo: true,
+    rol: 'CATEDRATICO' as const,
+    ...extra,
+  });
+
+  it('el mismo criterio que el envío: activo, que reciba avisos y que no sea quien escribe', () => {
+    const r = personasElegibles(
+      [
+        u('ana', 'Ana'),
+        u('yo', 'Yo mismo'),
+        u('baja', 'De baja', { activo: false }),
+        u('coord', 'Coordinación', { rol: 'COORDINADOR' }),
+        u('coord2', 'Coordinación que recibe', { rol: 'COORDINADOR', recibeAvisos: true }),
+      ],
+      'yo',
+    );
+    expect(r.map((p) => p.uid)).toEqual(['ana', 'coord2']);
+  });
+
+  it('lo que ofrece el selector es exactamente lo que el envío acepta', () => {
+    const usuarios = [u('ana', 'Ana'), u('beto', 'Beto', { activo: false }), u('yo', 'Yo')];
+    const elegibles = personasElegibles(usuarios, 'yo').map((p) => p.uid);
+    const resuelto = resolverDestinatarios(
+      { modo: 'INDIVIDUAL', usuariosIds: elegibles },
+      usuarios,
+      [],
+      'yo',
+    );
+    expect(resuelto.uids).toEqual(elegibles);
+    expect(resuelto.excluidos).toEqual([]);
+  });
+
+  it('ordenado por nombre, en español', () => {
+    const r = personasElegibles([u('b', 'Óscar'), u('a', 'Ana'), u('c', 'Mario')], 'x');
+    expect(r.map((p) => p.nombre)).toEqual(['Ana', 'Mario', 'Óscar']);
+  });
+
+  it('solo nombre y correo: no expone el resto del perfil', () => {
+    const [p] = personasElegibles([u('ana', 'Ana', { telefono: '5555 1234' })], 'x');
+    expect(Object.keys(p!).sort()).toEqual(['correo', 'nombre', 'uid']);
+  });
+});
+
