@@ -128,18 +128,68 @@ class EscuchaDeAperturas extends ConsumerStatefulWidget {
   ConsumerState<EscuchaDeAperturas> createState() => _EscuchaDeAperturasState();
 }
 
-class _EscuchaDeAperturasState extends ConsumerState<EscuchaDeAperturas> {
+class _EscuchaDeAperturasState extends ConsumerState<EscuchaDeAperturas>
+    with WidgetsBindingObserver {
+  /// Una sola toma a la vez: el mensaje del worker y la vuelta al frente llegan
+  /// casi juntos, y los dos irían a leer el mismo destino guardado.
+  Future<void> _enCurso = Future<void>.value();
+
+  /// El último destino fijado y cuándo. En iPhone el mensaje del worker puede
+  /// llegar DESPUÉS de que el destino guardado ya se abrió —se entrega al
+  /// descongelarse la app—, y abriría la misma conversación dos veces.
+  DestinoApertura? _ultimo;
+  DateTime? _ultimoEn;
+  static const Duration _ventanaDeRepetidos = Duration(seconds: 10);
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // Se lee ya, para que el destino con que arrancó quede fijado aunque la
     // sesión tarde en cargar.
     ref.read(aperturaPendienteProvider);
-    escucharAperturas((Map<String, String> datos) {
-      final DestinoApertura? destino = DestinoApertura.desde(datos);
-      if (destino != null && mounted) {
-        ref.read(aperturaPendienteProvider.notifier).fijar(destino);
+    _recoger();
+    escucharAperturas((Map<String, String> datos) => _recoger(datos));
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// En iPhone, tocar la notificación de una app que estaba en segundo plano
+  /// la trae al frente: aquí se recoge lo que el worker guardó.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState estado) {
+    if (estado == AppLifecycleState.resumed) {
+      _recoger();
+    }
+  }
+
+  /// Toma el destino guardado por el worker; si no hay, usa el del mensaje.
+  ///
+  /// El guardado va primero porque es el que se borra al leerlo: así, cuando
+  /// llegan los dos caminos, se abre una sola vez.
+  void _recoger([Map<String, String>? delMensaje]) {
+    _enCurso = _enCurso.then((_) async {
+      final Map<String, String>? guardado = await tomarAperturaGuardada();
+      final DestinoApertura? destino =
+          DestinoApertura.desde(guardado ?? const <String, String>{}) ??
+          (delMensaje == null ? null : DestinoApertura.desde(delMensaje));
+      if (destino == null || !mounted) {
+        return;
       }
+      final DateTime ahora = DateTime.now();
+      final DateTime? antes = _ultimoEn;
+      if (destino == _ultimo &&
+          antes != null &&
+          ahora.difference(antes) < _ventanaDeRepetidos) {
+        return;
+      }
+      _ultimo = destino;
+      _ultimoEn = ahora;
+      ref.read(aperturaPendienteProvider.notifier).fijar(destino);
     });
   }
 

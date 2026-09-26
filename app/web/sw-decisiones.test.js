@@ -311,3 +311,27 @@ describe('destinoDeNotificacion · tocar una notificación lleva a lo que la ori
   });
 });
 
+describe('aperturaVigente · el destino guardado solo vale un rato (C-6, iPhone)', () => {
+  const { aperturaVigente, SEGUNDOS_DE_APERTURA } = require('./sw-decisiones.js');
+  const ahora = Date.parse('2026-09-26T15:00:00Z');
+
+  test('recién guardado, vale', () => {
+    assert.equal(aperturaVigente({ en: ahora - 3000 }, ahora), true);
+  });
+
+  test('pasado el plazo, no: abrir la app horas después no lleva a aquel aviso', () => {
+    assert.equal(aperturaVigente({ en: ahora - (SEGUNDOS_DE_APERTURA + 1) * 1000 }, ahora), false);
+  });
+
+  test('un reloj un poco adelantado no lo invalida; uno muy adelantado, sí', () => {
+    assert.equal(aperturaVigente({ en: ahora + 30000 }, ahora), true);
+    assert.equal(aperturaVigente({ en: ahora + 10 * 60000 }, ahora), false);
+  });
+
+  test('sin fecha no vale', () => {
+    assert.equal(aperturaVigente({}, ahora), false);
+    assert.equal(aperturaVigente(null, ahora), false);
+    assert.equal(aperturaVigente({ en: 'ayer' }, ahora), false);
+  });
+});
+

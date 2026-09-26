@@ -774,26 +774,74 @@ self.addEventListener('notificationclick', (evento) => {
   trazar('clic:destino', destino);
 
   evento.waitUntil(
-    self.clients
-      .matchAll({ type: 'window', includeUncontrolled: true })
-      .then(async (ventanas) => {
-        const ventana =
-          ventanas.find((v) => v.focused) ||
-          ventanas.find((v) => v.visibilityState === 'visible') ||
-          ventanas[0];
-        if (ventana) {
-          ventana.postMessage({
+    (async () => {
+      // PRIMERO se guarda. En iPhone el mensaje a una app congelada puede
+      // perderse, y la app puede abrirse en su página inicial ignorando la
+      // dirección con el destino: se vio el 25/09/2026, Android llegaba a la
+      // respuesta e iPhone se quedaba en «Sin leer». Guardado aquí, la app lo
+      // recoge al arrancar o al volver al frente, llegue o no lo demás.
+      if (destino.abrir !== 'bandeja') {
+        await guardarApertura(destino);
+      }
+
+      const ventanas = await self.clients.matchAll({
+        type: 'window',
+        includeUncontrolled: true,
+      });
+      trazar('clic:ventanas', ventanas.length);
+      if (ventanas.length > 0) {
+        // A todas: con varias, no hay forma segura de saber cuál verá la
+        // persona. Cada una lo toma del almacén, así que solo una lo abre.
+        for (const v of ventanas) {
+          v.postMessage({
             tipo: 'sian:abrir',
             abrir: destino.abrir,
             aviso: destino.aviso || '',
             hilo: destino.hilo || '',
           });
-          if ('focus' in ventana) {
-            return ventana.focus();
-          }
-          return undefined;
         }
-        return self.clients.openWindow(destino.ruta);
-      }),
+        const ventana =
+          ventanas.find((v) => v.focused) ||
+          ventanas.find((v) => v.visibilityState === 'visible') ||
+          ventanas[0];
+        if ('focus' in ventana) {
+          try {
+            return await ventana.focus();
+          } catch (e) {
+            trazar('clic:focus-fallo', String(e));
+          }
+        }
+        return undefined;
+      }
+      return self.clients.openWindow(destino.ruta);
+    })(),
   );
 });
+
+/**
+ * Deja el destino donde la app lo encuentra aunque el mensaje no le llegue.
+ *
+ * Cache API y no IndexedDB: la comparten el worker y la página del mismo
+ * origen, y leerla desde la app no exige una base de datos. La app lo lee y lo
+ * borra (`core/plataforma/apertura_web.dart`), así que se abre una sola vez.
+ */
+async function guardarApertura(destino) {
+  try {
+    const almacen = await caches.open('sian-apertura');
+    await almacen.put(
+      '/__sian/apertura',
+      new Response(
+        JSON.stringify({
+          abrir: destino.abrir,
+          aviso: destino.aviso || '',
+          hilo: destino.hilo || '',
+          en: Date.now(),
+        }),
+        { headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+  } catch (e) {
+    // Sin almacén quedan el mensaje y la dirección, como antes.
+    trazar('clic:guardar-fallo', String(e));
+  }
+}

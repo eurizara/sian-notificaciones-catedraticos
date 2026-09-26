@@ -2458,3 +2458,23 @@ mismo origen) y la app navega. Sin ventana, se abre con el destino en la direcci
   copia de la notificación, que reemplaza a la del worker. Esa copia no llevaba datos, así que
   tocarla también dejaba en la bandeja. Ahora lleva los mismos que usa el worker.
 
+### 1.6.1 — En iPhone todavía no llegaba (26/09/2026)
+
+Probada la 1.6.0 por el responsable: **Android llegaba a la respuesta; iPhone abría la app en
+«Sin leer»**. Desde aquí no se ve la consola del iPhone, así que no se sabe cuál de estos
+caminos falló, y los tres son posibles en una PWA de iOS:
+
+  · el mensaje a una app **congelada en segundo plano** se pierde;
+  · iOS **abre la app en su página inicial** e ignora la dirección con el destino;
+  · el worker **no encuentra la ventana** suspendida.
+
+En lugar de apostar por uno, se cubren los tres: el worker **guarda** el destino en la Cache
+API —la comparten worker y página del mismo origen— antes de avisar, y la app lo **toma**
+(lee y borra) al arrancar, al recibir el mensaje y **al volver al frente**. Solo vale dos
+minutos (`aperturaVigente`), para que abrir la app horas después no lleve a aquel aviso. Y
+el mismo destino no se abre dos veces en diez segundos: en iPhone el mensaje puede llegar
+tarde, al descongelarse la app, cuando el guardado ya se abrió.
+
+Si aun así falla en iPhone, el siguiente paso es DT-34 (reporte de fallos del aparato), para
+ver qué hace iOS en vez de deducirlo.
+
