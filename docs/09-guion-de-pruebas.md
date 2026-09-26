@@ -718,6 +718,7 @@ pantalla**, en iPhone y en Android.
 | C6-2 | Como catedrático, responder un aviso. Quien lo envió toca la notificación de la respuesta | Se abre **Respuestas**, con ese aviso desplegado y la respuesta a la vista |
 | C6-2b | Repetir C6-2 y C6-3 con el aviso en **«Sin confirmar»** y en **«Leídos»**, y con la app dejada en otra pantalla (por ejemplo, Alcance o el filtro «Todos») | Lleva **a esa respuesta** en todos los casos, sin importar el filtro del aviso ni la pantalla de partida. Es el caso que delató el fallo |
 | C6-3 | Quien envió el aviso contesta. El catedrático toca esa notificación | Se abre **la conversación** dentro de ese aviso |
+| C6-6 | Con el aviso ya **confirmado** o en «Leídos», quien lo envió contesta. El catedrático abre SIAN (tocando la notificación o no) | El aviso aparece en **«Sin leer»** con «Respuesta nueva de quien lo envió», y cuenta en la pestaña y en el icono. Al desplegarlo se ve la respuesta; al salir, el aviso vuelve a «Leídos» y sigue confirmado. Solo le pasa a quien recibió la respuesta (1.6.15) |
 | C6-4 | Con la app abierta redactando algo, tocar una notificación | La app pasa al frente y abre el destino **sin recargarse** |
 | C6-5 | Tocar la notificación de prueba del registro del aparato | Abre la bandeja, como antes |
 

@@ -811,6 +811,31 @@ class _FilaState extends ConsumerState<_Fila> {
                               ),
                             ],
                           ),
+                          // Una respuesta de quien lo emitió que todavía no se
+                          // leyó: es lo que trae el aviso de vuelta a «Sin
+                          // leer», y tiene que decir por qué está ahí.
+                          if (mensaje.tieneRespuestaNueva) ...<Widget>[
+                            const SizedBox(height: 5),
+                            Row(
+                              children: <Widget>[
+                                Icon(
+                                  Icons.mark_chat_unread_outlined,
+                                  size: 16,
+                                  color: PaletaSian.de(context).primarioTexto,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  Textos.respuestaNuevaEnAviso(
+                                    mensaje.respuestasSinLeer,
+                                  ),
+                                  style: tema.textTheme.bodySmall?.copyWith(
+                                    color: PaletaSian.de(context).primarioTexto,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                           // ────────────────────────────────────────────────────
                           // PLEGADO SE VE EL TÍTULO, NO UN TROZO DEL TEXTO.
                           // ────────────────────────────────────────────────────

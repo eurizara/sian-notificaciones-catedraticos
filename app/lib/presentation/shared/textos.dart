@@ -549,6 +549,11 @@ abstract final class Textos {
   static String conversaciones(int n) =>
       n == 1 ? '1 conversación' : '$n conversaciones';
   static String sinLeer(int n) => n == 1 ? '1 sin leer' : '$n sin leer';
+
+  /// En la tarjeta de un aviso que volvió a «Sin leer» por una respuesta.
+  static String respuestaNuevaEnAviso(int n) => n == 1
+      ? 'Respuesta nueva de quien lo envió'
+      : '$n respuestas nuevas de quien lo envió';
   static String respuestasDeUnAviso(int n) =>
       n == 1 ? '1 respuesta' : '$n respuestas';
 

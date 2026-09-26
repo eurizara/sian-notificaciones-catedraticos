@@ -313,7 +313,7 @@ cualquiera habría podido saber cuántos compañeros contestaron.
 | `tituloAviso` | string | Copiado al crear el hilo: el emisor tiene que saber de qué le hablan sin abrir el aviso |
 | `turnos` | number | Cuántas intervenciones lleva |
 | `sinLeerEmisor` | number | Lo que le falta leer al emisor. Cada lado pone a cero **su** contador |
-| `sinLeerCatedratico` | number | Ídem, del otro lado |
+| `sinLeerCatedratico` | number | Ídem, del otro lado. Desde 1.6.15, mientras sea mayor que cero el aviso aparece en «Sin leer» en la bandeja del catedrático (consulta de grupo por `uid` y `sinLeerCatedratico > 0`) |
 | `ultimo` | map | `{lado, vista}` — vista previa del último turno, para la lista |
 | `creadoEn`, `actualizadoEn` | timestamp | |
 
