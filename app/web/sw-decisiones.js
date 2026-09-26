@@ -28,6 +28,9 @@
 (function (global) {
   'use strict';
 
+  /** Cuánto vale un destino guardado al tocar una notificación (C-6). */
+  const SEGUNDOS_DE_APERTURA = 120;
+
   /**
    * ¿Cuáles de las notificaciones mostradas hay que cerrar?
    *
@@ -283,6 +286,30 @@
     return { abrir: 'bandeja', ruta: '/' };
   }
 
+
+  /**
+   * ¿Sigue valiendo un destino que el worker guardó al tocar una notificación?
+   *
+   * En iPhone el aviso por mensaje a la app puede perderse (la app estaba
+   * congelada) o la app puede abrirse en su página inicial sin la dirección con
+   * el destino (C-6, 25/09/2026). Por eso el worker además lo **guarda**, y la
+   * app lo recoge al arrancar o al volver al frente. Pero solo si es reciente:
+   * abrir la app horas después de haber tocado una notificación no debe
+   * llevarlo a aquel aviso.
+   *
+   * @param {{en?: number}|null|undefined} guardado lo que dejó el worker.
+   * @param {number} ahora milisegundos.
+   * @returns {boolean}
+   */
+  function aperturaVigente(guardado, ahora) {
+    const en = guardado && typeof guardado.en === 'number' ? guardado.en : NaN;
+    if (!Number.isFinite(en)) {
+      return false;
+    }
+    const edad = ahora - en;
+    return edad >= -60000 && edad <= SEGUNDOS_DE_APERTURA * 1000;
+  }
+
   const api = {
     notificacionesACerrar,
     decidirCuenta,
@@ -294,6 +321,8 @@
     direccionDeSuscripcion,
     cuerpoDeSuscripcion,
     destinoDeNotificacion,
+    aperturaVigente,
+    SEGUNDOS_DE_APERTURA,
   };
 
   if (typeof module !== 'undefined' && module.exports) {

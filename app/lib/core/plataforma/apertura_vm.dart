@@ -28,3 +28,13 @@ void escucharAperturas(void Function(Map<String, String>) alAbrir) {
 /// Simula que el worker avisa de que se tocó una notificación.
 void simularAperturaDesdeElWorker(Map<String, String> datos) =>
     _oyente?.call(datos);
+
+/// Lo que el worker «guardó» al tocar una notificación, para las pruebas.
+Map<String, String>? aperturaGuardadaDePrueba;
+
+Future<Map<String, String>?> tomarAperturaGuardada() async {
+  final Map<String, String>? guardada = aperturaGuardadaDePrueba;
+  aperturaGuardadaDePrueba = null;
+  return guardada;
+}
+

@@ -47,6 +47,7 @@ void main() {
   setUp(() {
     parametrosDePrueba = <String, String>{};
     vecesQueSeLimpio = 0;
+    aperturaGuardadaDePrueba = null;
   });
 
   group('DestinoApertura.desde', () {
@@ -246,6 +247,60 @@ void main() {
 
       expect(find.text('Cuerpo de Aviso ya leído.'), findsOneWidget);
       expect(c.read(aperturaPendienteProvider), isNull);
+    });
+
+    testWidgets('iPhone: al volver al frente se recoge lo que guardó el worker', (
+      WidgetTester tester,
+    ) async {
+      // El caso del 25/09/2026: el mensaje a la app congelada se perdió y la
+      // app volvió en «Sin leer». Lo guardado por el worker lo rescata.
+      final ProviderContainer c = await montar(tester, tres);
+      aperturaGuardadaDePrueba = <String, String>{
+        'abrir': 'aviso',
+        'aviso': 'm-leido',
+        'hilo': '',
+      };
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Cuerpo de Aviso ya leído.'), findsOneWidget);
+      expect(c.read(aperturaPendienteProvider), isNull);
+      expect(aperturaGuardadaDePrueba, isNull, reason: 'se borra al tomarlo');
+    });
+
+    testWidgets('el guardado manda sobre el mensaje, y el mismo destino no se abre dos veces', (
+      WidgetTester tester,
+    ) async {
+      final ProviderContainer c = await montar(tester, tres);
+      aperturaGuardadaDePrueba = <String, String>{
+        'abrir': 'aviso',
+        'aviso': 'm-confirmar',
+        'hilo': '',
+      };
+      int fijados = 0;
+      c.listen<DestinoApertura?>(aperturaPendienteProvider, (DestinoApertura? _, DestinoApertura? d) {
+        if (d != null) {
+          fijados += 1;
+        }
+      });
+      // El mensaje dice otra cosa: manda lo guardado, que es lo que se borra.
+      simularAperturaDesdeElWorker(<String, String>{
+        'abrir': 'aviso',
+        'aviso': 'm-confirmar',
+        'hilo': '',
+      });
+      await tester.pumpAndSettle();
+      // Y el mismo mensaje, entregado tarde al descongelarse, no reabre.
+      simularAperturaDesdeElWorker(<String, String>{
+        'abrir': 'aviso',
+        'aviso': 'm-confirmar',
+        'hilo': '',
+      });
+      await tester.pumpAndSettle();
+
+      expect(fijados, 1);
+      expect(find.text('Cuerpo de Aviso por confirmar.'), findsOneWidget);
     });
 
     testWidgets('un aviso que no está en la bandeja se descarta sin romper nada', (
