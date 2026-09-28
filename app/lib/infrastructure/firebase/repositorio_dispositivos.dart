@@ -17,6 +17,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import '../../core/plataforma/canal.dart';
 import '../../core/version.dart';
 import '../../core/entorno.dart';
+import '../../core/fallos.dart';
 import '../../core/navegador.dart';
 import '../../core/plataforma/consola.dart';
 import '../../core/plataforma/instalacion.dart';
@@ -202,6 +203,10 @@ class RepositorioDispositivos {
                 const Duration(seconds: 12),
                 onTimeout: () {
                   consolaError('SIAN.dispositivo suscripción propia | sin respuesta');
+                  ReporteDeFallos.reportar(
+                    TipoDeFallo.suscripcionPropia,
+                    'sin respuesta en 12 s',
+                  );
                   return null;
                 },
               );
@@ -229,6 +234,7 @@ class RepositorioDispositivos {
       );
     } on Object catch (e) {
       consolaError('SIAN.dispositivo error | $e');
+      ReporteDeFallos.reportar(TipoDeFallo.registroDispositivo, e);
       return ResultadoRegistro(
         permiso: EstadoPermiso.pendiente,
         registrado: false,
@@ -327,7 +333,11 @@ class RepositorioDispositivos {
   EstadoPermiso _traducir(AuthorizationStatus estado) => switch (estado) {
     AuthorizationStatus.authorized ||
     AuthorizationStatus.provisional => EstadoPermiso.concedido,
-    AuthorizationStatus.denied => EstadoPermiso.denegado,
+    // `deniedPermanently` llegó con firebase_messaging 16.7 (actualización
+    // mensual de 09/2026): el sistema ya no volverá a preguntar. Para SIAN es
+    // lo mismo que denegado: la salida está en los ajustes del aparato.
+    AuthorizationStatus.denied ||
+    AuthorizationStatus.deniedPermanently => EstadoPermiso.denegado,
     AuthorizationStatus.notDetermined => EstadoPermiso.pendiente,
   };
 }

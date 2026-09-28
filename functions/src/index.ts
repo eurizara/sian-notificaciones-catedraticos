@@ -40,17 +40,18 @@
 
 export { activarSesion } from './triggers/activarSesion';
 export { registrarDispositivo } from './triggers/dispositivos';
-export { contarDestinatarios, enviarInmediato } from './triggers/envio';
+export { contarDestinatarios, enviarInmediato, personasDestinatarias } from './triggers/envio';
 export {
   cambiarProgramacion,
   programarMensaje,
   vistaPreviaOcurrencias,
 } from './triggers/programacion';
 export { despachador } from './triggers/despachador';
-export { dispositivosQueNecesitanAtencion, sondaDeCanal } from './triggers/sonda';
+export { dispositivosQueNecesitanAtencion, retirarDispositivo, sondaDeCanal } from './triggers/sonda';
 export { marcarHiloLeido, responderAviso } from './triggers/respuestas';
 export { acuseDeNotificacion } from './triggers/acuse';
 export { reportarSuscripcion } from './triggers/suscripcion';
+export { reportarFallo } from './triggers/fallos';
 export {
   confirmarLectura,
   detalleEntregas,

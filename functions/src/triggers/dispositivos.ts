@@ -30,10 +30,10 @@ import {
 } from '../domain/dispositivo';
 import { ErrorDominio, ErrorValidacion } from '../domain/errores';
 import type { Rol } from '../domain/tipos';
-import { FieldValue, OPCIONES_FUNCION, RUTAS, db } from '../infrastructure/firebase';
+import { FieldValue, OPCIONES_LLAMABLE, RUTAS, db } from '../infrastructure/firebase';
 import { escribirAsiento } from '../infrastructure/repositorios';
 
-export const registrarDispositivo = onCall(OPCIONES_FUNCION, async (peticion) => {
+export const registrarDispositivo = onCall(OPCIONES_LLAMABLE, async (peticion) => {
   if (!peticion.auth) {
     throw new HttpsError('unauthenticated', 'Hay que iniciar sesión.');
   }

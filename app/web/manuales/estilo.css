@@ -1,0 +1,257 @@
+/* SIAN — Estilos de los manuales y de las notas de la versión.
+   Un solo archivo para los tres documentos (U-5): antes cada uno llevaba su
+   copia, y un cambio había que hacerlo tres veces sin que se separaran. */
+
+:root{
+  color-scheme: light;
+  --primario:#2E6DA4; --sobre-primario:#FFFFFF; --primario-oscuro:#1F4E79; --urgente:#B3261E;
+  --dorado:#B8860B; --dorado-texto:#7A5A00; --confirmado:#2E7D32;
+  --fondo:#F7F9FC; --superficie:#FFFFFF; --borde:#DDE3EA;
+  --texto:#1A1C1E; --suave:#5A6472;
+  --barra:#2E6DA4; --sobre-barra:#FFFFFF; --sombra:rgba(0,0,0,.2);
+  --menu-activo:#E8EEF6; --codigo:#EEF2F7;
+  --aviso:#EEF4FA; --aviso-critico:#FCEEED; --aviso-ojo:#FBF5E6; --aviso-bien:#EDF6EE;
+  --etiqueta:#E8EEF6;
+  --ios:#EFEFF4; --ios-texto:#333333;
+  --android:#E6F4EA; --android-texto:#1E6B33;
+  --escritorio:#EAF0FB; --escritorio-texto:#274B8A;
+  --cabecera-tabla:#F2F5F9; --pendiente:#FBFCFE; --sombra-figura:rgba(20,40,70,.07);
+  --ancho-menu:280px;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   MODO OSCURO (U-5, RNF-24)
+   ════════════════════════════════════════════════════════════════════════════
+   Sigue lo que se eligió en SIAN (`sian.apariencia`, en el almacenamiento del
+   sitio, que el manual comparte con la app por ser el mismo dominio): el guion
+   al principio de cada documento pone `data-tema="claro"` u `"oscuro"` antes de
+   pintar. Si se eligió «igual que el dispositivo», no pone nada y manda el
+   teléfono (`prefers-color-scheme`).
+
+   Los colores salen de la paleta oscura de la app (PaletaSian.oscura) y se
+   midieron contra AA: todas las combinaciones de texto y fondo pasan, la peor
+   a 7.01:1. El número de los pasos va en azul muy oscuro sobre el círculo
+   claro (8.49:1): en blanco no se leería. */
+@media (prefers-color-scheme: dark){
+  :root:not([data-tema="claro"]){
+    color-scheme: dark;
+    --primario:#7FC4E8; --sobre-primario:#0B2233; --primario-oscuro:#A8D8F2; --urgente:#FF8A80;
+    --dorado:#E0B866; --dorado-texto:#E0B866; --confirmado:#7DD29A;
+    --fondo:#111417; --superficie:#1B1F23; --borde:#3A4048;
+    --texto:#E3E6EA; --suave:#AEB6C0;
+    --barra:#1C72A5; --sobre-barra:#FFFFFF; --sombra:rgba(0,0,0,.5);
+    --menu-activo:#26303A; --codigo:#262B31;
+    --aviso:#1D2A36; --aviso-critico:#3A1F1E; --aviso-ojo:#362E1B; --aviso-bien:#1C3024;
+    --etiqueta:#26303A;
+    --ios:#2C2F33; --ios-texto:#E3E6EA;
+    --android:#1C3024; --android-texto:#7DD29A;
+    --escritorio:#1E2A3D; --escritorio-texto:#A8D8F2;
+    --cabecera-tabla:#232830; --pendiente:#1B1F23; --sombra-figura:rgba(0,0,0,.4);
+  }
+}
+:root[data-tema="oscuro"]{
+  color-scheme: dark;
+  --primario:#7FC4E8; --sobre-primario:#0B2233; --primario-oscuro:#A8D8F2; --urgente:#FF8A80;
+  --dorado:#E0B866; --dorado-texto:#E0B866; --confirmado:#7DD29A;
+  --fondo:#111417; --superficie:#1B1F23; --borde:#3A4048;
+  --texto:#E3E6EA; --suave:#AEB6C0;
+  --barra:#1C72A5; --sobre-barra:#FFFFFF; --sombra:rgba(0,0,0,.5);
+  --menu-activo:#26303A; --codigo:#262B31;
+  --aviso:#1D2A36; --aviso-critico:#3A1F1E; --aviso-ojo:#362E1B; --aviso-bien:#1C3024;
+  --etiqueta:#26303A;
+  --ios:#2C2F33; --ios-texto:#E3E6EA;
+  --android:#1C3024; --android-texto:#7DD29A;
+  --escritorio:#1E2A3D; --escritorio-texto:#A8D8F2;
+  --cabecera-tabla:#232830; --pendiente:#1B1F23; --sombra-figura:rgba(0,0,0,.4);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:var(--fondo); color:var(--texto);
+  /* Nada empuja la página de lado. En un celular, un documento que se
+     desplaza en horizontal se vuelve muy difícil de leer: se pierde el
+     margen izquierdo y hay que ir y venir con cada línea. */
+  overflow-x:hidden;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  line-height:1.75; font-size:18px;
+}
+
+/* ---- Barra superior ---- */
+header{
+  position:sticky; top:0; z-index:30;
+  background:var(--barra); color:var(--sobre-barra);
+  display:flex; align-items:center; gap:12px; padding:12px 20px;
+  box-shadow:0 1px 4px var(--sombra);
+}
+header img{width:34px;height:34px;background:#fff;border-radius:50%;padding:2px}
+header h1{font-size:19px;margin:0;font-weight:600}
+header .sede{font-size:13px;opacity:.85;margin-left:auto;text-align:right}
+#abrirMenu{
+  display:none; background:rgba(255,255,255,.15); color:#fff; border:0;
+  border-radius:8px; font-size:22px; width:42px; height:38px; cursor:pointer;
+}
+
+/* ---- Disposición ---- */
+.envoltorio{display:flex; align-items:flex-start; max-width:1240px; margin:0 auto}
+nav{
+  width:var(--ancho-menu); flex:0 0 var(--ancho-menu);
+  position:sticky; top:62px; max-height:calc(100vh - 62px); overflow-y:auto;
+  padding:24px 12px 40px;
+}
+nav h2{
+  font-size:12px; text-transform:uppercase; letter-spacing:.08em;
+  color:var(--suave); margin:22px 10px 8px;
+}
+nav a{
+  display:block; padding:8px 12px; margin:2px 0; border-radius:8px;
+  color:var(--texto); text-decoration:none; font-size:15px;
+}
+nav a:hover{background:var(--menu-activo)}
+nav a.activo{background:var(--menu-activo); color:var(--primario-oscuro); font-weight:600}
+
+main{flex:1; min-width:0; padding:28px 28px 80px; background:var(--fondo)}
+
+/* ---- Contenido ---- */
+section{
+  background:var(--superficie); border:1px solid var(--borde); border-radius:14px;
+  padding:26px 30px; margin-bottom:26px; scroll-margin-top:76px;
+}
+h2{font-size:26px; color:var(--primario-oscuro); margin:0 0 4px; line-height:1.25}
+h3{font-size:20px; color:var(--primario-oscuro); margin:30px 0 8px}
+h4{font-size:17px; margin:22px 0 6px}
+.entradilla{color:var(--suave); margin:0 0 18px; font-size:16px}
+p{margin:12px 0}
+ul,ol{margin:12px 0; padding-left:26px}
+li{margin:7px 0}
+code{
+  background:var(--codigo); padding:2px 6px; border-radius:5px;
+  font-size:15px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+a{color:var(--primario)}
+
+/* Pasos numerados */
+ol.pasos{list-style:none; padding:0; counter-reset:paso}
+ol.pasos>li{
+  counter-increment:paso; position:relative;
+  padding:2px 0 2px 46px; margin:16px 0;
+}
+ol.pasos>li::before{
+  content:counter(paso);
+  position:absolute; left:0; top:0;
+  width:32px; height:32px; border-radius:50%;
+  background:var(--primario); color:var(--sobre-primario);
+  display:flex; align-items:center; justify-content:center;
+  font-weight:600; font-size:15px;
+}
+
+/* Avisos */
+.aviso{border-left:5px solid var(--primario); background:var(--aviso);
+  padding:14px 18px; border-radius:0 10px 10px 0; margin:18px 0}
+.aviso.critico{border-color:var(--urgente); background:var(--aviso-critico)}
+.aviso.ojo{border-color:var(--dorado); background:var(--aviso-ojo)}
+.aviso.bien{border-color:var(--confirmado); background:var(--aviso-bien)}
+.aviso>strong:first-child{display:block; margin-bottom:4px}
+
+/* Etiquetas de plataforma */
+.plataformas{display:flex; flex-wrap:wrap; gap:8px; margin:18px 0 4px}
+.etiqueta{
+  font-size:13px; font-weight:600; padding:5px 12px; border-radius:20px;
+  background:var(--etiqueta); color:var(--primario-oscuro);
+}
+.etiqueta.ios{background:var(--ios);color:var(--ios-texto)}
+.etiqueta.android{background:var(--android);color:var(--android-texto)}
+.etiqueta.escritorio{background:var(--escritorio);color:var(--escritorio-texto)}
+
+/* Las tablas van dentro de su propio marco desplazable: son lo único que no
+   se puede encoger sin volverse ilegible, y si empujaran la página se
+   llevarían por delante todo lo demás. */
+.tabla{overflow-x:auto; margin:18px 0; -webkit-overflow-scrolling:touch}
+table{border-collapse:collapse; width:100%; margin:0; font-size:16px;
+  min-width:420px}
+th,td{border:1px solid var(--borde); padding:9px 12px; text-align:left; vertical-align:top}
+th{background:var(--cabecera-tabla); font-weight:600}
+
+figure{margin:22px 0}
+figure img{
+  display:block; max-width:100%; height:auto;
+  border:1px solid var(--borde); border-radius:10px;
+  box-shadow:0 2px 10px var(--sombra-figura);
+}
+figure.movil img{max-width:330px; margin:0 auto}
+figure.recorte img{max-width:560px; margin:0 auto}
+figcaption{
+  color:var(--suave); font-size:14.5px; margin-top:8px; text-align:center;
+  max-width:640px; margin-left:auto; margin-right:auto;
+}
+
+.pendiente{
+  border:2px dashed var(--borde); border-radius:10px; padding:16px 18px;
+  color:var(--suave); font-size:15px; background:var(--pendiente); margin:16px 0;
+}
+
+footer{max-width:1240px;margin:0 auto;padding:0 28px 60px;color:var(--suave);font-size:14px}
+
+/* ---- Volver a SIAN ----
+   Solo con la aplicación instalada. Instalada, el manual se abre en la
+   misma ventana —en iPhone no hay otra forma— y no hay barra del navegador
+   ni botón de atrás: sin esto, la única salida era cerrar la aplicación.
+   En una pestaña del navegador sobra: ahí ya están atrás y cerrar. */
+.volver{
+  display:none; align-items:center; gap:4px; flex:0 0 auto;
+  /* Siempre blanco sobre la barra azul, así que el texto va fijo: con la
+     variable, en oscuro sería azul claro sobre blanco. */
+  background:#fff; color:#1F4E79; text-decoration:none;
+  font-weight:700; font-size:16px; line-height:1;
+  border-radius:999px; padding:0 14px; min-height:44px;
+}
+.volver:focus-visible{outline:3px solid #fff; outline-offset:2px}
+html.instalada .volver{display:inline-flex}
+@media (display-mode: standalone){ .volver{display:inline-flex} }
+
+@media print{
+  header,nav,#velo{display:none}
+  .envoltorio{display:block}
+  main{padding:0}
+  section{border:0; box-shadow:none; padding:0 0 18px; page-break-inside:avoid}
+  figure img{max-width:420px}
+  a{color:#000; text-decoration:none}
+  body{font-size:12pt}
+}
+
+@media (max-width:900px){
+  body{font-size:17px}
+  #abrirMenu{display:block}
+  header .sede{display:none}
+  /* Con el botón de volver, el escudo cede su sitio al título. */
+  html.instalada header img{display:none}
+  header h1{font-size:17px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .envoltorio{display:block; max-width:100%}
+  nav{
+    position:fixed; top:62px; left:0; bottom:0; width:min(86vw,320px);
+    background:var(--superficie); border-right:1px solid var(--borde);
+    transform:translateX(-101%); transition:transform .22s ease; z-index:25;
+    max-height:none; overflow-y:auto; visibility:hidden;
+  }
+  nav.abierto{visibility:visible}
+  nav.abierto{transform:none}
+  main{padding:20px 14px 70px; max-width:100%; overflow-x:hidden}
+  table{min-width:340px; font-size:15px}
+  section{padding:20px 18px; border-radius:12px}
+  h2{font-size:22px}
+  #velo{position:fixed;inset:62px 0 0;background:rgba(0,0,0,.35);z-index:20;display:none}
+  #velo.visible{display:block}
+}
+
+/* ---- Notas de la versión ---- */
+.fecha{color:var(--suave); font-size:.95rem; margin:-.4rem 0 1rem}
+.cambio{margin:.35rem 0 .35rem 0; padding-left:0; list-style:none}
+.cambio li{margin:.55rem 0}
+.para{display:inline-block; font-size:.72rem; font-weight:700; letter-spacing:.02em;
+      text-transform:uppercase; border-radius:6px; padding:.05rem .45rem; margin-right:.45rem;
+      vertical-align:.12em; border:1px solid var(--borde); color:var(--suave); background:var(--superficie)}
+.para.todos{color:var(--primario-oscuro); border-color:var(--primario)}
+.para.catedraticos{color:var(--confirmado); border-color:var(--confirmado)}
+.para.coordinacion{color:var(--dorado-texto); border-color:var(--dorado)}
+.para.correccion{color:var(--urgente); border-color:var(--urgente)}
+.publicada{background:var(--superficie); border:1px solid var(--borde); border-radius:10px;
+           padding:.7rem 1rem; margin:1rem 0 1.5rem}

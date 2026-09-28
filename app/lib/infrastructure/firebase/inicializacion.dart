@@ -17,6 +17,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/entorno.dart';
 import '../../firebase_options.dart';
+import 'app_check.dart';
 
 /// A qué está conectada la aplicación en este arranque.
 enum ConexionFirebase {
@@ -72,6 +73,13 @@ Future<ResultadoArranque> inicializarFirebase() async {
     // inglés, y un correo en inglés que dice «project-863854823370» es
     // indistinguible de una suplantación para quien lo recibe.
     await FirebaseAuth.instance.setLanguageCode('es');
+
+    // App Check (DT-33) va antes de cualquier llamada, para que la primera ya
+    // lleve el token. Si no enciende, se sigue: hoy solo se observa.
+    await activarAppCheck(
+      clave: Entorno.claveAppCheck,
+      usaEmulador: Entorno.usaEmulador,
+    );
 
     if (Entorno.usaEmulador) {
       await _conectarEmuladores();

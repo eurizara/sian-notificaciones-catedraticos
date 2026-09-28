@@ -301,13 +301,13 @@ gratuita.
 | DT-26 | En Android el contador del icono se queda encendido con todo leído | Plataforma | **Media** | **Pagada** | 0 USD |
 | DT-29 | Cambiar el manifiesto deja Android degradado hasta que Chrome regenera la aplicación | Plataforma | Baja | **Aceptada** | 0 USD |
 | DT-30 | Chrome puede marcar los avisos como «posible spam» y ofrecer anular la suscripción | Plataforma | **Media** | Abierta | 0 USD |
-| DT-27 | No hay forma de responder a un aviso | Alcance | Media | **Pagada** (en desarrollo y QA) | 0 USD |
-| DT-31 | «Entregado» no significa que el aparato lo mostrara, y nadie lo mide | Alcance | **Alta** | **Pagada** (en desarrollo y QA) | 0 USD |
-| DT-32 | Las funciones corren en Node.js 20, que Google retira el 30/10/2026 | Plataforma | **Alta** | **Pagada** en desarrollo (1.5.13) · a producción antes del 20/10 | 0 USD |
-| DT-33 | Sin App Check: las funciones aceptan llamadas de fuera de la aplicación | Plataforma | Media | Abierta | 0 USD |
-| DT-34 | Un fallo en el aparato no deja rastro en el servidor | Conocimiento | Media | Abierta | 0 USD |
-| DT-35 | Tocar una notificación no abre el aviso ni la respuesta: siempre cae en la bandeja | Alcance | **Media** | Abierta · **corrección C-6** | 0 USD |
-| DT-28 | El manual no se alcanza desde dentro de la aplicación | Alcance | Baja | **Pagada** (en desarrollo y QA) | 0 USD |
+| DT-27 | No hay forma de responder a un aviso | Alcance | Media | **Pagada** (en producción desde 1.5.11) | 0 USD |
+| DT-31 | «Entregado» no significa que el aparato lo mostrara, y nadie lo mide | Alcance | **Alta** | **Pagada** (en producción desde 1.5.11) | 0 USD |
+| DT-32 | Las funciones corren en Node.js 20, que Google retira el 30/10/2026 | Plataforma | **Alta** | **Pagada** (1.5.13, en producción desde el 24/09/2026) | 0 USD |
+| DT-33 | Sin App Check: las funciones aceptan llamadas de fuera de la aplicación | Plataforma | Media | **En pago**: en observación en desarrollo desde el 26/09 (todas las llamadas `VALID`); falta darlo de alta en QA y producción, y exigirlo | 0 USD |
+| DT-34 | Un fallo en el aparato no deja rastro en el servidor | Conocimiento | Media | **Pagada** (1.6.10, en desarrollo y QA) | 0 USD |
+| DT-35 | Tocar una notificación no abre el aviso ni la respuesta: siempre cae en la bandeja | Alcance | **Media** | **Mitigada** (1.6.0 y 1.6.15, en desarrollo y QA): Android abre la respuesta; en iPhone la respuesta aparece en «Sin leer». La causa en iOS sigue abierta | 0 USD |
+| DT-28 | El manual no se alcanza desde dentro de la aplicación | Alcance | Baja | **Pagada** (en producción desde 1.5.11) | 0 USD |
 
 **Prioridad de pago recomendada, en orden:** DT-03 → DT-14 → DT-04 → DT-01.
 
@@ -2360,6 +2360,12 @@ comprobar que todas las llamadas legítimas —incluidas las de iPhone instalado
 después, exigido. Antes de encenderlo, verificar la cuota gratuita de reCAPTCHA. Documento
 12, S-4.
 
+**Avance (1.6.9, en desarrollo).** La aplicación enciende App Check con reCAPTCHA
+Enterprise cuando el ambiente trae la clave de sitio, y las funciones llamables comparten
+una sola llave para exigirlo (`EXIGIR_APP_CHECK`, hoy `false`). Falta: crear la clave y
+registrar la aplicación en la consola de cada ambiente, observar una semana y exigir.
+Procedimiento en el documento 11, «App Check».
+
 ## DT-34 — Un fallo en el aparato no deja rastro en el servidor
 
 **Origen:** conocimiento · **Severidad:** media · **Estado:** abierta · **Costo:** 0 USD
@@ -2375,10 +2381,18 @@ Los fallos que ocurren en el aparato solo llegan a su consola, que nadie ve.
 plataforma, sin datos personales, con límite de frecuencia por aparato. Además, un contador
 en Alcance: «N aparatos reportaron fallos en las últimas 24 h». Documento 12, S-5.
 
+**Pagada en desarrollo (1.6.10).** Función HTTP `reportarFallo` (sin sesión, porque lo que
+más interesa es lo que falla antes de que Firebase arranque), con tipos de una lista cerrada,
+identificador de aparato al azar y el detalle limpio **en el aparato y otra vez en el
+servidor**. Tope: una escritura por minuto por aparato y tipo, 500 documentos nuevos al día,
+30 días de retención. La aplicación reporta siete sitios: arranque, registro del aparato,
+suscripción directa sin respuesta, registro del worker, notificación con la app abierta,
+App Check y los errores no atrapados. Alcance muestra el resumen de las últimas 24 horas.
+
 ## DT-35 — Tocar una notificación no abre el aviso ni la respuesta: siempre cae en la bandeja
 
-**Origen:** alcance · **Severidad:** media · **Estado:** abierta, se paga como la corrección
-**C-6** en la iteración 1.6 · **Costo:** 0 USD
+**Origen:** alcance · **Severidad:** media · **Estado:** pagada en desarrollo el 25/09/2026
+como la corrección **C-6** (1.6.0) · **Costo:** 0 USD
 
 **Reportado por el responsable el 24/09/2026, probando en QA:** al tocar la notificación de una
 **respuesta** a un aviso, la aplicación abre la bandeja en «Sin leer» y no la respuesta ni el
@@ -2442,4 +2456,46 @@ mismo origen) y la app navega. Sin ventana, se abre con el destino en la direcci
   respuestas; de widget, que la app abierta con `?aviso=X` muestra ese aviso. Y el guion
   del documento 09 en aparatos reales (C6-1 a C6-5), porque iOS y Android no reaccionan igual
   a una notificación tocada.
+
+### Lo que se hizo (1.6.0)
+
+- **Servidor:** `datosDeAvisoDeRespuesta` (dominio, con pruebas) arma la notificación de una
+  respuesta con `avisoId`, `hiloUid` y `para`, y **sin `mensajeId`**.
+- **Worker:** `destinoDeNotificacion` en `sw-decisiones.js` (7 pruebas) decide el destino y lo
+  guarda en la notificación. Al tocarla: con la app abierta, `postMessage` con
+  `sian:abrir`; sin ella, `openWindow` con `/?abrir=…`. Se retiró `navigate()`.
+- **Aplicación:** `presentation/shared/apertura.dart` guarda el destino pendiente —de la
+  dirección o del mensaje del worker— hasta que lo atiende la bandeja (despliega el aviso,
+  primero en la lista, aunque esté en otro filtro o haya una búsqueda escrita) o la sección
+  Respuestas (abre esa conversación). El panel cambia de sección solo. 14 pruebas.
+- **Un caso que no estaba en el diagnóstico:** con la app abierta, la app muestra su propia
+  copia de la notificación, que reemplaza a la del worker. Esa copia no llevaba datos, así que
+  tocarla también dejaba en la bandeja. Ahora lleva los mismos que usa el worker.
+
+### 1.6.1 — En iPhone todavía no llegaba (26/09/2026)
+
+Probada la 1.6.0 por el responsable: **Android llegaba a la respuesta; iPhone abría la app en
+«Sin leer»**. Desde aquí no se ve la consola del iPhone, así que no se sabe cuál de estos
+caminos falló, y los tres son posibles en una PWA de iOS:
+
+  · el mensaje a una app **congelada en segundo plano** se pierde;
+  · iOS **abre la app en su página inicial** e ignora la dirección con el destino;
+  · el worker **no encuentra la ventana** suspendida.
+
+En lugar de apostar por uno, se cubren los tres: el worker **guarda** el destino en la Cache
+API —la comparten worker y página del mismo origen— antes de avisar, y la app lo **toma**
+(lee y borra) al arrancar, al recibir el mensaje y **al volver al frente**. Solo vale dos
+minutos (`aperturaVigente`), para que abrir la app horas después no lleve a aquel aviso. Y
+el mismo destino no se abre dos veces en diez segundos: en iPhone el mensaje puede llegar
+tarde, al descongelarse la app, cuando el guardado ya se abrió.
+
+Si aun así falla en iPhone, el siguiente paso es DT-34 (reporte de fallos del aparato), para
+ver qué hace iOS en vez de deducirlo.
+
+**Mitigación en 1.6.15 (26/09/2026).** Probada la 1.6.x, en iPhone tocar la notificación de
+una respuesta **sigue** abriendo la bandeja en «Sin leer». Mientras se encuentra por qué la
+entrega del destino no llega a la aplicación en iOS, el aviso respondido **vuelve a «Sin
+leer»** para quien recibió la respuesta, con una marca que lo explica: ahí es justo donde cae
+la aplicación. La entrega no se toca. Queda abierto entender el fallo de iOS.
+
 

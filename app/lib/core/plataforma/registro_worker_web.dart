@@ -37,6 +37,7 @@ import 'dart:js_interop';
 
 import 'package:web/web.dart' as web;
 
+import '../fallos.dart';
 import 'consola.dart';
 
 /// El guion del worker de SIAN. Es el que atiende `push`, y el alcance es el
@@ -58,11 +59,16 @@ Future<web.ServiceWorkerRegistration?> registroDelWorker() async {
       _plazo,
       onTimeout: () {
         consolaError('SIAN.worker sin registro tras ${_plazo.inSeconds}s');
+        ReporteDeFallos.reportar(
+          TipoDeFallo.worker,
+          'sin registro tras ${_plazo.inSeconds}s',
+        );
         return null;
       },
     );
   } on Object catch (e) {
     consolaError('SIAN.worker no se pudo obtener el registro | $e');
+    ReporteDeFallos.reportar(TipoDeFallo.worker, e);
     return null;
   }
 }

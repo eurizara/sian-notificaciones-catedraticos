@@ -162,6 +162,78 @@ como siempre: desplegar sin **ninguna** de las dos llaves no rompe nada.
 > firma de todos los envíos. `functions/test/unidad/vapid.test.ts` falla si no coinciden o
 > si una tiene mal la forma.
 
+**Rotar las llaves VAPID (S-9, desde 1.6.12).** Cambiar el par de un ambiente. **No es
+rutinario**: se hace si la privada pudo filtrarse (se pegó donde no debía, o alguien que la
+tuvo ya no está en el proyecto). Con la privada **y** las suscripciones —que están en
+Firestore, protegidas por las reglas— alguien podría mandar notificaciones a los aparatos de
+ese ambiente. Solo con la privada, no.
+
+*Lo que cuesta.* Cada suscripción queda atada a la pública con la que se hizo. Desde que el
+servidor firma con la nueva, **un aparato no recibe notificaciones hasta que abra SIAN una
+vez**: al abrir, la aplicación ve que su suscripción es de otra llave, la retira, se suscribe
+con la nueva y se registra de nuevo, sola (`suscripcion_web.dart`, `_mismaLlave`). Los avisos
+de ese intervalo no se pierden: están en la bandeja. El servidor no guarda la llave anterior,
+así que no hay forma de cubrir ese intervalo sin programar una transición con dos llaves;
+si algún día se necesita rotar sin ese costo, es la mejora que hay que hacer.
+
+*Pasos, por ambiente y en el orden de siempre (desarrollo → QA → producción).* Fuera del
+horario de clases y sin avisos programados en la hora siguiente:
+
+  1. **Preparar el cambio de la pública.** Quien desarrolla deja listo, con la CI en verde y
+     **sin fusionar**, el pull request que cambia la pública en `functions/src/infrastructure/vapid.ts`
+     y en el `--dart-define=SIAN_VAPID_PROPIA` de ese ambiente en `deploy.yml`.
+     `vapid.test.ts` comprueba que coincidan.
+  2. **El responsable genera el par**, en su computadora:
+     `node -e "console.log(JSON.stringify(require('web-push').generateVAPIDKeys()))"` desde
+     `functions/`. Pasa **solo la pública** a quien desarrolla; la privada no se pega en
+     ningún chat, documento ni repositorio.
+  3. **El responsable carga la privada** en la consola de Google Cloud → Secret Manager →
+     `VAPID_PRIVADA` → **Nueva versión**. Sin desactivar la anterior todavía. Las funciones
+     leen `latest`, pero cada instancia guarda la llave en memoria: hasta el despliegue del
+     paso 4 conviven instancias con la vieja y con la nueva, y las nuevas fallan al firmar.
+     Por eso el paso 4 va **inmediatamente** después.
+  4. **Se fusiona el pull request** del paso 1 y se espera el despliegue (unos 10 minutos;
+     en producción, con la aprobación del responsable). Todas las instancias arrancan con
+     la privada nueva y la pública nueva.
+  5. **Pedir a todos que abran SIAN una vez**, por un canal que no sea SIAN (correo,
+     WhatsApp de coordinación): una notificación de SIAN no les llegaría. En Alcance se ve
+     quién ya volvió a registrarse (su última actividad).
+  6. **Comprobar** con los aparatos propios: abrir SIAN, mandarse un aviso de prueba, que
+     llegue.
+  7. **A la semana, destruir la versión vieja** del secreto: Secret Manager →
+     `VAPID_PRIVADA` → versiones → la anterior → **Destruir**. No antes: si hubiera que
+     volver atrás por un error del paso 4, es lo único que lo permite.
+  8. Anotar la fecha en la tabla de arriba.
+
+*Si algo sale mal en el paso 4* (el despliegue falla, o los envíos salen `SIN_LLAVES`):
+revertir el pull request y, en Secret Manager, abrir la versión **anterior** →
+*Ver el valor del secreto* → copiarlo en una **Nueva versión**. **No** desactivar la nueva:
+`latest` es siempre la versión creada más recientemente, y si está desactivada las funciones
+no leen ninguna y el ambiente se queda sin Web Push. Si la rotación era por una filtración,
+no se vuelve atrás: se corrige el despliegue y se sigue, porque la llave vieja ya no es de
+fiar.
+
+**Actualizar dependencias (S-8, desde 1.6.12).** El día 1 de cada mes,
+`.github/workflows/actualizar-dependencias.yml` sube lo que admiten los rangos declarados
+—menores y parches— de las funciones, la raíz y la aplicación, en **un solo** pull request
+contra `develop`, y lanza la integración continua sobre él. Se puede lanzar a mano desde
+*Actions → Actualización mensual de dependencias → Run workflow*.
+
+  - **CI en verde:** se fusiona y sigue el camino de siempre hacia QA y producción.
+  - **CI en rojo:** el pull request dice qué cambió; se busca el paquete culpable, se fija
+    su versión en el rango y se vuelve a lanzar.
+  - **Versiones mayores:** no se suben solas, porque cambian la API. La descripción del pull
+    request las lista; cada una se decide y se hace a mano, en su propio cambio.
+
+Mientras el repositorio no permita que las acciones abran pull requests (*Settings →
+Actions → General → «Allow GitHub Actions to create and approve pull requests»*, hoy
+desactivado), el flujo deja la rama lista, con la CI ya lanzada, y abre un **issue** con el
+enlace para crear el pull request con un clic. Activarlo es decisión del responsable: da a
+los flujos permiso para abrir pull requests, no para fusionarlos.
+
+Dependabot se queda solo con las acciones de GitHub: en npm y pub no había abierto nada
+desde que se configuró, y dos mecanismos para lo mismo acaban en pull requests duplicados.
+
 **Respaldos de Firestore (desde 1.5.13).** Hasta el 23/09/2026 no había ninguno, en ningún
 ambiente. Los configura `scripts/configurar-respaldos.py`, que es idempotente y con
 `--revisar` solo lee:
@@ -181,6 +253,59 @@ Firestore no hace respaldos al momento: el primero sale en la fecha del programa
      con `{"databaseId": "restauracion-AAAAMMDD", "backup": "<nombre del respaldo>"}`.
   3. Leer de esa base lo que haga falta y copiarlo a `(default)` con un guion revisado.
   4. Borrar la base temporal al terminar: mientras exista, se paga su almacenamiento.
+
+**App Check (desde 1.6.9, DT-33).** Comprueba que una llamada a las funciones sale de la
+aplicación y no de un guion con la configuración pública del proyecto. Va en **dos pasos**, y
+el segundo no se da hasta que el primero lo justifique.
+
+*Paso 1 — observar (una vez por ambiente; lo hace el responsable en la consola):*
+
+  1. Google Cloud → proyecto del ambiente → **Seguridad → reCAPTCHA** → habilitar la API si
+     la pide → **Crear clave**: tipo *Sitio web*, dominios `<proyecto>.web.app` y
+     `<proyecto>.firebaseapp.com`, **sin** desafío de casilla. Copiar el **ID de la clave**:
+     es pública, como la VAPID. reCAPTCHA Enterprise no tiene clave secreta.
+  2. Consola de Firebase → **App Check → Aplicaciones** → la aplicación web → *reCAPTCHA
+     Enterprise* → pegar el ID → **vigencia del token: 1 día** (con la de una hora se gasta
+     24 veces más cuota).
+  3. **No** pulsar *Aplicar* en ningún producto (Firestore, Storage, Authentication): eso es
+     el paso 2.
+  4. Guardar el ID como variable del repositorio: `gh variable set DEV_APP_CHECK_KEY`
+     (o `QA_…`, `PROD_…`). El siguiente despliegue del ambiente ya lo enciende.
+
+Cuota: reCAPTCHA cobra por evaluación, con un tramo gratuito mensual (10 000 al consultarlo
+en septiembre de 2026; confirmarlo en su página de precios antes de encenderlo en
+producción). Con tokens de un día, cada aparato hace como mucho una evaluación diaria: unos
+150 aparatos en producción son ~4 500 al mes.
+
+| Ambiente | App Check | Desde |
+|---|---|---|
+| Desarrollo | En observación · clave `SIAN dev App Check`, token de 1 día. Primeras 26 llamadas: todas `VALID` | 26/09/2026 |
+| QA | Sin dar de alta: la aplicación no lo enciende | — |
+| Producción | Sin dar de alta: la aplicación no lo enciende | — |
+
+*Cómo se observa.* Cada llamada deja en el registro de la función el resultado de las
+verificaciones. En el Explorador de registros:
+
+```
+resource.type="cloud_run_revision"
+jsonPayload.verifications.app=("MISSING" OR "INVALID")
+```
+
+`VALID` es la aplicación con token; `MISSING`, una llamada sin él (una versión anterior a
+1.6.9, o reCAPTCHA que no cargó); `INVALID`, un token falso o de otro proyecto. App Check →
+*APIs* muestra además las proporciones de Firestore y Storage.
+
+*Paso 2 — exigir.* Solo cuando, durante al menos **una semana**, no haya `MISSING` ni
+`INVALID` de personas reales, y Alcance diga que nadie sigue en una versión anterior a
+1.6.9 (esas no mandan token y quedarían fuera sin aviso). Entonces:
+`EXIGIR_APP_CHECK = true` en `functions/src/infrastructure/firebase.ts` (la prueba
+`appCheck.test.ts` pide actualizarla a propósito), y después, si se quiere, *Aplicar* en
+Firestore y Storage desde la consola. Las dos rutas HTTP del service worker —`acuse` y la
+renovación de la suscripción— quedan fuera: el worker no puede obtener un token.
+
+*Si algo sale mal.* Con App Check solo observado, nada: la aplicación arranca aunque
+reCAPTCHA no cargue. Ya exigido, se vuelve atrás con `EXIGIR_APP_CHECK = false` y un
+despliegue, o quitando *Aplicar* en la consola, que tiene efecto en minutos.
 
 **Gasto.** La cuenta de facturación tiene un **techo de 10 USD al mes para los tres
 proyectos**, con avisos por correo a los administradores de facturación al 50, 90 y 100 %, y
@@ -316,6 +441,12 @@ Se corrigió con dos cosas:
 **Un sello de versión.** `scripts/sellar-version.sh` escribe `version.json` en lo que se
 publica, con el árbol, el commit, la rama y si se compiló desde una copia limpia. La
 comparación lo lee de cada ambiente y lo pone en la primera fila.
+
+**La huella del paquete (desde 1.6.11).** Después de sellar, `scripts/huella-paquete.sh`
+renombra `main.dart.js` a `main.<huella>.dart.js` y apunta `flutter_bootstrap.js` a él, para
+que Hosting pueda guardarlo un año. Si una versión nueva de Flutter cambia el formato del
+arranque, el guion falla y el despliegue se detiene antes de publicar: es preferible a una
+aplicación en blanco. `comparar-ambientes.py` lee el nombre del arranque.
 
 > **Se compara el árbol, no el commit.** La primera versión comparaba commits y daba
 > «DIFIERE» con los tres ambientes corriendo exactamente el mismo código: promover por

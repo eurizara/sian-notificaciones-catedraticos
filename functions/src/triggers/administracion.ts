@@ -20,7 +20,7 @@ import { crearGrupo, normalizarMiembros, rozaElLimite } from '../domain/grupo';
 import { crearInvitacion, interpretarCsv } from '../domain/invitacion';
 import { exigirPermiso, type Permiso , recibeAvisos } from '../domain/autorizacion';
 import { ROLES, type Rol } from '../domain/tipos';
-import { FieldValue, OPCIONES_FUNCION, RUTAS, auth, db } from '../infrastructure/firebase';
+import { FieldValue, OPCIONES_LLAMABLE, RUTAS, auth, db } from '../infrastructure/firebase';
 import {
   actualizarPerfil,
   buscarPerfil,
@@ -117,7 +117,7 @@ function asiento(
 // Invitaciones — RF-USR-01, RF-AUT-03
 // ---------------------------------------------------------------------------
 
-export const crearInvitaciones = onCall(OPCIONES_FUNCION, async (peticion) => {
+export const crearInvitaciones = onCall(OPCIONES_LLAMABLE, async (peticion) => {
   const solicitante = await exigir(peticion, 'ADMINISTRAR_USUARIOS');
 
   try {
@@ -205,7 +205,7 @@ export const crearInvitaciones = onCall(OPCIONES_FUNCION, async (peticion) => {
   }
 });
 
-export const revocarInvitacion = onCall(OPCIONES_FUNCION, async (peticion) => {
+export const revocarInvitacion = onCall(OPCIONES_LLAMABLE, async (peticion) => {
   const solicitante = await exigir(peticion, 'ADMINISTRAR_USUARIOS');
   const correo = String((peticion.data as { correo?: string }).correo ?? '')
     .trim()
@@ -233,7 +233,7 @@ export const revocarInvitacion = onCall(OPCIONES_FUNCION, async (peticion) => {
 // Usuarios — RF-USR-02, RF-AUT-08, RN-10
 // ---------------------------------------------------------------------------
 
-export const cambiarRol = onCall(OPCIONES_FUNCION, async (peticion) => {
+export const cambiarRol = onCall(OPCIONES_LLAMABLE, async (peticion) => {
   const solicitante = await exigir(peticion, 'ADMINISTRAR_USUARIOS');
   const { uid, rol } = peticion.data as { uid?: string; rol?: string };
 
@@ -273,7 +273,7 @@ export const cambiarRol = onCall(OPCIONES_FUNCION, async (peticion) => {
   return { uid, rol: nuevoRol };
 });
 
-export const cambiarEstadoUsuario = onCall(OPCIONES_FUNCION, async (peticion) => {
+export const cambiarEstadoUsuario = onCall(OPCIONES_LLAMABLE, async (peticion) => {
   const solicitante = await exigir(peticion, 'ADMINISTRAR_USUARIOS');
   const { uid, activo } = peticion.data as { uid?: string; activo?: boolean };
 
@@ -315,7 +315,7 @@ export const cambiarEstadoUsuario = onCall(OPCIONES_FUNCION, async (peticion) =>
   return { uid, activo };
 });
 
-export const cambiarAutorizacionesFinas = onCall(OPCIONES_FUNCION, async (peticion) => {
+export const cambiarAutorizacionesFinas = onCall(OPCIONES_LLAMABLE, async (peticion) => {
   const solicitante = await exigir(peticion, 'ADMINISTRAR_USUARIOS');
   const { uid, puedeEmitirUrgentes, puedeCrearRecurrentes, recibeAvisos: recibe } =
     peticion.data as {
@@ -379,7 +379,7 @@ export const cambiarAutorizacionesFinas = onCall(OPCIONES_FUNCION, async (petici
 // Grupos — RF-USR-03, RF-USR-04, DT-08
 // ---------------------------------------------------------------------------
 
-export const guardarGrupo = onCall(OPCIONES_FUNCION, async (peticion) => {
+export const guardarGrupo = onCall(OPCIONES_LLAMABLE, async (peticion) => {
   const solicitante = await exigir(peticion, 'ADMINISTRAR_GRUPOS');
   const { grupoId, nombre, descripcion, miembros } = peticion.data as {
     grupoId?: string;
@@ -445,7 +445,7 @@ export const guardarGrupo = onCall(OPCIONES_FUNCION, async (peticion) => {
  * poder decir a qué grupo se envió. Desactivar lo saca de la lista de
  * destinatarios elegibles y conserva el rastro (RN-03 aplicado a grupos).
  */
-export const cambiarEstadoGrupo = onCall(OPCIONES_FUNCION, async (peticion) => {
+export const cambiarEstadoGrupo = onCall(OPCIONES_LLAMABLE, async (peticion) => {
   const solicitante = await exigir(peticion, 'ADMINISTRAR_GRUPOS');
   const { grupoId, activo } = peticion.data as {
     grupoId?: string;
@@ -503,7 +503,7 @@ export const cambiarEstadoGrupo = onCall(OPCIONES_FUNCION, async (peticion) => {
  * banderas, ni quién está desactivado. Suficiente para elegir, insuficiente
  * para hacerse un directorio.
  */
-export const destinatariosElegibles = onCall(OPCIONES_FUNCION, async (peticion) => {
+export const destinatariosElegibles = onCall(OPCIONES_LLAMABLE, async (peticion) => {
   await exigir(peticion, 'ADMINISTRAR_GRUPOS');
 
   const instantanea = await db.collection(RUTAS.usuarios).get();

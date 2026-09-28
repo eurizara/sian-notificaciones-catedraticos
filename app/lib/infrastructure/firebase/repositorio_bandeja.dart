@@ -7,8 +7,11 @@
 /// colecciones no puede filtrar por identificador de documento.
 library;
 
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../core/plataforma/consola.dart';
 import '../../core/version.dart';
 import '../../domain/repositorios.dart';
 
@@ -47,13 +50,85 @@ class RepositorioBandejaFirebase implements RepositorioBandeja {
 
   @override
   Stream<List<MensajeRecibido>> observarHistorial(String uid) {
-    return _firestore
+    final Stream<List<MensajeRecibido>> avisos = _firestore
         .collectionGroup('entregas')
         .where('uid', isEqualTo: uid)
         .orderBy('entregadoEn', descending: true)
         .limit(_limite)
         .snapshots()
         .asyncMap(_combinarConMensajes);
+    return _conRespuestas(avisos, _respuestasSinLeer(uid));
+  }
+
+  /// Avisos con respuestas que este catedrático no ha leído: identificador
+  /// del mensaje → cuántas (DT-27, `sinLeerCatedratico`).
+  ///
+  /// Solo trae las conversaciones con algo pendiente, que casi siempre son
+  /// ninguna o una: no cuesta leer todas las de la persona en cada cambio.
+  Stream<Map<String, int>> _respuestasSinLeer(String uid) => _firestore
+      .collectionGroup('hilos')
+      .where('uid', isEqualTo: uid)
+      .where('sinLeerCatedratico', isGreaterThan: 0)
+      .snapshots()
+      .map(
+        (QuerySnapshot<Map<String, dynamic>> q) => <String, int>{
+          for (final QueryDocumentSnapshot<Map<String, dynamic>> d in q.docs)
+            (d.data()['mensajeId'] as String?) ??
+                    d.reference.parent.parent?.id ??
+                    '':
+                (d.data()['sinLeerCatedratico'] as num?)?.toInt() ?? 0,
+        },
+      );
+
+  /// Lo último de los dos flujos, juntos.
+  ///
+  /// Los avisos salen en cuanto llegan, sin esperar a las respuestas. Y si la
+  /// consulta de respuestas falla —un índice que todavía se está creando, una
+  /// regla sin desplegar—, la bandeja sigue exactamente como antes de esto:
+  /// una respuesta que no se marca es un mal menor que una bandeja vacía.
+  Stream<List<MensajeRecibido>> _conRespuestas(
+    Stream<List<MensajeRecibido>> avisos,
+    Stream<Map<String, int>> respuestas,
+  ) {
+    late final StreamController<List<MensajeRecibido>> salida;
+    StreamSubscription<List<MensajeRecibido>>? subAvisos;
+    StreamSubscription<Map<String, int>>? subRespuestas;
+    List<MensajeRecibido>? ultimos;
+    Map<String, int> pendientes = const <String, int>{};
+
+    void emitir() {
+      final List<MensajeRecibido>? l = ultimos;
+      if (l != null && !salida.isClosed) {
+        salida.add(conRespuestasSinLeer(l, pendientes));
+      }
+    }
+
+    salida = StreamController<List<MensajeRecibido>>(
+      onListen: () {
+        subAvisos = avisos.listen(
+          (List<MensajeRecibido> l) {
+            ultimos = l;
+            emitir();
+          },
+          onError: salida.addError,
+        );
+        subRespuestas = respuestas.listen(
+          (Map<String, int> p) {
+            pendientes = p;
+            emitir();
+          },
+          onError: (Object e) {
+            consolaError('SIAN.bandeja respuestas sin leer no disponibles | $e');
+          },
+        );
+      },
+      onCancel: () async {
+        await subAvisos?.cancel();
+        await subRespuestas?.cancel();
+        await salida.close();
+      },
+    );
+    return salida.stream;
   }
 
   /// Combina las entregas con el contenido de sus mensajes.

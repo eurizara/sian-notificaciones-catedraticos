@@ -104,6 +104,10 @@ enum Rol {
   /// verdad.
   bool get recibeMensajes => this == Rol.catedratico;
 
+  /// Puede retirar registros de aparatos desde Alcance (1.6). Es el mismo
+  /// permiso que administrar usuarios en el servidor (`ADMINISTRAR_USUARIOS`).
+  bool get administraUsuarios => this == Rol.coordinador;
+
   /// ¿Puede emitir alertas urgentes?
   ///
   /// ────────────────────────────────────────────────────────────────────────

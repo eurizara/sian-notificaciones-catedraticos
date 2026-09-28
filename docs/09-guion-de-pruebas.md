@@ -335,7 +335,7 @@ notificaciones: sin dispositivo registrado no hay a dónde entregar (RN-02).
 
 | # | Acción | Resultado esperado |
 |---|---|---|
-| 4.1 | En **Mensajes**, escribe un título muy largo | Se corta a los 80 caracteres y el contador lo dice. Igual el cuerpo a los 500 (RF-MSG-06) |
+| 4.1 | En **Mensajes**, escribe un título muy largo | Se corta a los 80 caracteres y el contador lo dice. Igual el cuerpo a los 1000 (RF-MSG-06) |
 | 4.2 | Pulsa **Enviar ahora** con el formulario vacío | Avisa de lo que falta y **no llega ni a contar** destinatarios |
 | 4.3 | Redacta un aviso informativo a **todos los catedráticos** y pulsa enviar | Antes de nada muestra el **conteo exacto**: «llegará a N personas» (RF-USR-07) |
 | 4.4 | Si hay cuentas desactivadas, míralo en ese mismo diálogo | Dice **cuántas quedan fuera y por qué**. «43 de 45» sin motivo no ayudaría a nadie |
@@ -718,8 +718,61 @@ pantalla**, en iPhone y en Android.
 | C6-2 | Como catedrático, responder un aviso. Quien lo envió toca la notificación de la respuesta | Se abre **Respuestas**, con ese aviso desplegado y la respuesta a la vista |
 | C6-2b | Repetir C6-2 y C6-3 con el aviso en **«Sin confirmar»** y en **«Leídos»**, y con la app dejada en otra pantalla (por ejemplo, Alcance o el filtro «Todos») | Lleva **a esa respuesta** en todos los casos, sin importar el filtro del aviso ni la pantalla de partida. Es el caso que delató el fallo |
 | C6-3 | Quien envió el aviso contesta. El catedrático toca esa notificación | Se abre **la conversación** dentro de ese aviso |
+| C6-6 | Con el aviso ya **confirmado** o en «Leídos», quien lo envió contesta. El catedrático abre SIAN (tocando la notificación o no) | El aviso aparece en **«Sin leer»** con «Respuesta nueva de quien lo envió», y cuenta en la pestaña y en el icono. Al desplegarlo se ve la respuesta; al salir, el aviso vuelve a «Leídos» y sigue confirmado. Solo le pasa a quien recibió la respuesta (1.6.15) |
 | C6-4 | Con la app abierta redactando algo, tocar una notificación | La app pasa al frente y abre el destino **sin recargarse** |
 | C6-5 | Tocar la notificación de prueba del registro del aparato | Abre la bandeja, como antes |
+
+## Probar App Check en modo observación (DT-33, 1.6.9)
+
+Solo en un ambiente donde ya se dio de alta la clave (documento 11, «App Check»).
+
+| # | Paso | Qué debe ocurrir |
+|---|------|------------------|
+| AC-1 | Abrir la app instalada en iPhone y en Android, y en la computadora; entrar y mirar la bandeja | Todo igual que antes: ningún aviso, ninguna demora nueva |
+| AC-2 | Enviar un aviso, responderlo y abrir Alcance | Funciona igual |
+| AC-3 | En el Explorador de registros, filtrar las llamadas de los últimos 30 minutos por `jsonPayload.verifications.app` | Las de los pasos anteriores dicen **`VALID`**; las de aparatos en una versión anterior a 1.6.9, `MISSING` |
+| AC-4 | Abrir la app con reCAPTCHA bloqueado (por ejemplo, con un bloqueador de anuncios en la computadora) | Arranca y funciona; esas llamadas dicen `MISSING`. Así se ve en la observación qué se quedaría fuera al exigirlo |
+
+## Probar el reporte de fallos del aparato (DT-34, 1.6.10)
+
+| # | Paso | Qué debe ocurrir |
+|---|------|------------------|
+| RF-1 | Abrir Alcance sin haber provocado nada | «Ningún aparato reportó fallos en las últimas 24 horas.» (o los reales, si los hay) |
+| RF-2 | En Chrome de la computadora: herramientas de desarrollo → **Red** → bloquear solicitudes con el patrón `*registrarDispositivo*`; recargar SIAN y tocar «Activar notificaciones». Quitar el bloqueo y recargar Alcance | Aparece «El registro para recibir avisos», con **Computadora** y la versión 1.6.10. El reporte sale aunque el registro falle: va a otra función |
+| RF-3 | Leer el detalle del fallo en Alcance | No contiene correos, nombres ni números largos |
+| RF-4 | Provocar el mismo fallo tres veces seguidas | Cuenta **una** vez: el aparato no insiste antes de 10 minutos |
+| RF-5 | En la consola de Firestore, mirar `fallos_aparato` | Documentos con `aparato` al azar, sin uid ni correo |
+
+## Probar la carga inicial (S-7, 1.6.11)
+
+| # | Paso | Qué debe ocurrir |
+|---|------|------------------|
+| CI-1 | Tras desplegar, abrir `https://<proyecto>.web.app/version.json` | Dice 1.6.11 |
+| CI-2 | Abrir SIAN instalada en el iPhone, cerrarla del todo y volver a abrirla | Abre igual o más rápido que la 1.6.10; todo se ve bien (escudo, letra, iconos) |
+| CI-3 | En Chrome de la computadora, herramientas de desarrollo → Red, recargar dos veces | En la segunda, `main.<huella>.dart.js`, el escudo y las Urbanist salen «(memory cache)» o «(disk cache)» |
+| CI-4 | Publicar una versión nueva y pulsar «Actualizar» | Se carga la nueva: el nombre del paquete cambió |
+
+## Probar las plantillas de avisos (RF-MSG-14, 1.6.13)
+
+| # | Paso | Qué debe ocurrir |
+|---|------|------------------|
+| PL-1 | Como coordinación, Mensajes → **Usar plantilla** | Aparecen las seis incluidas, con buscador |
+| PL-2 | Elegir «Simulacro de evacuación» y pulsar enviar sin tocar nada | No deja: «Complete lo que está entre corchetes: [día], [hora]» |
+| PL-3 | Completar el día y la hora y enviar a sí mismo | Sale y llega como cualquier aviso, con confirmación de lectura |
+| PL-4 | Escribir algo, pulsar **Guardar como plantilla**, darle nombre | «Plantilla … guardada»; aparece en **Guardadas** para otra cuenta de coordinación o administración |
+| PL-5 | Con texto escrito, elegir una plantilla | Pregunta si reemplazar; «Cancelar» deja lo escrito |
+| PL-6 | Como administradora **sin** permiso de urgentes, abrir la lista | No aparece «Evacuación inmediata» |
+| PL-7 | Borrar una plantilla guardada | Pide confirmación y desaparece para todos |
+
+## Probar las listas cortas (1.6.16)
+
+| # | Paso | Qué debe ocurrir |
+|---|------|------------------|
+| LC-1 | Abrir **Respuestas** con más de 10 conversaciones | Se ven 10 y «Mostrando 10 de N»; «Ver más» trae 10 más |
+| LC-2 | Abrir **Alcance** | Las dos listas aparecen plegadas con su número; el resumen y «Enviar recordatorio» se ven sin desplegar |
+| LC-3 | Tocar cada encabezado | Se abre la lista; retirar un registro sigue funcionando |
+| LC-4 | En **Respuestas**, en el teléfono, bajar hasta el final y volver a subir varias veces, con avisos abiertos y plegados | El desplazamiento no se traba en ningún punto, tampoco al llegar arriba; lo abierto sigue abierto (1.6.17) |
+| LC-5 | En Respuestas, tocar el título de un aviso | Se pliega o despliega; los que tienen algo sin leer arrancan abiertos |
 
 ## Probar el mantenimiento de 1.5.13
 
@@ -743,6 +796,9 @@ pantalla**, en iPhone y en Android.
 | V-6 | En **Alcance**, baja hasta **Versión de la aplicación** | Dice cuántas personas tienen algún aparato sin la versión publicada y lista cada aparato atrasado con su versión y última actividad. Quien está al día no sale |
 | V-7 | Actualiza uno de esos aparatos y recarga Alcance | Ese aparato desaparece de la lista |
 | V-7b | Reinstala la app en un aparato ya actualizado (queda el registro anterior) y recarga Alcance | La persona **no** sale como atrasada; debajo del resumen aparece «Además hay 1 registro de una instalación anterior…» |
+| V-9 | Como coordinación, en Alcance → «Versión de la aplicación», toca la papelera de un aparato y confirma | Desaparece de la lista; en la bitácora queda «Retirado desde Alcance» con tu nombre. La administradora no ve la papelera |
+| V-10 | Toca **Enviar recordatorio a estas N personas** | Se abre Mensajes en «Personas concretas» con esas personas y el texto sugerido, que se puede cambiar |
+| V-11 | Deja un registro viejo de reinstalación sin tocar 14 días (o simúlalo en desarrollo) | La sonda diaria lo retira con «Retirado por una instalación más reciente del mismo aparato» |
 | V-8 | Abre el manual → **Notas de la versión** | La primera sección es la versión que dice el pie de la bandeja, marcada **Actual**; los dos manuales enlazan a esta página |
 
 ## Probar que el canal se repara solo (DT-23)

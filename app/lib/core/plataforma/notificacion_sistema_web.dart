@@ -19,6 +19,7 @@ import 'dart:js_interop';
 
 import 'package:web/web.dart' as web;
 
+import '../fallos.dart';
 import 'consola.dart';
 import 'registro_worker_web.dart';
 
@@ -27,6 +28,7 @@ Future<bool> mostrarNotificacionDelSistema({
   required String cuerpo,
   required bool urgente,
   String? etiqueta,
+  Map<String, String> datos = const <String, String>{},
 }) async {
   try {
     // Sin permiso concedido no se intenta: pedirlo aquí sería pedirlo sin que
@@ -59,6 +61,10 @@ Future<bool> mostrarNotificacionDelSistema({
             tag: etiqueta ?? 'sian',
             // Una alerta urgente no se descarta sola: exige un gesto.
             requireInteraction: urgente,
+            // Los mismos datos que usa el worker: con ellos decide a dónde
+            // lleva tocarla (C-6). Sin esto, esta copia —que reemplaza a la del
+            // worker por llevar la misma etiqueta— dejaba en la bandeja.
+            data: datos.jsify(),
           ),
         )
         .toDart;
@@ -70,6 +76,7 @@ Future<bool> mostrarNotificacionDelSistema({
     // dentro de la pantalla sigue siendo el respaldo. Pero sí se deja dicho,
     // porque un `false` mudo es lo que impidió ver por qué no salía.
     consolaError('SIAN.notif falló | $e');
+    ReporteDeFallos.reportar(TipoDeFallo.notificacion, e);
     return false;
   }
 }

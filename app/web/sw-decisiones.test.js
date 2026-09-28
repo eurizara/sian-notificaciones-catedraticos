@@ -252,3 +252,86 @@ describe('el reporte de suscripción — DT-23', () => {
   });
 });
 
+describe('destinoDeNotificacion · tocar una notificación lleva a lo que la originó (C-6)', () => {
+  const { destinoDeNotificacion } = require('./sw-decisiones.js');
+
+  test('un aviso abre ese aviso', () => {
+    assert.deepEqual(destinoDeNotificacion({ mensajeId: 'm-1', titulo: 'x' }), {
+      abrir: 'aviso',
+      aviso: 'm-1',
+      ruta: '/?abrir=aviso&aviso=m-1',
+    });
+  });
+
+  test('una respuesta a quien envió el aviso abre ESA conversación', () => {
+    // El caso reportado el 24/09/2026: caía en «Sin leer».
+    assert.deepEqual(
+      destinoDeNotificacion({ tipo: 'RESPUESTA', avisoId: 'm-1', hiloUid: 'cat-1', para: 'EMISOR' }),
+      { abrir: 'hilo', aviso: 'm-1', hilo: 'cat-1', ruta: '/?abrir=hilo&aviso=m-1&hilo=cat-1' },
+    );
+  });
+
+  test('una respuesta al catedrático abre el aviso: su conversación está dentro', () => {
+    assert.deepEqual(
+      destinoDeNotificacion({ tipo: 'RESPUESTA', avisoId: 'm-1', hiloUid: 'cat-1', para: 'CATEDRATICO' }),
+      { abrir: 'aviso', aviso: 'm-1', ruta: '/?abrir=aviso&aviso=m-1' },
+    );
+  });
+
+  test('una respuesta de antes de la corrección, sin avisoId, va a la bandeja', () => {
+    // Las que ya estaban en la pantalla del teléfono al actualizar.
+    assert.equal(
+      destinoDeNotificacion({ tipo: 'RESPUESTA', etiqueta: 'respuestas-m-1' }).abrir,
+      'bandeja',
+    );
+  });
+
+  test('sin nada que identifique (la prueba del registro), va a la bandeja', () => {
+    assert.deepEqual(destinoDeNotificacion({ titulo: 'Prueba' }), { abrir: 'bandeja', ruta: '/' });
+    assert.deepEqual(destinoDeNotificacion(null), { abrir: 'bandeja', ruta: '/' });
+  });
+
+  test('lo que no tiene forma de identificador no llega a la dirección', () => {
+    // Termina en la URL y en la aplicación: una barra o un & abrirían otra cosa.
+    for (const malo of ['../x', 'a&abrir=hilo', 'a/b', '', 'x'.repeat(200)]) {
+      assert.equal(destinoDeNotificacion({ mensajeId: malo }).abrir, 'bandeja', malo);
+      assert.equal(
+        destinoDeNotificacion({ tipo: 'RESPUESTA', avisoId: malo, para: 'CATEDRATICO' }).abrir,
+        'bandeja',
+        malo,
+      );
+    }
+  });
+
+  test('una respuesta a quien envió el aviso sin conversación válida abre el aviso', () => {
+    assert.equal(
+      destinoDeNotificacion({ tipo: 'RESPUESTA', avisoId: 'm-1', hiloUid: 'a/b', para: 'EMISOR' }).abrir,
+      'aviso',
+    );
+  });
+});
+
+describe('aperturaVigente · el destino guardado solo vale un rato (C-6, iPhone)', () => {
+  const { aperturaVigente, SEGUNDOS_DE_APERTURA } = require('./sw-decisiones.js');
+  const ahora = Date.parse('2026-09-26T15:00:00Z');
+
+  test('recién guardado, vale', () => {
+    assert.equal(aperturaVigente({ en: ahora - 3000 }, ahora), true);
+  });
+
+  test('pasado el plazo, no: abrir la app horas después no lleva a aquel aviso', () => {
+    assert.equal(aperturaVigente({ en: ahora - (SEGUNDOS_DE_APERTURA + 1) * 1000 }, ahora), false);
+  });
+
+  test('un reloj un poco adelantado no lo invalida; uno muy adelantado, sí', () => {
+    assert.equal(aperturaVigente({ en: ahora + 30000 }, ahora), true);
+    assert.equal(aperturaVigente({ en: ahora + 10 * 60000 }, ahora), false);
+  });
+
+  test('sin fecha no vale', () => {
+    assert.equal(aperturaVigente({}, ahora), false);
+    assert.equal(aperturaVigente(null, ahora), false);
+    assert.equal(aperturaVigente({ en: 'ayer' }, ahora), false);
+  });
+});
+

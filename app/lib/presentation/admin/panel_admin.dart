@@ -16,6 +16,8 @@ import '../../application/proveedores_respuestas.dart';
 
 import '../../domain/rol.dart';
 import '../../domain/sesion.dart';
+import '../shared/apertura.dart';
+import 'borrador_prefijado.dart';
 import '../shared/barra_sesion.dart';
 import 'seccion_bitacora.dart';
 import 'seccion_entregas.dart';
@@ -266,6 +268,55 @@ class _PanelAdminState extends ConsumerState<PanelAdmin> {
   /// está sentado frente a un escritorio.
   static const double _anchoMinimoParaMenuLateral = 700;
 
+  /// Alcance preparó un aviso (1.6): se pasa a Mensajes para terminarlo.
+  void _llevarARedactarSiHayBorrador(List<SeccionAdmin> visibles) {
+    if (ref.watch(borradorPrefijadoProvider) == null) {
+      return;
+    }
+    final int destino = visibles.indexWhere(
+      (SeccionAdmin s) => s.etiqueta == Textos.seccionMensajes,
+    );
+    if (destino >= 0 && _indice != destino) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() => _indice = destino);
+        }
+      });
+    }
+  }
+
+  /// Tocar una notificación lleva a su sección (C-6, DT-35).
+  ///
+  /// El panel solo elige la sección; la sección abre lo concreto y da el
+  /// pedido por atendido:
+  ///
+  ///   · una **respuesta** de un catedrático → **Respuestas**, que abre esa
+  ///     conversación;
+  ///   · un **aviso** → **Mis mensajes**, si esta persona también los recibe.
+  ///     Si no los recibe, no hay dónde mostrarlo y se descarta.
+  void _llevarADestinoDeNotificacion(List<SeccionAdmin> visibles) {
+    final DestinoApertura? pendiente = ref.watch(aperturaPendienteProvider);
+    if (pendiente == null) {
+      return;
+    }
+    final String etiqueta = pendiente.tipo == TipoApertura.hilo
+        ? Textos.seccionRespuestas
+        : Textos.seccionMisMensajes;
+    final int destino = visibles.indexWhere(
+      (SeccionAdmin s) => s.etiqueta == etiqueta,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || ref.read(aperturaPendienteProvider) != pendiente) {
+        return;
+      }
+      if (destino < 0) {
+        ref.read(aperturaPendienteProvider.notifier).consumir();
+      } else if (_indice != destino) {
+        setState(() => _indice = destino);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final List<SeccionAdmin> visibles = seccionesParaUsuario(widget.usuario);
@@ -280,6 +331,9 @@ class _PanelAdminState extends ConsumerState<PanelAdmin> {
         body: const Center(child: Text(Textos.sinSeccionesDisponibles)),
       );
     }
+
+    _llevarADestinoDeNotificacion(visibles);
+    _llevarARedactarSiHayBorrador(visibles);
 
     final int indice = _indice.clamp(0, visibles.length - 1);
     final SeccionAdmin actual = visibles[indice];
@@ -351,49 +405,63 @@ class _PanelAdminState extends ConsumerState<PanelAdmin> {
                   // 390 píxeles de alto, y sin esto el menú se desbordaba por
                   // abajo: las últimas entradas quedaban fuera de la pantalla y
                   // no había forma de llegar a ellas.
-                  LayoutBuilder(
-                    builder: (BuildContext _, BoxConstraints limites) =>
-                        SingleChildScrollView(
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              minHeight: limites.maxHeight,
-                            ),
-                            child: IntrinsicHeight(
-                              child: NavigationRail(
-                                selectedIndex: indice,
-                                onDestinationSelected: (int i) =>
-                                    setState(() => _indice = i),
-                                labelType: NavigationRailLabelType.all,
-                                // Al pie del menú, que es donde se mira cuando
-                                // preguntan qué versión se tiene. Va en el
-                                // hueco que el propio menú reserva para esto:
-                                // una columna alrededor deja al menú sin altura
-                                // que ocupar dentro de la zona desplazable.
-                                trailing: const Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: 8),
-                                  child: SelloDeVersion(),
-                                ),
-                                destinations: <NavigationRailDestination>[
-                                  for (final SeccionAdmin s in visibles)
-                                    NavigationRailDestination(
-                                      icon: _IconoConContador(
-                                        icono: s.icono,
-                                        cuenta: cuentaDe(s),
-                                      ),
-                                      label: Text(s.etiqueta),
+                  // ──────────────────────────────────────────────────────
+                  // EL MENÚ Y EL CONTENIDO, CADA UNO SU GRUPO DE FOCO (U-4).
+                  // ──────────────────────────────────────────────────────
+                  //
+                  // Sin grupos, Flutter ordena el tabulador por renglones de
+                  // pantalla, y el menú comparte renglones con el formulario:
+                  // desde «Título», Tab saltaba a tres opciones del menú,
+                  // volvía a «Mensaje» y saltaba otra vez al menú. Se reportó
+                  // el 23/09/2026 al redactar. Con grupos, Tab recorre todo
+                  // uno antes de pasar al otro, en todas las secciones.
+                  FocusTraversalGroup(
+                    child: LayoutBuilder(
+                      builder: (BuildContext _, BoxConstraints limites) =>
+                          SingleChildScrollView(
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                minHeight: limites.maxHeight,
+                              ),
+                              child: IntrinsicHeight(
+                                child: NavigationRail(
+                                  selectedIndex: indice,
+                                  onDestinationSelected: (int i) =>
+                                      setState(() => _indice = i),
+                                  labelType: NavigationRailLabelType.all,
+                                  // Al pie del menú, que es donde se mira cuando
+                                  // preguntan qué versión se tiene. Va en el
+                                  // hueco que el propio menú reserva para esto:
+                                  // una columna alrededor deja al menú sin altura
+                                  // que ocupar dentro de la zona desplazable.
+                                  trailing: const Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 8,
                                     ),
-                                ],
+                                    child: SelloDeVersion(),
+                                  ),
+                                  destinations: <NavigationRailDestination>[
+                                    for (final SeccionAdmin s in visibles)
+                                      NavigationRailDestination(
+                                        icon: _IconoConContador(
+                                          icono: s.icono,
+                                          cuenta: cuentaDe(s),
+                                        ),
+                                        label: Text(s.etiqueta),
+                                      ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
-                        ),
+                    ),
                   ),
                   const VerticalDivider(width: 1),
-                  Expanded(child: contenido),
+                  Expanded(child: FocusTraversalGroup(child: contenido)),
                 ],
               ),
             )
-          : conAvisoDeVersion(contenido),
+          : conAvisoDeVersion(FocusTraversalGroup(child: contenido)),
     );
   }
 }

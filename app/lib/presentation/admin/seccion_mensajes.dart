@@ -33,10 +33,23 @@ import '../../infrastructure/firebase/repositorio_envio.dart';
 import 'adjuntos_mensaje.dart';
 import 'programador.dart';
 import '../shared/tema.dart';
+import 'borrador_prefijado.dart';
+import 'plantillas.dart';
+import '../../infrastructure/firebase/repositorio_plantillas.dart';
 import '../shared/textos.dart';
 
 final Provider<RepositorioEnvio> repositorioEnvioProvider =
     Provider<RepositorioEnvio>((Ref ref) => RepositorioEnvio());
+
+/// A quién se puede elegir en un envío individual (U-6). Se pide al abrir el
+/// modo «Personas concretas» y se descarta al salir de la sección.
+final FutureProvider<List<PersonaDestinataria>> personasDestinatariasProvider =
+    FutureProvider.autoDispose<List<PersonaDestinataria>>(
+      (Ref ref) => ref.read(repositorioEnvioProvider).personas(),
+    );
+
+/// Todos, unos grupos o unas personas concretas (RF-USR-06).
+enum ModoDestino { todos, grupos, personas }
 
 final Provider<RepositorioAdjuntos> repositorioAdjuntosProvider =
     Provider<RepositorioAdjuntos>((Ref ref) => RepositorioAdjuntos());
@@ -96,8 +109,17 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
 
   bool _urgente = false;
   bool _requiereConfirmacion = false;
-  bool _aTodos = true;
+
+  /// Lo que traía entre corchetes la plantilla cargada (RF-MSG-14). Mientras
+  /// quede alguno en el texto, no se deja enviar: un simulacro «el [día] a las
+  /// [hora]» no le sirve a nadie.
+  Set<String> _marcadores = <String>{};
+  ModoDestino _modo = ModoDestino.todos;
   final Set<String> _gruposElegidos = <String>{};
+
+  /// En el orden en que se eligieron: así se leen en la confirmación.
+  final Map<String, PersonaDestinataria> _personasElegidas =
+      <String, PersonaDestinataria>{};
   AdjuntosEnCurso _adjuntos = const AdjuntosEnCurso();
   EleccionEnvio _cuando = const EleccionEnvio(modo: ModoEnvio.ahora);
   bool _enviando = false;
@@ -130,12 +152,42 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
     // Los contadores tienen que moverse mientras se escribe, no al validar.
     _titulo.addListener(_repintar);
     _cuerpo.addListener(_repintar);
+    // Alcance pudo haber dejado un aviso preparado antes de abrir esta sección.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _tomarBorrador());
   }
 
   void _repintar() {
     if (mounted) {
       setState(() {});
     }
+  }
+
+  /// Recoge el aviso que preparó otra sección (1.6): las personas, y el texto
+  /// sugerido solo si el formulario está vacío —nunca pisa lo escrito—.
+  void _tomarBorrador() {
+    if (!mounted) {
+      return;
+    }
+    final BorradorPrefijado? b = ref
+        .read(borradorPrefijadoProvider.notifier)
+        .tomar();
+    if (b == null) {
+      return;
+    }
+    setState(() {
+      _modo = ModoDestino.personas;
+      _personasElegidas
+        ..clear()
+        ..addEntries(<MapEntry<String, PersonaDestinataria>>[
+          for (final PersonaDestinataria p in b.personas) MapEntry(p.uid, p),
+        ]);
+      if (_titulo.text.trim().isEmpty && b.titulo.isNotEmpty) {
+        _titulo.text = b.titulo;
+      }
+      if (_cuerpo.text.trim().isEmpty && b.cuerpo.isNotEmpty) {
+        _cuerpo.text = b.cuerpo;
+      }
+    });
   }
 
   @override
@@ -145,9 +197,15 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
     super.dispose();
   }
 
-  Destinatarios _destinatarios() => _aTodos
-      ? const Destinatarios.todos()
-      : Destinatarios.grupos(_gruposElegidos.toList());
+  Destinatarios _destinatarios() => switch (_modo) {
+    ModoDestino.todos => const Destinatarios.todos(),
+    ModoDestino.grupos => Destinatarios.grupos(_gruposElegidos.toList()),
+    ModoDestino.personas => Destinatarios.individual(
+      _personasElegidas.keys.toList(),
+    ),
+  };
+
+  /// Flujo completo de envío: validar, contar, confirmar y despachar.
 
   /// Flujo completo de envío: validar, contar, confirmar y despachar.
   Future<void> _intentarEnviar() async {
@@ -160,8 +218,12 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
     if (!(_formulario.currentState?.validate() ?? false)) {
       return;
     }
-    if (!_aTodos && _gruposElegidos.isEmpty) {
+    if (_modo == ModoDestino.grupos && _gruposElegidos.isEmpty) {
       _avisar(Textos.validacionElijeGrupo, tono: TonoAviso.error);
+      return;
+    }
+    if (_modo == ModoDestino.personas && _personasElegidas.isEmpty) {
+      _avisar(Textos.validacionElijePersona, tono: TonoAviso.error);
       return;
     }
 
@@ -381,6 +443,7 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
   void _limpiar() {
     _titulo.clear();
     _cuerpo.clear();
+    _marcadores = <String>{};
     // Se suelta el identificador: lo que venga después es un mensaje nuevo y
     // tiene derecho a su propio sitio, aunque el texto sea idéntico. Sin esto,
     // repetir un aviso a propósito quedaría bloqueado para siempre (DT-24).
@@ -427,7 +490,16 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
         conteo: conteo,
         urgente: _urgente,
         adjuntos: _adjuntos,
+        // En un envío individual se dice A QUIÉN, con nombres: equivocarse
+        // de persona es el error caro de este modo (U-6).
+        nombres: _modo == ModoDestino.personas
+            ? <String>[
+                for (final PersonaDestinataria p in _personasElegidas.values)
+                  p.visible,
+              ]
+            : null,
       ),
+
       botonConfirmar: Textos.botonConfirmarEnvio,
       peligroso: false,
     );
@@ -442,6 +514,68 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
       botonConfirmar: Textos.botonConfirmarUrgente,
       peligroso: true,
     );
+  }
+
+  /// Nulo si no queda nada de la plantilla por completar en [texto].
+  String? _sinCompletar(String texto) {
+    final List<String> faltan = <String>[
+      for (final String m in _marcadores)
+        if (texto.contains(m)) m,
+    ];
+    return faltan.isEmpty ? null : Textos.plantillaFaltan(faltan);
+  }
+
+  Future<void> _usarPlantilla({required bool puedeUrgentes}) async {
+    final Plantilla? p = await elegirPlantilla(context, puedeUrgentes: puedeUrgentes);
+    if (p == null || !mounted) {
+      return;
+    }
+    final bool hayTexto =
+        _titulo.text.trim().isNotEmpty || _cuerpo.text.trim().isNotEmpty;
+    if (hayTexto &&
+        !await _dialogo(
+          titulo: Textos.plantillaReemplazarTitulo,
+          contenido: const Text(Textos.plantillaReemplazarDetalle),
+          botonConfirmar: Textos.plantillaReemplazar,
+          peligroso: false,
+        )) {
+      return;
+    }
+    setState(() {
+      _titulo.text = p.titulo;
+      _cuerpo.text = p.cuerpo;
+      _urgente = p.urgente && puedeUrgentes;
+      _requiereConfirmacion = p.requiereConfirmacion;
+      _marcadores = marcadoresDe('${p.titulo}\n${p.cuerpo}');
+    });
+  }
+
+  Future<void> _guardarPlantilla() async {
+    final String? nombre = await pedirNombreDePlantilla(context);
+    if (nombre == null || !mounted) {
+      return;
+    }
+    final ScaffoldMessengerState avisos = ScaffoldMessenger.of(context);
+    try {
+      await ref
+          .read(repositorioPlantillasProvider)
+          .guardar(
+            Plantilla(
+              nombre: nombre,
+              titulo: _titulo.text,
+              cuerpo: _cuerpo.text,
+              urgente: _urgente,
+              requiereConfirmacion: _requiereConfirmacion,
+            ),
+          );
+      avisos.showSnackBar(
+        SnackBar(content: Text(Textos.plantillaGuardada(nombre))),
+      );
+    } on Object {
+      avisos.showSnackBar(
+        const SnackBar(content: Text(Textos.plantillaNoSeGuardo)),
+      );
+    }
   }
 
   Future<bool> _dialogo({
@@ -481,6 +615,15 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
 
   @override
   Widget build(BuildContext context) {
+    // Si la sección ya estaba abierta cuando Alcance preparó el aviso.
+    ref.listen<BorradorPrefijado?>(borradorPrefijadoProvider, (
+      BorradorPrefijado? _,
+      BorradorPrefijado? nuevo,
+    ) {
+      if (nuevo != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _tomarBorrador());
+      }
+    });
     final Sesion sesion = ref.watch(sesionActualProvider);
     // Se consulta la MATRIZ, no la bandera suelta: el coordinador puede
     // siempre, y la bandera existe para que él decida qué administradoras
@@ -508,6 +651,26 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: <Widget>[
+                    OutlinedButton.icon(
+                      onPressed: () => _usarPlantilla(puedeUrgentes: puedeUrgentes),
+                      icon: const Icon(Icons.description_outlined),
+                      label: const Text(Textos.plantillaUsar),
+                    ),
+                    TextButton.icon(
+                      onPressed:
+                          _titulo.text.trim().isEmpty || _cuerpo.text.trim().isEmpty
+                          ? null
+                          : _guardarPlantilla,
+                      icon: const Icon(Icons.bookmark_add_outlined),
+                      label: const Text(Textos.plantillaGuardar),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 20),
 
                 TextFormField(
@@ -528,7 +691,7 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
                   ),
                   validator: (String? v) => (v ?? '').trim().isEmpty
                       ? Textos.validacionTituloObligatorio
-                      : null,
+                      : _sinCompletar(v ?? ''),
                 ),
                 const SizedBox(height: 16),
 
@@ -550,7 +713,7 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
                   ),
                   validator: (String? v) => (v ?? '').trim().isEmpty
                       ? Textos.validacionCuerpoObligatorio
-                      : null,
+                      : _sinCompletar(v ?? ''),
                 ),
                 const SizedBox(height: 24),
 
@@ -579,15 +742,19 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
                 const SizedBox(height: 24),
 
                 _Destinatarios(
-                  aTodos: _aTodos,
+                  modo: _modo,
                   elegidos: _gruposElegidos,
-                  alCambiarModo: (bool todos) =>
-                      setState(() => _aTodos = todos),
+                  personas: _personasElegidas,
+                  alCambiarModo: (ModoDestino m) => setState(() => _modo = m),
                   alAlternarGrupo: (String id) => setState(() {
                     if (!_gruposElegidos.remove(id)) {
                       _gruposElegidos.add(id);
                     }
                   }),
+                  alAgregarPersona: (PersonaDestinataria p) =>
+                      setState(() => _personasElegidas[p.uid] = p),
+                  alQuitarPersona: (String uid) =>
+                      setState(() => _personasElegidas.remove(uid)),
                 ),
                 const SizedBox(height: 16),
 
@@ -697,87 +864,260 @@ class _Clasificacion extends StatelessWidget {
 /// A quién va (RF-USR-07).
 class _Destinatarios extends ConsumerWidget {
   const _Destinatarios({
-    required this.aTodos,
+    required this.modo,
     required this.elegidos,
+    required this.personas,
     required this.alCambiarModo,
     required this.alAlternarGrupo,
+    required this.alAgregarPersona,
+    required this.alQuitarPersona,
   });
 
-  final bool aTodos;
+  final ModoDestino modo;
   final Set<String> elegidos;
-  final ValueChanged<bool> alCambiarModo;
+  final Map<String, PersonaDestinataria> personas;
+  final ValueChanged<ModoDestino> alCambiarModo;
   final ValueChanged<String> alAlternarGrupo;
+  final ValueChanged<PersonaDestinataria> alAgregarPersona;
+  final ValueChanged<String> alQuitarPersona;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData tema = Theme.of(context);
-    // Solo los activos: ofrecer uno desactivado sería tender la trampa,
-    // porque el servidor rechaza el envío a un grupo inactivo.
-    final AsyncValue<List<GrupoDetalle>> grupos = ref.watch(
-      gruposActivosProvider,
-    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(Textos.etiquetaDestinatarios, style: tema.textTheme.titleSmall),
         const SizedBox(height: 8),
-        RadioGroup<bool>(
-          groupValue: aTodos,
-          onChanged: (bool? v) => alCambiarModo(v ?? true),
+        RadioGroup<ModoDestino>(
+          groupValue: modo,
+          onChanged: (ModoDestino? v) => alCambiarModo(v ?? ModoDestino.todos),
           child: const Column(
             children: <Widget>[
-              RadioListTile<bool>(
-                value: true,
+              RadioListTile<ModoDestino>(
+                value: ModoDestino.todos,
                 title: Text(Textos.destinatariosTodos),
                 contentPadding: EdgeInsets.zero,
               ),
-              RadioListTile<bool>(
-                value: false,
+              RadioListTile<ModoDestino>(
+                value: ModoDestino.grupos,
                 title: Text(Textos.destinatariosGrupos),
+                contentPadding: EdgeInsets.zero,
+              ),
+              RadioListTile<ModoDestino>(
+                value: ModoDestino.personas,
+                title: Text(Textos.destinatariosPersonas),
                 contentPadding: EdgeInsets.zero,
               ),
             ],
           ),
         ),
-        if (!aTodos)
-          grupos.when(
-            loading: () => const Padding(
-              padding: EdgeInsets.all(8),
-              child: LinearProgressIndicator(),
-            ),
-            error: (Object e, StackTrace _) => Text('$e'),
-            data: (List<GrupoDetalle> lista) => lista.isEmpty
-                ? const Padding(
-                    padding: EdgeInsets.only(left: 16, top: 8),
-                    child: Text(Textos.sinGruposTodavia),
-                  )
-                : Wrap(
-                    spacing: 8,
-                    children: <Widget>[
-                      for (final GrupoDetalle g in lista)
-                        FilterChip(
-                          label: Text('${g.nombre} (${g.totalMiembros})'),
-                          selected: elegidos.contains(g.id),
-                          onSelected: (_) => alAlternarGrupo(g.id),
-                        ),
-                    ],
-                  ),
+        if (modo == ModoDestino.grupos)
+          _Grupos(elegidos: elegidos, alAlternar: alAlternarGrupo),
+        if (modo == ModoDestino.personas)
+          SelectorDePersonas(
+            elegidas: personas,
+            alAgregar: alAgregarPersona,
+            alQuitar: alQuitarPersona,
           ),
       ],
     );
   }
 }
 
-/// Lo que se ve antes de confirmar: el número real y quién queda fuera.
+class _Grupos extends ConsumerWidget {
+  const _Grupos({required this.elegidos, required this.alAlternar});
+
+  final Set<String> elegidos;
+  final ValueChanged<String> alAlternar;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => ref
+      .watch(gruposActivosProvider)
+      .when(
+        loading: () => const Padding(
+          padding: EdgeInsets.all(8),
+          child: LinearProgressIndicator(),
+        ),
+        error: (Object e, StackTrace _) => Text('$e'),
+        data: (List<GrupoDetalle> lista) => lista.isEmpty
+            ? const Padding(
+                padding: EdgeInsets.only(left: 16, top: 8),
+                child: Text(Textos.sinGruposTodavia),
+              )
+            : Wrap(
+                spacing: 8,
+                children: <Widget>[
+                  for (final GrupoDetalle g in lista)
+                    FilterChip(
+                      label: Text('${g.nombre} (${g.totalMiembros})'),
+                      selected: elegidos.contains(g.id),
+                      onSelected: (_) => alAlternar(g.id),
+                    ),
+                ],
+              ),
+      );
+}
+
+/// Elegir personas concretas, de 1 a n (U-6, RF-USR-06).
+///
+/// A veces no hay un grupo que sirva y hace falta escribirle a una o dos
+/// personas puntuales. Se busca por nombre o correo; las elegidas quedan como
+/// fichas que se pueden quitar, y la confirmación dirá sus nombres.
+class SelectorDePersonas extends ConsumerStatefulWidget {
+  const SelectorDePersonas({
+    required this.elegidas,
+    required this.alAgregar,
+    required this.alQuitar,
+    super.key,
+  });
+
+  final Map<String, PersonaDestinataria> elegidas;
+  final ValueChanged<PersonaDestinataria> alAgregar;
+  final ValueChanged<String> alQuitar;
+
+  @override
+  ConsumerState<SelectorDePersonas> createState() => _SelectorDePersonasState();
+}
+
+class _SelectorDePersonasState extends ConsumerState<SelectorDePersonas> {
+  final TextEditingController _busqueda = TextEditingController();
+
+  /// Cuántas coincidencias se enseñan a la vez: con más, se sigue escribiendo.
+  static const int _maximo = 8;
+
+  @override
+  void dispose() {
+    _busqueda.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData tema = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(left: 8, top: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          if (widget.elegidas.isNotEmpty)
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: <Widget>[
+                for (final PersonaDestinataria p in widget.elegidas.values)
+                  InputChip(
+                    label: Text(p.visible),
+                    onDeleted: () => widget.alQuitar(p.uid),
+                    deleteButtonTooltipMessage: Textos.quitarPersona(p.visible),
+                  ),
+              ],
+            ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _busqueda,
+            decoration: const InputDecoration(
+              labelText: Textos.buscarPersona,
+              prefixIcon: Icon(Icons.search),
+              border: OutlineInputBorder(),
+            ),
+            onChanged: (_) => setState(() {}),
+          ),
+          ref
+              .watch(personasDestinatariasProvider)
+              .when(
+                loading: () => const Padding(
+                  padding: EdgeInsets.all(8),
+                  child: Text(Textos.personasCargando),
+                ),
+                error: (Object _, StackTrace _) => const Padding(
+                  padding: EdgeInsets.all(8),
+                  child: Text(Textos.personasFallo),
+                ),
+                data: (List<PersonaDestinataria> todas) {
+                  final List<PersonaDestinataria> coinciden = filtrarPersonas(
+                    todas,
+                    _busqueda.text,
+                    excluir: widget.elegidas.keys.toSet(),
+                  );
+                  if (_busqueda.text.trim().isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+                  if (coinciden.isEmpty) {
+                    return Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Text(
+                        Textos.personasSinCoincidencias,
+                        style: tema.textTheme.bodySmall,
+                      ),
+                    );
+                  }
+                  return Column(
+                    children: <Widget>[
+                      for (final PersonaDestinataria p in coinciden.take(
+                        _maximo,
+                      ))
+                        ListTile(
+                          dense: true,
+                          leading: const Icon(Icons.person_add_alt_1_outlined),
+                          title: Text(p.visible),
+                          subtitle: p.nombre.isEmpty ? null : Text(p.correo),
+                          onTap: () {
+                            widget.alAgregar(p);
+                            _busqueda.clear();
+                            setState(() {});
+                          },
+                        ),
+                    ],
+                  );
+                },
+              ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Quién coincide con lo escrito, por nombre o correo, sin tildes ni
+/// mayúsculas. Lo ya elegido no se vuelve a ofrecer.
+List<PersonaDestinataria> filtrarPersonas(
+  List<PersonaDestinataria> todas,
+  String busqueda, {
+  Set<String> excluir = const <String>{},
+}) {
+  final String q = _sinTildes(busqueda.trim().toLowerCase());
+  if (q.isEmpty) {
+    return const <PersonaDestinataria>[];
+  }
+  return <PersonaDestinataria>[
+    for (final PersonaDestinataria p in todas)
+      if (!excluir.contains(p.uid) &&
+          (_sinTildes(p.nombre.toLowerCase()).contains(q) ||
+              p.correo.toLowerCase().contains(q)))
+        p,
+  ];
+}
+
+String _sinTildes(String s) => s
+    .replaceAll(RegExp('[áàä]'), 'a')
+    .replaceAll(RegExp('[éèë]'), 'e')
+    .replaceAll(RegExp('[íìï]'), 'i')
+    .replaceAll(RegExp('[óòö]'), 'o')
+    .replaceAll(RegExp('[úùü]'), 'u');
+
 class _ResumenConteo extends StatelessWidget {
   const _ResumenConteo({
     required this.conteo,
     required this.urgente,
     required this.adjuntos,
+    this.nombres,
   });
 
   final ConteoDestinatarios conteo;
+
+  /// En un envío individual, a quién va.
+  final List<String>? nombres;
   final bool urgente;
   final AdjuntosEnCurso adjuntos;
 
@@ -797,6 +1137,10 @@ class _ResumenConteo extends StatelessWidget {
                 : PaletaSian.de(context).primarioTexto,
           ),
         ),
+        if (nombres != null && nombres!.isNotEmpty) ...<Widget>[
+          const SizedBox(height: 6),
+          Text(Textos.confirmarPara(nombres!)),
+        ],
         // ──────────────────────────────────────────────────────────────────
         // QUÉ SE LLEVA EL MENSAJE, DICHO ANTES DE QUE SEA IRREVERSIBLE.
         // ──────────────────────────────────────────────────────────────────

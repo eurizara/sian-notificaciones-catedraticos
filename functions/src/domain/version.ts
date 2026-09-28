@@ -54,6 +54,8 @@ export interface PersonaConAparatos {
 }
 
 export interface AparatoConVersion {
+  /** El documento del dispositivo: lo que Alcance necesita para retirarlo. */
+  readonly id?: string;
   readonly uid: string;
   readonly plataforma: string;
   /** «Safari», «Chrome», «Firefox»… Distingue un navegador de otro en el mismo teléfono. */
@@ -67,6 +69,7 @@ export interface VersionesDePersona {
   readonly nombre: string;
   readonly correo: string;
   readonly aparatos: readonly {
+    readonly id: string;
     readonly plataforma: string;
     readonly navegador: string;
     readonly versionApp: string;
@@ -103,6 +106,7 @@ export function resumirVersiones(
       nombre: p.nombre,
       correo: p.correo,
       aparatos: (porUid.get(p.uid) ?? []).map((a) => ({
+        id: a.id ?? '',
         plataforma: a.plataforma,
         navegador: a.navegador.trim(),
         versionApp: a.versionApp.trim(),

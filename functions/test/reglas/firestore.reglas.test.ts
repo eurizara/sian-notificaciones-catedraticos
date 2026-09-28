@@ -25,7 +25,9 @@ import {
   getDoc,
   getDocs,
   orderBy,
+  deleteDoc,
   query,
+  serverTimestamp,
   setDoc,
   updateDoc,
   where,
@@ -107,6 +109,16 @@ beforeEach(async () => {
 
     await setDoc(doc(db, 'bitacora', 'b-1'), { tipo: 'MENSAJE_CREADO', actorUid: UID.administradora });
     await setDoc(doc(db, 'cola_despacho', 'c-1'), { mensajeId: 'm-1', estado: 'PENDIENTE' });
+    await setDoc(doc(db, 'fallos_aparato', 'f-1'), { que: 'worker', veces: 1 });
+    await setDoc(doc(db, 'plantillas', 'p-1'), {
+      nombre: 'Simulacro',
+      titulo: 'Simulacro de evacuación',
+      cuerpo: 'Hoy a las 10:00.',
+      urgente: false,
+      requiereConfirmacion: true,
+      creadaPor: UID.administradora,
+      actualizadaEn: new Date(),
+    });
     await setDoc(doc(db, 'invitaciones', 'nuevo@umg.edu.gt'), { rolAsignado: 'CATEDRATICO' });
     await setDoc(doc(db, 'configuracion', 'institucional'), { zonaHoraria: 'America/Guatemala' });
   });
@@ -312,6 +324,28 @@ describe('DT-27 · respuestas: una conversación de dos', () => {
     );
   });
 
+  it('el catedrático reúne sus respuestas sin leer, y solo las suyas (1.6.15)', async () => {
+    const db = contexto(UID.catedratico, 'CATEDRATICO');
+    await assertSucceeds(
+      getDocs(
+        query(
+          collectionGroup(db, 'hilos'),
+          where('uid', '==', UID.catedratico),
+          where('sinLeerCatedratico', '>', 0),
+        ),
+      ),
+    );
+    await assertFails(
+      getDocs(
+        query(
+          collectionGroup(db, 'hilos'),
+          where('uid', '==', UID.otroCatedratico),
+          where('sinLeerCatedratico', '>', 0),
+        ),
+      ),
+    );
+  });
+
   it('una consulta de hilos que no filtra por uno mismo se rechaza entera', async () => {
     const coordinador = contexto(UID.coordinador, 'COORDINADOR');
     await assertFails(getDocs(collectionGroup(coordinador, 'hilos')));
@@ -437,6 +471,95 @@ describe('Cola de despacho', () => {
       await assertFails(getDoc(doc(db, 'cola_despacho', 'c-1')));
       await assertFails(setDoc(doc(db, 'cola_despacho', 'c-2'), { estado: 'PENDIENTE' }));
     }
+  });
+});
+
+describe('Fallos de los aparatos (DT-34)', () => {
+  it('solo las funciones los leen y escriben: ningún rol, ni sin sesión', async () => {
+    for (const db of [
+      entorno.unauthenticatedContext().firestore(),
+      contexto(UID.coordinador, 'COORDINADOR'),
+      contexto(UID.catedratico, 'CATEDRATICO'),
+    ]) {
+      await assertFails(getDoc(doc(db, 'fallos_aparato', 'f-1')));
+      await assertFails(setDoc(doc(db, 'fallos_aparato', 'f-2'), { que: 'worker' }));
+      await assertFails(setDoc(doc(db, 'fallos_por_dia', '20260926'), { documentos: 0 }));
+    }
+  });
+});
+
+describe('Plantillas de avisos (RF-MSG-14)', () => {
+  const buena = (creadaPor: string) => ({
+    nombre: 'Recordatorio',
+    titulo: 'Recuerde responder',
+    cuerpo: 'Por favor responda el aviso anterior.',
+    urgente: false,
+    requiereConfirmacion: false,
+    creadaPor,
+    actualizadaEn: serverTimestamp(),
+  });
+
+  it('quien emite avisos las lee y las crea a su nombre', async () => {
+    for (const [uid, rol] of [
+      [UID.coordinador, 'COORDINADOR'],
+      [UID.administradora, 'ADMINISTRADORA'],
+    ] as const) {
+      const db = contexto(uid, rol);
+      await assertSucceeds(getDoc(doc(db, 'plantillas', 'p-1')));
+      await assertSucceeds(getDocs(collection(db, 'plantillas')));
+      await assertSucceeds(setDoc(doc(db, 'plantillas', `nueva-${uid}`), buena(uid)));
+    }
+  });
+
+  it('catedráticos, auditoría y sin sesión no las ven ni las tocan', async () => {
+    for (const db of [
+      contexto(UID.catedratico, 'CATEDRATICO'),
+      contexto(UID.auditor, 'AUDITOR'),
+      contexto(UID.administradora, 'ADMINISTRADORA', false),
+      entorno.unauthenticatedContext().firestore(),
+    ]) {
+      await assertFails(getDoc(doc(db, 'plantillas', 'p-1')));
+      await assertFails(setDoc(doc(db, 'plantillas', 'x'), buena(UID.catedratico)));
+      await assertFails(deleteDoc(doc(db, 'plantillas', 'p-1')));
+    }
+  });
+
+  it('no se crea a nombre de otro', async () => {
+    const db = contexto(UID.coordinador, 'COORDINADOR');
+    await assertFails(setDoc(doc(db, 'plantillas', 'y'), buena(UID.administradora)));
+  });
+
+  it('con los mismos límites que un aviso, y sin campos de más', async () => {
+    const db = contexto(UID.coordinador, 'COORDINADOR');
+    const malas: Record<string, unknown>[] = [
+      { ...buena(UID.coordinador), nombre: '' },
+      { ...buena(UID.coordinador), nombre: 'n'.repeat(61) },
+      { ...buena(UID.coordinador), titulo: 't'.repeat(81) },
+      { ...buena(UID.coordinador), cuerpo: 'c'.repeat(1001) },
+      { ...buena(UID.coordinador), urgente: 'sí' },
+      { ...buena(UID.coordinador), destinatarios: ['todos'] },
+      { ...buena(UID.coordinador), actualizadaEn: new Date(2000, 0, 1) },
+    ];
+    for (const [i, mala] of malas.entries()) {
+      await assertFails(setDoc(doc(db, 'plantillas', `mala-${i}`), mala));
+    }
+  });
+
+  it('otra persona que emite la edita o la borra, pero no le cambia la autoría', async () => {
+    const db = contexto(UID.coordinador, 'COORDINADOR');
+    await assertFails(
+      updateDoc(doc(db, 'plantillas', 'p-1'), {
+        creadaPor: UID.coordinador,
+        actualizadaEn: serverTimestamp(),
+      }),
+    );
+    await assertSucceeds(
+      updateDoc(doc(db, 'plantillas', 'p-1'), {
+        cuerpo: 'Hoy a las 11:00.',
+        actualizadaEn: serverTimestamp(),
+      }),
+    );
+    await assertSucceeds(deleteDoc(doc(db, 'plantillas', 'p-1')));
   });
 });
 

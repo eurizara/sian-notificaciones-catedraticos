@@ -25,15 +25,59 @@ import '../../core/plataforma/notificacion_sistema.dart';
 import '../../domain/sesion.dart';
 import '../../infrastructure/firebase/repositorio_respuestas.dart';
 import '../docente/tarjeta_notificaciones.dart';
+import '../shared/apertura.dart';
+import '../shared/buscador.dart';
 import '../shared/conversacion.dart';
 import '../shared/tema.dart';
 import '../shared/textos.dart';
 
-class SeccionRespuestas extends ConsumerWidget {
+/// Cuántas conversaciones se muestran de una vez; «Ver más» suma otras tantas.
+const int conversacionesPorPagina = 10;
+
+/// Los avisos, con como mucho [n] conversaciones entre todos.
+///
+/// Se cuentan conversaciones y no avisos: un aviso respondido por treinta
+/// personas llenaba solo la pantalla. Si el corte cae en medio de un aviso,
+/// ese aviso se muestra con las que caben, y el resto llega con «Ver más».
+List<AvisoConRespuestas> primerasConversaciones(
+  List<AvisoConRespuestas> avisos,
+  int n,
+) {
+  final List<AvisoConRespuestas> r = <AvisoConRespuestas>[];
+  int quedan = n;
+  for (final AvisoConRespuestas a in avisos) {
+    if (quedan <= 0) {
+      break;
+    }
+    r.add(
+      a.hilos.length <= quedan
+          ? a
+          : AvisoConRespuestas(
+              mensajeId: a.mensajeId,
+              tituloAviso: a.tituloAviso,
+              hilos: a.hilos.take(quedan).toList(),
+            ),
+    );
+    quedan -= a.hilos.length;
+  }
+  return r;
+}
+
+int totalDeConversaciones(List<AvisoConRespuestas> avisos) =>
+    avisos.fold(0, (int t, AvisoConRespuestas a) => t + a.hilos.length);
+
+class SeccionRespuestas extends ConsumerStatefulWidget {
   const SeccionRespuestas({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SeccionRespuestas> createState() => _SeccionRespuestasState();
+}
+
+class _SeccionRespuestasState extends ConsumerState<SeccionRespuestas> {
+  int _visibles = conversacionesPorPagina;
+
+  @override
+  Widget build(BuildContext context) {
     final Sesion sesion = ref.watch(sesionActualProvider);
     final AsyncValue<List<AvisoConRespuestas>> avisos = ref.watch(
       avisosConRespuestasProvider,
@@ -46,7 +90,30 @@ class SeccionRespuestas extends ConsumerWidget {
     final bool necesitaTarjeta =
         sesion is SesionActiva && !sesion.usuario.recibeAvisos;
 
-    return ListView(
+    _abrirConversacionPedida(context, ref, avisos);
+
+    // ──────────────────────────────────────────────────────────────────────
+    // La tarjeta de notificaciones va FUERA de la lista, como en la bandeja.
+    // ──────────────────────────────────────────────────────────────────────
+    //
+    // Dentro, al volver a la cima la lista la destruía y la recreaba; su
+    // `initState` vuelve a consultar el permiso y al responder cambia de alto.
+    // Ese salto justo arriba empujaba la vista y el desplazamiento se quedaba
+    // atrapado. Pasó en la bandeja en agosto de 2026 (2acf262) y volvió a pasar
+    // aquí el 26/09/2026: esta pantalla se hizo después y repitió el patrón.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        if (necesitaTarjeta)
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: TarjetaNotificaciones(
+              detallePendiente: Textos.respuestasNotifPendienteDetalle,
+              detalleActivo: Textos.respuestasNotifActivasDetalle,
+            ),
+          ),
+        Expanded(
+          child: ListView(
       padding: const EdgeInsets.all(16),
       children: <Widget>[
         Text(Textos.seccionRespuestasTitulo, style: tema.textTheme.titleLarge),
@@ -58,19 +125,24 @@ class SeccionRespuestas extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 16),
-        if (necesitaTarjeta) ...<Widget>[
-          const TarjetaNotificaciones(
-            detallePendiente: Textos.respuestasNotifPendienteDetalle,
-            detalleActivo: Textos.respuestasNotifActivasDetalle,
-          ),
-          const SizedBox(height: 8),
-        ],
         ...avisos.when(
           data: (List<AvisoConRespuestas> lista) => lista.isEmpty
               ? <Widget>[const _Vacio()]
               : <Widget>[
-                  for (final AvisoConRespuestas a in lista)
+                  for (final AvisoConRespuestas a in primerasConversaciones(
+                    lista,
+                    _visibles,
+                  ))
                     TarjetaAvisoConRespuestas(aviso: a),
+                  VerMas(
+                    mostrados: totalDeConversaciones(lista) < _visibles
+                        ? totalDeConversaciones(lista)
+                        : _visibles,
+                    total: totalDeConversaciones(lista),
+                    alPulsar: () => setState(
+                      () => _visibles += conversacionesPorPagina,
+                    ),
+                  ),
                 ],
           loading: () => <Widget>[
             const Padding(
@@ -86,8 +158,54 @@ class SeccionRespuestas extends ConsumerWidget {
           ],
         ),
       ],
+          ),
+        ),
+      ],
     );
   }
+}
+
+/// Tocar la notificación de una respuesta abre ESA conversación (C-6, DT-35).
+///
+/// Antes dejaba en la bandeja, y con el aviso ya leído no había forma de
+/// llegar a la respuesta. Se abre la conversación con esa persona, que es
+/// donde está lo que se respondió, esté el aviso donde esté.
+void _abrirConversacionPedida(
+  BuildContext context,
+  WidgetRef ref,
+  AsyncValue<List<AvisoConRespuestas>> avisos,
+) {
+  final DestinoApertura? pendiente = ref.watch(aperturaPendienteProvider);
+  final List<AvisoConRespuestas>? lista = avisos.value;
+  if (pendiente == null ||
+      pendiente.tipo != TipoApertura.hilo ||
+      lista == null) {
+    return;
+  }
+  Hilo? hilo;
+  for (final AvisoConRespuestas a in lista) {
+    for (final Hilo h in a.hilos) {
+      if (h.mensajeId == pendiente.avisoId && h.uid == pendiente.hiloUid) {
+        hilo = h;
+      }
+    }
+  }
+  final Hilo? encontrado = hilo;
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (!context.mounted || ref.read(aperturaPendienteProvider) != pendiente) {
+      return;
+    }
+    // Se da por atendido ANTES de abrir: si no, cada reconstrucción de esta
+    // sección volvería a abrir la misma conversación encima.
+    ref.read(aperturaPendienteProvider.notifier).consumir();
+    if (encontrado != null) {
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (BuildContext _) => PantallaHilo(hilo: encontrado),
+        ),
+      );
+    }
+  });
 }
 
 class _Vacio extends StatelessWidget {
@@ -119,21 +237,29 @@ class TarjetaAvisoConRespuestas extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData tema = Theme.of(context);
     final int sinLeer = aviso.sinLeer;
+    // Plegable, con quién respondió dentro (26/09/2026). Arranca abierto solo
+    // si hay algo sin leer: es lo único que pide atención.
+    //
+    // La clave de página NO es decoración. La lista recrea lo que sale de la
+    // pantalla; sin ella, un aviso que se había abierto volvía plegado al
+    // regresar, cambiaba de alto, y el desplazamiento se trababa (es la misma
+    // familia de fallo que la tarjeta de notificaciones, arriba).
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Text(
+      child: Theme(
+        data: tema.copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          key: PageStorageKey<String>('respuestas-${aviso.mensajeId}'),
+          initiallyExpanded: sinLeer > 0,
+          tilePadding: const EdgeInsets.fromLTRB(16, 6, 12, 6),
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+          title: Text(
               aviso.tituloAviso,
               style: tema.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 2),
-            Text(
+          subtitle: Text(
               sinLeer > 0
                   ? '${Textos.conversaciones(aviso.hilos.length)} · '
                         '${Textos.sinLeer(sinLeer)}'
@@ -145,8 +271,17 @@ class TarjetaAvisoConRespuestas extends StatelessWidget {
                 fontWeight: sinLeer > 0 ? FontWeight.w600 : null,
               ),
             ),
-            const SizedBox(height: 4),
-            for (final Hilo h in aviso.hilos) FilaDeHilo(hilo: h),
+          children: <Widget>[
+            // Clave propia para lo de dentro: si no, lo que guardara un
+            // desplazamiento interno chocaría con el «abierto» del desplegable.
+            Column(
+              key: PageStorageKey<String>(
+                'respuestas-${aviso.mensajeId}-contenido',
+              ),
+              children: <Widget>[
+                for (final Hilo h in aviso.hilos) FilaDeHilo(hilo: h),
+              ],
+            ),
           ],
         ),
       ),

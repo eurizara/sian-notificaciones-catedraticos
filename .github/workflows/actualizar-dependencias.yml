@@ -1,0 +1,134 @@
+name: Actualización mensual de dependencias
+
+# ─────────────────────────────────────────────────────────────────────────────
+# S-8: las dependencias se actualizaban cuando algo fallaba.
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# Dependabot estaba configurado desde la iteración 1.1 y, a 26/09/2026, no había
+# abierto ni un solo pull request en este repositorio. Nadie lo notó porque su
+# silencio se parece mucho a «no hay nada que actualizar».
+#
+# Este flujo no depende de él. El día 1 de cada mes:
+#
+#   1. Sube lo que admiten los rangos declarados —menores y parches—, en un solo
+#      pull request contra `develop`: funciones, raíz y aplicación.
+#   2. Lanza la integración continua sobre esa rama. Hace falta lanzarla a mano:
+#      lo que se empuja con el token del flujo NO dispara otros flujos, y sin
+#      ella el pull request se quedaría esperando unos checks que nunca llegan.
+#   3. En la descripción deja las versiones MAYORES pendientes, que no se suben
+#      solas porque cambian la API: se deciden a mano, una por una.
+#
+# Quien fusiona es una persona, cuando la CI está en verde. Nada de esto toca
+# `qa` ni `main`.
+
+on:
+  schedule:
+    # Día 1, 07:00 en Guatemala (13:00 UTC).
+    - cron: '0 13 1 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: write
+
+concurrency:
+  group: actualizar-dependencias
+  cancel-in-progress: false
+
+jobs:
+  actualizar:
+    name: Subir menores y parches
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: develop
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.x'
+          cache: true
+
+      - name: Funciones y raíz (npm, dentro de los rangos)
+        run: |
+          (cd functions && npm update --no-audit --no-fund)
+          npm update --no-audit --no-fund
+
+      - name: Aplicación (pub, dentro de los rangos)
+        working-directory: app
+        run: |
+          flutter pub upgrade
+
+      - name: Qué cambió y qué queda pendiente
+        id: resumen
+        run: |
+          {
+            echo '## Actualización mensual de dependencias'
+            echo
+            echo 'Menores y parches, dentro de los rangos declarados. La integración continua decide:'
+            echo 'si está en verde, se fusiona; si no, se revisa qué paquete lo rompió.'
+            echo
+            echo '### Archivos'
+            echo '```'
+            git diff --stat
+            echo '```'
+            echo
+            echo '### Versiones mayores pendientes (no se suben solas)'
+            echo
+            echo '**Funciones**'
+            echo '```'
+            (cd functions && npm outdated || true)
+            echo '```'
+            echo '**Aplicación**'
+            echo '```'
+            (cd app && flutter pub outdated --no-dev-dependencies --show-all 2>/dev/null | head -60 || true)
+            echo '```'
+            echo
+            echo 'Procedimiento: documento 11, «Actualizar dependencias».'
+          } > "$RUNNER_TEMP/cuerpo.md"
+          if git diff --quiet -- functions/package-lock.json package-lock.json app/pubspec.lock; then
+            echo "hay=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Nada que subir este mes dentro de los rangos."
+          else
+            echo "hay=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Abrir el pull request y lanzar la integración continua
+        if: steps.resumen.outputs.hay == 'true'
+        run: |
+          rama="deps/mensual-$(date -u +%Y-%m)"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "$rama"
+          git add functions/package-lock.json package-lock.json app/pubspec.lock
+          git commit -m "chore(deps): actualización mensual $(date -u +%Y-%m)"
+          git push --force -u origin "$rama"
+          titulo="chore(deps): actualización mensual $(date -u +%Y-%m)"
+          # Lanza la CI sobre la rama pase lo que pase con el pull request: así
+          # los checks ya están en el commit cuando alguien lo abra.
+          gh workflow run ci.yml --ref "$rama"
+          if ! gh pr create --base develop --head "$rama" --title "$titulo" \
+               --body-file "$RUNNER_TEMP/cuerpo.md"; then
+            # El repositorio no deja que las acciones abran pull requests
+            # (Configuración → Actions → «Allow GitHub Actions to create and
+            # approve pull requests»). Se avisa con un issue, que sí se puede:
+            # la rama queda lista y abrir el PR es un clic.
+            enlace="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/compare/develop...${rama}?expand=1"
+            {
+              echo "La actualización mensual está lista en la rama \`$rama\`, con la integración continua ya lanzada."
+              echo
+              echo "**Abrir el pull request:** $enlace"
+              echo
+              cat "$RUNNER_TEMP/cuerpo.md"
+            } > "$RUNNER_TEMP/aviso.md"
+            gh issue create --title "$titulo: abrir el pull request" --body-file "$RUNNER_TEMP/aviso.md"
+            echo "::warning::No se pudo abrir el pull request; se abrió un issue con el enlace."
+          fi

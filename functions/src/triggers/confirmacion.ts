@@ -26,7 +26,7 @@ import { exigirPermiso } from '../domain/autorizacion';
 import { crearAsiento } from '../domain/bitacora';
 import { ErrorDominio } from '../domain/errores';
 import type { EstadoEntrega, Rol } from '../domain/tipos';
-import { FieldValue, OPCIONES_FUNCION, RUTAS, db } from '../infrastructure/firebase';
+import { FieldValue, OPCIONES_LLAMABLE, RUTAS, db } from '../infrastructure/firebase';
 import { escribirAsiento } from '../infrastructure/repositorios';
 
 interface Ubicacion {
@@ -75,7 +75,7 @@ function refEntrega(u: Ubicacion, uid: string): DocumentReference {
  * distinguir «lo vio pasar» de «dijo que lo leyó», que es la diferencia entre
  * un dato y una prueba.
  */
-export const marcarAbierto = onCall(OPCIONES_FUNCION, async (peticion) => {
+export const marcarAbierto = onCall(OPCIONES_LLAMABLE, async (peticion) => {
   if (!peticion.auth) {
     throw new HttpsError('unauthenticated', 'Hay que iniciar sesión.');
   }
@@ -125,7 +125,7 @@ export const marcarAbierto = onCall(OPCIONES_FUNCION, async (peticion) => {
  * puede repetir: la máquina de estados no tiene ninguna transición de salida
  * desde CONFIRMADO, y aquí se comprueba antes de escribir.
  */
-export const confirmarLectura = onCall(OPCIONES_FUNCION, async (peticion) => {
+export const confirmarLectura = onCall(OPCIONES_LLAMABLE, async (peticion) => {
   if (!peticion.auth) {
     throw new HttpsError('unauthenticated', 'Hay que iniciar sesión.');
   }
@@ -224,7 +224,7 @@ export const confirmarLectura = onCall(OPCIONES_FUNCION, async (peticion) => {
  * el reporte, `VER_REPORTE_ENTREGAS`, que para la administradora tiene alcance
  * PROPIO: sobre sus mensajes sí, sobre los ajenos no.
  */
-export const detalleEntregas = onCall(OPCIONES_FUNCION, async (peticion) => {
+export const detalleEntregas = onCall(OPCIONES_LLAMABLE, async (peticion) => {
   const sujeto = {
     uid: peticion.auth?.uid ?? '',
     rol: (peticion.auth?.token.rol as Rol | undefined) ?? 'CATEDRATICO',
