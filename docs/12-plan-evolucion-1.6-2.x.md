@@ -1,8 +1,8 @@
 # 12 · Plan de evolución: iteraciones 1.6, 2.0 y 2.1
 
 **Estado:** **aprobado** por el responsable el 23/09/2026, con todas las recomendaciones de la
-sección 10. **1.5.13 en producción** desde el 24/09. **1.6 terminada** (1.6.0 a 1.6.17) y en
-calidad desde el 27/09. Siguen 2.0 (sedes) y 2.1/2.2 (repositorio), sin empezar. Escrito sobre
+sección 10. **1.5.13 en producción** desde el 24/09 y **1.6** (1.6.0 a 1.6.17) desde el 28/09,
+tras pasar por calidad el 27/09. Siguen 2.0 (sedes) y 2.1/2.2 (repositorio), sin empezar. Escrito sobre
 lo que había en `develop` (1.5.12), `qa` y `main` (1.5.11) el 23/09.
 
 **Qué es este documento.** Recoge lo que pidió el responsable del proyecto el 23/09/2026 y

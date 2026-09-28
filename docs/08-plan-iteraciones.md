@@ -477,7 +477,7 @@ aprobado el 23/09.
 | Iteración | Estado |
 |---|---|
 | **1.5.13** — Node.js 22 (DT-32), respaldos, presupuestos | **En producción** desde el 24/09/2026 |
-| **1.6** — mejoras de uso, seguridad y estabilidad (1.6.0 a 1.6.17, tabla de versiones arriba) | **En calidad** desde el 27/09/2026 |
+| **1.6** — mejoras de uso, seguridad y estabilidad (1.6.0 a 1.6.17, tabla de versiones arriba) | **En producción** desde el 28/09/2026 (en calidad desde el 27/09) |
 | **2.0** — varias sedes (ADR-009) | Aprobada, sin empezar |
 | **2.1 · 2.2** — repositorio de archivos (ADR-010) | Aprobada, sin empezar |
 
