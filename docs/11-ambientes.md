@@ -281,7 +281,7 @@ producción). Con tokens de un día, cada aparato hace como mucho una evaluació
 |---|---|---|
 | Desarrollo | En observación · clave `SIAN dev App Check`, token de 1 día. Primeras 26 llamadas: todas `VALID` | 26/09/2026 |
 | QA | En observación · clave `SIAN qa App Check`, token de 1 día | 28/09/2026 |
-| Producción | Sin dar de alta: la aplicación no lo enciende | — |
+| Producción | En observación · clave `SIAN App Check` en la app «SIAN Produccion Web» (la otra app web del proyecto, «SIAN-UMG-BDM», no la usa SIAN), token de 1 día | 28/09/2026 |
 
 *Cómo se observa.* Cada llamada deja en el registro de la función el resultado de las
 verificaciones. En el Explorador de registros:
