@@ -277,6 +277,12 @@ en septiembre de 2026; confirmarlo en su página de precios antes de encenderlo 
 producción). Con tokens de un día, cada aparato hace como mucho una evaluación diaria: unos
 150 aparatos en producción son ~4 500 al mes.
 
+| Ambiente | App Check | Desde |
+|---|---|---|
+| Desarrollo | En observación · clave `SIAN dev App Check`, token de 1 día. Primeras 26 llamadas: todas `VALID` | 26/09/2026 |
+| QA | Sin dar de alta: la aplicación no lo enciende | — |
+| Producción | Sin dar de alta: la aplicación no lo enciende | — |
+
 *Cómo se observa.* Cada llamada deja en el registro de la función el resultado de las
 verificaciones. En el Explorador de registros:
 

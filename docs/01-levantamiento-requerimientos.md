@@ -324,19 +324,19 @@ sobre el control de confirmación. Abrir un mensaje nunca lo marca como confirma
 | RF-ADM-04 | El panel presenta un tablero con métricas: mensajes enviados, tasa de entrega y tasa de confirmación | B |
 | RF-ADM-05 | El sistema notifica al emisor cuando un envío termina con fallos por encima de un umbral | P |
 
-### 3.9 Propuestos para las iteraciones 1.6, 2.0 y 2.1 (en análisis)
+### 3.9 Aprobados para las iteraciones 1.6, 2.0 y 2.1
 
-Pedidos y **aprobados** el 23 de septiembre de 2026; **todavía no implementados**: el análisis, el
-orden y la estrategia están en el [documento 12](12-plan-evolucion-1.6-2.x.md). Cuando se
-aprueben, pasan a su módulo y a la matriz de trazabilidad.
+Pedidos y **aprobados** el 23 de septiembre de 2026. Los de **1.6 están implementados**
+(1.6.0 a 1.6.17, en calidad desde el 27/09); los de 2.0 y 2.1/2.2 todavía no. El análisis, el
+orden y la estrategia están en el [documento 12](12-plan-evolucion-1.6-2.x.md).
 
-| ID | Requisito propuesto | Prioridad | Iteración |
+| ID | Requisito | Prioridad | Iteración |
 |----|-----------|:---:|:---:|
-| RF-MSG-15 | El destinatario puede copiar el título y el mensaje de un aviso | D | 1.6 |
-| RF-MSG-16 | Las direcciones web (`http`, `https`, `www.`) del mensaje se muestran como enlaces que se abren en otra pestaña; ningún otro esquema se vuelve enlace | D | 1.6 |
-| RF-MSG-17 | El destinatario puede descargar las imágenes de un aviso; en iPhone, mediante «Guardar imagen» | D | 1.6 |
-| RF-USR-06 | *(ya aprobado)* Dirigir un mensaje a una selección individual de personas: **falta la pantalla**, el servidor ya lo soporta | D | 1.6 |
-| RF-ADM-06 | La coordinación puede retirar desde Alcance un registro de aparato, y queda en la bitácora | D | 1.6 |
+| RF-MSG-15 | El destinatario puede copiar el título y el mensaje de un aviso | D | **1.6.2 ✓** |
+| RF-MSG-16 | Las direcciones web (`http`, `https`, `www.`), los correos y los teléfonos de Guatemala del mensaje se muestran como enlaces; la web se abre en otra pestaña. Ningún otro esquema se vuelve enlace | D | **1.6.2 ✓** |
+| RF-MSG-17 | El destinatario puede descargar las imágenes de un aviso; en iPhone, mediante «Guardar imagen» | D | **1.6.3 ✓** |
+| RF-USR-06 | *(ya aprobado)* Dirigir un mensaje a una selección individual de personas | D | **1.6.6 ✓** |
+| RF-ADM-06 | La coordinación puede retirar desde Alcance un registro de aparato, y queda en la bitácora | D | **1.6.8 ✓** |
 | RF-SED-01 | El sistema admite varias sedes; cada mensaje, grupo, carpeta y entrada de bitácora pertenece a una | D | 2.0 |
 | RF-SED-02 | Una persona puede pertenecer a varias sedes, con un rol en cada una | D | 2.0 |
 | RF-SED-03 | «Enviar a todos» significa todos los destinatarios de la sede elegida | D | 2.0 |
@@ -350,8 +350,8 @@ aprueben, pasan a su módulo y a la matriz de trazabilidad.
 | RF-REP-05 | El catedrático ve y descarga solo las carpetas de sus grupos | D | 2.2 |
 | RF-REP-06 | La descarga se hace con un enlace que caduca, y queda en la bitácora | D | 2.2 |
 | RF-REP-07 | No se aceptan ejecutables ni archivos comprimidos | D | 2.1 |
-| RNF-23 | Los formularios se recorren con el tabulador en el orden en que se leen, y al revés con Mayús+Tab | D | 1.6 |
-| RNF-24 | Los manuales siguen la apariencia elegida en la aplicación, o la del dispositivo si no se eligió ninguna, con contraste AA en los dos modos | D | 1.6 |
+| RNF-23 | Los formularios se recorren con el tabulador en el orden en que se leen, y al revés con Mayús+Tab | D | **1.6.4 ✓** |
+| RNF-24 | Los manuales siguen la apariencia elegida en la aplicación, o la del dispositivo si no se eligió ninguna, con contraste AA en los dos modos | D | **1.6.5 ✓** |
 
 ---
 

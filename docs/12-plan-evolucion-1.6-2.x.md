@@ -1,8 +1,9 @@
 # 12 · Plan de evolución: iteraciones 1.6, 2.0 y 2.1
 
 **Estado:** **aprobado** por el responsable el 23/09/2026, con todas las recomendaciones de la
-sección 10. **1.5.13 en producción** desde el 24/09. En curso: **1.6** (C-6 hecha en desarrollo como 1.6.0). Escrito sobre lo que había en `develop`
-(1.5.12), `qa` y `main` (1.5.11).
+sección 10. **1.5.13 en producción** desde el 24/09. **1.6 terminada** (1.6.0 a 1.6.17) y en
+calidad desde el 27/09. Siguen 2.0 (sedes) y 2.1/2.2 (repositorio), sin empezar. Escrito sobre
+lo que había en `develop` (1.5.12), `qa` y `main` (1.5.11) el 23/09.
 
 **Qué es este documento.** Recoge lo que pidió el responsable del proyecto el 23/09/2026 y
 lo que se encontró al revisar el código para pedirlo. Para cada punto explica qué hay hoy, qué
@@ -440,7 +441,7 @@ grupo.
 
 | Propuesta | Por qué |
 |---|---|
-| **Mensajes de hasta 1000 caracteres** (hoy 500) — **hecho en desarrollo, 1.6.7** | El aviso de actualización de 1.5.11 no cupo a la primera. Se puede ampliar sin riesgo si la **notificación** lleva un resumen (primeros ~250 caracteres) y la **bandeja** el texto completo: así la carga del push sigue lejos del límite de 4 KB |
+| **Mensajes de hasta 1000 caracteres** (antes 500) — **hecho, 1.6.7** | El aviso de actualización de 1.5.11 no cupo a la primera. Se puede ampliar sin riesgo si la **notificación** lleva un resumen (primeros ~250 caracteres) y la **bandeja** el texto completo: así la carga del push sigue lejos del límite de 4 KB |
 | **Plantillas de avisos** (RF-MSG-14, ya en la cartera) — **hecho en desarrollo, 1.6.13** | Los recordatorios de actualizar y responder son siempre parecidos |
 | **Recordatorio automático a quien no confirma** (RF-CNF-09, ya en la cartera) | Combina con U-7c |
 | **Canal de respaldo por SMS o WhatsApp** | Aplazado por decisión del responsable. Sigue siendo lo único que cubre a quien no abre la app; se retoma cuando se decida |
