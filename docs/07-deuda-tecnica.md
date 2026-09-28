@@ -305,8 +305,8 @@ gratuita.
 | DT-31 | «Entregado» no significa que el aparato lo mostrara, y nadie lo mide | Alcance | **Alta** | **Pagada** (en producción desde 1.5.11) | 0 USD |
 | DT-32 | Las funciones corren en Node.js 20, que Google retira el 30/10/2026 | Plataforma | **Alta** | **Pagada** (1.5.13, en producción desde el 24/09/2026) | 0 USD |
 | DT-33 | Sin App Check: las funciones aceptan llamadas de fuera de la aplicación | Plataforma | Media | **En pago**: en observación en desarrollo desde el 26/09 (todas las llamadas `VALID`) y en QA desde el 28/09; falta producción, y exigirlo | 0 USD |
-| DT-34 | Un fallo en el aparato no deja rastro en el servidor | Conocimiento | Media | **Pagada** (1.6.10, en desarrollo y QA) | 0 USD |
-| DT-35 | Tocar una notificación no abre el aviso ni la respuesta: siempre cae en la bandeja | Alcance | **Media** | **Mitigada** (1.6.0 y 1.6.15, en desarrollo y QA): Android abre la respuesta; en iPhone la respuesta aparece en «Sin leer». La causa en iOS sigue abierta | 0 USD |
+| DT-34 | Un fallo en el aparato no deja rastro en el servidor | Conocimiento | Media | **Pagada** (1.6.10, en producción desde el 28/09/2026) | 0 USD |
+| DT-35 | Tocar una notificación no abre el aviso ni la respuesta: siempre cae en la bandeja | Alcance | **Media** | **Mitigada** (1.6.0 y 1.6.15, en producción desde el 28/09/2026): Android abre la respuesta; en iPhone la respuesta aparece en «Sin leer». La causa en iOS sigue abierta | 0 USD |
 | DT-28 | El manual no se alcanza desde dentro de la aplicación | Alcance | Baja | **Pagada** (en producción desde 1.5.11) | 0 USD |
 
 **Prioridad de pago recomendada, en orden:** DT-03 → DT-14 → DT-04 → DT-01.
