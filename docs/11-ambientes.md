@@ -280,7 +280,7 @@ producción). Con tokens de un día, cada aparato hace como mucho una evaluació
 | Ambiente | App Check | Desde |
 |---|---|---|
 | Desarrollo | En observación · clave `SIAN dev App Check`, token de 1 día. Primeras 26 llamadas: todas `VALID` | 26/09/2026 |
-| QA | Sin dar de alta: la aplicación no lo enciende | — |
+| QA | En observación · clave `SIAN qa App Check`, token de 1 día | 28/09/2026 |
 | Producción | Sin dar de alta: la aplicación no lo enciende | — |
 
 *Cómo se observa.* Cada llamada deja en el registro de la función el resultado de las
