@@ -569,11 +569,21 @@ En GitHub → Settings → Environments, crea el ambiente `produccion` y marca *
 reviewers** con tu usuario. Así ningún despliegue a producción ocurre sin tu aprobación
 explícita.
 
-### F.2 Secretos que debes cargar en GitHub
+> **El esquema de arriba es el de la fase 1.** El flujo real, con los tres ambientes, es
+> `.github/workflows/deploy.yml`: además compila con las claves públicas por ambiente
+> (VAPID propia y App Check), sella la versión (`scripts/sellar-version.sh`) y pone la huella
+> de contenido al paquete (`scripts/huella-paquete.sh`, 1.6.11).
+
+### F.2 Secretos y variables que debes cargar en GitHub
 
 | Secreto | De dónde sale |
 |---------|---------------|
 | `QA_VAPID_KEY` / `PROD_VAPID_KEY` | Consola de Firebase → Cloud Messaging → Web configuration |
+| Variable `DEV_APP_CHECK_KEY` / `QA_…` / `PROD_…` | ID de la clave de reCAPTCHA Enterprise del ambiente (**pública**, por eso es variable y no secreto). Vacía, App Check queda apagado. Procedimiento en el documento 11, «App Check» |
+
+La llave VAPID **propia** (DT-23) no está en GitHub: la pública va en `deploy.yml` y en
+`functions/src/infrastructure/vapid.ts`, y la privada en Secret Manager de cada proyecto
+(documento 11).
 
 > **`QA_PROJECT_ID` y `PROD_PROJECT_ID` van a nivel de repositorio**, no dentro del
 > *environment*: el `if:` del job se evalúa antes de que GitHub aplique el ambiente, y
@@ -603,10 +613,10 @@ git conserva todo.
       muera nadie se entera hasta que alguien pregunte por un aviso que no llegó
       (DT-07). Se crean con `scripts/configurar-alertas.py <proyecto>`
 - [x] **El CORS del bucket de producción está aplicado.** No lo hace `firebase deploy`
-- [ ] **La clave VAPID de producción está puesta.** Sin ella no llega ninguna notificación,
+- [x] **La clave VAPID de producción está puesta.** Sin ella no llega ninguna notificación,
       y la aplicación funciona en todo lo demás sin decir palabra. Se genera a mano en la
       consola: es por proyecto y no tiene API
-- [ ] **El proveedor de Google está habilitado en producción.** El botón aparece en
+- [x] **El proveedor de Google está habilitado en producción.** El botón aparece en
       pantalla aunque no lo esté, y falla al pulsarlo. Ese clic crea el cliente OAuth,
       que la API no crea sola
 

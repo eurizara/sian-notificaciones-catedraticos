@@ -467,16 +467,19 @@ sin incidencias de severidad alta.
 
 Ritmo sugerido: iteraciones de dos semanas.
 
-### Propuesta en análisis: 1.5.13, 1.6, 2.0 y 2.1 (23/09/2026)
+### Evolución aprobada: 1.5.13, 1.6, 2.0 y 2.1 (23/09/2026)
 
 Lo pedido el 23/09 —copiar, enlaces, descargar imágenes, tabulador, manual oscuro, envío a
 personas concretas, mejoras de Alcance, **varias sedes** y **repositorio de archivos**—, más
-lo encontrado al revisar el código, está analizado en el
-[documento 12](12-plan-evolucion-1.6-2.x.md), con la estrategia para hacerlo sin romper nada.
-**No hay nada aplicado.**
+lo encontrado al revisar el código, está en el [documento 12](12-plan-evolucion-1.6-2.x.md),
+aprobado el 23/09.
 
-Lo único con fecha: **las funciones deben pasar a Node.js 22 antes del 30/10/2026** (DT-32).
-Se propone liberarlo solo, como 1.5.13, antes que cualquier otra cosa.
+| Iteración | Estado |
+|---|---|
+| **1.5.13** — Node.js 22 (DT-32), respaldos, presupuestos | **En producción** desde el 24/09/2026 |
+| **1.6** — mejoras de uso, seguridad y estabilidad (1.6.0 a 1.6.17, tabla de versiones arriba) | **En calidad** desde el 27/09/2026 |
+| **2.0** — varias sedes (ADR-009) | Aprobada, sin empezar |
+| **2.1 · 2.2** — repositorio de archivos (ADR-010) | Aprobada, sin empezar |
 
 ### Cartera de mejoras candidatas
 
@@ -486,7 +489,7 @@ Se propone liberarlo solo, como 1.5.13, antes que cualquier otra cosa.
 | 2 | Observabilidad y alertas operativas | DT-07 |
 | 3 | URLs firmadas para adjuntos | DT-04 |
 | 4 | Recordatorio automático a quienes no confirman | RF-CNF-09 |
-| 5 | Plantillas de mensajes frecuentes | RF-MSG-14 |
+| 5 | ~~Plantillas de mensajes frecuentes~~ — hecho en 1.6.13 | RF-MSG-14 |
 | 6 | Tablero de métricas para la coordinación | RF-ADM-04 |
 | 7 | Exportación de bitácora a CSV | RF-BIT-06 |
 | 8 | Distribución de APK Android por descarga directa | DT-01 |

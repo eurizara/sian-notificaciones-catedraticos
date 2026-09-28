@@ -301,13 +301,13 @@ gratuita.
 | DT-26 | En Android el contador del icono se queda encendido con todo leído | Plataforma | **Media** | **Pagada** | 0 USD |
 | DT-29 | Cambiar el manifiesto deja Android degradado hasta que Chrome regenera la aplicación | Plataforma | Baja | **Aceptada** | 0 USD |
 | DT-30 | Chrome puede marcar los avisos como «posible spam» y ofrecer anular la suscripción | Plataforma | **Media** | Abierta | 0 USD |
-| DT-27 | No hay forma de responder a un aviso | Alcance | Media | **Pagada** (en desarrollo y QA) | 0 USD |
-| DT-31 | «Entregado» no significa que el aparato lo mostrara, y nadie lo mide | Alcance | **Alta** | **Pagada** (en desarrollo y QA) | 0 USD |
-| DT-32 | Las funciones corren en Node.js 20, que Google retira el 30/10/2026 | Plataforma | **Alta** | **Pagada** en desarrollo (1.5.13) · a producción antes del 20/10 | 0 USD |
-| DT-33 | Sin App Check: las funciones aceptan llamadas de fuera de la aplicación | Plataforma | Media | **En pago**: observación preparada en desarrollo (1.6.9); falta darla de alta en la consola y exigirla | 0 USD |
-| DT-34 | Un fallo en el aparato no deja rastro en el servidor | Conocimiento | Media | **Pagada** en desarrollo (1.6.10) | 0 USD |
-| DT-35 | Tocar una notificación no abre el aviso ni la respuesta: siempre cae en la bandeja | Alcance | **Media** | **Pagada** en desarrollo (1.6.0) | 0 USD |
-| DT-28 | El manual no se alcanza desde dentro de la aplicación | Alcance | Baja | **Pagada** (en desarrollo y QA) | 0 USD |
+| DT-27 | No hay forma de responder a un aviso | Alcance | Media | **Pagada** (en producción desde 1.5.11) | 0 USD |
+| DT-31 | «Entregado» no significa que el aparato lo mostrara, y nadie lo mide | Alcance | **Alta** | **Pagada** (en producción desde 1.5.11) | 0 USD |
+| DT-32 | Las funciones corren en Node.js 20, que Google retira el 30/10/2026 | Plataforma | **Alta** | **Pagada** (1.5.13, en producción desde el 24/09/2026) | 0 USD |
+| DT-33 | Sin App Check: las funciones aceptan llamadas de fuera de la aplicación | Plataforma | Media | **En pago**: en observación en desarrollo desde el 26/09 (todas las llamadas `VALID`); falta darlo de alta en QA y producción, y exigirlo | 0 USD |
+| DT-34 | Un fallo en el aparato no deja rastro en el servidor | Conocimiento | Media | **Pagada** (1.6.10, en desarrollo y QA) | 0 USD |
+| DT-35 | Tocar una notificación no abre el aviso ni la respuesta: siempre cae en la bandeja | Alcance | **Media** | **Mitigada** (1.6.0 y 1.6.15, en desarrollo y QA): Android abre la respuesta; en iPhone la respuesta aparece en «Sin leer». La causa en iOS sigue abierta | 0 USD |
+| DT-28 | El manual no se alcanza desde dentro de la aplicación | Alcance | Baja | **Pagada** (en producción desde 1.5.11) | 0 USD |
 
 **Prioridad de pago recomendada, en orden:** DT-03 → DT-14 → DT-04 → DT-01.
 
