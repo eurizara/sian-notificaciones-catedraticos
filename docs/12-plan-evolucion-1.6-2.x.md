@@ -1,8 +1,9 @@
 # 12 · Plan de evolución: iteraciones 1.6, 2.0 y 2.1
 
 **Estado:** **aprobado** por el responsable el 23/09/2026, con todas las recomendaciones de la
-sección 10. En curso: **1.5.13** (en desarrollo). Escrito sobre lo que había en `develop`
-(1.5.12), `qa` y `main` (1.5.11).
+sección 10. **1.5.13 en producción** desde el 24/09 y **1.6** (1.6.0 a 1.6.17) desde el 28/09,
+tras pasar por calidad el 27/09. Siguen 2.0 (sedes) y 2.1/2.2 (repositorio), sin empezar. Escrito sobre
+lo que había en `develop` (1.5.12), `qa` y `main` (1.5.11) el 23/09.
 
 **Qué es este documento.** Recoge lo que pidió el responsable del proyecto el 23/09/2026 y
 lo que se encontró al revisar el código para pedirlo. Para cada punto explica qué hay hoy, qué
@@ -17,14 +18,14 @@ el documento 01.
 | # | Qué | Tamaño | Riesgo | Toca datos | Versión propuesta |
 |---|-----|:---:|:---:|:---:|:---:|
 | **U-0** | **Pasar las funciones de Node.js 20 a 22** — Google retira Node 20 el **30/10/2026** | S | Medio | No | **1.5.13 (urgente)** |
-| **C-6** | **Tocar una notificación abre el aviso o la respuesta que la originó** (corrección, DT-35) | M | Medio | No | **1.6, lo primero** |
-| U-1 | Copiar el título o el mensaje | S | Bajo | No | 1.6 |
-| U-2 | Enlaces (URL) que se abren al tocarlos | S | Bajo | No | 1.6 |
-| U-3 | Descargar las imágenes de un aviso | S–M | Bajo | No | 1.6 |
-| U-4 | El tabulador recorre el formulario de redactar en orden | S | Bajo | No | 1.6 |
-| U-5 | El manual sigue el modo claro/oscuro | S | Bajo | No | 1.6 |
-| U-6 | Enviar a personas concretas (1 a n) | M | Bajo | No | 1.6 |
-| U-7 | Mejoras de Alcance | M | Bajo | Sí (retiros) | 1.6 |
+| **C-6** | **Tocar una notificación abre el aviso o la respuesta que la originó** (corrección, DT-35) | M | Medio | No | **1.6.0 — hecho en desarrollo** |
+| U-1 | Copiar el título o el mensaje | S | Bajo | No | **1.6.2 — hecho en desarrollo** |
+| U-2 | Enlaces (URL) que se abren al tocarlos | S | Bajo | No | **1.6.2 — hecho en desarrollo** |
+| U-3 | Descargar las imágenes de un aviso | S–M | Bajo | No | **1.6.3 — hecho en desarrollo** |
+| U-4 | El tabulador recorre el formulario de redactar en orden | S | Bajo | No | **1.6.4 — hecho en desarrollo** |
+| U-5 | El manual sigue el modo claro/oscuro | S | Bajo | No | **1.6.5 — hecho en desarrollo** |
+| U-6 | Enviar a personas concretas (1 a n) | M | Bajo | No | **1.6.6 — hecho en desarrollo** |
+| U-7 | Mejoras de Alcance | M | Bajo | Sí (retiros) | **1.6.8 — hecho en desarrollo** |
 | S-1..S-5 | Rendimiento, estabilidad y seguridad | varía | — | — | 1.5.13 y 1.6 |
 | **SED** | **Varias sedes; una persona en más de una** | **L** | **Alto** | **Sí (migración)** | **2.0** |
 | **REP** | **Repositorio de archivos por carpetas y grupos** | **L** | Medio | Sí (nuevo) | **2.1** (administración) · **2.2** (catedrático) |
@@ -309,12 +310,12 @@ Salen de revisar el código y los registros de producción, no de una lista gen�
 | **S-1** | **Node.js 22** | Ver sección 3 | **1.5.13** |
 | **S-2** | **Respaldos programados de Firestore en producción** | Hoy no hay. Es requisito previo a la migración de sedes | **1.5.13** |
 | **S-3** | **Verificar presupuestos y alertas de facturación** en los tres proyectos | Los tres están en Blaze. Antes del repositorio, que añade Storage, tiene que haber un aviso si el gasto pasa de un umbral | **1.5.13** |
-| **S-4** | **App Check** (DT-33) | Los registros de producción dicen `"app": "MISSING"` en cada llamada: cualquiera con la configuración pública del proyecto puede llamar a las funciones fuera de la app. Se enciende primero **en modo observación** (solo mide), y cuando todas las llamadas legítimas lo traigan, se exige | 1.6 |
-| **S-5** | **Fallos del cliente que nadie ve** (DT-34) | El 12/09 el registro de dispositivos se colgó en todos los aparatos y **el servidor no registró ni un error**: se supo porque un aviso no llegó. Propuesta: un punto de reporte mínimo (qué falló, versión, plataforma; nada personal), con límite de frecuencia, y un contador visible en Alcance | 1.6 |
+| **S-4** | **App Check** (DT-33) | Los registros de producción dicen `"app": "MISSING"` en cada llamada: cualquiera con la configuración pública del proyecto puede llamar a las funciones fuera de la app. Se enciende primero **en modo observación** (solo mide), y cuando todas las llamadas legítimas lo traigan, se exige | 1.6 — **preparado en desarrollo, 1.6.9**; falta el alta en la consola (documento 11) |
+| **S-5** | **Fallos del cliente que nadie ve** (DT-34) | El 12/09 el registro de dispositivos se colgó en todos los aparatos y **el servidor no registró ni un error**: se supo porque un aviso no llegó. Propuesta: un punto de reporte mínimo (qué falló, versión, plataforma; nada personal), con límite de frecuencia, y un contador visible en Alcance | 1.6 — **hecho en desarrollo, 1.6.10** |
 | S-6 | **Adjuntos legibles por cualquier usuario activo** (DT-04, ya registrada) | La regla de Storage deja a cualquier catedrático activo leer cualquier adjunto si conoce la ruta. El riesgo es bajo, porque las rutas son aleatorias, pero el repositorio **no puede heredar esto**. Se corrige con el mismo mecanismo que el repositorio (sección 7) | 2.1 |
-| S-7 | **Carga inicial para catedráticos** | El paquete de la app incluye todo el panel de administración, que un catedrático nunca abre. Medir primero el tamaño y el tiempo de carga en un iPhone real; si vale la pena, cargar el panel solo cuando se abre (carga diferida) | 1.6, si la medición lo justifica |
-| S-8 | **Actualización de dependencias mensual** | Hoy se actualizan cuando algo falla. Un PR mensual automático, con la CI decidiendo | 1.6 |
-| S-9 | **Procedimiento para rotar las llaves VAPID** | Si una privada se filtrara, hoy no hay pasos escritos para cambiarla sin dejar a los aparatos sin canal. Solo documentación | 1.6 |
+| S-7 | **Carga inicial para catedráticos** | El paquete de la app incluye todo el panel de administración, que un catedrático nunca abre. Medir primero el tamaño y el tiempo de carga en un iPhone real; si vale la pena, cargar el panel solo cuando se abre (carga diferida) | 1.6 — **medido y hecho en desarrollo, 1.6.11**: ver «Medición de la carga inicial» |
+| S-8 | **Actualización de dependencias mensual** | Hoy se actualizan cuando algo falla. Un PR mensual automático, con la CI decidiendo | 1.6 — **hecho en desarrollo, 1.6.12** |
+| S-9 | **Procedimiento para rotar las llaves VAPID** | Si una privada se filtrara, hoy no hay pasos escritos para cambiarla sin dejar a los aparatos sin canal. Solo documentación | 1.6 — **escrito, 1.6.12** (documento 11) |
 
 ---
 
@@ -440,8 +441,8 @@ grupo.
 
 | Propuesta | Por qué |
 |---|---|
-| **Mensajes de hasta 1000 caracteres** (hoy 500) | El aviso de actualización de 1.5.11 no cupo a la primera. Se puede ampliar sin riesgo si la **notificación** lleva un resumen (primeros ~250 caracteres) y la **bandeja** el texto completo: así la carga del push sigue lejos del límite de 4 KB |
-| **Plantillas de avisos** (RF-MSG-14, ya en la cartera) | Los recordatorios de actualizar y responder son siempre parecidos |
+| **Mensajes de hasta 1000 caracteres** (antes 500) — **hecho, 1.6.7** | El aviso de actualización de 1.5.11 no cupo a la primera. Se puede ampliar sin riesgo si la **notificación** lleva un resumen (primeros ~250 caracteres) y la **bandeja** el texto completo: así la carga del push sigue lejos del límite de 4 KB |
+| **Plantillas de avisos** (RF-MSG-14, ya en la cartera) — **hecho en desarrollo, 1.6.13** | Los recordatorios de actualizar y responder son siempre parecidos |
 | **Recordatorio automático a quien no confirma** (RF-CNF-09, ya en la cartera) | Combina con U-7c |
 | **Canal de respaldo por SMS o WhatsApp** | Aplazado por decisión del responsable. Sigue siendo lo único que cubre a quien no abre la app; se retoma cuando se decida |
 
@@ -505,3 +506,37 @@ Lo que se preguntaba, para referencia:
 - Calendario de runtimes de Cloud Run functions: <https://docs.cloud.google.com/functions/docs/runtime-support>
 - Precios de Firebase (cuota gratuita de Storage por región): <https://firebase.google.com/pricing>
 - Reglas de Storage que consultan Firestore (costo y límite de dos documentos): <https://firebase.google.com/docs/storage/security/rules-conditions>
+
+---
+
+## Medición de la carga inicial (S-7, 25/09/2026)
+
+Medido en desarrollo con la 1.6.10, en bytes transferidos (comprimidos con brotli):
+
+| Qué | Tamaño | Antes de 1.6.11 |
+|---|---:|---|
+| CanvasKit (motor de dibujo, desde `gstatic.com`) | 2,27 MB | Caché de un año en el CDN de Google: solo la primera vez y al actualizar Flutter |
+| `main.dart.js` (todo el código de SIAN) | 820 KB | **Sin caché: en cada apertura** |
+| Escudo y cuatro tipografías Urbanist | ~350 KB | **Sin caché: en cada apertura** (Hosting no contesta 304 a lo servido sin caché) |
+| Arranque, `index.html`, manifiestos, `version.json` | ~40 KB | En cada apertura, y así debe seguir |
+
+**Carga diferida del panel de coordinación: no se hace.** Compilada de prueba, sacaba 81 KB
+de los 820 (~10 %) del paquete de un catedrático, a cambio de una pantalla de espera más para
+coordinación y de un punto de fallo nuevo (la parte diferida puede no llegar). Lo que pesaba no
+era el tamaño, sino **repetir la descarga en cada apertura**.
+
+**Lo que sí se hizo (1.6.11):**
+
+- `scripts/huella-paquete.sh` renombra el paquete con la huella de su contenido
+  (`main.<12 hex>.dart.js`) y apunta el arranque a él; Hosting lo guarda un año
+  (`immutable`). Si el contenido cambia, cambia el nombre: nunca se corre código viejo.
+- El escudo y las tipografías propias (`/assets/assets/**`) se guardan una semana. Si alguno
+  cambia, **cambia de nombre**: `cargaInicial.test.ts` guarda su huella y falla si no.
+- Lo que Flutter regenera con el mismo nombre (fuente de iconos, manifiestos) sigue
+  revalidándose, por la misma razón que antes.
+
+Resultado, comprobado con el emulador de Hosting: la segunda apertura ya no pide ni el
+paquete ni el escudo ni las tipografías. De ~1,2 MB por apertura se pasa a ~40 KB, salvo la
+primera después de cada despliegue. **Falta la medición en un iPhone real**, que la hace el
+responsable: abrir SIAN instalada dos veces seguidas (con buena señal y con datos móviles) y
+comparar con la 1.6.10.

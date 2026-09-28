@@ -570,7 +570,13 @@ function componer(carga) {
       vibrate: esUrgente
         ? [400, 150, 400, 150, 400, 150, 400, 150, 400, 150, 400]
         : [200],
-      data: { mensajeId: datos.mensajeId || '' },
+      // `mensajeId` solo lo llevan los avisos: el contador del icono y el
+      // cierre de las ya leídas dependen de él. `destino` dice a dónde lleva
+      // la notificación al tocarla, también para las respuestas (C-6).
+      data: {
+        mensajeId: datos.mensajeId || '',
+        destino: self.SianDecisiones.destinoDeNotificacion(datos),
+      },
     },
   };
 }
@@ -738,31 +744,104 @@ if (self.SIAN_FIREBASE_CONFIG && self.SIAN_FIREBASE_CONFIG.apiKey !== 'SIN-CONFI
   });
 }
 
-/** Abrir la notificación lleva al detalle del mensaje (RF-ENT-07). */
+/**
+ * Tocar la notificación lleva a lo que la originó (RF-ENT-07, C-6, DT-35).
+ *
+ * ────────────────────────────────────────────────────────────────────────────
+ * Con la app abierta se le AVISA; no se navega la ventana.
+ * ────────────────────────────────────────────────────────────────────────────
+ *
+ * Aquí se hacía `ventana.navigate(destino)`, y nunca funcionó: `navigate()`
+ * solo actúa sobre ventanas que este worker controla, y este worker vive en
+ * `/firebase-cloud-messaging-push-scope`, que no cubre la aplicación —el mismo
+ * hecho que costó la 1.5.7—. Fallaba sin decir nada (su promesa no se
+ * esperaba), la app solo pasaba al frente y se quedaba en la bandeja.
+ *
+ * `postMessage` sí llega a una ventana no controlada del mismo origen: se le
+ * dice qué abrir y la aplicación navega sola, sin recargarse. Sin ninguna
+ * ventana abierta, se abre una con el destino en la dirección, que la
+ * aplicación lee al arrancar.
+ *
+ * No se toca la insignia aquí: la bandeja fija el número exacto en cuanto
+ * carga, y dos sitios decidiendo lo mismo es lo que la rompió dos veces.
+ */
 self.addEventListener('notificationclick', (evento) => {
   evento.notification.close();
-  // No se toca la insignia aquí. Abrir la notificación lleva a la bandeja, y
-  // es la bandeja la que fija el número exacto en cuanto carga. Restarlo aquí
-  // solo adelantaría medio segundo un dato que llega bien de todas formas, y a
-  // cambio dejaría dos sitios decidiendo lo mismo.
-  const mensajeId = evento.notification.data && evento.notification.data.mensajeId;
-  const destino = mensajeId ? `/mensajes/${mensajeId}` : '/';
+  const datos = evento.notification.data || {};
+  // Una notificación mostrada por una versión anterior del worker no trae
+  // `destino`; se decide con lo que sí trae.
+  const destino = datos.destino || self.SianDecisiones.destinoDeNotificacion(datos);
+  trazar('clic:destino', destino);
 
   evento.waitUntil(
-    self.clients
-      .matchAll({ type: 'window', includeUncontrolled: true })
-      .then((ventanas) => {
-        // Si la aplicación ya está abierta se reutiliza esa ventana, en lugar
-        // de abrir una segunda.
-        for (const ventana of ventanas) {
-          if ('focus' in ventana) {
-            if ('navigate' in ventana) {
-              ventana.navigate(destino);
-            }
-            return ventana.focus();
+    (async () => {
+      // PRIMERO se guarda. En iPhone el mensaje a una app congelada puede
+      // perderse, y la app puede abrirse en su página inicial ignorando la
+      // dirección con el destino: se vio el 25/09/2026, Android llegaba a la
+      // respuesta e iPhone se quedaba en «Sin leer». Guardado aquí, la app lo
+      // recoge al arrancar o al volver al frente, llegue o no lo demás.
+      if (destino.abrir !== 'bandeja') {
+        await guardarApertura(destino);
+      }
+
+      const ventanas = await self.clients.matchAll({
+        type: 'window',
+        includeUncontrolled: true,
+      });
+      trazar('clic:ventanas', ventanas.length);
+      if (ventanas.length > 0) {
+        // A todas: con varias, no hay forma segura de saber cuál verá la
+        // persona. Cada una lo toma del almacén, así que solo una lo abre.
+        for (const v of ventanas) {
+          v.postMessage({
+            tipo: 'sian:abrir',
+            abrir: destino.abrir,
+            aviso: destino.aviso || '',
+            hilo: destino.hilo || '',
+          });
+        }
+        const ventana =
+          ventanas.find((v) => v.focused) ||
+          ventanas.find((v) => v.visibilityState === 'visible') ||
+          ventanas[0];
+        if ('focus' in ventana) {
+          try {
+            return await ventana.focus();
+          } catch (e) {
+            trazar('clic:focus-fallo', String(e));
           }
         }
-        return self.clients.openWindow(destino);
-      }),
+        return undefined;
+      }
+      return self.clients.openWindow(destino.ruta);
+    })(),
   );
 });
+
+/**
+ * Deja el destino donde la app lo encuentra aunque el mensaje no le llegue.
+ *
+ * Cache API y no IndexedDB: la comparten el worker y la página del mismo
+ * origen, y leerla desde la app no exige una base de datos. La app lo lee y lo
+ * borra (`core/plataforma/apertura_web.dart`), así que se abre una sola vez.
+ */
+async function guardarApertura(destino) {
+  try {
+    const almacen = await caches.open('sian-apertura');
+    await almacen.put(
+      '/__sian/apertura',
+      new Response(
+        JSON.stringify({
+          abrir: destino.abrir,
+          aviso: destino.aviso || '',
+          hilo: destino.hilo || '',
+          en: Date.now(),
+        }),
+        { headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+  } catch (e) {
+    // Sin almacén quedan el mensaje y la dirección, como antes.
+    trazar('clic:guardar-fallo', String(e));
+  }
+}

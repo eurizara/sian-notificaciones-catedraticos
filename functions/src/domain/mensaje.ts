@@ -284,3 +284,26 @@ export const MensajeFactory = {
     });
   },
 };
+
+/**
+ * Lo que dice la notificación de un aviso: el cuerpo, o su principio.
+ *
+ * Desde la 1.6 un mensaje admite 1000 caracteres (antes 500). La notificación
+ * lleva un resumen y la bandeja el texto completo: se corta en el último
+ * espacio antes del límite para no partir una palabra, y termina en «…» para
+ * que se note que hay más.
+ */
+export function resumenParaNotificacion(
+  cuerpo: string,
+  maximo: number = LIMITES.CUERPO_EN_NOTIFICACION,
+): string {
+  const letras = [...cuerpo.trim()];
+  if (letras.length <= maximo) {
+    return letras.join('');
+  }
+  const recorte = letras.slice(0, maximo).join('');
+  const espacio = recorte.lastIndexOf(' ');
+  const base = espacio > maximo * 0.6 ? recorte.slice(0, espacio) : recorte;
+  return `${base.replace(/[\s.,;:]+$/u, '')}…`;
+}
+

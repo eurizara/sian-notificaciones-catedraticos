@@ -394,6 +394,114 @@ abstract final class Textos {
             'se actualizó. No hay que pedir nada: se retira solo a los 60 días.'
       : 'Además hay $n registros de instalaciones anteriores de aparatos que ya '
             'se actualizaron. No hay que pedir nada: se retiran solos a los 60 días.';
+  // --- Alcance: retirar y recordar (1.6) --------------------------------------
+  static String botonRecordarVersion(int n) => n == 1
+      ? 'Enviar recordatorio a esta persona'
+      : 'Enviar recordatorio a estas $n personas';
+  static const String retirarRegistro = 'Retirar este registro';
+  static const String retirarTitulo = '¿Retirar este registro?';
+  static String retirarDetalle(String aparato, String persona) =>
+      'Se retirará el registro de $aparato de $persona. Si todavía lo usa, se '
+      'registrará solo la próxima vez que abra SIAN en él. Queda en la bitácora.';
+  static const String botonRetirar = 'Retirar';
+  static const String registroRetirado = 'Registro retirado.';
+  static const String registroNoRetirado =
+      'No se pudo retirar el registro. Inténtalo de nuevo.';
+  static const String verReemplazados = 'Ver y retirar';
+  static const String ocultarReemplazados = 'Ocultar';
+
+  /// El recordatorio sugerido. Cabe en 500 caracteres aunque el límite ya sea
+  /// de 1000: se lee entero en la notificación de un iPhone.
+  static const String recordatorioTitulo =
+      'Verifique su versión de SIAN y responda este aviso';
+  static String recordatorioCuerpo(String version) =>
+      'Le pedimos confirmar que su SIAN está al día:\n\n'
+      '1. Baje hasta el final de sus mensajes: debe decir SIAN $version.\n\n'
+      '2. Si dice otra versión o no aparece, toque Recargar (flecha circular, '
+      'arriba) y vuelva a revisar.\n\n'
+      '3. Si usa Android con la app instalada y le aparece la tarjeta «Un ajuste '
+      'más…», siga sus pasos.\n\n'
+      '4. Toque Responder debajo de este aviso y escriba: «Listo, $version».\n\n'
+      'Si ya lo hizo antes, solo responda. Gracias.';
+
+  // --- Plantillas de avisos (RF-MSG-14) ------------------------------------
+
+  static const String plantillaUsar = 'Usar plantilla';
+  static const String plantillaGuardar = 'Guardar como plantilla';
+  static const String plantillaElegirTitulo = 'Plantillas';
+  static const String plantillaBuscar = 'Buscar plantilla';
+  static const String plantillaPropias = 'Guardadas';
+  static const String plantillaPredefinidas = 'Incluidas en SIAN';
+  static const String plantillaSinResultados = 'Ninguna plantilla coincide.';
+  static const String plantillaReemplazarTitulo = '¿Reemplazar lo escrito?';
+  static const String plantillaReemplazarDetalle =
+      'La plantilla reemplaza el título y el mensaje que ya escribió.';
+  static const String plantillaReemplazar = 'Reemplazar';
+  static const String plantillaSinCompletar =
+      'Complete lo que está entre corchetes';
+
+  static String plantillaFaltan(List<String> marcadores) =>
+      '$plantillaSinCompletar: ${marcadores.join(', ')}';
+
+  static const String plantillaNombre = 'Nombre de la plantilla';
+  static const String plantillaNombreAyuda =
+      'Así la reconocerán en la lista. La verán todos los que envían avisos.';
+  static const String plantillaGuardarConfirmar = 'Guardar';
+
+  static String plantillaGuardada(String nombre) =>
+      'Plantilla «$nombre» guardada.';
+
+  static const String plantillaNoSeGuardo =
+      'No se pudo guardar la plantilla. Intente de nuevo.';
+  static const String plantillaBorrar = 'Borrar plantilla';
+  static const String plantillaBorrarTitulo = '¿Borrar la plantilla?';
+
+  static String plantillaBorrarDetalle(String nombre) =>
+      'Se borra «$nombre» para todos los que envían avisos. Los avisos ya '
+      'enviados con ella no cambian.';
+
+  static const String plantillaBorrarConfirmar = 'Borrar';
+
+  // --- Fallos reportados por los aparatos (DT-34) --------------------------
+
+  /// Encabezados de las listas plegables de Alcance.
+  static String canalVerPersonas(int n) =>
+      n == 1 ? 'Ver a la persona' : 'Ver a las $n personas';
+
+  static String canalVerFallos(int n) =>
+      n == 1 ? 'Ver el tipo de fallo' : 'Ver los $n tipos de fallo';
+
+  static String canalVerAtrasados(int n) => n == 1
+      ? 'Ver a la persona con una versión anterior'
+      : 'Ver a las $n personas con una versión anterior';
+
+  static const String canalFallosTitulo = 'Fallos reportados por los aparatos';
+
+  static String canalFallosResumen(int aparatos) => switch (aparatos) {
+    0 => 'Ningún aparato reportó fallos en las últimas 24 horas.',
+    1 => '1 aparato reportó fallos en las últimas 24 horas.',
+    _ => '$aparatos aparatos reportaron fallos en las últimas 24 horas.',
+  };
+
+  static const String canalFallosNota =
+      'Sin nombres: solo qué falló, en qué tipo de aparato y en qué versión. '
+      'Se conservan 30 días.';
+
+  static String canalFalloCuenta(int aparatos, int veces) =>
+      '$aparatos ${aparatos == 1 ? 'aparato' : 'aparatos'} · '
+      '$veces ${veces == 1 ? 'vez' : 'veces'}';
+
+  static String nombreFallo(String clave) => switch (clave) {
+    'arranque' => 'La aplicación no pudo arrancar',
+    'registro-dispositivo' => 'El registro para recibir avisos',
+    'suscripcion-propia' => 'La vía directa de avisos no respondió (se usó la otra)',
+    'worker' => 'El servicio de notificaciones del aparato',
+    'notificacion' => 'Mostrar una notificación con la app abierta',
+    'app-check' => 'La comprobación de la aplicación (App Check)',
+    'no-controlado' => 'Un error inesperado',
+    _ => clave,
+  };
+
   static String nombrePlataforma(String plataforma) => switch (plataforma) {
     'WEB_ANDROID' => 'Android',
     'WEB_IOS' => 'iPhone',
@@ -452,6 +560,11 @@ abstract final class Textos {
   static String conversaciones(int n) =>
       n == 1 ? '1 conversación' : '$n conversaciones';
   static String sinLeer(int n) => n == 1 ? '1 sin leer' : '$n sin leer';
+
+  /// En la tarjeta de un aviso que volvió a «Sin leer» por una respuesta.
+  static String respuestaNuevaEnAviso(int n) => n == 1
+      ? 'Respuesta nueva de quien lo envió'
+      : '$n respuestas nuevas de quien lo envió';
   static String respuestasDeUnAviso(int n) =>
       n == 1 ? '1 respuesta' : '$n respuestas';
 
@@ -624,6 +737,19 @@ abstract final class Textos {
   static const String notifDenegadasTitulo = 'Notificaciones bloqueadas';
   static const String notifInstalarTitulo = 'Ábrela desde la pantalla de inicio';
 
+  // --- Guardar una imagen (U-3) ----------------------------------------------
+  static const String guardarImagen = 'Guardar imagen';
+  static const String guardandoImagen = 'Preparando la imagen…';
+  static const String imagenNoSeGuardo =
+      'No se pudo guardar la imagen. Inténtalo de nuevo.';
+
+  // --- Copiar un aviso (U-1) --------------------------------------------------
+  static const String botonCopiar = 'Copiar';
+  static const String copiarTodo = 'Copiar título y mensaje';
+  static const String copiarTitulo = 'Copiar solo el título';
+  static const String copiarMensaje = 'Copiar solo el mensaje';
+  static const String copiado = 'Copiado';
+
   // --- Uso en segundo plano en Android (13/09/2026) -------------------------
   static const String segundoPlanoTitulo =
       'Un ajuste más para que los avisos lleguen al momento';
@@ -690,7 +816,8 @@ abstract final class Textos {
 
   // --- Composición y envío (ronda 4, iteración 1.3) --------------------------
   static const int limiteTitulo = 80;
-  static const int limiteCuerpo = 500;
+  /// Desde 1.6: la notificación lleva un resumen y la bandeja el texto entero.
+  static const int limiteCuerpo = 1000;
 
   static const String redactarTitulo = 'Redactar aviso';
   static const String etiquetaTituloMensaje = 'Título';
@@ -705,6 +832,26 @@ abstract final class Textos {
   static const String etiquetaDestinatarios = 'Destinatarios';
   static const String destinatariosTodos = 'Todos los catedráticos';
   static const String destinatariosGrupos = 'Grupos concretos';
+  static const String destinatariosPersonas = 'Personas concretas';
+  static const String buscarPersona = 'Buscar por nombre o correo';
+  static const String personasSinCoincidencias = 'Nadie coincide con esa búsqueda.';
+  static const String personasCargando = 'Cargando personas…';
+  static const String personasFallo =
+      'No se pudo cargar la lista de personas. Vuelve a intentarlo.';
+  static const String validacionElijePersona = 'Elige al menos una persona.';
+  static String quitarPersona(String nombre) => 'Quitar a $nombre';
+
+  /// En la confirmación de un envío individual: A QUIÉN va, con nombres.
+  /// Equivocarse de persona es el error caro de este modo.
+  static String confirmarPara(List<String> nombres) {
+    const int maximo = 12;
+    if (nombres.length <= maximo) {
+      return 'Va a: ${nombres.join(', ')}.';
+    }
+    final int resto = nombres.length - maximo;
+    return 'Va a: ${nombres.take(maximo).join(', ')} y $resto '
+        '${resto == 1 ? 'persona' : 'personas'} más.';
+  }
   static const String exigirConfirmacion = 'Exigir confirmación de lectura';
   static const String exigirConfirmacionDetalle =
       'El catedrático tendrá que confirmar que lo leyó. Deja constancia con valor probatorio.';

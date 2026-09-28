@@ -11,6 +11,7 @@ Future<bool> mostrarNotificacionDelSistema({
   required String cuerpo,
   required bool urgente,
   String? etiqueta,
+  Map<String, String> datos = const <String, String>{},
 }) async => false;
 
 /// Etiquetas que se pidieron cerrar, para que las pruebas lo comprueben.

@@ -10,12 +10,15 @@ import { recibeAvisos } from '../../src/domain/autorizacion';
 import { resolverDestinatarios } from '../../src/application/resolverDestinatarios';
 import type { Rol } from '../../src/domain/tipos';
 import {
-  DIAS_PARA_RETIRO_POR_INACTIVIDAD,
   decidirSobreDispositivo,
-  estadoDeCanal,
-  GRAVEDAD_DE_CANAL,
+  DIAS_PARA_RETIRO_POR_INACTIVIDAD,
+  DIAS_PARA_RETIRO_POR_REEMPLAZO,
   type DispositivoAEvaluar,
   type DispositivoDeCanal,
+  estadoDeCanal,
+  GRAVEDAD_DE_CANAL,
+  reemplazadosPorOtro,
+  tokensPorValidar,
 } from '../../src/domain/dispositivo';
 
 const AHORA = new Date('2026-09-09T12:00:00Z');
@@ -342,3 +345,72 @@ describe('la población del Alcance es la misma que la del envío', () => {
     expect(recibeAvisos('CATEDRATICO', false)).toBe(false);
   });
 });
+
+describe('reemplazadosPorOtro · registros de reinstalaciones anteriores (1.6)', () => {
+  const ahora = new Date('2026-09-26T12:00:00Z');
+  const haceDias = (d: number) => new Date(ahora.getTime() - d * 86_400_000);
+  const d = (id: string, dias: number | null, extra: Partial<Record<string, string>> = {}) => ({
+    id,
+    uid: extra.uid ?? 'ana',
+    plataforma: extra.plataforma ?? 'WEB_IOS',
+    navegador: extra.navegador ?? 'Safari',
+    ultimaActividad: dias === null ? null : haceDias(dias),
+  });
+
+  it('el caso de producción: un iPhone al día y tres registros de agosto del mismo', () => {
+    const r = reemplazadosPorOtro([d('nuevo', 0), d('a', 30), d('b', 29), d('c', 29)], ahora);
+    expect([...r].sort()).toEqual(['a', 'b', 'c']);
+  });
+
+  it('el usado más recientemente se conserva siempre', () => {
+    expect(reemplazadosPorOtro([d('viejo', 40), d('menos-viejo', 30)], ahora)).toEqual(
+      new Set(['viejo']),
+    );
+  });
+
+  it(`uno reemplazado hace menos de ${DIAS_PARA_RETIRO_POR_REEMPLAZO} días todavía se deja`, () => {
+    expect(reemplazadosPorOtro([d('nuevo', 0), d('reciente', 5)], ahora).size).toBe(0);
+  });
+
+  it('otro navegador u otra plataforma no son reemplazo: son otro canal', () => {
+    const r = reemplazadosPorOtro(
+      [
+        d('chrome', 0, { plataforma: 'WEB_ANDROID', navegador: 'Chrome' }),
+        d('firefox', 30, { plataforma: 'WEB_ANDROID', navegador: 'Firefox' }),
+        d('compu', 30, { plataforma: 'WEB_ESCRITORIO', navegador: 'Chrome' }),
+      ],
+      ahora,
+    );
+    expect(r.size).toBe(0);
+  });
+
+  it('personas distintas nunca se reemplazan entre sí', () => {
+    expect(reemplazadosPorOtro([d('ana', 0), d('luis', 30, { uid: 'luis' })], ahora).size).toBe(0);
+  });
+
+  it('sin fecha de actividad no se decide nada', () => {
+    expect(reemplazadosPorOtro([d('nuevo', 0), d('sin-fecha', null)], ahora).size).toBe(0);
+  });
+
+  it('el navegador se compara sin distinguir mayúsculas', () => {
+    expect(
+      reemplazadosPorOtro([d('nuevo', 0), d('viejo', 30, { navegador: 'safari ' })], ahora),
+    ).toEqual(new Set(['viejo']));
+  });
+});
+
+describe('tokensPorValidar · Alcance no vuelve a preguntar lo que acaba de preguntar', () => {
+  const ahora = Date.parse('2026-09-26T12:00:00Z');
+  const memoria = new Map([
+    ['reciente', { muerto: false, en: ahora - 60_000 }],
+    ['viejo', { muerto: false, en: ahora - 30 * 60_000 }],
+  ]);
+
+  it('solo lo que no se validó hace poco', () => {
+    expect(tokensPorValidar(['reciente', 'viejo', 'nuevo'], memoria, ahora)).toEqual([
+      'viejo',
+      'nuevo',
+    ]);
+  });
+});
+

@@ -65,8 +65,8 @@ describe('resumirVersiones', () => {
     ]);
     expect(r).toHaveLength(1);
     expect(r[0]!.aparatos).toEqual([
-      { plataforma: 'WEB_ANDROID', navegador: 'Chrome', versionApp: '1.5.10', ultimaActividad: hace.toISOString() },
-      { plataforma: 'WEB_ESCRITORIO', navegador: 'Chrome', versionApp: '1.5.4', ultimaActividad: null },
+      { id: '', plataforma: 'WEB_ANDROID', navegador: 'Chrome', versionApp: '1.5.10', ultimaActividad: hace.toISOString() },
+      { id: '', plataforma: 'WEB_ESCRITORIO', navegador: 'Chrome', versionApp: '1.5.4', ultimaActividad: null },
     ]);
   });
 

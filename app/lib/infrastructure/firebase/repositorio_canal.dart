@@ -80,9 +80,13 @@ class AparatoConVersion {
   const AparatoConVersion({
     required this.plataforma,
     required this.versionApp,
+    this.id = '',
     this.navegador = '',
     this.ultimaActividad,
   });
+
+  /// El documento del dispositivo: lo que hace falta para retirarlo.
+  final String id;
 
   /// `WEB_ANDROID`, `WEB_IOS` o `WEB_ESCRITORIO`.
   final String plataforma;
@@ -121,6 +125,7 @@ class VersionesDePersona {
               in (m['aparatos'] as List<Object?>? ?? <Object?>[]))
             if (a is Map<Object?, Object?>)
               AparatoConVersion(
+                id: (a['id'] as String?) ?? '',
                 plataforma: (a['plataforma'] as String?) ?? '',
                 navegador: ((a['navegador'] as String?) ?? '').trim(),
                 versionApp: ((a['versionApp'] as String?) ?? '').trim(),
@@ -136,15 +141,20 @@ class VersionesDePersona {
 class ClasificacionDeVersiones {
   const ClasificacionDeVersiones({
     required this.atrasados,
-    required this.reemplazados,
+    required this.registrosReemplazados,
   });
+
+  /// Cuántos registros viejos hay de aparatos que ya se actualizaron.
+  int get reemplazados => registrosReemplazados.length;
+
+  /// Cuáles, con de quién son: para poder retirarlos desde Alcance.
+  final List<({VersionesDePersona persona, AparatoConVersion aparato})>
+  registrosReemplazados;
 
   /// Quiénes tienen algún aparato de verdad sin la versión publicada, con solo
   /// esos aparatos. Es a quien hay que pedirle actualizar.
   final List<VersionesDePersona> atrasados;
 
-  /// Cuántos registros viejos hay de aparatos que ya se actualizaron.
-  final int reemplazados;
 }
 
 /// Separa los aparatos atrasados de los registros que ya fueron reemplazados.
@@ -171,7 +181,8 @@ ClasificacionDeVersiones clasificarVersiones(
   String publicada,
 ) {
   final List<VersionesDePersona> atrasados = <VersionesDePersona>[];
-  int reemplazados = 0;
+  final List<({VersionesDePersona persona, AparatoConVersion aparato})>
+  reemplazados = <({VersionesDePersona persona, AparatoConVersion aparato})>[];
 
   for (final VersionesDePersona p in personas) {
     final List<AparatoConVersion> alDia = <AparatoConVersion>[
@@ -193,7 +204,7 @@ ClasificacionDeVersiones clasificarVersiones(
                 b.ultimaActividad!.isAfter(a.ultimaActividad!)),
       );
       if (loReemplazo) {
-        reemplazados += 1;
+        reemplazados.add((persona: p, aparato: a));
       } else {
         deVerdad.add(a);
       }
@@ -213,8 +224,82 @@ ClasificacionDeVersiones clasificarVersiones(
 
   return ClasificacionDeVersiones(
     atrasados: atrasados,
-    reemplazados: reemplazados,
+    registrosReemplazados: reemplazados,
   );
+}
+
+/// Un tipo de fallo reportado por los aparatos en las últimas 24 h (DT-34).
+class TipoDeFallosResumido {
+  const TipoDeFallosResumido({
+    required this.que,
+    required this.aparatos,
+    required this.veces,
+    required this.plataformas,
+    required this.versiones,
+    required this.ultimoDetalle,
+  });
+
+  factory TipoDeFallosResumido.desdeMapa(Map<Object?, Object?> m) =>
+      TipoDeFallosResumido(
+        que: m['que'] as String? ?? '',
+        aparatos: (m['aparatos'] as num?)?.toInt() ?? 0,
+        veces: (m['veces'] as num?)?.toInt() ?? 0,
+        plataformas: <String>[
+          for (final Object? p in m['plataformas'] as List<Object?>? ?? <Object?>[])
+            if (p is String) p,
+        ],
+        versiones: <String>[
+          for (final Object? v in m['versiones'] as List<Object?>? ?? <Object?>[])
+            if (v is String) v,
+        ],
+        ultimoDetalle: m['ultimoDetalle'] as String? ?? '',
+      );
+
+  /// La clave del tipo, como la manda el aparato (`registro-dispositivo`…).
+  final String que;
+  final int aparatos;
+  final int veces;
+  final List<String> plataformas;
+  final List<String> versiones;
+
+  /// El detalle técnico del más reciente, ya limpio de datos personales.
+  final String ultimoDetalle;
+}
+
+/// Lo que los aparatos reportaron que les falló en las últimas 24 h (DT-34).
+///
+/// Sin nombres: el reporte no sabe de quién es el aparato.
+class FallosDeAparatos {
+  const FallosDeAparatos({
+    required this.aparatos,
+    required this.reportes,
+    required this.porTipo,
+  });
+
+  /// Una función anterior a 1.6.10 no lo manda: se lee como «ninguno».
+  factory FallosDeAparatos.desdeMapa(Object? m) {
+    if (m is! Map<Object?, Object?>) {
+      return ninguno;
+    }
+    return FallosDeAparatos(
+      aparatos: (m['aparatos'] as num?)?.toInt() ?? 0,
+      reportes: (m['reportes'] as num?)?.toInt() ?? 0,
+      porTipo: <TipoDeFallosResumido>[
+        for (final Object? t in m['porTipo'] as List<Object?>? ?? <Object?>[])
+          if (t is Map<Object?, Object?>) TipoDeFallosResumido.desdeMapa(t),
+      ],
+    );
+  }
+
+  static const FallosDeAparatos ninguno = FallosDeAparatos(
+    aparatos: 0,
+    reportes: 0,
+    porTipo: <TipoDeFallosResumido>[],
+  );
+
+  final int aparatos;
+  final int reportes;
+  final List<TipoDeFallosResumido> porTipo;
 }
 
 class RevisionDeCanal {
@@ -223,7 +308,11 @@ class RevisionDeCanal {
     required this.catedraticos,
     required this.personas,
     this.versiones = const <VersionesDePersona>[],
+    this.fallos = FallosDeAparatos.ninguno,
   });
+
+  /// Lo que reportaron los aparatos en las últimas 24 h (DT-34).
+  final FallosDeAparatos fallos;
 
   /// Cada destinatario con aparatos, y la versión de cada aparato.
   final List<VersionesDePersona> versiones;
@@ -249,6 +338,14 @@ class RepositorioCanal {
   late final FirebaseFunctions _fn =
       _dadas ?? FirebaseFunctions.instanceFor(region: 'us-central1');
 
+  /// Retira un registro de aparato (1.6). Solo coordinación; queda en la
+  /// bitácora. Si el aparato sigue en uso, se registra solo al abrir SIAN.
+  Future<void> retirar({required String uid, required String dispositivoId}) =>
+      _fn.httpsCallable('retirarDispositivo').call<Object?>(<String, Object?>{
+        'uid': uid,
+        'dispositivoId': dispositivoId,
+      });
+
   Future<RevisionDeCanal> revisar() async {
     final HttpsCallableResult<Object?> r = await _fn
         .httpsCallable('dispositivosQueNecesitanAtencion')
@@ -269,6 +366,7 @@ class RepositorioCanal {
             in (datos['versiones'] as List<Object?>? ?? <Object?>[]))
           if (v is Map<Object?, Object?>) VersionesDePersona.desdeMapa(v),
       ],
+      fallos: FallosDeAparatos.desdeMapa(datos['fallos']),
     );
   }
 }

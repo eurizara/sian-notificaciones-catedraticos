@@ -73,15 +73,16 @@ se desarrolla más abajo.
 
 | Capa | Tecnología | Versión | Dónde está en el repositorio |
 |---|---|---|---|
-| **Frontend** | Flutter Web (motor CanvasKit) · Dart | 3.44.8 · 3.12.2 | `app/lib/presentation/` |
-| **Estado del frontend** | Riverpod | 3.4.2 | `app/lib/application/` |
-| **Backend** | Cloud Functions v2 · Node.js · TypeScript | 6.6.0 · 20 · 5.9.3 | `functions/src/` |
+| **Frontend** | Flutter Web (motor CanvasKit) · Dart | 3.44 · 3.12 | `app/lib/presentation/` |
+| **Estado del frontend** | Riverpod | 3.4.3 | `app/lib/application/` |
+| **Backend** | Cloud Functions v2 · Node.js · TypeScript | 6.6.0 · 22 · 5.9.3 | `functions/src/` |
 | **Base de datos** | Cloud Firestore, modo Native — **NoSQL documental** | — | `firestore.rules`, `firestore.indexes.json` |
-| **Seguridad · identidad** | Firebase Authentication con *custom claims* | 6.5.6 | `functions/src/triggers/activarSesion.ts` |
+| **Seguridad · identidad** | Firebase Authentication con *custom claims* | 6.7.0 | `functions/src/triggers/activarSesion.ts` |
+| **Seguridad · origen de las llamadas** | App Check con reCAPTCHA Enterprise, en observación (DT-33) | 0.4.8 | `app/lib/infrastructure/firebase/app_check.dart`, `OPCIONES_LLAMABLE` |
 | **Seguridad · autorización** | Reglas de Firestore y de Storage, evaluadas por el servidor | — | `firestore.rules`, `storage.rules` |
 | **Seguridad · reglas de negocio** | Dominio puro en TypeScript, del lado del servidor | — | `functions/src/domain/` |
-| **Notificaciones** | Firebase Cloud Messaging + Service Worker propio | 16.4.3 | `app/web/firebase-messaging-sw.js` |
-| **Almacenamiento de archivos** | Cloud Storage | 13.4.5 | `app/lib/infrastructure/firebase/repositorio_adjuntos.dart` |
+| **Notificaciones** | Web Push directo con llaves VAPID propias (`web-push` 3.6.7), FCM de respaldo, y Service Worker propio | 16.7.0 | `functions/src/infrastructure/webpush.ts`, `app/web/firebase-messaging-sw.js` |
+| **Almacenamiento de archivos** | Cloud Storage | 13.6.0 | `app/lib/infrastructure/firebase/repositorio_adjuntos.dart` |
 | **Planificación** | Cloud Scheduler → Cloud Function cada minuto | — | `functions/src/triggers/despachador.ts` |
 | **Alojamiento** | Firebase Hosting | — | `firebase.json` |
 | **Integración continua** | GitHub Actions, cuatro trabajos | — | `.github/workflows/` |
@@ -143,10 +144,15 @@ flowchart LR
 ```
 
 **La flecha que define el sistema es la segunda.** El navegador *lee* de
-Firestore directamente, pero **nunca escribe**: toda escritura pasa por una
-Cloud Function. Las reglas de seguridad lo hacen literal —
-`allow write: if false` en las colecciones que importan— porque una regla que
-solo viva en el cliente no es una regla, es una sugerencia.
+Firestore directamente, pero **nunca escribe lo que importa**: avisos, entregas,
+confirmaciones, roles y bitácora pasan siempre por una Cloud Function. Las reglas
+de seguridad lo hacen literal —`allow write: if false` en esas colecciones—
+porque una regla que solo viva en el cliente no es una regla, es una sugerencia.
+
+Hay dos escrituras directas, deliberadas y acotadas por las reglas: los campos no
+privilegiados del propio perfil (RF-USR-08) y las **plantillas de avisos** (1.6.13),
+que no llegan a nadie hasta que alguien las carga, las revisa y las envía por la
+Function de siempre.
 
 ### 2.3 Framework de la interfaz
 
@@ -260,8 +266,10 @@ servidor propio delante, y con él, alguien que lo administre.
 | **Authentication** | Identidad, y los *claims* que llevan el rol dentro del token. El rol NO se lee de la base de datos al decidir permisos: viaja firmado en el token (RN-01) | `functions/src/triggers/activarSesion.ts` |
 | **Hosting** | Sirve el sitio y el manual. Aquí viven también las reglas de caché | `firebase.json` |
 | **Cloud Storage** | Notas de voz e imágenes. Se sube contra un identificador reservado *antes* de que el mensaje exista | `app/lib/infrastructure/firebase/repositorio_adjuntos.dart` |
-| **Cloud Messaging** | La notificación que suena con la aplicación cerrada. Se envían mensajes **solo de datos** para que el Service Worker decida cómo mostrarlos | `app/web/firebase-messaging-sw.js` |
-| **Cloud Scheduler** | Despierta al planificador cada minuto, y a la sonda de canal los lunes. Dos trabajos por ambiente: uno reparte lo programado, el otro comprueba que la gente siga alcanzable (DT-22) |
+| **Web Push y Cloud Messaging** | La notificación que suena con la aplicación cerrada. Desde 1.5.6 se envía **directo** al servicio de push del navegador con llaves VAPID propias (la privada en Secret Manager); FCM queda para los aparatos registrados antes. Mensajes **solo de datos**, para que el Service Worker decida cómo mostrarlos | `functions/src/infrastructure/webpush.ts`, `app/web/firebase-messaging-sw.js` |
+| **App Check** | Comprueba que la llamada sale de la aplicación (reCAPTCHA Enterprise). En observación: se mide, no se exige (DT-33) | `app/lib/infrastructure/firebase/app_check.dart` |
+| **Secret Manager** | La llave VAPID privada de cada ambiente. Nunca pasa por el repositorio ni por GitHub | `functions/src/infrastructure/webpush.ts` |
+| **Cloud Scheduler** | Despierta al planificador cada minuto, y a la sonda de canal cada día a las 06:00. Dos trabajos por ambiente: uno reparte lo programado, el otro comprueba que la gente siga alcanzable (DT-22), retira registros muertos o reemplazados y olvida los fallos de aparatos de más de 30 días |
 
 ### 2.8 Cómo encajan las capas con la tecnología
 
@@ -494,7 +502,7 @@ El código fuente vive en un solo sitio, y es GitHub.
 | Lo que ve el usuario | Qué se ejecuta | Compilado desde | Fuente en el repositorio |
 |---|---|---|---|
 | El sitio web | Archivos estáticos servidos por Hosting | `flutter build web --release` | `app/lib/` y `app/web/` |
-| Las 25 Functions | JavaScript de Node 22 | `npm run build` (TypeScript → JavaScript) | `functions/src/` |
+| Las 28 Functions | JavaScript de Node 22 | `npm run build` (TypeScript → JavaScript) | `functions/src/` |
 | Las reglas de seguridad | Se ejecutan tal cual, sin compilar | — | `firestore.rules`, `storage.rules` |
 | El manual | HTML estático | Se copia sin tocar | `app/web/manuales/` |
 
@@ -502,9 +510,14 @@ Lo publicado **nunca** es lo que se edita: `app/build/web` y `functions/lib`
 son resultados de compilación y no se versionan. Modificarlos a mano no
 serviría de nada, porque la siguiente compilación los reescribe.
 
-### 6.1b La única función que NO es una llamada firmada
+### 6.1b Las funciones que NO son una llamada firmada
 
-De las 24, `acuseDeNotificacion` es la excepción: es una petición HTTP corriente y tiene que
+De las 28, tres son peticiones HTTP corrientes y tienen que serlo: `acuseDeNotificacion` y
+`reportarSuscripcion`, que llama el service worker, y `reportarFallo` (DT-34), que tiene que
+funcionar aunque Firebase no haya arrancado. Ninguna escribe nada con valor probatorio, y
+`reportarFallo` solo acepta tipos de una lista cerrada, sin datos personales y con tope diario.
+
+`acuseDeNotificacion` es la más delicada: es una petición HTTP corriente y tiene que
 serlo. Quien llama es el **service worker**, que se despierta con el push y no tiene sesión
 de nadie —no hay token de usuario que firmar—. Lo identifica una seña aleatoria que viajó
 dentro de ese mismo push.
@@ -989,9 +1002,10 @@ Plegado no cambia nada. Ahí se hojea una lista, y no había nada que arreglar.
 | Cifrado en reposo | Cifrado por omisión de Google Cloud |
 | Bitácora inmutable | Reglas que niegan `update` y `delete` sobre `bitacora` a todo cliente; solo el SDK de administración escribe |
 | Protección de adjuntos | Reglas de Storage que permiten lectura únicamente al emisor y a los destinatarios del mensaje |
-| Gestión de secretos | Nada en el repositorio. Secrets de GitHub Actions y variables de entorno locales |
-| Control de gasto | Alerta de presupuesto en 1 USD, más límite máximo de instancias en las Functions |
-| Auditoría de dependencias | `dependabot` habilitado, más `npm audit` en la integración continua |
+| Gestión de secretos | Nada en el repositorio. Secrets de GitHub Actions, variables de entorno locales y Secret Manager para la llave VAPID privada |
+| Origen de las llamadas | App Check con reCAPTCHA Enterprise, en observación; exigirlo es una sola constante (`EXIGIR_APP_CHECK`) |
+| Control de gasto | Techo de 10 USD al mes para los tres proyectos con avisos al 50, 90 y 100 %, uno de 1 USD para desarrollo, y límite máximo de instancias en las Functions |
+| Auditoría de dependencias | Actualización mensual automática con la integración continua decidiendo (`actualizar-dependencias.yml`), Dependabot para las acciones de GitHub, y `npm audit` en cada integración |
 
 ---
 
@@ -1003,7 +1017,7 @@ Plegado no cambia nada. Ahí se hojea una lista, y no había nada que arreglar.
 | R-02 | El catedrático no instala la PWA en su pantalla de inicio, y en iOS eso significa cero notificaciones | Alta | Alto | Instructivo guiado obligatorio en el primer acceso, con detección automática de si la aplicación corre instalada o en pestaña |
 | R-03 | El service worker de Flutter Web entra en conflicto con el service worker de notificaciones | Media | Medio | Mantenerlos estrictamente separados: nunca fusionar la lógica de mensajería dentro del archivo generado por Flutter |
 | R-04 | El usuario deniega el permiso de notificaciones y luego no sabe revertirlo | Media | Medio | Detectar el estado del permiso y mostrar instrucciones específicas por navegador |
-| R-05 | El plan Blaze genera un cobro inesperado | Baja | Medio | Alerta de presupuesto en 1 USD, tope de instancias, y revisión semanal del consumo durante el primer mes |
+| R-05 | El plan Blaze genera un cobro inesperado | Baja | Medio | Techo de 10 USD con avisos, tope de instancias, y revisión semanal del consumo durante el primer mes |
 | R-06 | El peso inicial de Flutter Web perjudica la carga en conexiones lentas | Media | Bajo | Compilación optimizada, precarga de recursos y medición contra RNF-03 |
 
 ---

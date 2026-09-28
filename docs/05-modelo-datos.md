@@ -211,7 +211,7 @@ El identificador del documento es el UID de Firebase Authentication.
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | `titulo` | string | Máximo 80 caracteres (RF-MSG-06) |
-| `cuerpo` | string | Máximo 500 caracteres |
+| `cuerpo` | string | Máximo 1000 caracteres (500 hasta la 1.6). En la notificación viaja un resumen de 240 |
 | `tipo` | string | `INFORMATIVO` · `URGENTE` |
 | `formato` | array de string | Combinación de `TEXTO`, `VOZ`, `IMAGEN` |
 | `adjuntos` | map | `{ audio: {ruta, bytes, duracionSeg}, imagen: {ruta, bytes, ancho, alto} }` |
@@ -313,7 +313,7 @@ cualquiera habría podido saber cuántos compañeros contestaron.
 | `tituloAviso` | string | Copiado al crear el hilo: el emisor tiene que saber de qué le hablan sin abrir el aviso |
 | `turnos` | number | Cuántas intervenciones lleva |
 | `sinLeerEmisor` | number | Lo que le falta leer al emisor. Cada lado pone a cero **su** contador |
-| `sinLeerCatedratico` | number | Ídem, del otro lado |
+| `sinLeerCatedratico` | number | Ídem, del otro lado. Desde 1.6.15, mientras sea mayor que cero el aviso aparece en «Sin leer» en la bandeja del catedrático (consulta de grupo por `uid` y `sinLeerCatedratico > 0`) |
 | `ultimo` | map | `{lado, vista}` — vista previa del último turno, para la lista |
 | `creadoEn`, `actualizadoEn` | timestamp | |
 
@@ -351,6 +351,27 @@ Colección de nivel raíz. **Ningún cliente puede leerla ni escribirla.**
 | `bloqueoHasta` | timestamp | Vence a los 5 minutos, para liberar ejecuciones muertas |
 | `prioridad` | number | Las urgentes se procesan primero dentro del mismo lote |
 | `creadoEn` | timestamp | |
+
+### 2.8b `fallos_aparato/{AAAAMMDD_aparato_tipo}` (DT-34, desde 1.6.10)
+
+Colección de nivel raíz. **Ningún cliente puede leerla ni escribirla**: la escribe la
+función HTTP `reportarFallo` y la lee `dispositivosQueNecesitanAtencion` para Alcance. Un
+documento por aparato, tipo de fallo y día (UTC); el mismo fallo repetido suma en él, como
+mucho una vez por minuto.
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `que` | string | `arranque` · `registro-dispositivo` · `suscripcion-propia` · `worker` · `notificacion` · `app-check` · `no-controlado` |
+| `aparato` | string | Identificador **al azar** que genera la aplicación y guarda en el navegador. No está ligado a ninguna cuenta |
+| `plataforma` | string | `WEB_IOS` · `WEB_ANDROID` · `WEB_ESCRITORIO` · `OTRA` |
+| `version` | string | Versión de la aplicación, o vacío |
+| `detalle` | string | Detalle técnico del último, **limpio** de correos, números largos, claves y rutas de direcciones; hasta 200 caracteres |
+| `dia` | string | `AAAAMMDD` |
+| `veces` | number | |
+| `primero`, `ultimo` | timestamp | |
+
+`fallos_por_dia/{AAAAMMDD}` lleva `documentos`, el contador que pone el tope de 500
+documentos nuevos al día.
 
 ### 2.9 `bitacora/{eventoId}`
 
@@ -407,6 +428,27 @@ de usuarios, que sí mueve las dos (RF-USR-02).
 > `consumidaEn` intactos: un documento contradiciéndose. Y con eso desarmado deja de funcionar
 > la comprobación de `decidirActivacion` que rechaza a quien intenta usar una invitación que
 > otro ya consumió. La regla vive ahora en `decidirCarga`, en el dominio, con sus pruebas.
+
+### 2.10b `plantillas/{plantillaId}` (RF-MSG-14, desde 1.6.13)
+
+Textos de avisos frecuentes, compartidos entre quienes emiten. **No son avisos**: no llegan a
+nadie hasta que alguien los carga en el formulario, los revisa y los envía, y el envío pasa por
+la validación de siempre en el servidor. Por eso los escribe el cliente directamente, con las
+reglas poniendo los mismos límites que a un aviso. Leen, crean, editan y borran el
+coordinador y la administradora activos (`esEmisor()`); nadie más.
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `nombre` | string | 1 a 60 caracteres. Cómo se reconoce en la lista |
+| `titulo` | string | Hasta 80 |
+| `cuerpo` | string | Hasta 1000 |
+| `urgente` | bool | Solo se ofrece a quien puede emitir urgentes |
+| `requiereConfirmacion` | bool | |
+| `creadaPor` | string | uid; al crear, solo el propio. No se cambia al editar |
+| `actualizadaEn` | timestamp | Hora del servidor (`request.time`) |
+
+Las **predefinidas** (recordatorio de actualizar, de responder, simulacro, suspensión, reunión,
+evacuación inmediata) no están aquí: vienen en el código (`presentation/admin/plantillas.dart`).
 
 ### 2.11 `configuracion/institucional`
 
@@ -641,3 +683,4 @@ Advertencias que deben vigilarse:
 | Tokens de dispositivo inactivos | 90 días sin actividad | Function programada semanal, aprovechando el mismo job del despachador |
 | Adjuntos | Mientras exista el mensaje (RN-09) | Sin depuración automática |
 | Mensajes y entregas | Permanente | Sin depuración automática |
+| Fallos reportados por los aparatos (`fallos_aparato`, `fallos_por_dia`) | 30 días | La sonda diaria de canal los borra |

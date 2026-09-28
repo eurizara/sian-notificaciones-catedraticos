@@ -8,10 +8,14 @@
 /// llegan en la iteración 1.2.
 library;
 
+import 'dart:ui' show PlatformDispatcher;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/ambiente.dart';
+import 'core/entorno.dart';
+import 'core/fallos.dart';
 import 'core/plataforma/actualizar_worker.dart';
 import 'firebase_options.dart';
 import 'infrastructure/firebase/inicializacion.dart';
@@ -22,11 +26,31 @@ import 'presentation/shared/enrutador.dart';
 import 'presentation/shared/pantalla_estado.dart';
 import 'presentation/shared/tema.dart';
 import 'presentation/shared/textos.dart';
+import 'presentation/shared/apertura.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Los fallos del aparato llegan al servidor (DT-34). Se configura ANTES que
+  // Firebase: si Firebase no arranca, es justo lo que más interesa saber.
+  ReporteDeFallos.configurar(
+    proyecto: DefaultFirebaseOptions.currentPlatform.projectId,
+    usaEmulador: Entorno.usaEmulador,
+  );
+  FlutterError.onError = (FlutterErrorDetails detalle) {
+    FlutterError.presentError(detalle);
+    ReporteDeFallos.reportar(TipoDeFallo.noControlado, detalle.exception);
+  };
+  PlatformDispatcher.instance.onError = (Object error, StackTrace _) {
+    ReporteDeFallos.reportar(TipoDeFallo.noControlado, error);
+    // Falso: que siga su curso normal y aparezca en la consola como siempre.
+    return false;
+  };
+
   final ResultadoArranque arranque = await inicializarFirebase();
+  if (!arranque.correcto) {
+    ReporteDeFallos.reportar(TipoDeFallo.arranque, arranque.detalle);
+  }
 
   // Comprueba si hay un service worker nuevo, en cada arranque.
   //
@@ -74,12 +98,15 @@ class AplicacionSian extends ConsumerWidget {
       // La banda de ambiente envuelve TODO, incluida la pantalla de ingreso y la
       // de diagnóstico, que no tienen barra donde ponerla (DT-20). En producción
       // `BandaAmbiente` devuelve el hijo tal cual: ni un widget de más.
-      builder: (BuildContext context, Widget? hijo) => VigilanteDeVersion(
-        child: BandaAmbiente(
-          ambiente: ambienteDe(
-            DefaultFirebaseOptions.currentPlatform.projectId,
+      builder: (BuildContext context, Widget? hijo) => EscuchaDeAperturas(
+        // Tocar una notificación lleva a lo que la originó (C-6).
+        child: VigilanteDeVersion(
+          child: BandaAmbiente(
+            ambiente: ambienteDe(
+              DefaultFirebaseOptions.currentPlatform.projectId,
+            ),
+            hijo: hijo ?? const SizedBox.shrink(),
           ),
-          hijo: hijo ?? const SizedBox.shrink(),
         ),
       ),
       // Si Firebase no arrancó no hay sesión que resolver, así que se muestra

@@ -6,190 +6,21 @@
 <title>Manuales de uso · SIAN UMG-BDM</title>
 <meta name="description" content="Manuales de uso del Sistema Institucional de Avisos y Notificaciones, Universidad Mariano Gálvez, sede Boca del Monte.">
 <link rel="icon" href="../favicon.png">
-<style>
-  :root{
-    --primario:#2E6DA4; --primario-oscuro:#1F4E79; --urgente:#B3261E;
-    --dorado:#B8860B; --confirmado:#2E7D32;
-    --fondo:#F7F9FC; --superficie:#FFFFFF; --borde:#DDE3EA;
-    --texto:#1A1C1E; --suave:#5A6472;
-    --ancho-menu:280px;
-  }
-  *{box-sizing:border-box}
-  html{scroll-behavior:smooth}
-  body{
-    margin:0; background:var(--fondo); color:var(--texto);
-    /* Nada empuja la página de lado. En un celular, un documento que se
-       desplaza en horizontal se vuelve muy difícil de leer: se pierde el
-       margen izquierdo y hay que ir y venir con cada línea. */
-    overflow-x:hidden;
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-    line-height:1.75; font-size:18px;
-  }
-
-  /* ---- Barra superior ---- */
-  header{
-    position:sticky; top:0; z-index:30;
-    background:var(--primario); color:#fff;
-    display:flex; align-items:center; gap:12px; padding:12px 20px;
-    box-shadow:0 1px 4px rgba(0,0,0,.2);
-  }
-  header img{width:34px;height:34px;background:#fff;border-radius:50%;padding:2px}
-  header h1{font-size:19px;margin:0;font-weight:600}
-  header .sede{font-size:13px;opacity:.85;margin-left:auto;text-align:right}
-  #abrirMenu{
-    display:none; background:rgba(255,255,255,.15); color:#fff; border:0;
-    border-radius:8px; font-size:22px; width:42px; height:38px; cursor:pointer;
-  }
-
-  /* ---- Disposición ---- */
-  .envoltorio{display:flex; align-items:flex-start; max-width:1240px; margin:0 auto}
-  nav{
-    width:var(--ancho-menu); flex:0 0 var(--ancho-menu);
-    position:sticky; top:62px; max-height:calc(100vh - 62px); overflow-y:auto;
-    padding:24px 12px 40px;
-  }
-  nav h2{
-    font-size:12px; text-transform:uppercase; letter-spacing:.08em;
-    color:var(--suave); margin:22px 10px 8px;
-  }
-  nav a{
-    display:block; padding:8px 12px; margin:2px 0; border-radius:8px;
-    color:var(--texto); text-decoration:none; font-size:15px;
-  }
-  nav a:hover{background:#E8EEF6}
-  nav a.activo{background:#E8EEF6; color:var(--primario-oscuro); font-weight:600}
-
-  main{flex:1; min-width:0; padding:28px 28px 80px; background:var(--fondo)}
-
-  /* ---- Contenido ---- */
-  section{
-    background:var(--superficie); border:1px solid var(--borde); border-radius:14px;
-    padding:26px 30px; margin-bottom:26px; scroll-margin-top:76px;
-  }
-  h2{font-size:26px; color:var(--primario-oscuro); margin:0 0 4px; line-height:1.25}
-  h3{font-size:20px; color:var(--primario-oscuro); margin:30px 0 8px}
-  h4{font-size:17px; margin:22px 0 6px}
-  .entradilla{color:var(--suave); margin:0 0 18px; font-size:16px}
-  p{margin:12px 0}
-  ul,ol{margin:12px 0; padding-left:26px}
-  li{margin:7px 0}
-  code{
-    background:#EEF2F7; padding:2px 6px; border-radius:5px;
-    font-size:15px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
-  }
-  a{color:var(--primario)}
-
-  /* Pasos numerados */
-  ol.pasos{list-style:none; padding:0; counter-reset:paso}
-  ol.pasos>li{
-    counter-increment:paso; position:relative;
-    padding:2px 0 2px 46px; margin:16px 0;
-  }
-  ol.pasos>li::before{
-    content:counter(paso);
-    position:absolute; left:0; top:0;
-    width:32px; height:32px; border-radius:50%;
-    background:var(--primario); color:#fff;
-    display:flex; align-items:center; justify-content:center;
-    font-weight:600; font-size:15px;
-  }
-
-  /* Avisos */
-  .aviso{border-left:5px solid var(--primario); background:#EEF4FA;
-    padding:14px 18px; border-radius:0 10px 10px 0; margin:18px 0}
-  .aviso.critico{border-color:var(--urgente); background:#FCEEED}
-  .aviso.ojo{border-color:var(--dorado); background:#FBF5E6}
-  .aviso.bien{border-color:var(--confirmado); background:#EDF6EE}
-  .aviso>strong:first-child{display:block; margin-bottom:4px}
-
-  /* Etiquetas de plataforma */
-  .plataformas{display:flex; flex-wrap:wrap; gap:8px; margin:18px 0 4px}
-  .etiqueta{
-    font-size:13px; font-weight:600; padding:5px 12px; border-radius:20px;
-    background:#E8EEF6; color:var(--primario-oscuro);
-  }
-  .etiqueta.ios{background:#EFEFF4;color:#333}
-  .etiqueta.android{background:#E6F4EA;color:#1E6B33}
-  .etiqueta.escritorio{background:#EAF0FB;color:#274B8A}
-
-  /* Las tablas van dentro de su propio marco desplazable: son lo único que no
-     se puede encoger sin volverse ilegible, y si empujaran la página se
-     llevarían por delante todo lo demás. */
-  .tabla{overflow-x:auto; margin:18px 0; -webkit-overflow-scrolling:touch}
-  table{border-collapse:collapse; width:100%; margin:0; font-size:16px;
-    min-width:420px}
-  th,td{border:1px solid var(--borde); padding:9px 12px; text-align:left; vertical-align:top}
-  th{background:#F2F5F9; font-weight:600}
-
-  figure{margin:22px 0}
-  figure img{
-    display:block; max-width:100%; height:auto;
-    border:1px solid var(--borde); border-radius:10px;
-    box-shadow:0 2px 10px rgba(20,40,70,.07);
-  }
-  figure.movil img{max-width:330px; margin:0 auto}
-  figure.recorte img{max-width:560px; margin:0 auto}
-  figcaption{
-    color:var(--suave); font-size:14.5px; margin-top:8px; text-align:center;
-    max-width:640px; margin-left:auto; margin-right:auto;
-  }
-
-  .pendiente{
-    border:2px dashed var(--borde); border-radius:10px; padding:16px 18px;
-    color:var(--suave); font-size:15px; background:#FBFCFE; margin:16px 0;
-  }
-
-  footer{max-width:1240px;margin:0 auto;padding:0 28px 60px;color:var(--suave);font-size:14px}
-
-  /* ---- Volver a SIAN ----
-     Solo con la aplicación instalada. Instalada, el manual se abre en la
-     misma ventana —en iPhone no hay otra forma— y no hay barra del navegador
-     ni botón de atrás: sin esto, la única salida era cerrar la aplicación.
-     En una pestaña del navegador sobra: ahí ya están atrás y cerrar. */
-  .volver{
-    display:none; align-items:center; gap:4px; flex:0 0 auto;
-    background:#fff; color:var(--primario-oscuro); text-decoration:none;
-    font-weight:700; font-size:16px; line-height:1;
-    border-radius:999px; padding:0 14px; min-height:44px;
-  }
-  .volver:focus-visible{outline:3px solid #fff; outline-offset:2px}
-  html.instalada .volver{display:inline-flex}
-  @media (display-mode: standalone){ .volver{display:inline-flex} }
-
-  @media print{
-    header,nav,#velo{display:none}
-    .envoltorio{display:block}
-    main{padding:0}
-    section{border:0; box-shadow:none; padding:0 0 18px; page-break-inside:avoid}
-    figure img{max-width:420px}
-    a{color:#000; text-decoration:none}
-    body{font-size:12pt}
-  }
-
-  @media (max-width:900px){
-    body{font-size:17px}
-    #abrirMenu{display:block}
-    header .sede{display:none}
-    /* Con el botón de volver, el escudo cede su sitio al título. */
-    html.instalada header img{display:none}
-    header h1{font-size:17px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-    .envoltorio{display:block; max-width:100%}
-    nav{
-      position:fixed; top:62px; left:0; bottom:0; width:min(86vw,320px);
-      background:var(--superficie); border-right:1px solid var(--borde);
-      transform:translateX(-101%); transition:transform .22s ease; z-index:25;
-      max-height:none; overflow-y:auto; visibility:hidden;
-    }
-    nav.abierto{visibility:visible}
-    nav.abierto{transform:none}
-    main{padding:20px 14px 70px; max-width:100%; overflow-x:hidden}
-    table{min-width:340px; font-size:15px}
-    section{padding:20px 18px; border-radius:12px}
-    h2{font-size:22px}
-    #velo{position:fixed;inset:62px 0 0;background:rgba(0,0,0,.35);z-index:20;display:none}
-    #velo.visible{display:block}
-  }
-</style>
+<script>
+  // La apariencia elegida en SIAN (U-5). El manual se sirve desde el mismo
+  // dominio que la app y comparte su almacenamiento: si allí se eligió claro u
+  // oscuro, aquí también. Va antes de los estilos para no pintar en blanco y
+  // cambiar después. Con «igual que el dispositivo» manda el teléfono.
+  (function () {
+    try {
+      var p = window.localStorage.getItem('sian.apariencia');
+      if (p === 'claro' || p === 'oscuro') {
+        document.documentElement.setAttribute('data-tema', p);
+      }
+    } catch (e) { /* sin almacenamiento, manda el dispositivo */ }
+  })();
+</script>
+<link rel="stylesheet" href="estilo.css">
 </head>
 <body>
 
@@ -234,6 +65,7 @@
 
   <h2>Crear avisos</h2>
   <a href="#crear">Todas las opciones</a>
+  <a href="#plantillas">Plantillas</a>
 
   <h2>Según su rol</h2>
   <a href="catedratico/">Catedrático · guía aparte</a>
@@ -651,15 +483,33 @@
     <tr><td><strong>Cuándo sale</strong></td><td>Ahora · En una fecha · Repetido</td></tr>
     <tr><td><strong>Qué lleva</strong></td><td>Solo texto · Notas de voz · Imágenes</td></tr>
     <tr><td><strong>Cuánto pesa</strong></td><td>Informativo · Urgente</td></tr>
-    <tr><td><strong>A quién</strong></td><td>Todos · Grupos concretos</td></tr>
+    <tr><td><strong>A quién</strong></td><td>Todos · Grupos concretos · Personas concretas</td></tr>
   </table>
   </div>
 
   <p>Y una casilla aparte: si <strong>exige confirmación de lectura</strong>.</p>
 
+  <h3 id="plantillas">Empezar desde una plantilla</h3>
+  <p>Arriba del formulario, <strong>Usar plantilla</strong> abre una lista con
+  avisos frecuentes ya escritos: recordatorio de actualizar SIAN, recordatorio
+  de responder, simulacro, suspensión de clases, reunión. Al elegir una se
+  llenan el título, el mensaje y la casilla de confirmación; nada sale hasta
+  que usted lo revise y pulse enviar.</p>
+  <ul>
+    <li><strong>Lo que va entre corchetes</strong>, como <code>[día]</code> o
+        <code>[hora]</code>, hay que completarlo: SIAN no deja enviar mientras
+        quede alguno.</li>
+    <li><strong>Guardar como plantilla</strong> guarda lo que tiene escrito con
+        el nombre que usted elija. La ven todos los que envían avisos, y
+        cualquiera de ellos la puede borrar desde la misma lista.</li>
+    <li>Las plantillas <strong>urgentes</strong> solo aparecen a quien puede
+        enviar urgentes.</li>
+  </ul>
+
   <h3>1 · Qué dice</h3>
   <p>El <strong>título</strong> admite hasta 80 caracteres y el
-  <strong>mensaje</strong> hasta 500. El contador se mueve mientras usted
+  <strong>mensaje</strong> hasta 1000. En la notificación del teléfono se ve un
+  resumen de las primeras líneas; el texto completo, en la bandeja. El contador se mueve mientras usted
   escribe y no lo deja pasarse: es mejor enterarse ahí que perder el texto al
   intentar enviarlo.</p>
 
@@ -771,6 +621,8 @@
     <li><strong>Grupos concretos:</strong> uno o varios de los grupos que haya
     armado. Quien esté en dos grupos recibe el aviso <strong>una sola
     vez</strong>.</li>
+    <li><strong>Personas concretas:</strong> una o varias personas, buscándolas
+    por nombre o correo. La confirmación antes de enviar dice sus nombres.</li>
   </ul>
 
   <h3>La casilla de confirmación</h3>
@@ -1044,12 +896,13 @@
   <ol class="pasos">
     <li>Entre a <strong>Mensajes</strong>.</li>
     <li>Escriba el <strong>título</strong> (hasta 80 caracteres) y el
-        <strong>mensaje</strong> (hasta 500). El contador le avisa mientras
+        <strong>mensaje</strong> (hasta 1000). El contador le avisa mientras
         escribe; no lo dejará pasarse.</li>
     <li>Elija <strong>cuándo</strong>: ahora, en una fecha concreta, o repetido.</li>
     <li>Adjunte lo que necesite (ver abajo).</li>
     <li>Marque si es <strong>urgente</strong> y si <strong>exige confirmación</strong>.</li>
-    <li>Elija los <strong>destinatarios</strong>: todos, o grupos concretos.</li>
+    <li>Elija los <strong>destinatarios</strong>: todos, grupos concretos o
+        personas concretas.</li>
     <li>Presione <strong>Enviar ahora</strong>.</li>
   </ol>
 
@@ -1280,7 +1133,7 @@
         <strong>Actualizar</strong> en la tarjeta de versión nueva.</li>
     <li><strong>«Versión desconocida»</strong> es un aparato que no ha abierto
         SIAN desde hace mucho. Si ya no lo usa, deja de aparecer solo a los 60
-        días sin actividad.</li>
+        días sin actividad, o puede retirarlo con el botón de la papelera.</li>
     <li><strong>Reinstalar la aplicación deja el registro anterior.</strong> Si
         la persona ya tiene ese mismo aparato —misma plataforma y mismo
         navegador— en la última versión, los registros viejos no la cuentan
@@ -1288,9 +1141,37 @@
         nada. Un navegador distinto en el mismo teléfono sí cuenta, porque es
         otro canal.</li>
   </ul>
+  <p>Las listas —quién no recibiría un aviso, quién tiene una versión
+  anterior y el detalle de los fallos de aparatos— aparecen
+  <strong>plegadas</strong>, con cuántos hay en cada una. Toque el encabezado
+  para abrirla.</p>
+
+  <h3 id="alcance-acciones">Recordar y retirar desde Alcance</h3>
+  <ul>
+    <li><strong>Enviar recordatorio a estas N personas.</strong> Abre
+        <strong>Mensajes</strong> con esas personas ya elegidas y un texto
+        sugerido para que verifiquen su versión y respondan. Puede cambiar el
+        texto antes de enviar; la confirmación dice a quién va.</li>
+    <li><strong>Retirar un registro</strong> (solo coordinación). Cada aparato
+        tiene un botón para retirarlo, con confirmación, y queda en la bitácora.
+        Úselo con registros que ya no se usan. Si el aparato sigue en uso, se
+        registra solo la próxima vez que se abra SIAN en él.</li>
+    <li><strong>Registros de instalaciones anteriores.</strong> Con
+        <strong>Ver y retirar</strong> se pueden revisar uno por uno. Si nadie los
+        retira, SIAN los retira solo a los 14 días sin uso.</li>
+  </ul>
+
   <p>Importa aunque la persona reciba bien: las correcciones de las
   notificaciones llegan con las versiones. Qué trae cada una está en las
   <a href="notas/">notas de la versión</a>.</p>
+
+  <h3 id="alcance-fallos">Fallos reportados por los aparatos</h3>
+  <p>Al final de Alcance se ve cuántos aparatos informaron que algo les falló
+  en las últimas 24 horas: por ejemplo, el registro para recibir avisos. Se
+  agrupa por tipo, con el tipo de aparato y la versión. No dice de quién es
+  cada aparato: el reporte no lleva nombres ni correos. Sirve para enterarse
+  de un problema antes de que alguien diga «no me llegó»; si un mismo fallo
+  aparece en muchos aparatos, avise a quien mantiene SIAN.</p>
 </section>
 
 <section id="coordinador">
@@ -1443,6 +1324,12 @@
 
   <p>Usted no puede iniciar una conversación: solo contestar a quien le
   escribió. SIAN es un sistema de avisos, no una mensajería.</p>
+  <p>La pantalla muestra <strong>10 conversaciones a la vez</strong>; el botón
+  <strong>Ver más</strong> trae las siguientes. Primero van las que tienen algo
+  sin leer.</p>
+  <p>Cada aviso se puede <strong>plegar y desplegar</strong> tocando su título.
+  Los que tienen respuestas sin leer aparecen abiertos; los demás, plegados, con
+  cuántas conversaciones tienen.</p>
 </section>
 
 <!-- ================= GLOSARIO ================= -->

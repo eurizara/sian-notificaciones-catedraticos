@@ -259,6 +259,12 @@ urgente exige doble confirmación) · RN-09 (los adjuntos son inmutables).
 ---
 
 <a id="cu-04"></a>
+> **Desde 1.6.13 (RF-MSG-14).** La redacción puede empezar desde una **plantilla**
+> —predefinida o guardada por quien emite—. La plantilla solo llena el formulario: el caso
+> sigue igual desde ahí, con la misma validación en el servidor. Lo que la plantilla trae
+> entre corchetes (`[día]`, `[hora]`) impide enviar hasta completarlo. Las plantillas
+> urgentes solo se ofrecen a quien puede emitir urgentes.
+
 ## CU-04 · Programar un aviso para una fecha y hora
 
 | | |

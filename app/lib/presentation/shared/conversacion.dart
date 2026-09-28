@@ -14,6 +14,7 @@ import '../../application/proveedores_respuestas.dart';
 import '../../infrastructure/firebase/repositorio_respuestas.dart';
 import 'tema.dart';
 import 'textos.dart';
+import 'texto_con_enlaces.dart';
 
 /// Largo máximo de una respuesta. El mismo que valida el servidor.
 const int largoMaximoRespuesta = 1000;
@@ -126,7 +127,8 @@ class _Burbuja extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 4),
-              SelectableText(turno.texto),
+              // Las respuestas también pueden traer un enlace (U-2).
+              TextoConEnlaces(turno.texto),
             ],
           ),
         ),

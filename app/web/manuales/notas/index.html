@@ -18,204 +18,21 @@
   Se escribe para quien usa SIAN, no para quien lo programa. El detalle técnico
   de cada versión está en docs/08-plan-iteraciones.md.
 -->
-<style>
-  :root{
-    --primario:#2E6DA4; --primario-oscuro:#1F4E79; --urgente:#B3261E;
-    --dorado:#B8860B; --confirmado:#2E7D32;
-    --fondo:#F7F9FC; --superficie:#FFFFFF; --borde:#DDE3EA;
-    --texto:#1A1C1E; --suave:#5A6472;
-    --ancho-menu:280px;
-  }
-  *{box-sizing:border-box}
-  html{scroll-behavior:smooth}
-  body{
-    margin:0; background:var(--fondo); color:var(--texto);
-    /* Nada empuja la página de lado. En un celular, un documento que se
-       desplaza en horizontal se vuelve muy difícil de leer: se pierde el
-       margen izquierdo y hay que ir y venir con cada línea. */
-    overflow-x:hidden;
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-    line-height:1.75; font-size:18px;
-  }
-
-  /* ---- Barra superior ---- */
-  header{
-    position:sticky; top:0; z-index:30;
-    background:var(--primario); color:#fff;
-    display:flex; align-items:center; gap:12px; padding:12px 20px;
-    box-shadow:0 1px 4px rgba(0,0,0,.2);
-  }
-  header img{width:34px;height:34px;background:#fff;border-radius:50%;padding:2px}
-  header h1{font-size:19px;margin:0;font-weight:600}
-  header .sede{font-size:13px;opacity:.85;margin-left:auto;text-align:right}
-  #abrirMenu{
-    display:none; background:rgba(255,255,255,.15); color:#fff; border:0;
-    border-radius:8px; font-size:22px; width:42px; height:38px; cursor:pointer;
-  }
-
-  /* ---- Disposición ---- */
-  .envoltorio{display:flex; align-items:flex-start; max-width:1240px; margin:0 auto}
-  nav{
-    width:var(--ancho-menu); flex:0 0 var(--ancho-menu);
-    position:sticky; top:62px; max-height:calc(100vh - 62px); overflow-y:auto;
-    padding:24px 12px 40px;
-  }
-  nav h2{
-    font-size:12px; text-transform:uppercase; letter-spacing:.08em;
-    color:var(--suave); margin:22px 10px 8px;
-  }
-  nav a{
-    display:block; padding:8px 12px; margin:2px 0; border-radius:8px;
-    color:var(--texto); text-decoration:none; font-size:15px;
-  }
-  nav a:hover{background:#E8EEF6}
-  nav a.activo{background:#E8EEF6; color:var(--primario-oscuro); font-weight:600}
-
-  main{flex:1; min-width:0; padding:28px 28px 80px; background:var(--fondo)}
-
-  /* ---- Contenido ---- */
-  section{
-    background:var(--superficie); border:1px solid var(--borde); border-radius:14px;
-    padding:26px 30px; margin-bottom:26px; scroll-margin-top:76px;
-  }
-  h2{font-size:26px; color:var(--primario-oscuro); margin:0 0 4px; line-height:1.25}
-  h3{font-size:20px; color:var(--primario-oscuro); margin:30px 0 8px}
-  h4{font-size:17px; margin:22px 0 6px}
-  .entradilla{color:var(--suave); margin:0 0 18px; font-size:16px}
-  p{margin:12px 0}
-  ul,ol{margin:12px 0; padding-left:26px}
-  li{margin:7px 0}
-  code{
-    background:#EEF2F7; padding:2px 6px; border-radius:5px;
-    font-size:15px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
-  }
-  a{color:var(--primario)}
-
-  /* Pasos numerados */
-  ol.pasos{list-style:none; padding:0; counter-reset:paso}
-  ol.pasos>li{
-    counter-increment:paso; position:relative;
-    padding:2px 0 2px 46px; margin:16px 0;
-  }
-  ol.pasos>li::before{
-    content:counter(paso);
-    position:absolute; left:0; top:0;
-    width:32px; height:32px; border-radius:50%;
-    background:var(--primario); color:#fff;
-    display:flex; align-items:center; justify-content:center;
-    font-weight:600; font-size:15px;
-  }
-
-  /* Avisos */
-  .aviso{border-left:5px solid var(--primario); background:#EEF4FA;
-    padding:14px 18px; border-radius:0 10px 10px 0; margin:18px 0}
-  .aviso.critico{border-color:var(--urgente); background:#FCEEED}
-  .aviso.ojo{border-color:var(--dorado); background:#FBF5E6}
-  .aviso.bien{border-color:var(--confirmado); background:#EDF6EE}
-  .aviso>strong:first-child{display:block; margin-bottom:4px}
-
-  /* Etiquetas de plataforma */
-  .plataformas{display:flex; flex-wrap:wrap; gap:8px; margin:18px 0 4px}
-  .etiqueta{
-    font-size:13px; font-weight:600; padding:5px 12px; border-radius:20px;
-    background:#E8EEF6; color:var(--primario-oscuro);
-  }
-  .etiqueta.ios{background:#EFEFF4;color:#333}
-  .etiqueta.android{background:#E6F4EA;color:#1E6B33}
-  .etiqueta.escritorio{background:#EAF0FB;color:#274B8A}
-
-  /* Las tablas van dentro de su propio marco desplazable: son lo único que no
-     se puede encoger sin volverse ilegible, y si empujaran la página se
-     llevarían por delante todo lo demás. */
-  .tabla{overflow-x:auto; margin:18px 0; -webkit-overflow-scrolling:touch}
-  table{border-collapse:collapse; width:100%; margin:0; font-size:16px;
-    min-width:420px}
-  th,td{border:1px solid var(--borde); padding:9px 12px; text-align:left; vertical-align:top}
-  th{background:#F2F5F9; font-weight:600}
-
-  figure{margin:22px 0}
-  figure img{
-    display:block; max-width:100%; height:auto;
-    border:1px solid var(--borde); border-radius:10px;
-    box-shadow:0 2px 10px rgba(20,40,70,.07);
-  }
-  figure.movil img{max-width:330px; margin:0 auto}
-  figure.recorte img{max-width:560px; margin:0 auto}
-  figcaption{
-    color:var(--suave); font-size:14.5px; margin-top:8px; text-align:center;
-    max-width:640px; margin-left:auto; margin-right:auto;
-  }
-
-  .pendiente{
-    border:2px dashed var(--borde); border-radius:10px; padding:16px 18px;
-    color:var(--suave); font-size:15px; background:#FBFCFE; margin:16px 0;
-  }
-
-  footer{max-width:1240px;margin:0 auto;padding:0 28px 60px;color:var(--suave);font-size:14px}
-
-  /* ---- Volver a SIAN ----
-     Solo con la aplicación instalada. Instalada, el manual se abre en la
-     misma ventana —en iPhone no hay otra forma— y no hay barra del navegador
-     ni botón de atrás: sin esto, la única salida era cerrar la aplicación.
-     En una pestaña del navegador sobra: ahí ya están atrás y cerrar. */
-  .volver{
-    display:none; align-items:center; gap:4px; flex:0 0 auto;
-    background:#fff; color:var(--primario-oscuro); text-decoration:none;
-    font-weight:700; font-size:16px; line-height:1;
-    border-radius:999px; padding:0 14px; min-height:44px;
-  }
-  .volver:focus-visible{outline:3px solid #fff; outline-offset:2px}
-  html.instalada .volver{display:inline-flex}
-  @media (display-mode: standalone){ .volver{display:inline-flex} }
-
-  @media print{
-    header,nav,#velo{display:none}
-    .envoltorio{display:block}
-    main{padding:0}
-    section{border:0; box-shadow:none; padding:0 0 18px; page-break-inside:avoid}
-    figure img{max-width:420px}
-    a{color:#000; text-decoration:none}
-    body{font-size:12pt}
-  }
-
-  @media (max-width:900px){
-    body{font-size:17px}
-    #abrirMenu{display:block}
-    header .sede{display:none}
-    /* Con el botón de volver, el escudo cede su sitio al título. */
-    html.instalada header img{display:none}
-    header h1{font-size:17px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-    .envoltorio{display:block; max-width:100%}
-    nav{
-      position:fixed; top:62px; left:0; bottom:0; width:min(86vw,320px);
-      background:var(--superficie); border-right:1px solid var(--borde);
-      transform:translateX(-101%); transition:transform .22s ease; z-index:25;
-      max-height:none; overflow-y:auto; visibility:hidden;
-    }
-    nav.abierto{visibility:visible}
-    nav.abierto{transform:none}
-    main{padding:20px 14px 70px; max-width:100%; overflow-x:hidden}
-    table{min-width:340px; font-size:15px}
-    section{padding:20px 18px; border-radius:12px}
-    h2{font-size:22px}
-    #velo{position:fixed;inset:62px 0 0;background:rgba(0,0,0,.35);z-index:20;display:none}
-    #velo.visible{display:block}
-  }
-
-  /* ---- Notas de la versión ---- */
-  .fecha{color:var(--suave); font-size:.95rem; margin:-.4rem 0 1rem}
-  .cambio{margin:.35rem 0 .35rem 0; padding-left:0; list-style:none}
-  .cambio li{margin:.55rem 0}
-  .para{display:inline-block; font-size:.72rem; font-weight:700; letter-spacing:.02em;
-        text-transform:uppercase; border-radius:6px; padding:.05rem .45rem; margin-right:.45rem;
-        vertical-align:.12em; border:1px solid var(--borde); color:var(--suave); background:var(--superficie)}
-  .para.todos{color:var(--primario-oscuro); border-color:var(--primario)}
-  .para.catedraticos{color:var(--confirmado); border-color:var(--confirmado)}
-  .para.coordinacion{color:#7a5a00; border-color:var(--dorado)}
-  .para.correccion{color:var(--urgente); border-color:var(--urgente)}
-  .publicada{background:var(--superficie); border:1px solid var(--borde); border-radius:10px;
-             padding:.7rem 1rem; margin:1rem 0 1.5rem}
-</style>
+<script>
+  // La apariencia elegida en SIAN (U-5). El manual se sirve desde el mismo
+  // dominio que la app y comparte su almacenamiento: si allí se eligió claro u
+  // oscuro, aquí también. Va antes de los estilos para no pintar en blanco y
+  // cambiar después. Con «igual que el dispositivo» manda el teléfono.
+  (function () {
+    try {
+      var p = window.localStorage.getItem('sian.apariencia');
+      if (p === 'claro' || p === 'oscuro') {
+        document.documentElement.setAttribute('data-tema', p);
+      }
+    } catch (e) { /* sin almacenamiento, manda el dispositivo */ }
+  })();
+</script>
+<link rel="stylesheet" href="../estilo.css">
 </head>
 <body>
 
@@ -247,6 +64,24 @@
   <a href="../">Manual de coordinación</a>
 
   <h2>Versiones</h2>
+  <a href="#v1.6.17">1.6.17</a>
+  <a href="#v1.6.16">1.6.16</a>
+  <a href="#v1.6.15">1.6.15</a>
+  <a href="#v1.6.14">1.6.14</a>
+  <a href="#v1.6.13">1.6.13</a>
+  <a href="#v1.6.12">1.6.12</a>
+  <a href="#v1.6.11">1.6.11</a>
+  <a href="#v1.6.10">1.6.10</a>
+  <a href="#v1.6.9">1.6.9</a>
+  <a href="#v1.6.8">1.6.8</a>
+  <a href="#v1.6.7">1.6.7</a>
+  <a href="#v1.6.6">1.6.6</a>
+  <a href="#v1.6.5">1.6.5</a>
+  <a href="#v1.6.4">1.6.4</a>
+  <a href="#v1.6.3">1.6.3</a>
+  <a href="#v1.6.2">1.6.2</a>
+  <a href="#v1.6.1">1.6.1</a>
+  <a href="#v1.6.0">1.6.0</a>
   <a href="#v1.5.13">1.5.13</a>
   <a href="#v1.5.12">1.5.12</a>
   <a href="#v1.5.11">1.5.11</a>
@@ -273,6 +108,158 @@
   <p>Cuando hay una versión más reciente, SIAN lo avisa arriba de sus mensajes con
   un botón <strong>Actualizar</strong>. Actualizar tarda unos segundos y no se
   pierde nada.</p>
+</section>
+
+<section id="v1.6.17">
+  <h2>SIAN 1.6.17</h2>
+  <p class="fecha">26 de septiembre de 2026</p>
+  <ul class="cambio">
+    <li><span class="para correccion">Corrección</span>En <strong>Respuestas</strong>, desplazarse por la lista ya no se traba al volver arriba.</li>
+    <li><span class="para coordinacion">Coordinación</span>En <strong>Respuestas</strong>, cada aviso se puede plegar y desplegar para ver quién respondió; los que tienen algo sin leer aparecen abiertos. En <strong>Alcance</strong>, el detalle de los fallos de aparatos también aparece plegado.</li>
+  </ul>
+</section>
+
+<section id="v1.6.16">
+  <h2>SIAN 1.6.16</h2>
+  <p class="fecha">26 de septiembre de 2026</p>
+  <ul class="cambio">
+    <li><span class="para coordinacion">Coordinación</span><strong>Respuestas</strong> muestra 10 conversaciones a la vez, con el botón <strong>Ver más</strong>.</li>
+    <li><span class="para coordinacion">Coordinación</span>En <strong>Alcance</strong>, las listas de quién no recibiría un aviso y de quién tiene una versión anterior aparecen plegadas, con cuántas personas hay; se abren tocando el encabezado.</li>
+  </ul>
+</section>
+
+<section id="v1.6.15">
+  <h2>SIAN 1.6.15</h2>
+  <p class="fecha">26 de septiembre de 2026</p>
+  <ul class="cambio">
+    <li><span class="para catedraticos">Catedráticos</span>Cuando quien envió un aviso le contesta, ese aviso vuelve a <strong>Sin leer</strong> con la marca «Respuesta nueva», aunque usted ya lo hubiera leído o confirmado. Así la respuesta no se pierde. Al abrirla, el aviso vuelve a su lugar y su confirmación sigue intacta.</li>
+  </ul>
+</section>
+
+<section id="v1.6.14">
+  <h2>SIAN 1.6.14</h2>
+  <p class="fecha">26 de septiembre de 2026</p>
+  <ul class="cambio">
+    <li><span class="para todos">Para todos</span>Actualización mensual de los componentes de SIAN, incluidos los de notificaciones. No cambia nada de lo que usted ve ni hace.</li>
+  </ul>
+</section>
+
+<section id="v1.6.13">
+  <h2>SIAN 1.6.13</h2>
+  <p class="fecha">26 de septiembre de 2026</p>
+  <ul class="cambio">
+    <li><span class="para coordinacion">Coordinación</span><strong>Plantillas de avisos</strong>: en Mensajes, <strong>Usar plantilla</strong> llena el aviso con un texto frecuente —recordatorio de actualizar o de responder, simulacro, suspensión de clases, reunión— y <strong>Guardar como plantilla</strong> guarda el suyo para la próxima vez. Lo que va entre corchetes, como [día] o [hora], hay que completarlo antes de enviar.</li>
+  </ul>
+</section>
+
+<section id="v1.6.12">
+  <h2>SIAN 1.6.12</h2>
+  <p class="fecha">26 de septiembre de 2026</p>
+  <ul class="cambio">
+    <li><span class="para todos">Para todos</span>Mantenimiento interno: los componentes de SIAN se revisan y actualizan una vez al mes. No cambia nada de lo que usted ve ni hace.</li>
+  </ul>
+</section>
+
+<section id="v1.6.11">
+  <h2>SIAN 1.6.11</h2>
+  <p class="fecha">26 de septiembre de 2026</p>
+  <ul class="cambio">
+    <li><span class="para todos">Para todos</span>SIAN abre más rápido y gasta menos datos: después de la primera vez, ya no vuelve a descargar la aplicación completa cada vez que se abre, solo cuando hay una versión nueva.</li>
+  </ul>
+</section>
+
+<section id="v1.6.10">
+  <h2>SIAN 1.6.10</h2>
+  <p class="fecha">25 de septiembre de 2026</p>
+  <ul class="cambio">
+    <li><span class="para todos">Para todos</span>Cuando algo falla en su aparato —por ejemplo, el registro para recibir avisos—, SIAN lo informa al servidor para que se pueda corregir sin esperar a que usted lo note. No se envía su nombre, correo ni ningún dato personal: solo qué falló, el tipo de aparato y la versión.</li>
+    <li><span class="para coordinacion">Coordinación</span>En <strong>Alcance</strong>, un apartado nuevo dice cuántos aparatos reportaron fallos en las últimas 24 horas, de qué tipo y en qué versión.</li>
+  </ul>
+</section>
+
+<section id="v1.6.9">
+  <h2>SIAN 1.6.9</h2>
+  <p class="fecha">25 de septiembre de 2026</p>
+  <ul class="cambio">
+    <li><span class="para todos">Para todos</span>Protección adicional: el servidor empieza a comprobar que cada solicitud sale de la aplicación SIAN y no de otro programa. Por ahora solo lo mide; no cambia nada de lo que usted ve ni hace.</li>
+  </ul>
+</section>
+
+<section id="v1.6.8">
+  <h2>SIAN 1.6.8</h2>
+  <p class="fecha">25 de septiembre de 2026</p>
+  <ul class="cambio">
+    <li><span class="para coordinacion">Coordinación</span>En <strong>Alcance</strong>: botón <strong>Enviar recordatorio</strong> a quien no tiene la última versión, y botón para <strong>retirar</strong> un registro de aparato que ya no se usa (queda en la bitácora).</li>
+    <li><span class="para todos">Para todos</span>Los registros de instalaciones anteriores de un mismo aparato se retiran solos a las dos semanas, en vez de a los dos meses.</li>
+  </ul>
+</section>
+
+<section id="v1.6.7">
+  <h2>SIAN 1.6.7</h2>
+  <p class="fecha">25 de septiembre de 2026</p>
+  <ul class="cambio">
+    <li><span class="para coordinacion">Coordinación</span>Los mensajes admiten <strong>hasta 1000 caracteres</strong> (antes 500).</li>
+    <li><span class="para catedraticos">Catedráticos</span>Si un aviso es largo, la notificación muestra el principio y el aviso completo está en su bandeja.</li>
+  </ul>
+</section>
+
+<section id="v1.6.6">
+  <h2>SIAN 1.6.6</h2>
+  <p class="fecha">25 de septiembre de 2026</p>
+  <ul class="cambio">
+    <li><span class="para coordinacion">Coordinación</span>Nuevo modo de destinatarios, <strong>Personas concretas</strong>: busque por nombre o correo y elija de una a las que necesite. Antes de enviar, la confirmación dice sus nombres.</li>
+  </ul>
+</section>
+
+<section id="v1.6.5">
+  <h2>SIAN 1.6.5</h2>
+  <p class="fecha">25 de septiembre de 2026</p>
+  <ul class="cambio">
+    <li><span class="para todos">Para todos</span>El <strong>manual y estas notas</strong> se ven en modo oscuro si así eligió SIAN o, si no eligió nada, si su teléfono o computadora está en modo oscuro.</li>
+  </ul>
+</section>
+
+<section id="v1.6.4">
+  <h2>SIAN 1.6.4</h2>
+  <p class="fecha">25 de septiembre de 2026</p>
+  <ul class="cambio">
+    <li><span class="para coordinacion">Coordinación</span>Al redactar, la tecla <strong>Tab</strong> recorre los campos en orden: título, mensaje, cuándo enviarlo, adjuntos, tipo, destinatarios, confirmación y Enviar, sin saltar al menú. Lo mismo en usuarios y grupos.</li>
+  </ul>
+</section>
+
+<section id="v1.6.3">
+  <h2>SIAN 1.6.3</h2>
+  <p class="fecha">25 de septiembre de 2026</p>
+  <ul class="cambio">
+    <li><span class="para catedraticos">Catedráticos</span>Botón <strong>Guardar</strong> en la imagen ampliada de un aviso. En iPhone abre el menú Compartir: elija <strong>«Guardar imagen»</strong>.</li>
+  </ul>
+</section>
+
+<section id="v1.6.2">
+  <h2>SIAN 1.6.2</h2>
+  <p class="fecha">25 de septiembre de 2026</p>
+  <ul class="cambio">
+    <li><span class="para catedraticos">Catedráticos</span>Botón <strong>Copiar</strong> en cada aviso: el aviso entero, solo el título o solo el mensaje. El texto también se puede seleccionar.</li>
+    <li><span class="para todos">Para todos</span>Las <strong>direcciones web, correos y teléfonos</strong> de un aviso o de una respuesta se pueden tocar: abren la página, el correo o el marcador.</li>
+  </ul>
+</section>
+
+<section id="v1.6.1">
+  <h2>SIAN 1.6.1</h2>
+  <p class="fecha">25 de septiembre de 2026</p>
+  <ul class="cambio">
+    <li><span class="para correccion">Corrección</span><strong>iPhone:</strong> tocar la notificación de una respuesta también lleva a ella. En la 1.6.0 funcionaba en Android, pero en iPhone la aplicación se abría en «Sin leer».</li>
+  </ul>
+</section>
+
+<section id="v1.6.0">
+  <h2>SIAN 1.6.0</h2>
+  <p class="fecha">25 de septiembre de 2026</p>
+  <ul class="cambio">
+    <li><span class="para correccion">Corrección</span>Al tocar una notificación, SIAN abre <strong>lo que la originó</strong>: el aviso, o la respuesta a un aviso. Antes siempre llevaba a «Sin leer», y si el aviso ya estaba leído no había forma de llegar a la respuesta.</li>
+    <li><span class="para catedraticos">Catedráticos</span>El aviso se abre desplegado y <strong>primero en la lista</strong>, esté en el filtro que esté.</li>
+    <li><span class="para coordinacion">Coordinación</span>La notificación de una respuesta abre <strong>la conversación con esa persona</strong>.</li>
+  </ul>
 </section>
 
 <section id="v1.5.13">

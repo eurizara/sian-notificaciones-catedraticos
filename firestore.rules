@@ -236,6 +236,35 @@ service cloud.firestore {
     // (RF-ADM-01..03).
     // ---------------------------------------------------------------------
 
+    // ---------------------------------------------------------------------
+    // plantillas/{plantillaId} (RF-MSG-14, desde 1.6.13)
+    // Textos de avisos frecuentes, compartidos entre quienes emiten. No son
+    // avisos: no llegan a nadie hasta que alguien los usa, los revisa y los
+    // envía, y el envío pasa por su propia validación en el servidor. Por eso
+    // se escriben desde el cliente, con los mismos límites que un aviso.
+    // ---------------------------------------------------------------------
+
+    function plantillaValida() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['nombre', 'titulo', 'cuerpo', 'urgente',
+                               'requiereConfirmacion', 'creadaPor', 'actualizadaEn'])
+        && d.keys().hasAll(['nombre', 'titulo', 'cuerpo', 'creadaPor', 'actualizadaEn'])
+        && d.nombre is string && d.nombre.size() >= 1 && d.nombre.size() <= 60
+        && d.titulo is string && d.titulo.size() <= 80
+        && d.cuerpo is string && d.cuerpo.size() <= 1000
+        && d.get('urgente', false) is bool
+        && d.get('requiereConfirmacion', false) is bool
+        && d.actualizadaEn == request.time;
+    }
+
+    match /plantillas/{plantillaId} {
+      allow read, delete: if esEmisor();
+      allow create: if esEmisor() && plantillaValida()
+        && request.resource.data.creadaPor == request.auth.uid;
+      allow update: if esEmisor() && plantillaValida()
+        && request.resource.data.creadaPor == resource.data.creadaPor;
+    }
+
     match /configuracion/{doc} {
       allow read: if activo();
       allow write: if false;

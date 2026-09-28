@@ -31,9 +31,10 @@ import type { DocumentReference } from 'firebase-admin/firestore';
 import { getMessaging, type TokenMessage } from 'firebase-admin/messaging';
 
 import {
-  resolverDestinatarios,
   type CandidatoDestinatario,
   type GrupoResuelto,
+  personasElegibles,
+  resolverDestinatarios,
 } from '../application/resolverDestinatarios';
 import { LARGO_DE_ACUSE, armarSeña, cabecerasDeEnvio } from '../domain/acuse';
 import {
@@ -44,10 +45,14 @@ import { actorSistema, crearAsiento } from '../domain/bitacora';
 import { esIdentificadorDeInstalacion, esTokenMuerto } from '../domain/dispositivo';
 import { exigirPermiso, type Sujeto } from '../domain/autorizacion';
 import { ErrorAutorizacion, ErrorDominio, esDocumentoYaExistente } from '../domain/errores';
-import { MensajeFactory, type Mensaje } from '../domain/mensaje';
+import {
+  type Mensaje,
+  MensajeFactory,
+  resumenParaNotificacion,
+} from '../domain/mensaje';
 import { normalizarAdjuntos } from '../domain/tipos';
 import type { Adjuntos, Destinatarios, Rol, TipoMensaje } from '../domain/tipos';
-import { FieldValue, OPCIONES_FUNCION, RUTAS, aTimestamp, db } from '../infrastructure/firebase';
+import { FieldValue, OPCIONES_LLAMABLE, RUTAS, aTimestamp, db } from '../infrastructure/firebase';
 import { escribirAsiento, escribirAsientos, nombreDe } from '../infrastructure/repositorios';
 import { versionMasAlta } from '../domain/version';
 
@@ -130,7 +135,7 @@ async function leerPadron(
  * la única oportunidad de detectar que el grupo elegido no era el que se creía.
  * Después ya no hay vuelta atrás: RN-03 lo impide.
  */
-export const contarDestinatarios = onCall(OPCIONES_FUNCION, async (peticion) => {
+export const contarDestinatarios = onCall(OPCIONES_LLAMABLE, async (peticion) => {
   const sujeto = sujetoDe(peticion);
 
   try {
@@ -161,13 +166,44 @@ export const contarDestinatarios = onCall(OPCIONES_FUNCION, async (peticion) => 
 });
 
 /**
+ * Las personas que se pueden elegir en un envío individual (U-6, RF-USR-06).
+ *
+ * Por función y no leyendo `usuarios` desde la app: las reglas solo dejan leer
+ * la lista a coordinación y auditoría, y la administradora también redacta.
+ * Abrir las reglas le daría el perfil entero de todos; esto le da solo nombre y
+ * correo de quien puede recibir, con el mismo permiso que redactar.
+ */
+export const personasDestinatarias = onCall(OPCIONES_LLAMABLE, async (peticion) => {
+  const sujeto = sujetoDe(peticion);
+  try {
+    exigirPermiso(sujeto, 'CREAR_AVISO_INFORMATIVO');
+    const instantanea = await db.collection(RUTAS.usuarios).get();
+    return {
+      personas: personasElegibles(
+        instantanea.docs.map((d) => ({
+          uid: d.id,
+          nombre: (d.get('nombre') as string | undefined) ?? '',
+          correo: (d.get('correo') as string | undefined) ?? '',
+          activo: d.get('activo') === true,
+          rol: (d.get('rol') as Rol | undefined) ?? 'CATEDRATICO',
+          recibeAvisos: d.get('recibeAvisos') as boolean | undefined,
+        })),
+        sujeto.uid,
+      ),
+    };
+  } catch (e) {
+    throw traducirError(e);
+  }
+});
+
+/**
  * Redacta, despacha y deja constancia, en una sola llamada.
  *
  * No se parte en «crear» y «enviar» a propósito: un mensaje creado y no
  * despachado por un fallo intermedio es exactamente el estado ambiguo que
  * RN-03 quiere evitar. Aquí, o hay mensaje con entregas, o no hay nada.
  */
-export const enviarInmediato = onCall(OPCIONES_FUNCION, async (peticion) => {
+export const enviarInmediato = onCall(OPCIONES_LLAMABLE, async (peticion) => {
   const sujeto = sujetoDe(peticion);
   const datos = peticion.data as PeticionEnvio;
   const correo = (peticion.auth?.token.email as string | undefined) ?? '';
@@ -401,7 +437,9 @@ async function despachar(
   const carga: Record<string, string> = {
     tipo: mensaje.tipo,
     titulo: mensaje.titulo,
-    cuerpo: mensaje.cuerpo,
+    // Un resumen: el texto completo, hasta 1000 caracteres, se lee en la
+    // bandeja.
+    cuerpo: resumenParaNotificacion(mensaje.cuerpo),
     mensajeId,
     // Para que la notificación pueda decir «lleva nota de voz» sin abrir nada.
     formato: mensaje.formato.join(','),

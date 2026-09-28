@@ -5,9 +5,9 @@ académico y a personal administrativo autorizado emitir notificaciones informat
 urgentes (texto, voz e imagen), programarlas, repetirlas con un patrón definido y llevar
 trazabilidad completa con confirmación de lectura.
 
-> **Estado:** Fase 1 **en producción** desde el 26 de agosto de 2026. Iteraciones 1.1
-> a 1.4 construidas, rondas de prueba 1 a 5 superadas y ambiente de calidad certificado
-> ([plan](docs/08-plan-iteraciones.md)).
+> **Estado:** Fase 1 **en producción** desde el 26 de agosto de 2026. Los tres ambientes
+> van en **1.6.17**, la iteración de mejoras de uso, liberada el 28/09/2026
+> ([plan](docs/08-plan-iteraciones.md), [evolución](docs/12-plan-evolucion-1.6-2.x.md)).
 >
 > | Ambiente | Aplicación | Manuales |
 > |---|---|---|
@@ -28,15 +28,19 @@ un catedrático y los servicios de Google.
 |---|---|---|
 | **Interfaz** | Flutter 3.44 · Dart 3.12, compilado a web | Una sola base de código para celular y computadora, instalable sin pasar por App Store ni Play Store |
 | **Estado** | Riverpod 3 | Inyección de dependencias: es lo que permite probar cada pantalla sin levantar Firebase |
-| **Servidor** | Cloud Functions v2 · Node 22 · TypeScript 5.9 | Todo lo que no puede confiarse al navegador. **25 funciones desplegadas** |
+| **Servidor** | Cloud Functions v2 · Node 22 · TypeScript 5.9 | Todo lo que no puede confiarse al navegador. **28 funciones desplegadas** |
 | **Base de datos** | Cloud Firestore, modo Native — **NoSQL documental** | Lectura directa desde el navegador con reglas por documento, y bandeja que se actualiza sola |
 | **Identidad** | Firebase Authentication + *custom claims* | El rol viaja firmado dentro del token, no se consulta a la base al decidir permisos |
-| **Notificaciones** | Firebase Cloud Messaging | El aviso que suena con la aplicación cerrada |
+| **Notificaciones** | Web Push directo con llaves VAPID propias, y Firebase Cloud Messaging de respaldo | El aviso que suena con la aplicación cerrada. La llave privada vive en Secret Manager |
+| **Protección** | App Check con reCAPTCHA Enterprise (en observación) | Comprobar que las llamadas salen de la aplicación |
 | **Archivos** | Cloud Storage | Notas de voz e imágenes |
-| **Planificador** | Cloud Scheduler, cada minuto | Mensajes programados y recurrentes |
+| **Planificador** | Cloud Scheduler: el despachador cada minuto y la sonda de canal cada día | Mensajes programados y recurrentes; aparatos que dejaron de ser alcanzables |
 
-El navegador **lee** de Firestore directamente, pero **nunca escribe**: toda escritura
-pasa por una Cloud Function, y las reglas lo hacen literal con `allow write: if false`.
+El navegador **lee** de Firestore directamente, y **todo lo que tiene valor probatorio o
+decide permisos** —avisos, entregas, confirmaciones, roles, bitácora— se escribe solo desde
+una Cloud Function: las reglas lo hacen literal con `allow write: if false`. Las dos
+excepciones son deliberadas y acotadas por las reglas: los campos no privilegiados del propio
+perfil y las plantillas de avisos (1.6.13), que no llegan a nadie hasta que alguien las envía.
 
 ### Por qué aparecen Python y Shell
 
@@ -93,14 +97,17 @@ solo se verifica desplegando a `dev` (documento 06, etapa D.5).
 | — | **Manuales de usuario publicados** | En línea |
 | 1.5 | Web Push directo con llaves VAPID propias, canal que se repara solo, guía de Android y versiones en Alcance (1.5.5–1.5.11) | En producción |
 | — | **Notas de la versión dentro de los manuales** | En producción |
-| 2.x | Pruebas con catedráticos voluntarios | Siguiente |
+| 1.5 | Alcance distingue reinstalaciones (1.5.12); Node.js 22, respaldos de Firestore y presupuestos (1.5.13) | En producción |
+| 1.6 | Tocar una notificación abre lo que la originó; copiar, enlaces y guardar imágenes; tabulador; manual en modo oscuro; envío a personas; mensajes de 1000 caracteres; mejoras de Alcance; App Check; reporte de fallos del aparato; carga más ligera; dependencias mensuales; plantillas; respuestas en «Sin leer»; listas plegables (1.6.0–1.6.17) | En producción |
+| 2.0 | Varias sedes, una persona en más de una ([ADR-009](docs/adr/ADR-009-multisede.md)) | Aprobada, sin empezar |
+| 2.1 · 2.2 | Repositorio de archivos por carpetas y grupos ([ADR-010](docs/adr/ADR-010-repositorio-archivos.md)) | Aprobada, sin empezar |
 
-**Versión:** 1.5.11 en producción y QA (liberada el 13/09/2026); 1.5.12 en desarrollo. La aplicación enseña su versión en el pie y avisa cuando hay una más reciente.
+**Versión:** 1.6.17 en los tres ambientes (liberada a producción el 28/09/2026). La aplicación enseña su versión en el pie y avisa cuando hay una más reciente.
 Qué trae cada una, para quien usa SIAN, está en las **notas de la versión**
 (`/manuales/notas/`); el detalle técnico y el esquema, en el documento 08.
 
-**Pruebas hoy:** 469 de widget · 367 de dominio y Cloud Functions · 38 de reglas · 27 del
-service worker, todas verificadas contra el emulador. Los cuatro trabajos de integración
+**Pruebas hoy:** 564 de la aplicación · 431 de dominio y Cloud Functions · 45 de reglas · 38
+del service worker, todas verificadas contra el emulador. Los cuatro trabajos de integración
 continua corren en cada solicitud de incorporación.
 
 ---
@@ -120,7 +127,7 @@ continua corren en cada solicitud de incorporación.
 | 09 | [Guion de pruebas](docs/09-guion-de-pruebas.md) | Qué probar en cada ronda, paso a paso, con su alcance y lo que queda fuera |
 | 10 | [Especificación de casos de uso](docs/10-casos-de-uso.md) | Los doce casos de uso en formato extendido ISO/IEC/IEEE 29148: actores, precondiciones, garantías, flujos principales, alternativos y de excepción, y trazabilidad a requisitos |
 | 11 | [Ambientes](docs/11-ambientes.md) | Los tres ambientes: proyectos, URL, quién tiene acceso, configuración por ambiente, costo real medido y cómo se promueve un cambio |
-| 12 | [Plan de evolución 1.6 · 2.0 · 2.1](docs/12-plan-evolucion-1.6-2.x.md) | **Propuesta en análisis:** mejoras de uso, varias sedes, repositorio de archivos, y lo urgente (Node.js 22 antes del 30/10/2026) |
+| 12 | [Plan de evolución 1.6 · 2.0 · 2.1](docs/12-plan-evolucion-1.6-2.x.md) | **Aprobado el 23/09/2026.** 1.5.13 y 1.6 en producción; siguen varias sedes (2.0) y el repositorio de archivos (2.1 · 2.2) |
 
 ---
 
@@ -133,7 +140,7 @@ continua corren en cada solicitud de incorporación.
 | Canal de distribución | **PWA vía Firebase Hosting**, sin tiendas de aplicaciones | Requisito explícito: cero publicación en Google Play / App Store |
 | Plan de Firebase | **Blaze** (pago por uso) | Obligatorio para Cloud Functions, Cloud Storage y Cloud Scheduler. A esta escala el consumo real proyectado se mantiene dentro de las cuotas gratuitas incluidas |
 | Mensaje de voz | **Grabación del emisor** subida a Cloud Storage | Sin dependencia de costo variable de Text-to-Speech |
-| Programación de envíos | **1 job de Cloud Scheduler por ambiente** que consume una cola en Firestore | Cloud Scheduler regala 3 jobs por cuenta de facturación: dev + qa + prod = 3 = exactamente la cuota gratuita |
+| Programación de envíos | **1 job de Cloud Scheduler por ambiente** que consume una cola en Firestore | Mantiene el costo casi en cero. Con la sonda de canal son dos por ambiente y la cuenta pasa la cuota gratuita de 3: es de lo poco que cuesta (documento 11, «Costo») |
 
 Ver el detalle y las alternativas descartadas en
 [docs/02-arquitectura-y-diseno.md](docs/02-arquitectura-y-diseno.md).
@@ -156,6 +163,6 @@ Por eso se exige, sin excepción:
 
 ## Licencia y branding
 
-Repositorio público. El branding institucional (logotipos, nombre y colores de la
-universidad) lo proporciona el propietario del proyecto y se integra en la fase de
-prototipo. Mientras tanto se usan marcadores de posición neutros.
+Repositorio público. El branding institucional (escudo, nombre y colores de la universidad)
+lo proporciona el propietario del proyecto y está aplicado en la aplicación, los iconos y los
+manuales.

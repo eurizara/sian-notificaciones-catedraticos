@@ -32,7 +32,7 @@ import type {
   Rol,
   TipoMensaje,
 } from '../domain/tipos';
-import { FieldValue, OPCIONES_FUNCION, RUTAS, aTimestamp, db } from '../infrastructure/firebase';
+import { FieldValue, OPCIONES_LLAMABLE, RUTAS, aTimestamp, db } from '../infrastructure/firebase';
 import { escribirAsiento, nombreDe } from '../infrastructure/repositorios';
 
 const ZONA_INSTITUCIONAL = 'America/Guatemala';
@@ -63,7 +63,7 @@ function sujetoDe(peticion: {
  *
  * No escribe nada: es un cálculo puro expuesto por la red.
  */
-export const vistaPreviaOcurrencias = onCall(OPCIONES_FUNCION, async (peticion) => {
+export const vistaPreviaOcurrencias = onCall(OPCIONES_LLAMABLE, async (peticion) => {
   const sujeto = sujetoDe(peticion);
 
   try {
@@ -114,7 +114,7 @@ interface PeticionProgramar {
  * salir. Separarlo así es lo que permite suspender, reanudar y cancelar sin
  * tocar el mensaje, y lo que hace que un reinicio no pierda nada.
  */
-export const programarMensaje = onCall(OPCIONES_FUNCION, async (peticion) => {
+export const programarMensaje = onCall(OPCIONES_LLAMABLE, async (peticion) => {
   const sujeto = sujetoDe(peticion);
   const datos = peticion.data as PeticionProgramar;
   const correo = (peticion.auth?.token.email as string | undefined) ?? '';
@@ -265,7 +265,7 @@ export const programarMensaje = onCall(OPCIONES_FUNCION, async (peticion) => {
  * para siempre. La segunda es irreversible, así que la interfaz la pide dos
  * veces y aquí se comprueba el estado antes de tocar nada.
  */
-export const cambiarProgramacion = onCall(OPCIONES_FUNCION, async (peticion) => {
+export const cambiarProgramacion = onCall(OPCIONES_LLAMABLE, async (peticion) => {
   const sujeto = sujetoDe(peticion);
   const correo = (peticion.auth?.token.email as string | undefined) ?? '';
   const { mensajeId, accion } = peticion.data as {
