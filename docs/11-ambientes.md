@@ -261,6 +261,17 @@ Firestore no hace respaldos al momento: el primero sale en la fecha del programa
   3. Leer de esa base lo que haga falta y copiarlo a `(default)` con un guion revisado.
   4. Borrar la base temporal al terminar: mientras exista, se paga su almacenamiento.
 
+**Probado el 10/10/2026 en desarrollo.** Se restauró el respaldo semanal del 04/10
+(02:22 UTC) en `restauracion-20261010`: la operación tardó unos 15 minutos y terminó sin
+error. `scripts/comparar-restauracion.py` lo comparó con `(default)`: los **1 578 documentos**
+de 13 colecciones que existían al respaldarse estaban todos, e idénticos —usuarios,
+dispositivos, grupos, mensajes, ocurrencias, entregas, hilos, turnos, invitaciones, bitácora,
+plantillas y cola—. La base temporal se borró al terminar. Para repetirlo:
+
+```
+python3 scripts/comparar-restauracion.py sian-umg-bdm-dev restauracion-AAAAMMDD 2026-10-04T02:22
+```
+
 **App Check (desde 1.6.9, DT-33).** Comprueba que una llamada a las funciones sale de la
 aplicación y no de un guion con la configuración pública del proyecto. Va en **dos pasos**, y
 el segundo no se da hasta que el primero lo justifique.
