@@ -558,6 +558,33 @@ export function reemplazadosPorOtro(
   return retirar;
 }
 
+/**
+ * Lo que la sonda diaria deja en el registro al terminar.
+ *
+ * `quedan` descuenta los tres motivos de retiro. Hasta el 10/10/2026 olvidaba
+ * los reemplazados: el 03/10 la sonda de producción retiró uno y dijo «quedan
+ * 29» con 28 aparatos. Un registro que miente en una cuenta tan simple hace
+ * dudar de todos los demás.
+ */
+export function resumenDeSonda(
+  revisados: number,
+  retiros: { porMuerto: number; porReemplazo: number; porInactividad: number },
+): {
+  revisados: number;
+  retiradosPorMuerto: number;
+  retiradosPorReemplazo: number;
+  retiradosPorInactividad: number;
+  quedan: number;
+} {
+  return {
+    revisados,
+    retiradosPorMuerto: retiros.porMuerto,
+    retiradosPorReemplazo: retiros.porReemplazo,
+    retiradosPorInactividad: retiros.porInactividad,
+    quedan: revisados - retiros.porMuerto - retiros.porReemplazo - retiros.porInactividad,
+  };
+}
+
 // --- Validación de tokens en memoria (1.6, Alcance) --------------------------
 
 /** Cuánto vale lo que FCM dijo de un token antes de volver a preguntar. */
