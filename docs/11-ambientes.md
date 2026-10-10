@@ -231,6 +231,13 @@ desactivado), el flujo deja la rama lista, con la CI ya lanzada, y abre un **iss
 enlace para crear el pull request con un clic. Activarlo es decisión del responsable: da a
 los flujos permiso para abrir pull requests, no para fusionarlos.
 
+**Si el pull request mensual queda «bloqueado» con la CI en verde** (pasó en octubre de
+2026): la corrida que dispara el propio pull request quedó esperando aprobación, porque
+GitHub trata al bot de Actions como colaborador nuevo. Se desbloquea en el pull request con
+*Approve and run workflows*. Para que no vuelva a pasar: *Settings → Actions → General →
+Approval for running fork pull request workflows* → «Require approval for first-time
+contributors who are new to GitHub».
+
 Dependabot se queda solo con las acciones de GitHub: en npm y pub no había abierto nada
 desde que se configuró, y dos mecanismos para lo mismo acaban en pull requests duplicados.
 

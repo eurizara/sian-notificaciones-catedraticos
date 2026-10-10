@@ -55,6 +55,7 @@ import {
   esTokenMuerto,
   GRAVEDAD_DE_CANAL,
   reemplazadosPorOtro,
+  resumenDeSonda,
   tokensPorValidar,
 } from '../domain/dispositivo';
 import { resumirVersiones, versionMasAlta } from '../domain/version';
@@ -335,13 +336,14 @@ export const sondaDeCanal = onSchedule(
       }
     }
 
-    logger.info('Sonda de canal completada', {
-      revisados: dispositivos.length,
-      retiradosPorMuerto: porMuerto,
-      retiradosPorReemplazo: porReemplazado,
-      retiradosPorInactividad: porInactivo,
-      quedan: dispositivos.length - porMuerto - porInactivo,
-    });
+    logger.info(
+      'Sonda de canal completada',
+      resumenDeSonda(dispositivos.length, {
+        porMuerto,
+        porReemplazo: porReemplazado,
+        porInactividad: porInactivo,
+      }),
+    );
   },
 );
 
