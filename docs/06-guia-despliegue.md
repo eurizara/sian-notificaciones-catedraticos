@@ -551,6 +551,12 @@ están protegidas: no se fusiona nada si alguno falla.
 | Búsqueda de secretos (RNF-10, RES-10) | Que no haya claves ni contraseñas en el repositorio |
 | Aplicación Flutter | `flutter analyze` sin una sola advertencia y `flutter test` |
 
+Los cuatro corren **en paralelo**, cada uno en su propia máquina Linux (`ubuntu-latest`). Un
+quinto trabajo, **Resumen de la integración**, los espera con `needs: [functions, reglas,
+secretos, flutter]`: solo corre si los cuatro pasaron, y deja en la página de la corrida una
+tabla con el resultado de cada uno y su nivel de prueba. Si alguno falla, el resumen aparece
+como *skipped*. No es obligatorio para fusionar: los cuatro de arriba ya lo son.
+
 ### F.2 Despliegue continuo: `.github/workflows/deploy.yml`
 
 Se dispara con cada cambio que entra a una de las tres ramas, y también a mano desde
