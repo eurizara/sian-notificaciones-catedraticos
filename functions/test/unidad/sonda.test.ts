@@ -18,6 +18,7 @@ import {
   estadoDeCanal,
   GRAVEDAD_DE_CANAL,
   reemplazadosPorOtro,
+  resumenDeSonda,
   tokensPorValidar,
 } from '../../src/domain/dispositivo';
 
@@ -414,3 +415,21 @@ describe('tokensPorValidar · Alcance no vuelve a preguntar lo que acaba de preg
   });
 });
 
+describe('resumen de la sonda', () => {
+  it('lo que queda descuenta TODOS los retiros, también los reemplazados', () => {
+    // El 03/10/2026 la sonda de producción retiró 1 por reemplazo y dijo
+    // «quedan 29» con 28 aparatos: el resumen no contaba ese motivo.
+    expect(
+      resumenDeSonda(29, { porMuerto: 0, porReemplazo: 1, porInactividad: 0 }),
+    ).toEqual({
+      revisados: 29,
+      retiradosPorMuerto: 0,
+      retiradosPorReemplazo: 1,
+      retiradosPorInactividad: 0,
+      quedan: 28,
+    });
+    expect(
+      resumenDeSonda(10, { porMuerto: 2, porReemplazo: 3, porInactividad: 1 }).quedan,
+    ).toBe(4);
+  });
+});

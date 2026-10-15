@@ -183,3 +183,39 @@ jobs:
         if: steps.comprobar.outputs.existe == 'true'
         run: flutter test --coverage
         working-directory: app
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # El único trabajo que ESPERA a otros (`needs`).
+  # ──────────────────────────────────────────────────────────────────────────
+  #
+  # Los cuatro controles de arriba corren en paralelo, cada uno en su propia
+  # máquina: no dependen entre sí y así la integración tarda lo que el más
+  # lento, no la suma. Este espera a los cuatro y solo corre si todos pasaron.
+  # Si uno falla, aparece como «skipped» (omitido): es la forma en que GitHub
+  # dice «no llegué a correr porque algo de lo que dependía falló».
+  #
+  # Deja en la página de la corrida un resumen legible del resultado. Se
+  # añadió el 14/10/2026 para las demostraciones de la cátedra, donde hacía
+  # falta enseñar dependencias entre trabajos; no es un control obligatorio
+  # más: los cuatro de arriba ya lo son.
+  resumen:
+    name: Resumen de la integración
+    needs: [functions, reglas, secretos, flutter]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Escribir el resumen de la corrida
+        run: |
+          {
+            echo "## Integración continua: los cuatro controles pasaron"
+            echo
+            echo "| Control | Nivel de prueba | Resultado |"
+            echo "|---|---|---|"
+            echo "| Dominio y Cloud Functions | Unidad | ${{ needs.functions.result }} |"
+            echo "| Reglas de seguridad (RNF-08) | Integración (emulador de Firestore) | ${{ needs.reglas.result }} |"
+            echo "| Búsqueda de secretos | Análisis estático | ${{ needs.secretos.result }} |"
+            echo "| Aplicación Flutter | Unidad y componentes de la interfaz | ${{ needs.flutter.result }} |"
+            echo
+            echo "Rama: \`${{ github.ref_name }}\` · evento: \`${{ github.event_name }}\` · commit: \`${{ github.sha }}\`"
+            echo
+            echo "Las pruebas de **sistema** corren después, en el flujo *Despliegue*, sobre el ambiente ya publicado."
+          } >> "$GITHUB_STEP_SUMMARY"

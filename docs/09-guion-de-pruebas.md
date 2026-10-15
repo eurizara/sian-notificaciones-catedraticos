@@ -782,7 +782,7 @@ Solo en un ambiente donde ya se dio de alta la clave (documento 11, «App Check�
 | N-2 | Mandar un aviso a un iPhone y a un Android con la app en 1.5.13 | Llega por Web Push directo en segundos, igual que antes: el cifrado cambió de Node, no de comportamiento |
 | N-3 | Responder un aviso y ver Alcance | Funcionan igual |
 | N-4 | `python3 scripts/configurar-respaldos.py <proyecto> --revisar` | Todo «ya está» |
-| N-5 | Después del primer domingo, restaurar un respaldo de desarrollo en una base nueva (documento 11) | Los documentos de la base restaurada coinciden con los de ese día. Borrar la base temporal al terminar |
+| N-5 | Después del primer domingo, restaurar un respaldo de desarrollo en una base nueva (documento 11) | Los documentos de la base restaurada coinciden con los de ese día. Borrar la base temporal al terminar. **Hecho el 10/10/2026: 1 578 de 1 578 idénticos** |
 
 ## Probar la versión a la vista
 

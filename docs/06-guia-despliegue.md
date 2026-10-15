@@ -408,6 +408,10 @@ firebase emulators:exec --only firestore "npm --prefix functions run test:rules"
 
 ## Etapa E — Despliegue a desarrollo y demostración funcionando
 
+> **Despliegue a mano.** Así se hizo en la fase 1. Hoy cada fusión en `develop` despliega
+> sola en desarrollo (etapa F), así que esto queda para el primer despliegue de un proyecto
+> nuevo o para una emergencia en la que GitHub Actions no esté disponible.
+
 ### E.1 Compilar la aplicación web
 
 ```bash
@@ -527,54 +531,74 @@ Recorre esta lista en un teléfono real, no en el emulador del navegador:
 
 ---
 
-## Etapa F — Ambientes de QA y producción
+## Etapa F — Integración y despliegue continuos en los tres ambientes
 
-### F.1 Integración y despliegue continuos
+> **Por qué antes decía solo QA y producción.** En la fase 1, desarrollo se desplegaba a
+> mano con la etapa E y GitHub Actions solo automatizaba `qa` y `main`. Después se
+> automatizó también `develop`, y desde entonces **los tres ambientes se despliegan solos**.
+> La etapa E queda para el primer despliegue de un proyecto nuevo o para una emergencia.
 
-`.github/workflows/deploy.yml` — esquema:
+### F.1 Integración continua: `.github/workflows/ci.yml`
 
-```yaml
-name: Despliegue
-on:
-  push:
-    branches: [qa, main]
+Corre en cada pull request contra `develop`, `qa` o `main`, en cada cambio a esas ramas y
+cuando la lanza el flujo mensual de dependencias. Son cuatro trabajos, y las tres ramas
+están protegidas: no se fusiona nada si alguno falla.
 
-jobs:
-  qa:
-    if: github.ref == 'refs/heads/qa'
-    runs-on: ubuntu-latest
-    environment: qa
-    steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with: { flutter-version: '3.24.x' }
-      - run: cd app && flutter pub get && flutter analyze && flutter test
-      - run: cd app && flutter build web --release
-          --dart-define=FIREBASE_VAPID_KEY=${{ secrets.QA_VAPID_KEY }}
-      - uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.QA_SERVICE_ACCOUNT }}
-          projectId: ${{ vars.QA_PROJECT_ID }}
-          channelId: live
+| Trabajo | Qué comprueba |
+|---|---|
+| Dominio y Cloud Functions | Analizador estático, compilación de TypeScript, pruebas con cobertura y `npm audit` de lo que se despliega |
+| Reglas de seguridad (RNF-08) | Las pruebas de `firestore.rules` contra el emulador |
+| Búsqueda de secretos (RNF-10, RES-10) | Que no haya claves ni contraseñas en el repositorio |
+| Aplicación Flutter | `flutter analyze` sin una sola advertencia y `flutter test` |
 
-  produccion:
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    environment: produccion      # con aprobación manual obligatoria
-    steps: [ ... equivalente, apuntando a ${{ vars.PROD_PROJECT_ID }} ... ]
-```
+Los cuatro corren **en paralelo**, cada uno en su propia máquina Linux (`ubuntu-latest`). Un
+quinto trabajo, **Resumen de la integración**, los espera con `needs: [functions, reglas,
+secretos, flutter]`: solo corre si los cuatro pasaron, y deja en la página de la corrida una
+tabla con el resultado de cada uno y su nivel de prueba. Si alguno falla, el resumen aparece
+como *skipped*. No es obligatorio para fusionar: los cuatro de arriba ya lo son.
 
-En GitHub → Settings → Environments, crea el ambiente `produccion` y marca **Required
-reviewers** con tu usuario. Así ningún despliegue a producción ocurre sin tu aprobación
-explícita.
+### F.2 Despliegue continuo: `.github/workflows/deploy.yml`
 
-> **El esquema de arriba es el de la fase 1.** El flujo real, con los tres ambientes, es
-> `.github/workflows/deploy.yml`: además compila con las claves públicas por ambiente
-> (VAPID propia y App Check), sella la versión (`scripts/sellar-version.sh`) y pone la huella
-> de contenido al paquete (`scripts/huella-paquete.sh`, 1.6.11).
+Se dispara con cada cambio que entra a una de las tres ramas, y también a mano desde
+*Actions → Despliegue → Run workflow*. Cada rama tiene su trabajo, su ambiente de GitHub
+y su proyecto de Firebase:
 
-### F.2 Secretos y variables que debes cargar en GitHub
+| Rama | Trabajo | Proyecto | ¿Pide aprobación? |
+|---|---|---|---|
+| `develop` | `desarrollo` | `vars.DEV_PROJECT_ID` (sian-umg-bdm-dev) | No |
+| `qa` | `qa` | `vars.QA_PROJECT_ID` (sian-umg-bdm-qa) | No |
+| `main` | `produccion` | `vars.PROD_PROJECT_ID` (sian-umg-bdm) | **Sí**: el ambiente `produccion` exige que el responsable pulse *Review deployments → Approve and deploy* |
+
+Los tres trabajos hacen lo mismo, cada uno con sus claves y su proyecto:
+
+  1. Compilar y probar las Functions.
+  2. Generar `firebase_options.dart` del ambiente y construir la PWA con sus claves
+     públicas: VAPID de FCM (secreto), VAPID propia y App Check (variable).
+  3. Desplegar reglas de Firestore y Storage, índices y Functions, y **verificar que están
+     todas**: una vez desplegaron 18 de 19 y el trabajo terminó en verde.
+  4. Avisar si el archivo de bloqueo de Flutter cambió al compilar (DT-25).
+  5. Teñir los iconos con el ambiente (`scripts/tenir-iconos-ambiente.py`; producción no
+     cambia).
+  6. Sellar la versión en `version.json` (`scripts/sellar-version.sh`).
+  7. Poner la huella de contenido al paquete (`scripts/huella-paquete.sh`, 1.6.11).
+  8. Desplegar Hosting y **comprobar que lo publicado es este commit**, leyendo
+     `version.json` del sitio.
+
+La rama dice a dónde va el código; el orden lo pone el flujo `develop → qa → main`, con un
+pull request en cada paso (documento 11, sección 8).
+
+En GitHub → Settings → Environments, el ambiente `produccion` lleva **Required reviewers**
+con el usuario responsable. Así ningún despliegue a producción ocurre sin su aprobación
+explícita, ni siquiera relanzando uno viejo.
+
+### F.3 Mantenimiento automático
+
+- `.github/workflows/actualizar-dependencias.yml`: el día 1 de cada mes sube menores y
+  parches, abre un pull request contra `develop` y lanza la integración continua
+  (documento 11, «Actualizar dependencias»).
+- `.github/dependabot.yml`: las versiones de las propias acciones de GitHub, una vez al mes.
+
+### F.4 Secretos y variables que debes cargar en GitHub
 
 | Secreto | De dónde sale |
 |---------|---------------|
@@ -594,7 +618,7 @@ La llave VAPID **propia** (DT-23) no está en GitHub: la pública va en `deploy.
 Nunca los pegues en un archivo del repositorio, ni siquiera temporalmente: el historial de
 git conserva todo.
 
-### F.3 Antes de habilitar producción
+### F.5 Antes de habilitar producción
 
 - [x] Hay alerta de presupuesto sobre la cuenta de facturación, que cubre los tres ambientes
 - [x] Existen exactamente 3 jobs de Cloud Scheduler en total
