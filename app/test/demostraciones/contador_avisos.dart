@@ -13,6 +13,8 @@ class ContadorAvisos extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text('$cantidad avisos sin leer');
+    return Text(
+      cantidad == 1 ? '1 aviso sin leer' : '$cantidad avisos sin leer',
+    );
   }
 }
