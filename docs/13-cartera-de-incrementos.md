@@ -41,7 +41,7 @@ repositorio (2.1), para no migrar los datos dos veces.
 |---|---|---|---|---|---|---|---|---|
 | 1 | MNT-11 | Actualización mensual de dependencias de noviembre | Mantenimiento | Media | En dev | 1.6.19 | #217 | 2026-11-02 |
 | 2 | DEM-1 | Demostraciones de CI/CD para la cátedra | CI/CD | Media | En dev | 1.6.19 | #214, #215, #216 | 2026-11-02 |
-| 3 | DOC-13 | Esta cartera de incrementos | Documentación | Alta | En desarrollo | 1.6.19 | este PR | 2026-11-02 |
+| 3 | DOC-13 | Esta cartera de incrementos | Documentación | Alta | En dev | 1.6.19 | #218 | 2026-11-02 |
 | 4 | DT-35 | Tocar la notificación de una respuesta no la abre en iPhone | Corrección | Media | Aprobada | — | — | 2026-11-02 |
 | 5 | S-4 | Exigir App Check en las funciones | Seguridad | Media | Bloqueada | — | — | 2026-11-02 |
 | 6 | DT-13 | La política de contraseñas se aplica solo en el cliente | Seguridad | Media | Propuesta | — | — | 2026-11-02 |
@@ -107,7 +107,7 @@ repositorio (2.1), para no migrar los datos dos veces.
 
 ### DOC-13 · Esta cartera de incrementos
 
-- **Estado:** En desarrollo · **Prioridad:** Alta · **Origen:** responsable, 2026-11-02
+- **Estado:** En dev (PR #218) · **Prioridad:** Alta · **Origen:** responsable, 2026-11-02
 - **Problema:** las propuestas estaban repartidas en los documentos 07, 08 y 12, con estados
   que ya no eran ciertos (varias decían «hecho en desarrollo» estando en producción).
 - **Propuesta:** una sola lista con formato estándar, estados fijos y fichas con criterios
@@ -119,7 +119,7 @@ repositorio (2.1), para no migrar los datos dos veces.
 - **Pruebas:** no aplica (solo documentación); la CI completa en verde.
 - **Accesibilidad y usabilidad:** no aplica.
 - **Documentos tocados:** 13 (nuevo), README, 08, 12.
-- **Historial:** 2026-11-02 Aprobada · 2026-11-02 En desarrollo
+- **Historial:** 2026-11-02 Aprobada · 2026-11-02 En dev
 
 ### DT-35 · Tocar la notificación de una respuesta no la abre en iPhone
 
