@@ -323,6 +323,7 @@ las 23:48—; desarrollo en **1.5.12**.
 | 1.6.16 | **Pantallas más cortas en Respuestas y Alcance** (pedido del responsable el 26/09/2026). **Respuestas** muestra 10 conversaciones a la vez, con «Ver más», como Entregas; se cuentan conversaciones y no avisos, y un aviso con más de las que caben se muestra en parte (`primerasConversaciones`). En **Alcance**, la lista de quién no recibiría un aviso y la de quién tiene una versión anterior arrancan **plegadas** bajo un encabezado con su número («Ver a las N personas…»); el resumen y el botón «Enviar recordatorio» siguen a la vista |
 | 1.6.17 | **El desplazamiento de Respuestas se trababa; más listas plegables** (26/09/2026). La causa, la misma que en la bandeja en agosto (2acf262): `TarjetaNotificaciones` —que Respuestas muestra a quien no recibe avisos— vivía **dentro** de la lista; al volver a la cima se recreaba, cambiaba de alto y atrapaba la vista. Sale de la lista, con una prueba que lo exige. Además: en **Respuestas** cada aviso es plegable con quién respondió dentro (abierto solo si hay algo sin leer), y en **Alcance** también se pliega el detalle de los fallos de aparatos. Todos los desplegables llevan **clave de página**: sin ella, uno abierto volvía plegado al salir y regresar a la pantalla, cambiaba de alto y reproducía el mismo atasco (hay prueba, y se comprobó que falla sin la clave). Y el contenido lleva su propia clave: el texto seleccionable del detalle de un fallo guardaba su posición en el mismo sitio que el «abierto» del desplegable y rompía al desplegar |
 | 1.6.18 | **Mantenimiento de octubre.** (a) Segunda actualización mensual (PR #206): menores y parches de funciones y raíz, entre ellos el cliente de Firestore del servidor 9.2 → 9.3 y `google-gax` 6.7 → 6.10; la aplicación no tenía nada que subir. El flujo ya abrió el PR solo, pero su CI quedó esperando aprobación: GitHub trata al bot de Actions como colaborador nuevo (ver documento 11). (b) El resumen de la sonda diaria no descontaba los registros retirados por reemplazo: el 03/10 producción retiró uno y dijo «quedan 29» con 28. Ahora sale de `resumenDeSonda`, con prueba. Comprobado de paso: la primera sonda de producción (29/09) retiró exactamente los 3 registros previstos |
+| 1.6.19 | **Mantenimiento de noviembre.** (a) Tercera actualización mensual (PR #217): menores y parches de la aplicación (`pubspec.lock`), de las funciones y de la raíz; su CI volvió a quedar esperando aprobación y se aprobó por API. (b) Las tres demostraciones de CI/CD de la cátedra (PR #214, #215 y #216): una prueba de unidad (`functions/test/unidad/demostraciones/`), la colección `demostraciones` de solo lectura con dos pruebas de reglas, y una prueba de widget (`app/test/demostraciones/`); ninguna toca la aplicación. (c) Cartera de incrementos, documento 13 (PR #218), y dos reglas de gobierno nuevas. Las versiones mayores pendientes quedan registradas como MNT-M en la cartera |
 
 **Dónde se ve.** En el pie de la bandeja y del panel; cuando hay una más reciente, una
 tarjeta arriba con el botón de actualizar. Y en **Alcance**, la versión de cada persona:
@@ -484,6 +485,9 @@ aprobado el 23/09.
 
 ### Cartera de mejoras candidatas
 
+> **Desde el 02/11/2026 el estado y el orden de cada mejora se llevan en el
+> [documento 13](13-cartera-de-incrementos.md).** Esta tabla se conserva como origen.
+
 | Prioridad | Mejora | Origen |
 |:---:|--------|--------|
 | 1 | Redundancia por correo para mensajes urgentes | DT-03 |
@@ -504,6 +508,10 @@ aprobado el 23/09.
 3. Toda deuda técnica nueva se registra en el documento 07 en el mismo pull request.
 4. La documentación se actualiza en el mismo commit que el código que la afecta, nunca
    después.
+5. Toda propuesta se registra en la cartera (documento 13) antes de implementarse, y su
+   estado se actualiza en el mismo pull request que la cambia.
+6. Cada incremento corre la batería completa de pruebas (regresión) y llega con las pruebas
+   que cubren lo nuevo; si aparece algo que la integración continua no revisa, se agrega.
 
 ---
 
