@@ -484,6 +484,9 @@ aprobado el 23/09.
 
 ### Cartera de mejoras candidatas
 
+> **Desde el 02/11/2026 el estado y el orden de cada mejora se llevan en el
+> [documento 13](13-cartera-de-incrementos.md).** Esta tabla se conserva como origen.
+
 | Prioridad | Mejora | Origen |
 |:---:|--------|--------|
 | 1 | Redundancia por correo para mensajes urgentes | DT-03 |
@@ -504,6 +507,10 @@ aprobado el 23/09.
 3. Toda deuda técnica nueva se registra en el documento 07 en el mismo pull request.
 4. La documentación se actualiza en el mismo commit que el código que la afecta, nunca
    después.
+5. Toda propuesta se registra en la cartera (documento 13) antes de implementarse, y su
+   estado se actualiza en el mismo pull request que la cambia.
+6. Cada incremento corre la batería completa de pruebas (regresión) y llega con las pruebas
+   que cubren lo nuevo; si aparece algo que la integración continua no revisa, se agrega.
 
 ---
 

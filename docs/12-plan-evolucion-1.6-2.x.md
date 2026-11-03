@@ -5,6 +5,10 @@ sección 10. **1.5.13 en producción** desde el 24/09 y **1.6** (1.6.0 a 1.6.17)
 tras pasar por calidad el 27/09. Siguen 2.0 (sedes) y 2.1/2.2 (repositorio), sin empezar. Escrito sobre
 lo que había en `develop` (1.5.12), `qa` y `main` (1.5.11) el 23/09.
 
+> **El estado vigente de cada punto se lleva en el [documento 13](13-cartera-de-incrementos.md)**
+> desde el 02/11/2026. Las marcas «hecho en desarrollo» de este documento son del momento en que
+> se escribió: todo lo de la 1.6 está en producción desde el 28/09/2026.
+
 **Qué es este documento.** Recoge lo que pidió el responsable del proyecto el 23/09/2026 y
 lo que se encontró al revisar el código para pedirlo. Para cada punto explica qué hay hoy, qué
 se propone, cómo hacerlo sin romper lo que ya funciona, cómo se prueba y en qué orden va.
