@@ -128,6 +128,7 @@ continua corren en cada solicitud de incorporación.
 | 10 | [Especificación de casos de uso](docs/10-casos-de-uso.md) | Los doce casos de uso en formato extendido ISO/IEC/IEEE 29148: actores, precondiciones, garantías, flujos principales, alternativos y de excepción, y trazabilidad a requisitos |
 | 11 | [Ambientes](docs/11-ambientes.md) | Los tres ambientes: proyectos, URL, quién tiene acceso, configuración por ambiente, costo real medido y cómo se promueve un cambio |
 | 12 | [Plan de evolución 1.6 · 2.0 · 2.1](docs/12-plan-evolucion-1.6-2.x.md) | **Aprobado el 23/09/2026.** 1.5.13 y 1.6 en producción; siguen varias sedes (2.0) y el repositorio de archivos (2.1 · 2.2) |
+| 13 | [Cartera de incrementos](docs/13-cartera-de-incrementos.md) | La única lista de lo pendiente, en el orden en que se pide, con el estado de cada punto (propuesta, aprobada, en dev, en QA, en producción) y sus criterios de aceptación |
 
 ---
 

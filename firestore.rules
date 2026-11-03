@@ -270,6 +270,12 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Demostración 2 (CI/CD): avisos fijos que la aplicación solo muestra.
+    match /demostraciones/{id} {
+      allow read: if activo();
+      allow write: if false;
+    }
+
     // ---------------------------------------------------------------------
     // Cierre por omisión: todo lo no contemplado arriba queda denegado.
     // ---------------------------------------------------------------------

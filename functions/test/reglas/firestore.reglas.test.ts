@@ -121,6 +121,7 @@ beforeEach(async () => {
     });
     await setDoc(doc(db, 'invitaciones', 'nuevo@umg.edu.gt'), { rolAsignado: 'CATEDRATICO' });
     await setDoc(doc(db, 'configuracion', 'institucional'), { zonaHoraria: 'America/Guatemala' });
+    await setDoc(doc(db, 'demostraciones', 'd-1'), { texto: 'Aviso fijo' });
   });
 });
 
@@ -613,5 +614,17 @@ describe('Token sin rol', () => {
     await assertFails(getDoc(doc(db, 'bitacora', 'b-1')));
     await assertFails(getDoc(doc(db, 'grupos', 'g-1')));
     await assertFails(getDoc(doc(db, 'mensajes', 'm-1')));
+  });
+});
+
+describe('Demostración 2 · colección de solo lectura', () => {
+  it('cualquier persona activa la puede leer', async () => {
+    const db = contexto(UID.catedratico, 'CATEDRATICO');
+    await assertSucceeds(getDoc(doc(db, 'demostraciones', 'd-1')));
+  });
+
+  it('nadie la puede escribir desde la aplicación', async () => {
+    const db = contexto(UID.catedratico, 'CATEDRATICO');
+    await assertFails(setDoc(doc(db, 'demostraciones', 'd-2'), { texto: 'Inventado' }));
   });
 });
