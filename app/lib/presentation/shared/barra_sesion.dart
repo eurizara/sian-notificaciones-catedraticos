@@ -8,6 +8,8 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/proveedores_catalogos.dart';
+import '../../application/proveedores_sede.dart';
 import '../../application/proveedores_sesion.dart';
 import '../../core/version.dart';
 import '../../core/plataforma/manual.dart';
@@ -55,6 +57,10 @@ class BarraSesion extends ConsumerWidget implements PreferredSizeWidget {
     // el rol se escribían oscuro sobre oscuro.
     final Color sobreBarra =
         tema.appBarTheme.foregroundColor ?? tema.colorScheme.onSurface;
+    // La sede de trabajo se decide aquí, que está en toda pantalla con sesión:
+    // así cada llamada al servidor la lleva desde el primer momento (2.0).
+    final String sede = ref.watch(sedeDeTrabajoProvider);
+    final bool variasSedes = usuario.sedes.length > 1;
 
     return AppBar(
       title: Row(
@@ -94,7 +100,12 @@ class BarraSesion extends ConsumerWidget implements PreferredSizeWidget {
                     ),
                   ),
                   Text(
-                    usuario.rol.etiqueta,
+                    // Con varias sedes, el rol depende de la sede: se dice
+                    // cuál, que es lo primero que se mira si algo no aparece.
+                    variasSedes
+                        ? '${(usuario.sedes[sede] ?? usuario.rol).etiqueta} · '
+                              '${ref.watch(nombreDeSedeProvider(sede)).value ?? sede}'
+                        : usuario.rol.etiqueta,
                     overflow: TextOverflow.ellipsis,
                     style: tema.textTheme.bodySmall?.copyWith(
                       // Sin transparencia: al 85 % sobre el azul daba 4.28:1, por
@@ -131,6 +142,8 @@ class BarraSesion extends ConsumerWidget implements PreferredSizeWidget {
         // nombre accesible, y ese nombre dice dónde se abre: en el navegador,
         // en otra pestaña; instalada, en la misma ventana y con un botón para
         // volver.
+        // RF-SED-04: con una sola sede no se pregunta nada.
+        if (variasSedes) SelectorSede(usuario: usuario, sede: sede),
         IconButton(
           icon: const Icon(Icons.menu_book_outlined),
           tooltip: manualSeAbreEnOtraPestana()
@@ -274,3 +287,38 @@ class MenuCuenta extends ConsumerWidget {
     );
   }
 }
+
+/// Elegir la sede de trabajo (2.0, RF-SED-04). Solo aparece con más de una.
+///
+/// Cambia lo que se ve —grupos, programados, alcance— y desde dónde se envía.
+/// Su nombre accesible dice cuál está elegida, para que un lector de pantalla
+/// no tenga que abrir el menú para saberlo.
+class SelectorSede extends ConsumerWidget {
+  const SelectorSede({required this.usuario, required this.sede, super.key});
+
+  final UsuarioSesion usuario;
+  final String sede;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    String nombre(String id) => ref.watch(nombreDeSedeProvider(id)).value ?? id;
+    final List<String> ids = usuario.sedes.keys.toList()
+      ..sort((String a, String b) => nombre(a).compareTo(nombre(b)));
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.location_city_outlined),
+      tooltip: Textos.sedeDeTrabajo(nombre(sede)),
+      initialValue: sede,
+      onSelected: (String id) =>
+          ref.read(sedeDeTrabajoProvider.notifier).elegir(id),
+      itemBuilder: (BuildContext _) => <PopupMenuEntry<String>>[
+        for (final String id in ids)
+          CheckedPopupMenuItem<String>(
+            value: id,
+            checked: id == sede,
+            child: Text('${nombre(id)} · ${usuario.sedes[id]!.etiqueta}'),
+          ),
+      ],
+    );
+  }
+}
+

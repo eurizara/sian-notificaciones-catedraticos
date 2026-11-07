@@ -8,14 +8,24 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../infrastructure/firebase/repositorio_grupos.dart';
+import 'proveedores_sede.dart';
 
 final Provider<RepositorioGrupos> repositorioGruposProvider =
     Provider<RepositorioGrupos>((Ref ref) => RepositorioGrupos());
 
 /// Todos los grupos, activos e inactivos.
-final gruposProvider = StreamProvider<List<GrupoDetalle>>(
-  (Ref ref) => ref.watch(repositorioGruposProvider).observarGrupos(),
-);
+/// Los grupos de la sede de trabajo (2.0). Los de otra sede no se ofrecen: el
+/// servidor los rechazaría igual (`GRUPO_DE_OTRA_SEDE`).
+final gruposProvider = StreamProvider<List<GrupoDetalle>>((Ref ref) {
+  final String sede = ref.watch(sedeDeTrabajoProvider);
+  return ref
+      .watch(repositorioGruposProvider)
+      .observarGrupos()
+      .map(
+        (List<GrupoDetalle> todos) =>
+            todos.where((GrupoDetalle g) => g.sedeId == sede).toList(),
+      );
+});
 
 /// Solo los elegibles como destinatarios.
 ///

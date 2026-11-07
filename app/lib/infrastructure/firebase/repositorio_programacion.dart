@@ -10,6 +10,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
 import 'repositorio_adjuntos.dart';
+import '../../core/sede_de_trabajo.dart';
 
 /// Unidad del intervalo de una recurrencia (RF-PRG-06).
 enum UnidadIntervalo {
@@ -95,7 +96,11 @@ class MensajeProgramado {
     this.confirmados = 0,
     this.mostrados = 0,
     this.acuseEsperado = false,
+    this.sedeId = 'bdm',
   });
+
+  /// La sede desde la que se envió (2.0). Sin el campo, `bdm`.
+  final String sedeId;
 
   final String id;
   final String titulo;
@@ -324,7 +329,7 @@ class RepositorioProgramacion {
   Future<List<OcurrenciaPrevista>> vistaPrevia(PatronRecurrencia patron) async {
     final HttpsCallableResult<Object?> r = await _fn
         .httpsCallable('vistaPreviaOcurrencias')
-        .call<Object?>(<String, Object?>{'recurrencia': patron.aMapa()});
+        .call<Object?>(conSede(<String, Object?>{'recurrencia': patron.aMapa()}));
 
     final Map<Object?, Object?> d =
         (r.data as Map<Object?, Object?>?) ?? <Object?, Object?>{};
@@ -355,7 +360,7 @@ class RepositorioProgramacion {
   }) async {
     final HttpsCallableResult<Object?> r = await _fn
         .httpsCallable('programarMensaje')
-        .call<Object?>(<String, Object?>{
+        .call<Object?>(conSede(<String, Object?>{
           'titulo': titulo,
           'cuerpo': cuerpo,
           'tipo': urgente ? 'URGENTE' : 'INFORMATIVO',
@@ -376,7 +381,7 @@ class RepositorioProgramacion {
                 for (final AdjuntoSubido a in adjuntos) a.aMapa(),
               ],
             },
-        });
+        }));
 
     final Map<Object?, Object?> d =
         (r.data as Map<Object?, Object?>?) ?? <Object?, Object?>{};
@@ -441,6 +446,7 @@ class RepositorioProgramacion {
 
       return MensajeProgramado(
         id: d.id,
+        sedeId: sedeDelDocumento(x),
         titulo: (x['titulo'] as String?) ?? '',
         tipo: (x['tipo'] as String?) ?? 'INFORMATIVO',
         estado: (x['estado'] as String?) ?? '',

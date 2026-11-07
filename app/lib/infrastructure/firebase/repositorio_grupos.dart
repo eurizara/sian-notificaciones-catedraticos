@@ -13,6 +13,7 @@ library;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import '../../core/sede_de_trabajo.dart';
 
 /// Límites del dominio, duplicados aquí solo para avisar antes de llamar.
 /// La fuente de verdad es el dominio de TypeScript.
@@ -51,8 +52,11 @@ class GrupoDetalle {
     required this.descripcion,
     required this.miembros,
     required this.activo,
+    this.sedeId = 'bdm',
   });
 
+  /// La sede del grupo (2.0). Sin el campo, `bdm`.
+  final String sedeId;
   final String id;
   final String nombre;
   final String descripcion;
@@ -92,6 +96,7 @@ class RepositorioGrupos {
         final Map<String, dynamic> x = d.data();
         return GrupoDetalle(
           id: d.id,
+          sedeId: sedeDelDocumento(x),
           nombre: (x['nombre'] as String?) ?? d.id,
           descripcion: (x['descripcion'] as String?) ?? '',
           miembros:
@@ -124,7 +129,7 @@ class RepositorioGrupos {
   Future<List<Elegible>> elegibles() async {
     final HttpsCallableResult<Object?> r = await _fn
         .httpsCallable('destinatariosElegibles')
-        .call<Object?>();
+        .call<Object?>(conSede());
 
     final Map<Object?, Object?> d =
         (r.data as Map<Object?, Object?>?) ?? <Object?, Object?>{};
@@ -150,12 +155,12 @@ class RepositorioGrupos {
   }) async {
     final HttpsCallableResult<Object?> r = await _fn
         .httpsCallable('guardarGrupo')
-        .call<Object?>(<String, Object?>{
+        .call<Object?>(conSede(<String, Object?>{
           'grupoId': ?grupoId,
           'nombre': nombre,
           'descripcion': descripcion,
           'miembros': miembros,
-        });
+        }));
 
     final Map<Object?, Object?> d =
         (r.data as Map<Object?, Object?>?) ?? <Object?, Object?>{};
@@ -171,8 +176,8 @@ class RepositorioGrupos {
     required String grupoId,
     required bool activo,
   }) async {
-    await _fn.httpsCallable('cambiarEstadoGrupo').call<Object?>(
-      <String, Object?>{'grupoId': grupoId, 'activo': activo},
+    await _fn.httpsCallable('cambiarEstadoGrupo').call<Object?>(conSede(
+      <String, Object?>{'grupoId': grupoId, 'activo': activo}),
     );
   }
 }

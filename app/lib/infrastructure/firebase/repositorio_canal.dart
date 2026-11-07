@@ -10,6 +10,7 @@
 library;
 
 import 'package:cloud_functions/cloud_functions.dart';
+import '../../core/sede_de_trabajo.dart';
 
 /// En qué estado está el canal de una persona.
 ///
@@ -341,15 +342,15 @@ class RepositorioCanal {
   /// Retira un registro de aparato (1.6). Solo coordinación; queda en la
   /// bitácora. Si el aparato sigue en uso, se registra solo al abrir SIAN.
   Future<void> retirar({required String uid, required String dispositivoId}) =>
-      _fn.httpsCallable('retirarDispositivo').call<Object?>(<String, Object?>{
+      _fn.httpsCallable('retirarDispositivo').call<Object?>(conSede(<String, Object?>{
         'uid': uid,
         'dispositivoId': dispositivoId,
-      });
+      }));
 
   Future<RevisionDeCanal> revisar() async {
     final HttpsCallableResult<Object?> r = await _fn
         .httpsCallable('dispositivosQueNecesitanAtencion')
-        .call<Object?>();
+        .call<Object?>(conSede());
 
     final Map<Object?, Object?> datos =
         (r.data as Map<Object?, Object?>?) ?? <Object?, Object?>{};

@@ -9,6 +9,7 @@ library;
 import 'package:cloud_functions/cloud_functions.dart';
 
 import 'repositorio_adjuntos.dart';
+import '../../core/sede_de_trabajo.dart';
 
 /// A quién va dirigido un mensaje (documento 05, sección 2.4).
 class Destinatarios {
@@ -108,7 +109,7 @@ class RepositorioEnvio {
   Future<List<PersonaDestinataria>> personas() async {
     final HttpsCallableResult<Object?> r = await _fn
         .httpsCallable('personasDestinatarias')
-        .call<Object?>();
+        .call<Object?>(conSede());
     final Map<Object?, Object?> d =
         (r.data as Map<Object?, Object?>?) ?? <Object?, Object?>{};
     return <PersonaDestinataria>[
@@ -125,9 +126,9 @@ class RepositorioEnvio {
   Future<ConteoDestinatarios> contar(Destinatarios destinatarios) async {
     final HttpsCallableResult<Object?> r = await _fn
         .httpsCallable('contarDestinatarios')
-        .call<Object?>(<String, Object?>{
+        .call<Object?>(conSede(<String, Object?>{
           'destinatarios': destinatarios.aMapa(),
-        });
+        }));
 
     final Map<Object?, Object?> d =
         (r.data as Map<Object?, Object?>?) ?? <Object?, Object?>{};
@@ -161,7 +162,7 @@ class RepositorioEnvio {
   }) async {
     final HttpsCallableResult<Object?> r = await _fn
         .httpsCallable('enviarInmediato')
-        .call<Object?>(<String, Object?>{
+        .call<Object?>(conSede(<String, Object?>{
           'titulo': titulo,
           'cuerpo': cuerpo,
           'tipo': urgente ? 'URGENTE' : 'INFORMATIVO',
@@ -177,7 +178,7 @@ class RepositorioEnvio {
                 for (final AdjuntoSubido a in adjuntos) a.aMapa(),
               ],
             },
-        });
+        }));
 
     final Map<Object?, Object?> d =
         (r.data as Map<Object?, Object?>?) ?? <Object?, Object?>{};

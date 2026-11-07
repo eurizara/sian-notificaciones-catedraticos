@@ -9,6 +9,7 @@ library;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import '../../core/sede_de_trabajo.dart';
 
 /// Invitación tal como se muestra en el panel.
 class InvitacionVista {
@@ -220,18 +221,18 @@ class RepositorioAdministracion {
   }) async {
     final HttpsCallableResult<Object?> r = await _fn
         .httpsCallable('crearInvitaciones')
-        .call<Object?>(<String, Object?>{
+        .call<Object?>(conSede(<String, Object?>{
           'correo': correo,
           'rol': rol,
           'nombre': nombre,
-        });
+        }));
     return _interpretarCarga(r.data);
   }
 
   Future<ResultadoCarga> cargarCsv(String csv) async {
     final HttpsCallableResult<Object?> r = await _fn
         .httpsCallable('crearInvitaciones')
-        .call<Object?>(<String, Object?>{'csv': csv});
+        .call<Object?>(conSede(<String, Object?>{'csv': csv}));
     return _interpretarCarga(r.data);
   }
 
@@ -260,24 +261,24 @@ class RepositorioAdministracion {
   }
 
   Future<void> revocarInvitacion(String correo) async {
-    await _fn.httpsCallable('revocarInvitacion').call<Object?>(
-      <String, Object?>{'correo': correo},
+    await _fn.httpsCallable('revocarInvitacion').call<Object?>(conSede(
+      <String, Object?>{'correo': correo}),
     );
   }
 
   Future<void> cambiarRol({required String uid, required String rol}) async {
-    await _fn.httpsCallable('cambiarRol').call<Object?>(<String, Object?>{
+    await _fn.httpsCallable('cambiarRol').call<Object?>(conSede(<String, Object?>{
       'uid': uid,
       'rol': rol,
-    });
+    }));
   }
 
   Future<void> cambiarEstado({
     required String uid,
     required bool activo,
   }) async {
-    await _fn.httpsCallable('cambiarEstadoUsuario').call<Object?>(
-      <String, Object?>{'uid': uid, 'activo': activo},
+    await _fn.httpsCallable('cambiarEstadoUsuario').call<Object?>(conSede(
+      <String, Object?>{'uid': uid, 'activo': activo}),
     );
   }
 
@@ -289,11 +290,11 @@ class RepositorioAdministracion {
   }) async {
     await _fn
         .httpsCallable('cambiarAutorizacionesFinas')
-        .call<Object?>(<String, Object?>{
+        .call<Object?>(conSede(<String, Object?>{
           'uid': uid,
           'puedeEmitirUrgentes': ?puedeEmitirUrgentes,
           'puedeCrearRecurrentes': ?puedeCrearRecurrentes,
           'recibeAvisos': ?recibeAvisos,
-        });
+        }));
   }
 }
