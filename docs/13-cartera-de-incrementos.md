@@ -1,6 +1,6 @@
 # 13 · Cartera de incrementos
 
-**Versión:** 1.2 · 6 de noviembre de 2026
+**Versión:** 1.3 · 6 de noviembre de 2026
 
 **Qué es este documento.** La **única lista** de lo que falta por hacer en SIAN y en qué
 orden se pide. Cada propuesta, del responsable o del equipo, se registra aquí **antes** de
@@ -31,6 +31,9 @@ Los demás documentos explican el detalle y no repiten el estado:
 | Descartada | No se hará; se anota por qué |
 | Bloqueada | Depende de algo externo; se anota de qué |
 
+**Orden aprobado el 06/11/2026:** 1.6.20 DT-35 → 2.0 sedes, facultades y catálogos → 2.1 caja
+chica base → 2.2 caja chica reportes → 2.3 encuestas → 2.4 y 2.5 repositorio.
+
 **Reglas de orden.** Las correcciones van antes que las mejoras. Lo que tiene fecha límite va
 primero. Lo que es base de otras cosas va antes, para no migrar los datos dos veces: sedes y
 facultades (2.0) antes que caja chica, encuestas y repositorio. Lo que maneja dinero se hace
@@ -43,19 +46,20 @@ El razonamiento completo está en el documento 14, sección 6.
 
 La tabla va por grupos y **en el orden recomendado** en el [documento 14, sección 6](14-analisis-facultades-catalogos-caja-chica-encuestas.md#6-orden-recomendado-y-por-qué).
 Cada funcionalidad nueva tiene **su propia fila**, con el requisito del documento 01 como ID.
-Lo marcado «Propuesta» espera la aprobación del responsable; el orden de B y B2 también.
+Lo marcado «Propuesta» espera la aprobación del responsable. El orden de B lo aprobó el
+responsable el 06/11/2026.
 
 ### A. Lo siguiente: correcciones
 
 | Orden | ID | Incremento | Tipo | Prioridad | Estado | Versión | PR | Actualizado |
 |---|---|---|---|---|---|---|---|---|
-| 1 | DT-35 | Tocar la notificación de una respuesta no la abre en iPhone | Corrección | Media | Aprobada | — | — | 2026-11-06 |
+| 1 | DT-35 | Tocar la notificación de una respuesta no la abre en iPhone | Corrección | Media | Aprobada | 1.6.20 | — | 2026-11-06 |
 
 ### B. Funcionalidades nuevas aprobadas el 23/09/2026 y pedidas el 06/11/2026
 
 Origen: los pedidos del responsable del 23/09/2026 (sedes y repositorio, aprobados ese día;
-documento 12) y del 06/11/2026 (facultades, catálogos, caja chica y encuestas, en análisis;
-documento 14). **Ninguna está empezada.**
+documento 12) y del 06/11/2026 (facultades, catálogos, caja chica y encuestas, aprobados ese día con sus diez
+decisiones; documento 14). **Ninguna está empezada.**
 
 **2.0 · Varias sedes, facultades y mantenimiento de catálogos** (una sola migración)
 
@@ -67,128 +71,130 @@ documento 14). **Ninguna está empezada.**
 | 5 | RF-SED-04 | Quien está en más de una sede elige en cuál trabaja; con una sola, no se le pregunta | Funcionalidad | Alta | Aprobada | 2.0 | — | 2026-11-06 |
 | 6 | RF-SED-05 | Nadie ve ni modifica nada de una sede a la que no pertenece | Seguridad | Alta | Aprobada | 2.0 | — | 2026-11-06 |
 | 7 | RF-SED-06 | Rol de administración general: crea sedes y asigna a sus coordinadores | Funcionalidad | Alta | Aprobada | 2.0 | — | 2026-11-06 |
-| 8 | RF-FAC-01 | Cada sede tiene facultades; una persona pertenece a una o varias | Funcionalidad | Alta | Propuesta | 2.0 | — | 2026-11-06 |
-| 9 | RF-FAC-02 | Un aviso puede dirigirse a toda una facultad | Funcionalidad | Alta | Propuesta | 2.0 | — | 2026-11-06 |
-| 10 | RF-FAC-03 | Los grupos pueden pertenecer a una facultad y se filtran por ella | Funcionalidad | Media | Propuesta | 2.0 | — | 2026-11-06 |
-| 11 | RF-FAC-04 | Con una sola facultad o ninguna, no se pregunta ni se muestra | Funcionalidad | Media | Propuesta | 2.0 | — | 2026-11-06 |
-| 12 | RF-FAC-05 | Los reportes se filtran por facultad | Funcionalidad | Media | Propuesta | 2.0 | — | 2026-11-06 |
-| 13 | RF-CAT-01 | Pantalla de mantenimiento por catálogo: buscador, alta, edición, activar/desactivar | Funcionalidad | Alta | Propuesta | 2.0 | — | 2026-11-06 |
-| 14 | RF-CAT-02 | Lo que está en uso no se borra: se desactiva y conserva su nombre | Funcionalidad | Alta | Propuesta | 2.0 | — | 2026-11-06 |
-| 15 | RF-CAT-03 | Sin nombres repetidos en el mismo catálogo y sede | Funcionalidad | Media | Propuesta | 2.0 | — | 2026-11-06 |
-| 16 | RF-CAT-04 | Cada cambio de un catálogo queda en la bitácora | Seguridad | Media | Propuesta | 2.0 | — | 2026-11-06 |
-| 17 | RF-CAT-05 | Cada catálogo lo mantiene solo su rol; los demás solo lo usan | Seguridad | Alta | Propuesta | 2.0 | — | 2026-11-06 |
+| 8 | RF-FAC-01 | Cada sede tiene facultades; una persona pertenece a una o varias | Funcionalidad | Alta | Aprobada | 2.0 | — | 2026-11-06 |
+| 9 | RF-FAC-02 | Un aviso puede dirigirse a toda una facultad | Funcionalidad | Alta | Aprobada | 2.0 | — | 2026-11-06 |
+| 10 | RF-FAC-03 | Los grupos pueden pertenecer a una facultad y se filtran por ella | Funcionalidad | Media | Aprobada | 2.0 | — | 2026-11-06 |
+| 11 | RF-FAC-04 | Con una sola facultad o ninguna, no se pregunta ni se muestra | Funcionalidad | Media | Aprobada | 2.0 | — | 2026-11-06 |
+| 12 | RF-FAC-05 | Los reportes se filtran por facultad | Funcionalidad | Media | Aprobada | 2.0 | — | 2026-11-06 |
+| 13 | RF-CAT-01 | Pantalla de mantenimiento por catálogo: buscador, alta, edición, activar/desactivar | Funcionalidad | Alta | Aprobada | 2.0 | — | 2026-11-06 |
+| 14 | RF-CAT-02 | Lo que está en uso no se borra: se desactiva y conserva su nombre | Funcionalidad | Alta | Aprobada | 2.0 | — | 2026-11-06 |
+| 15 | RF-CAT-03 | Sin nombres repetidos en el mismo catálogo y sede | Funcionalidad | Media | Aprobada | 2.0 | — | 2026-11-06 |
+| 16 | RF-CAT-04 | Cada cambio de un catálogo queda en la bitácora | Seguridad | Media | Aprobada | 2.0 | — | 2026-11-06 |
+| 17 | RF-CAT-05 | Cada catálogo lo mantiene solo su rol; los demás solo lo usan | Seguridad | Alta | Aprobada | 2.0 | — | 2026-11-06 |
 
-**Caja chica, base**
-
-| Orden | ID | Incremento | Tipo | Prioridad | Estado | Versión | PR | Actualizado |
-|---|---|---|---|---|---|---|---|---|
-| 18 | RF-CCH-01 | La coordinación crea la caja de cada sede y facultad y registra su carga inicial | Funcionalidad | Alta | Propuesta | — | — | 2026-11-06 |
-| 19 | RF-CCH-02 | La coordinación asigna uno o varios catedráticos como operadores | Funcionalidad | Alta | Propuesta | — | — | 2026-11-06 |
-| 20 | RF-CCH-03 | Solo los operadores registran entradas y salidas | Seguridad | Alta | Propuesta | — | — | 2026-11-06 |
-| 21 | RF-CCH-04 | Cada movimiento lleva fecha, tipo, monto, observación y quién lo registró | Funcionalidad | Alta | Propuesta | — | — | 2026-11-06 |
-| 22 | RF-CCH-05 | Catálogos de tipos de entrada y de salida (donaciones, aportes, publicidad, pastel, almuerzos, convivios…) | Funcionalidad | Alta | Propuesta | — | — | 2026-11-06 |
-| 23 | RF-CCH-06 | Un aporte de catedrático exige elegir al catedrático y entra al kárdex | Funcionalidad | Alta | Propuesta | — | — | 2026-11-06 |
-| 24 | RF-CCH-07 | Kárdex en orden con el saldo después de cada movimiento | Funcionalidad | Alta | Propuesta | — | — | 2026-11-06 |
-| 25 | RF-CCH-08 | El saldo lo calcula el servidor, en la misma transacción que el movimiento | Seguridad | Alta | Propuesta | — | — | 2026-11-06 |
-| 26 | RF-CCH-09 | Ninguna salida deja el saldo en negativo | Seguridad | Alta | Propuesta | — | — | 2026-11-06 |
-| 27 | RF-CCH-10 | Los movimientos no se editan ni se borran; se corrigen con una anulación | Seguridad | Alta | Propuesta | — | — | 2026-11-06 |
-| 28 | RF-CCH-11 | Todos los catedráticos de la sede y facultad ven solo el saldo; el kárdex, solo los encargados | Funcionalidad | Alta | Propuesta | — | — | 2026-11-06 |
-
-**Caja chica, reportes**
+**2.1 · Caja chica, base**
 
 | Orden | ID | Incremento | Tipo | Prioridad | Estado | Versión | PR | Actualizado |
 |---|---|---|---|---|---|---|---|---|
-| 29 | RF-CCH-12 | Aportes acumulados por catedrático (solo los encargados) | Funcionalidad | Media | Propuesta | — | — | 2026-11-06 |
-| 30 | RF-CCH-13 | Reporte por rango de fechas y totales por tipo | Funcionalidad | Media | Propuesta | — | — | 2026-11-06 |
-| 31 | RF-CCH-14 | Exportar el kárdex a CSV (solo los encargados) | Funcionalidad | Baja | Propuesta | — | — | 2026-11-06 |
-| 32 | RF-CCH-15 | Cada catedrático ve sus propios aportes; solo los encargados ven los de todos | Seguridad | Alta | Propuesta | — | — | 2026-11-06 |
+| 18 | RF-CCH-01 | La coordinación crea la caja de cada sede y facultad y registra su carga inicial | Funcionalidad | Alta | Aprobada | 2.1 | — | 2026-11-06 |
+| 19 | RF-CCH-02 | La coordinación asigna uno o varios catedráticos como operadores | Funcionalidad | Alta | Aprobada | 2.1 | — | 2026-11-06 |
+| 20 | RF-CCH-03 | Solo los operadores registran entradas y salidas | Seguridad | Alta | Aprobada | 2.1 | — | 2026-11-06 |
+| 21 | RF-CCH-04 | Cada movimiento lleva fecha, tipo, monto, observación y quién lo registró | Funcionalidad | Alta | Aprobada | 2.1 | — | 2026-11-06 |
+| 22 | RF-CCH-05 | Catálogos de tipos de entrada y de salida (donaciones, aportes, publicidad, pastel, almuerzos, convivios…) | Funcionalidad | Alta | Aprobada | 2.1 | — | 2026-11-06 |
+| 23 | RF-CCH-06 | Un aporte de catedrático exige elegir al catedrático y entra al kárdex | Funcionalidad | Alta | Aprobada | 2.1 | — | 2026-11-06 |
+| 24 | RF-CCH-07 | Kárdex en orden con el saldo después de cada movimiento | Funcionalidad | Alta | Aprobada | 2.1 | — | 2026-11-06 |
+| 25 | RF-CCH-08 | El saldo lo calcula el servidor, en la misma transacción que el movimiento | Seguridad | Alta | Aprobada | 2.1 | — | 2026-11-06 |
+| 26 | RF-CCH-09 | Ninguna salida deja el saldo en negativo | Seguridad | Alta | Aprobada | 2.1 | — | 2026-11-06 |
+| 27 | RF-CCH-10 | Los movimientos no se editan ni se borran; se corrigen con una anulación | Seguridad | Alta | Aprobada | 2.1 | — | 2026-11-06 |
+| 28 | RF-CCH-11 | Todos los catedráticos de la sede y facultad ven solo el saldo; el kárdex, solo los encargados | Funcionalidad | Alta | Aprobada | 2.1 | — | 2026-11-06 |
+| 29 | RF-CCH-15 | Cada catedrático ve sus propios aportes; solo los encargados ven los de todos | Seguridad | Alta | Aprobada | 2.1 | — | 2026-11-06 |
+| 30 | RF-CCH-16 | Aportes periódicos (cuota con monto y frecuencia), eventuales o de monto libre | Funcionalidad | Alta | Aprobada | 2.1 | — | 2026-11-06 |
 
-**Encuestas**
-
-| Orden | ID | Incremento | Tipo | Prioridad | Estado | Versión | PR | Actualizado |
-|---|---|---|---|---|---|---|---|---|
-| 33 | RF-ENC-01 | Quienes emiten avisos crean encuestas: opción única, múltiple, escala y texto corto | Funcionalidad | Media | Propuesta | — | — | 2026-11-06 |
-| 34 | RF-ENC-02 | Se envían con los mismos destinatarios que un aviso, por notificación | Funcionalidad | Media | Propuesta | — | — | 2026-11-06 |
-| 35 | RF-ENC-03 | Cada persona responde una sola vez, hasta la fecha de cierre | Funcionalidad | Media | Propuesta | — | — | 2026-11-06 |
-| 36 | RF-ENC-04 | Encuestas anónimas: nadie puede saber quién respondió qué | Seguridad | Media | Propuesta | — | — | 2026-11-06 |
-| 37 | RF-ENC-05 | Resultados sumados por pregunta, para quienes emiten avisos | Funcionalidad | Media | Propuesta | — | — | 2026-11-06 |
-| 38 | RF-ENC-06 | Quién respondió y quién no (en las anónimas, solo la participación) | Funcionalidad | Media | Propuesta | — | — | 2026-11-06 |
-| 39 | RF-ENC-07 | Recordatorio a quien no respondió | Funcionalidad | Baja | Propuesta | — | — | 2026-11-06 |
-| 40 | RF-ENC-08 | Exportar los resultados a CSV | Funcionalidad | Baja | Propuesta | — | — | 2026-11-06 |
-
-**Repositorio de archivos: administración** (aprobado como 2.1; el documento 14 propone moverlo después de caja chica y encuestas)
+**2.2 · Caja chica, reportes**
 
 | Orden | ID | Incremento | Tipo | Prioridad | Estado | Versión | PR | Actualizado |
 |---|---|---|---|---|---|---|---|---|
-| 41 | RF-REP-01 | Crear, renombrar y borrar carpetas, hasta dos niveles | Funcionalidad | Media | Aprobada | 2.1 | — | 2026-11-06 |
-| 42 | RF-REP-02 | Subir archivos de tipos permitidos, de hasta 25 MB | Funcionalidad | Media | Aprobada | 2.1 | — | 2026-11-06 |
-| 43 | RF-REP-03 | Cupo de almacenamiento por sede (2 GB) que el servidor no deja superar | Funcionalidad | Media | Aprobada | 2.1 | — | 2026-11-06 |
-| 44 | RF-REP-04 | El acceso a cada carpeta se da por grupos | Funcionalidad | Media | Aprobada | 2.1 | — | 2026-11-06 |
-| 45 | RF-REP-07 | No se aceptan ejecutables ni archivos comprimidos | Seguridad | Media | Aprobada | 2.1 | — | 2026-11-06 |
+| 31 | RF-CCH-12 | Aportes acumulados por catedrático (solo los encargados) | Funcionalidad | Media | Aprobada | 2.2 | — | 2026-11-06 |
+| 32 | RF-CCH-13 | Reporte por rango de fechas y totales por tipo | Funcionalidad | Media | Aprobada | 2.2 | — | 2026-11-06 |
+| 33 | RF-CCH-14 | Exportar el kárdex a CSV (solo los encargados) | Funcionalidad | Baja | Aprobada | 2.2 | — | 2026-11-06 |
+| 34 | RF-CCH-17 | Cuotas periódicas: cada catedrático ve si está al día; los encargados ven quién tiene pendientes | Funcionalidad | Media | Aprobada | 2.2 | — | 2026-11-06 |
 
-**Repositorio de archivos: catedrático** (aprobado como 2.2)
+**2.3 · Encuestas**
 
 | Orden | ID | Incremento | Tipo | Prioridad | Estado | Versión | PR | Actualizado |
 |---|---|---|---|---|---|---|---|---|
-| 46 | RF-REP-05 | El catedrático ve y descarga solo las carpetas de sus grupos | Funcionalidad | Media | Aprobada | 2.2 | — | 2026-11-06 |
-| 47 | RF-REP-06 | Descarga con enlace que caduca a los 10 minutos y queda en la bitácora (cierra DT-04 / S-6) | Seguridad | Media | Aprobada | 2.2 | — | 2026-11-06 |
-| 48 | REP-AV | Aviso automático «hay un archivo nuevo en tu carpeta» (opcional) | Funcionalidad | Baja | Propuesta | 2.2 | — | 2026-11-06 |
+| 35 | RF-ENC-01 | Quienes emiten avisos crean encuestas: opción única, múltiple, escala y texto corto | Funcionalidad | Media | Aprobada | 2.3 | — | 2026-11-06 |
+| 36 | RF-ENC-02 | Se envían con los mismos destinatarios que un aviso, por notificación | Funcionalidad | Media | Aprobada | 2.3 | — | 2026-11-06 |
+| 37 | RF-ENC-03 | Cada persona responde una sola vez, hasta la fecha de cierre | Funcionalidad | Media | Aprobada | 2.3 | — | 2026-11-06 |
+| 38 | RF-ENC-04 | Encuestas anónimas: nadie puede saber quién respondió qué | Seguridad | Media | Aprobada | 2.3 | — | 2026-11-06 |
+| 39 | RF-ENC-05 | Resultados sumados por pregunta, para quienes emiten avisos | Funcionalidad | Media | Aprobada | 2.3 | — | 2026-11-06 |
+| 40 | RF-ENC-06 | Quién respondió y quién no (en las anónimas, solo la participación) | Funcionalidad | Media | Aprobada | 2.3 | — | 2026-11-06 |
+| 41 | RF-ENC-07 | Recordatorio a quien no respondió | Funcionalidad | Baja | Aprobada | 2.3 | — | 2026-11-06 |
+| 42 | RF-ENC-08 | Exportar los resultados a CSV | Funcionalidad | Baja | Aprobada | 2.3 | — | 2026-11-06 |
+
+**2.4 · Repositorio de archivos: administración** (aprobado el 23/09 como 2.1; pasa a 2.4 con el orden aprobado el 06/11)
+
+| Orden | ID | Incremento | Tipo | Prioridad | Estado | Versión | PR | Actualizado |
+|---|---|---|---|---|---|---|---|---|
+| 43 | RF-REP-01 | Crear, renombrar y borrar carpetas, hasta dos niveles | Funcionalidad | Media | Aprobada | 2.4 | — | 2026-11-06 |
+| 44 | RF-REP-02 | Subir archivos de tipos permitidos, de hasta 25 MB | Funcionalidad | Media | Aprobada | 2.4 | — | 2026-11-06 |
+| 45 | RF-REP-03 | Cupo de almacenamiento por sede (2 GB) que el servidor no deja superar | Funcionalidad | Media | Aprobada | 2.4 | — | 2026-11-06 |
+| 46 | RF-REP-04 | El acceso a cada carpeta se da por grupos | Funcionalidad | Media | Aprobada | 2.4 | — | 2026-11-06 |
+| 47 | RF-REP-07 | No se aceptan ejecutables ni archivos comprimidos | Seguridad | Media | Aprobada | 2.4 | — | 2026-11-06 |
+
+**2.5 · Repositorio de archivos: catedrático** (antes 2.2)
+
+| Orden | ID | Incremento | Tipo | Prioridad | Estado | Versión | PR | Actualizado |
+|---|---|---|---|---|---|---|---|---|
+| 48 | RF-REP-05 | El catedrático ve y descarga solo las carpetas de sus grupos | Funcionalidad | Media | Aprobada | 2.5 | — | 2026-11-06 |
+| 49 | RF-REP-06 | Descarga con enlace que caduca a los 10 minutos y queda en la bitácora (cierra DT-04 / S-6) | Seguridad | Media | Aprobada | 2.5 | — | 2026-11-06 |
+| 50 | REP-AV | Aviso automático «hay un archivo nuevo en tu carpeta» (opcional) | Funcionalidad | Baja | Propuesta | 2.5 | — | 2026-11-06 |
 
 ### C. Seguridad y mantenimiento
 
 | Orden | ID | Incremento | Tipo | Prioridad | Estado | Versión | PR | Actualizado |
 |---|---|---|---|---|---|---|---|---|
-| 49 | S-4 | Exigir App Check en las funciones | Seguridad | Media | Bloqueada | — | — | 2026-11-06 |
-| 50 | DT-13 | La política de contraseñas se aplica solo en el cliente | Seguridad | Media | Propuesta | — | — | 2026-11-06 |
-| 51 | DT-12 | Vulnerabilidades moderadas heredadas de `firebase-admin` | Seguridad | Baja | Propuesta | — | — | 2026-11-06 |
-| 52 | MNT-M | Versiones mayores pendientes de dependencias | Mantenimiento | Media | Propuesta | — | — | 2026-11-06 |
-| 53 | DT-11 | La CLI de Firebase queda anclada por JDK 17 | Deuda técnica | Media | Propuesta | — | — | 2026-11-06 |
+| 51 | S-4 | Exigir App Check en las funciones | Seguridad | Media | Bloqueada | — | — | 2026-11-06 |
+| 52 | DT-13 | La política de contraseñas se aplica solo en el cliente | Seguridad | Media | Propuesta | — | — | 2026-11-06 |
+| 53 | DT-12 | Vulnerabilidades moderadas heredadas de `firebase-admin` | Seguridad | Baja | Propuesta | — | — | 2026-11-06 |
+| 54 | MNT-M | Versiones mayores pendientes de dependencias | Mantenimiento | Media | Propuesta | — | — | 2026-11-06 |
+| 55 | DT-11 | La CLI de Firebase queda anclada por JDK 17 | Deuda técnica | Media | Propuesta | — | — | 2026-11-06 |
 
 ### D. Funcionalidades propuestas, sin aprobar
 
 | Orden | ID | Incremento | Tipo | Prioridad | Estado | Versión | PR | Actualizado |
 |---|---|---|---|---|---|---|---|---|
-| 54 | ALC-1 | Alcance muestra a quién no le aparecen los avisos (lo que queda de DT-31) | Funcionalidad | Media | Propuesta | — | — | 2026-11-06 |
-| 55 | RF-CNF-09 | Recordatorio automático a quien no confirma | Funcionalidad | Media | Propuesta | — | — | 2026-11-06 |
-| 56 | DT-03 | Aviso urgente también por correo | Funcionalidad | Media | Propuesta | — | — | 2026-11-06 |
-| 57 | RF-ADM-04 | Tablero de métricas para la coordinación | Funcionalidad | Baja | Propuesta | — | — | 2026-11-06 |
-| 58 | RF-BIT-06 | Exportar la bitácora a CSV | Funcionalidad | Baja | Propuesta | — | — | 2026-11-06 |
-| 59 | RF-AUT-10 | Verificación en dos pasos para la coordinación | Seguridad | Baja | Propuesta | — | — | 2026-11-06 |
-| 60 | RF-BIT-10 | Encadenamiento criptográfico de la bitácora | Seguridad | Baja | Propuesta | — | — | 2026-11-06 |
-| 61 | DT-01 | Distribuir el APK de Android por descarga directa | Funcionalidad | Baja | Propuesta | — | — | 2026-11-06 |
+| 56 | ALC-1 | Alcance muestra a quién no le aparecen los avisos (lo que queda de DT-31) | Funcionalidad | Media | Propuesta | — | — | 2026-11-06 |
+| 57 | RF-CNF-09 | Recordatorio automático a quien no confirma | Funcionalidad | Media | Propuesta | — | — | 2026-11-06 |
+| 58 | DT-03 | Aviso urgente también por correo | Funcionalidad | Media | Propuesta | — | — | 2026-11-06 |
+| 59 | RF-ADM-04 | Tablero de métricas para la coordinación | Funcionalidad | Baja | Propuesta | — | — | 2026-11-06 |
+| 60 | RF-BIT-06 | Exportar la bitácora a CSV | Funcionalidad | Baja | Propuesta | — | — | 2026-11-06 |
+| 61 | RF-AUT-10 | Verificación en dos pasos para la coordinación | Seguridad | Baja | Propuesta | — | — | 2026-11-06 |
+| 62 | RF-BIT-10 | Encadenamiento criptográfico de la bitácora | Seguridad | Baja | Propuesta | — | — | 2026-11-06 |
+| 63 | DT-01 | Distribuir el APK de Android por descarga directa | Funcionalidad | Baja | Propuesta | — | — | 2026-11-06 |
 
 ### E. Deuda técnica menor
 
 | Orden | ID | Incremento | Tipo | Prioridad | Estado | Versión | PR | Actualizado |
 |---|---|---|---|---|---|---|---|---|
-| 62 | DT-30 | Chrome puede marcar los avisos como «posible spam» | Deuda técnica | Media | Propuesta | — | — | 2026-11-06 |
-| 63 | DT-15 | Reparación temporal de la fuente de iconos | Deuda técnica | Baja | Propuesta | — | — | 2026-11-06 |
-| 64 | DT-16 | `Entorno.configuracionCompleta` no se usa | Deuda técnica | Baja | Propuesta | — | — | 2026-11-06 |
+| 64 | DT-30 | Chrome puede marcar los avisos como «posible spam» | Deuda técnica | Media | Propuesta | — | — | 2026-11-06 |
+| 65 | DT-15 | Reparación temporal de la fuente de iconos | Deuda técnica | Baja | Propuesta | — | — | 2026-11-06 |
+| 66 | DT-16 | `Entorno.configuracionCompleta` no se usa | Deuda técnica | Baja | Propuesta | — | — | 2026-11-06 |
 
 ### F. Operación (no es código)
 
 | Orden | ID | Incremento | Tipo | Prioridad | Estado | Versión | PR | Actualizado |
 |---|---|---|---|---|---|---|---|---|
-| 65 | OPS-1 | Personas sin un canal confiable en producción | Operación | Alta | Aprobada | — | — | 2026-11-06 |
-| 66 | OPS-2 | Aparatos con versiones anteriores a 1.6.9 que impiden exigir App Check | Operación | Media | Aprobada | — | — | 2026-11-06 |
-| 67 | OPS-3 | Medir la carga inicial en un iPhone real (S-7) | Operación | Baja | Aprobada | — | — | 2026-11-06 |
-| 68 | OPS-4 | Registrar el estado del despliegue escalonado (3.2), la estabilización (3.3) y el criterio de salida de la fase 3 | Operación | Media | Aprobada | — | — | 2026-11-06 |
+| 67 | OPS-1 | Personas sin un canal confiable en producción | Operación | Alta | Aprobada | — | — | 2026-11-06 |
+| 68 | OPS-2 | Aparatos con versiones anteriores a 1.6.9 que impiden exigir App Check | Operación | Media | Aprobada | — | — | 2026-11-06 |
+| 69 | OPS-3 | Medir la carga inicial en un iPhone real (S-7) | Operación | Baja | Aprobada | — | — | 2026-11-06 |
+| 70 | OPS-4 | Registrar el estado del despliegue escalonado (3.2), la estabilización (3.3) y el criterio de salida de la fase 3 | Operación | Media | Aprobada | — | — | 2026-11-06 |
 
 ### G. Documentación
 
 | Orden | ID | Incremento | Tipo | Prioridad | Estado | Versión | PR | Actualizado |
 |---|---|---|---|---|---|---|---|---|
-| 69 | DOC-07 | Estados viejos en el resumen del documento 07 (DT-07, DT-21, DT-23) | Documentación | Baja | En dev | — | #222 | 2026-11-06 |
-| 70 | DOC-CAT | El guion de la cátedra dice 12 pasos de despliegue y son 15 | Documentación | Baja | Aprobada | — | — | 2026-11-06 |
-| 71 | DOC-14 | Análisis de facultades, catálogos, caja chica y encuestas | Documentación | Alta | En desarrollo | — | #223 | 2026-11-06 |
+| 71 | DOC-07 | Estados viejos en el resumen del documento 07 (DT-07, DT-21, DT-23) | Documentación | Baja | En dev | — | #222 | 2026-11-06 |
+| 72 | DOC-CAT | El guion de la cátedra dice 12 pasos de despliegue y son 15 | Documentación | Baja | Aprobada | — | — | 2026-11-06 |
+| 73 | DOC-14 | Análisis de facultades, catálogos, caja chica y encuestas | Documentación | Alta | En desarrollo | — | #223 | 2026-11-06 |
 
 ### H. Bloqueadas por algo externo
 
 | Orden | ID | Incremento | Tipo | Prioridad | Estado | Versión | PR | Actualizado |
 |---|---|---|---|---|---|---|---|---|
-| 72 | DT-14 | Los correos de la cuenta caen en No deseado (C-4) | Corrección | Media | Bloqueada | — | — | 2026-11-06 |
-| 73 | RES | Canal de respaldo por SMS o WhatsApp | Funcionalidad | Media | Bloqueada | — | — | 2026-11-06 |
-| 74 | DT-02 | Sonido y vibración propios en iPhone | Funcionalidad | Baja | Bloqueada | — | — | 2026-11-06 |
+| 74 | DT-14 | Los correos de la cuenta caen en No deseado (C-4) | Corrección | Media | Bloqueada | — | — | 2026-11-06 |
+| 75 | RES | Canal de respaldo por SMS o WhatsApp | Funcionalidad | Media | Bloqueada | — | — | 2026-11-06 |
+| 76 | DT-02 | Sonido y vibración propios en iPhone | Funcionalidad | Baja | Bloqueada | — | — | 2026-11-06 |
 
 ---
 
@@ -359,7 +365,7 @@ documento 14). **Ninguna está empezada.**
 
 ### 2.0 (ampliación) · Facultades y mantenimiento de catálogos (RF-FAC-01 a 05, RF-CAT-01 a 05)
 
-- **Estado:** Propuesta · **Prioridad:** Alta · **Origen:** responsable, 06/11/2026: «en el manejo de sedes también hay que agregar el manejo de facultades … a todos estos catálogos … hay que crear un [mantenimiento]»
+- **Estado:** Aprobada (2026-11-06), versión 2.0 · **Prioridad:** Alta · **Origen:** responsable, 06/11/2026: «en el manejo de sedes también hay que agregar el manejo de facultades … a todos estos catálogos … hay que crear un [mantenimiento]»
 - **Propuesta:** facultades dentro de la sede, en la **misma migración** de la 2.0; una
   pantalla de mantenimiento común para todos los catálogos. Análisis en el documento 14,
   secciones 2 y 3.
@@ -375,15 +381,15 @@ documento 14). **Ninguna está empezada.**
   - [ ] RF-CAT-04 · Cambios en la bitácora
   - [ ] RF-CAT-05 · Cada catálogo, solo su rol
   - [x] Decisión 3: por ahora solo Ingeniería en Sistemas (2026-11-06)
-  - [ ] Decisión 2: ¿una persona en varias facultades?
+  - [x] Decisión 2: una persona puede estar en varias facultades (2026-11-06)
 - **Pruebas:** reglas por sede y facultad contra el emulador; widget del mantenimiento común;
   migración idempotente; regresión completa.
 - **Accesibilidad y usabilidad:** un solo patrón de mantenimiento para todos (consistencia);
   confirmación antes de desactivar (prevención de errores).
 
-### Caja chica (RF-CCH-01 a 14)
+### Caja chica (RF-CCH-01 a 17)
 
-- **Estado:** Propuesta · **Prioridad:** Alta · **Origen:** responsable, 06/11/2026
+- **Estado:** Aprobada (2026-11-06): base 2.1, reportes 2.2 · **Prioridad:** Alta · **Origen:** responsable, 06/11/2026
 - **Propuesta:** cajas por sede con operadores, catálogos de tipos, carga inicial, kárdex con
   saldo y anulaciones en lugar de ediciones. El saldo lo calcula el servidor en transacción.
   En dos entregas: base (01 a 11) y reportes (12 a 14). Análisis en el documento 14, sección 4.
@@ -404,7 +410,9 @@ documento 14). **Ninguna está empezada.**
   - [ ] RF-CCH-14 · Exportar el kárdex a CSV (solo encargados)
   - [ ] RF-CCH-15 · Cada catedrático ve sus aportes; los encargados, todos
   - [x] Decisiones 4, 5, 6 y 8: una caja por sede y facultad; catedráticos solo ven el saldo; cada uno sus aportes; sin foto de comprobante (2026-11-06)
-  - [ ] Decisiones 7 y 9: cuotas y aprobación de salidas grandes
+  - [ ] RF-CCH-16 · Aportes periódicos, eventuales o de monto libre
+  - [ ] RF-CCH-17 · Cuotas periódicas al día o pendientes
+  - [x] Decisiones 7 y 9: aportes periódicos, eventuales y libres; sin aprobación de una segunda persona (2026-11-06)
 - **Pruebas:** dominio (saldo, anulación, negativo, tipos que exigen catedrático), reglas
   (nadie escribe movimientos desde el cliente), concurrencia (dos movimientos a la vez),
   regresión completa.
@@ -413,7 +421,7 @@ documento 14). **Ninguna está empezada.**
 
 ### Encuestas (RF-ENC-01 a 08)
 
-- **Estado:** Propuesta · **Prioridad:** Media · **Origen:** responsable, 06/11/2026
+- **Estado:** Aprobada (2026-11-06), versión 2.3 · **Prioridad:** Media · **Origen:** responsable, 06/11/2026
 - **Propuesta:** reutilizar el envío, la entrega y el Alcance de los avisos; respuestas
   anónimas separadas de la participación. Análisis en el documento 14, sección 5.
 - **Criterios de aceptación:**
@@ -431,9 +439,9 @@ documento 14). **Ninguna está empezada.**
 - **Accesibilidad y usabilidad:** preguntas navegables con el tabulador; progreso visible;
   guardar antes de enviar.
 
-### 2.1 · Repositorio de archivos: administración (RF-REP-01 a 04 y 07)
+### 2.4 · Repositorio de archivos: administración (RF-REP-01 a 04 y 07)
 
-- **Estado:** Aprobada (2026-09-23), sin empezar; va después de 2.0 · **Prioridad:** Media · **Origen:** responsable, 23/09/2026: carpetas, archivos con límite de tamaño y acceso por grupos, «validar si esto es posible en firebase … y que no dispare costos»
+- **Estado:** Aprobada (2026-09-23), sin empezar; versión 2.4 por el orden aprobado el 06/11 · **Prioridad:** Media · **Origen:** responsable, 23/09/2026: carpetas, archivos con límite de tamaño y acceso por grupos, «validar si esto es posible en firebase … y que no dispare costos»
 - **Costo (comprobado el 23/09):** cabe en la cuota gratuita de Storage en `us-central1`
   (5 GB guardados, 100 GB de descarga al mes). Hoy los adjuntos ocupan 1,5 MB.
 - **Propuesta:** `sedes/{s}/carpetas/{c}` y sus `archivos/{a}`; el archivo en
@@ -451,7 +459,7 @@ documento 14). **Ninguna está empezada.**
   que digan qué pasó y qué hacer.
 - **Documentos tocados:** 01, 02, 05, 09, 10, ADR-010, manual de coordinación.
 
-### 2.2 · Repositorio de archivos: catedrático (RF-REP-05 y 06, REP-AV)
+### 2.5 · Repositorio de archivos: catedrático (RF-REP-05 y 06, REP-AV)
 
 - **Estado:** Aprobada (2026-09-23), sin empezar · **Prioridad:** Media · **Origen:** responsable, 23/09/2026: «luego se agregará al catedrático esta opción … para que descargue los archivos si tiene acceso»
 - **Propuesta:** una sección **Archivos** con solo sus carpetas. La descarga la entrega una
@@ -590,8 +598,8 @@ documento 14). **Ninguna está empezada.**
   - [x] Documento 14 con lo pedido, modelo, riesgos, decisiones y orden recomendado
   - [x] Requisitos propuestos en el documento 01, sección 3.10
   - [x] Una fila por requisito en esta cartera
-  - [x] Seis de las diez decisiones resueltas (2026-11-06, PR de decisiones)
-  - [ ] El responsable aprueba el orden (decisión 1) y las decisiones 2, 7 y 9
+  - [x] Seis de las diez decisiones resueltas (2026-11-06, PR #224)
+  - [x] Orden aprobado y las cuatro decisiones restantes resueltas (2026-11-06)
 
 ### DT-14 · Los correos de la cuenta caen en No deseado (C-4)
 
