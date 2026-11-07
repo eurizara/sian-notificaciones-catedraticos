@@ -262,12 +262,12 @@ decisiones; documento 14). **Ninguna está empezada.**
   PWA de iOS (la página puede estar congelada o restaurarse sin cargar) y llevar a la
   respuesta sin importar el filtro del aviso.
 - **Criterios de aceptación:**
-  - [ ] En iPhone, tocar la notificación de una respuesta abre esa conversación
+  - [x] En iPhone, tocar la notificación de una respuesta abre esa conversación (probado por el responsable en desarrollo, 1.6.20, 2026-11-07)
   - [ ] Funciona con la aplicación cerrada, en segundo plano y abierta
   - [ ] Android sigue funcionando igual (regresión)
   - [x] Causa probable encontrada y corregida: la app leía el destino antes de que el worker lo guardara (1.6.20)
   - [x] Prueba de widget que reproduce la carrera y falla sin la corrección
-  - [ ] Reportes `apertura` revisados en Alcance tras probar en iPhone (C6-7)
+  - [x] Reportes `apertura` revisados en Alcance tras probar en iPhone (C6-7): ninguno del iPhone; el destino se encontró a la primera (2026-11-07)
 - **Pruebas:** prueba de widget de la apertura y prueba del service worker (`npm run test:sw`);
   prueba manual en iPhone según el guion C6 del documento 09.
 - **Accesibilidad y usabilidad:** heurística de Nielsen «estado visible del sistema»: la

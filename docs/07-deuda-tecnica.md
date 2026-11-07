@@ -2522,7 +2522,12 @@ queda confirmada como causa. Si el iPhone sigue cayendo en la bandeja **sin ning
 reporte**, el worker no llegó a guardar, y el siguiente paso es reportar desde el propio
 worker.
 
-**Pendiente:** que el responsable lo pruebe en su iPhone (guion C6 del documento 09, con la
-fila C6-7 nueva).
+**Probado el 07/11/2026** por el responsable en su iPhone, en desarrollo: tocar la
+notificación de una respuesta **lleva a esa respuesta**. En Alcance no apareció ningún
+reporte `apertura` de su aparato (solo el de la prueba de humo): en esas pruebas el destino
+se encontró a la primera, así que **no quedó demostrado** que la carrera fuera la causa en
+cada caso, aunque la corrección la cubre. El diagnóstico sigue activo en producción: si un
+iPhone necesita los reintentos, aparecerá ahí y se anota en esta ficha. La ficha se cierra
+como pagada cuando funcione también en producción.
 
 
