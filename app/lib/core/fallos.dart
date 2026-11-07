@@ -38,7 +38,8 @@ enum TipoDeFallo {
   worker('worker'),
   notificacion('notificacion'),
   appCheck('app-check'),
-  noControlado('no-controlado');
+  noControlado('no-controlado'),
+  apertura('apertura');
 
   const TipoDeFallo(this.clave);
 

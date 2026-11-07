@@ -21,9 +21,12 @@
 /// atiende después de entrar.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/fallos.dart';
 import '../../core/plataforma/apertura.dart';
 
 enum TipoApertura {
@@ -119,6 +122,14 @@ aperturaPendienteProvider =
 ///
 /// Va en la raíz, una sola vez: el aviso puede llegar en cualquier pantalla, y
 /// la que sabe atenderlo lo recoge del proveedor.
+/// Cuánto dura, en total, la búsqueda del destino tras volver al frente.
+abstract final class EscuchaDeAperturasReintentos {
+  static Duration get total => _EscuchaDeAperturasState.esperasDeReintento.fold(
+    Duration.zero,
+    (Duration a, Duration b) => a + b,
+  );
+}
+
 class EscuchaDeAperturas extends ConsumerStatefulWidget {
   const EscuchaDeAperturas({required this.child, super.key});
 
@@ -141,19 +152,42 @@ class _EscuchaDeAperturasState extends ConsumerState<EscuchaDeAperturas>
   DateTime? _ultimoEn;
   static const Duration _ventanaDeRepetidos = Duration(seconds: 10);
 
+  /// Cuándo se vuelve a mirar el almacén si el destino no estaba (DT-35, 1.6.20).
+  ///
+  /// En iPhone, tocar la notificación trae la app al frente **y a la vez**
+  /// despierta al worker. La app leía el almacén una sola vez, en cuanto volvía
+  /// al frente; si el worker todavía no había guardado, lo encontraba vacío. Y
+  /// si además el mensaje se perdía porque la app estaba congelada, no quedaba
+  /// ningún camino: la app se quedaba en la bandeja. Android no lo sufre porque
+  /// allí el mensaje sí llega. Unos segundos de reintentos cubren esa carrera;
+  /// leer un almacén vacío no cuesta nada.
+  @visibleForTesting
+  static const List<Duration> esperasDeReintento = <Duration>[
+    Duration(milliseconds: 300),
+    Duration(milliseconds: 700),
+    Duration(milliseconds: 1500),
+    Duration(seconds: 3),
+  ];
+  final List<Timer> _reintentos = <Timer>[];
+  DateTime _buscandoDesde = DateTime.now();
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     // Se lee ya, para que el destino con que arrancó quede fijado aunque la
-    // sesión tarde en cargar.
+    // sesión tarde en cargar. Con reintentos: si la notificación abrió la app
+    // desde cero, el worker puede estar guardando todavía.
     ref.read(aperturaPendienteProvider);
-    _recoger();
-    escucharAperturas((Map<String, String> datos) => _recoger(datos));
+    _buscar();
+    escucharAperturas(
+      (Map<String, String> datos) => _recoger(delMensaje: datos),
+    );
   }
 
   @override
   void dispose() {
+    _cancelarReintentos();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -162,16 +196,44 @@ class _EscuchaDeAperturasState extends ConsumerState<EscuchaDeAperturas>
   /// la trae al frente: aquí se recoge lo que el worker guardó.
   @override
   void didChangeAppLifecycleState(AppLifecycleState estado) {
-    if (estado == AppLifecycleState.resumed) {
-      _recoger();
+    switch (estado) {
+      case AppLifecycleState.resumed:
+        _buscar();
+      case AppLifecycleState.paused:
+      case AppLifecycleState.hidden:
+      case AppLifecycleState.detached:
+        _cancelarReintentos();
+      case AppLifecycleState.inactive:
+        break;
     }
+  }
+
+  /// Mira el almacén ahora y, si el destino no está, otra vez en cada
+  /// [esperasDeReintento]. Para en cuanto fija un destino.
+  void _buscar() {
+    _cancelarReintentos();
+    _buscandoDesde = DateTime.now();
+    _recoger();
+    Duration acumulada = Duration.zero;
+    for (int i = 0; i < esperasDeReintento.length; i++) {
+      acumulada += esperasDeReintento[i];
+      final int intento = i + 1;
+      _reintentos.add(Timer(acumulada, () => _recoger(intento: intento)));
+    }
+  }
+
+  void _cancelarReintentos() {
+    for (final Timer t in _reintentos) {
+      t.cancel();
+    }
+    _reintentos.clear();
   }
 
   /// Toma el destino guardado por el worker; si no hay, usa el del mensaje.
   ///
   /// El guardado va primero porque es el que se borra al leerlo: así, cuando
   /// llegan los dos caminos, se abre una sola vez.
-  void _recoger([Map<String, String>? delMensaje]) {
+  void _recoger({Map<String, String>? delMensaje, int intento = 0}) {
     _enCurso = _enCurso.then((_) async {
       final Map<String, String>? guardado = await tomarAperturaGuardada();
       final DestinoApertura? destino =
@@ -180,6 +242,7 @@ class _EscuchaDeAperturasState extends ConsumerState<EscuchaDeAperturas>
       if (destino == null || !mounted) {
         return;
       }
+      _cancelarReintentos();
       final DateTime ahora = DateTime.now();
       final DateTime? antes = _ultimoEn;
       if (destino == _ultimo &&
@@ -189,8 +252,24 @@ class _EscuchaDeAperturasState extends ConsumerState<EscuchaDeAperturas>
       }
       _ultimo = destino;
       _ultimoEn = ahora;
+      _diagnosticar(guardado != null, intento, ahora);
       ref.read(aperturaPendienteProvider.notifier).fijar(destino);
     });
+  }
+
+  /// Avisa al servidor (DT-34) cuando el destino llegó por un camino que no es
+  /// el esperado: guardado, pero tarde, o solo por el mensaje. Es lo que hace
+  /// falta para entender iOS sin ver la consola del iPhone.
+  void _diagnosticar(bool delAlmacen, int intento, DateTime ahora) {
+    final int ms = ahora.difference(_buscandoDesde).inMilliseconds;
+    if (delAlmacen && intento > 0) {
+      ReporteDeFallos.reportar(
+        TipoDeFallo.apertura,
+        'guardado tarde: intento $intento, $ms ms',
+      );
+    } else if (!delAlmacen) {
+      ReporteDeFallos.reportar(TipoDeFallo.apertura, 'solo por el mensaje');
+    }
   }
 
   @override

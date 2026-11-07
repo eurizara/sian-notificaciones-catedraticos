@@ -37,6 +37,9 @@ export const TIPOS_DE_FALLO = [
   'app-check',
   // Un error que nadie atrapó.
   'no-controlado',
+  // Diagnóstico de DT-35: tocar una notificación y que el destino llegara tarde
+  // o solo por un camino. No es un error de la persona; dice qué hace iOS.
+  'apertura',
 ] as const;
 
 export type TipoDeFallo = (typeof TIPOS_DE_FALLO)[number];
