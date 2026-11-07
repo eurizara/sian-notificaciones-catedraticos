@@ -13,6 +13,7 @@ import {
   FACULTAD_INICIAL,
   MAXIMO_DE_SEDES,
   SEDE_INICIAL,
+  conFacultadesEnSede,
   conRolEnSede,
   elegirSede,
   esIdDeSede,
@@ -261,5 +262,62 @@ describe('claims de la 2.0', () => {
     if (r.tipo !== 'PERFIL_CREADO') return;
     expect(r.perfil.membresias).toEqual({ bdm: { rol: 'ADMINISTRADORA', facultades: [] } });
     expect(r.claims.sedes).toEqual({ bdm: 'ADMINISTRADORA' });
+  });
+});
+
+describe('conFacultadesEnSede (RF-FAC-01)', () => {
+  const CATALOGO = [
+    { id: 'ing-sistemas', activa: true },
+    { id: 'derecho', activa: true },
+    { id: 'cerrada', activa: false },
+  ];
+
+  it('fija las facultades de esa sede, sin tocar el rol ni las otras sedes', () => {
+    expect(
+      conFacultadesEnSede(
+        {
+          rol: 'CATEDRATICO',
+          membresias: {
+            bdm: { rol: 'CATEDRATICO', facultades: ['ing-sistemas'] },
+            otra: { rol: 'COORDINADOR', facultades: ['x'] },
+          },
+        },
+        'bdm',
+        ['derecho', 'ing-sistemas', 'derecho'],
+        CATALOGO,
+      ),
+    ).toEqual({
+      bdm: { rol: 'CATEDRATICO', facultades: ['derecho', 'ing-sistemas'] },
+      otra: { rol: 'COORDINADOR', facultades: ['x'] },
+    });
+  });
+
+  it('un perfil sin membresías queda migrado', () => {
+    expect(conFacultadesEnSede({ rol: 'CATEDRATICO' }, 'bdm', ['ing-sistemas'], CATALOGO)).toEqual({
+      bdm: { rol: 'CATEDRATICO', facultades: ['ing-sistemas'] },
+    });
+  });
+
+  it('dejarla sin facultades es válido', () => {
+    expect(conFacultadesEnSede({ rol: 'CATEDRATICO' }, 'bdm', [], CATALOGO).bdm?.facultades).toEqual([]);
+  });
+
+  it('una facultad inexistente o inactiva se rechaza', () => {
+    expect(() => conFacultadesEnSede({ rol: 'CATEDRATICO' }, 'bdm', ['quimica'], CATALOGO)).toThrow(
+      ErrorValidacion,
+    );
+    expect(() => conFacultadesEnSede({ rol: 'CATEDRATICO' }, 'bdm', ['cerrada'], CATALOGO)).toThrow(
+      /no existe o está inactiva/,
+    );
+  });
+
+  it('alguien de otra sede, o una lista mal formada, se rechaza', () => {
+    expect(() => conFacultadesEnSede({ rol: 'CATEDRATICO' }, 'otra', [], CATALOGO)).toThrow(/no pertenece/);
+    expect(() => conFacultadesEnSede({ rol: 'CATEDRATICO' }, 'bdm', 'ing-sistemas', CATALOGO)).toThrow(
+      ErrorValidacion,
+    );
+    expect(() => conFacultadesEnSede({ rol: 'CATEDRATICO' }, 'bdm', ['Con Espacio'], CATALOGO)).toThrow(
+      ErrorValidacion,
+    );
   });
 });

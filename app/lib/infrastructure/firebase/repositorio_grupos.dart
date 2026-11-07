@@ -53,10 +53,14 @@ class GrupoDetalle {
     required this.miembros,
     required this.activo,
     this.sedeId = 'bdm',
+    this.facultadId,
   });
 
   /// La sede del grupo (2.0). Sin el campo, `bdm`.
   final String sedeId;
+
+  /// La facultad a la que pertenece, si se eligió una (2.0, RF-FAC-03).
+  final String? facultadId;
   final String id;
   final String nombre;
   final String descripcion;
@@ -97,6 +101,7 @@ class RepositorioGrupos {
         return GrupoDetalle(
           id: d.id,
           sedeId: sedeDelDocumento(x),
+          facultadId: x['facultadId'] as String?,
           nombre: (x['nombre'] as String?) ?? d.id,
           descripcion: (x['descripcion'] as String?) ?? '',
           miembros:
@@ -152,15 +157,21 @@ class RepositorioGrupos {
     required String descripcion,
     required List<String> miembros,
     String? grupoId,
+
+    /// La facultad del grupo (2.0, RF-FAC-03). Nulo: sin facultad.
+    String? facultadId,
   }) async {
     final HttpsCallableResult<Object?> r = await _fn
         .httpsCallable('guardarGrupo')
-        .call<Object?>(conSede(<String, Object?>{
-          'grupoId': ?grupoId,
-          'nombre': nombre,
-          'descripcion': descripcion,
-          'miembros': miembros,
-        }));
+        .call<Object?>(
+          conSede(<String, Object?>{
+            'grupoId': ?grupoId,
+            'nombre': nombre,
+            'descripcion': descripcion,
+            'miembros': miembros,
+            'facultadId': facultadId,
+          }),
+        );
 
     final Map<Object?, Object?> d =
         (r.data as Map<Object?, Object?>?) ?? <Object?, Object?>{};
@@ -176,8 +187,10 @@ class RepositorioGrupos {
     required String grupoId,
     required bool activo,
   }) async {
-    await _fn.httpsCallable('cambiarEstadoGrupo').call<Object?>(conSede(
-      <String, Object?>{'grupoId': grupoId, 'activo': activo}),
-    );
+    await _fn
+        .httpsCallable('cambiarEstadoGrupo')
+        .call<Object?>(
+          conSede(<String, Object?>{'grupoId': grupoId, 'activo': activo}),
+        );
   }
 }

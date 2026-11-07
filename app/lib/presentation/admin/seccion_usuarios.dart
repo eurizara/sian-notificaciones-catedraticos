@@ -10,6 +10,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../infrastructure/firebase/repositorio_administracion.dart';
 import '../shared/textos.dart';
+import '../../application/proveedores_catalogos.dart';
+import '../../application/proveedores_sede.dart';
+import '../../infrastructure/firebase/repositorio_catalogos.dart';
 
 final Provider<RepositorioAdministracion> repositorioAdminProvider =
     Provider<RepositorioAdministracion>(
@@ -20,9 +23,18 @@ final invitacionesProvider = StreamProvider<List<InvitacionVista>>(
   (Ref ref) => ref.watch(repositorioAdminProvider).observarInvitaciones(),
 );
 
-final usuariosProvider = StreamProvider<List<UsuarioVista>>(
-  (Ref ref) => ref.watch(repositorioAdminProvider).observarUsuarios(),
-);
+/// La gente de la sede de trabajo (2.0, RF-SED-05): un coordinador
+/// administra a los de su sede, y el servidor rechaza lo demás.
+final usuariosProvider = StreamProvider<List<UsuarioVista>>((Ref ref) {
+  final String sede = ref.watch(sedeDeTrabajoProvider);
+  return ref
+      .watch(repositorioAdminProvider)
+      .observarUsuarios()
+      .map(
+        (List<UsuarioVista> todos) =>
+            todos.where((UsuarioVista u) => u.perteneceA(sede)).toList(),
+      );
+});
 
 class SeccionUsuarios extends ConsumerWidget {
   const SeccionUsuarios({super.key});
@@ -290,7 +302,8 @@ class _Invitaciones extends ConsumerWidget {
         rechazadas: r.rechazadas.length,
       );
 
-      final bool hayDetalle = r.rechazadas.isNotEmpty || r.yaEntraron.isNotEmpty;
+      final bool hayDetalle =
+          r.rechazadas.isNotEmpty || r.yaEntraron.isNotEmpty;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -328,7 +341,12 @@ class _Invitaciones extends ConsumerWidget {
                             if (r.yaEntraron.isNotEmpty) ...<Widget>[
                               if (r.rechazadas.isNotEmpty) const Divider(),
                               Padding(
-                                padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                                padding: const EdgeInsets.fromLTRB(
+                                  16,
+                                  8,
+                                  16,
+                                  4,
+                                ),
                                 child: Text(
                                   Textos.explicacionYaEntraron,
                                   style: Theme.of(c).textTheme.bodySmall,
@@ -402,6 +420,10 @@ class _FilaUsuario extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final RepositorioAdministracion repo = ref.read(repositorioAdminProvider);
+    // El rol que se ve y se cambia es el de la sede de trabajo (2.0).
+    final String sede = ref.watch(sedeDeTrabajoProvider);
+    final String rol = usuario.rolEn(sede);
+    final bool porFacultad = ref.watch(hayFacultadesParaElegirProvider);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -414,14 +436,14 @@ class _FilaUsuario extends ConsumerWidget {
         ),
         title: Text(usuario.nombre.isEmpty ? usuario.correo : usuario.nombre),
         subtitle: Text(
-          '${usuario.correo} · ${usuario.rol}'
+          '${usuario.correo} · $rol'
           '${usuario.activo ? '' : ' · ${Textos.usuarioDesactivado}'}',
         ),
         children: <Widget>[
           ListTile(
             title: const Text(Textos.etiquetaRol),
             trailing: DropdownButton<String>(
-              value: usuario.rol.isEmpty ? null : usuario.rol,
+              value: rol.isEmpty ? null : rol,
               items: const <DropdownMenuItem<String>>[
                 DropdownMenuItem<String>(
                   value: 'CATEDRATICO',
@@ -441,7 +463,7 @@ class _FilaUsuario extends ConsumerWidget {
                 ),
               ],
               onChanged: (String? v) {
-                if (v == null || v == usuario.rol) {
+                if (v == null || v == rol) {
                   return;
                 }
                 _ejecutar(
@@ -453,7 +475,9 @@ class _FilaUsuario extends ConsumerWidget {
             ),
           ),
           // Solo tienen sentido para quien emite.
-          if (usuario.rol == 'ADMINISTRADORA') ...<Widget>[
+          // RF-FAC-01 · RF-FAC-04: con dos o más facultades, a cuáles pertenece.
+          if (porFacultad) _FacultadesDeLaPersona(usuario: usuario, sede: sede),
+          if (rol == 'ADMINISTRADORA') ...<Widget>[
             SwitchListTile(
               title: const Text(Textos.autorizacionUrgentes),
               subtitle: const Text(Textos.autorizacionUrgentesAyuda),
@@ -511,6 +535,125 @@ class _FilaUsuario extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// A qué facultades de la sede pertenece (2.0, RF-FAC-01).
+class _FacultadesDeLaPersona extends ConsumerWidget {
+  const _FacultadesDeLaPersona({required this.usuario, required this.sede});
+
+  final UsuarioVista usuario;
+  final String sede;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final List<ElementoCatalogo> catalogo =
+        ref.watch(facultadesActivasProvider).value ??
+        const <ElementoCatalogo>[];
+    final List<String> suyas = usuario.facultadesEn(sede);
+    final List<String> nombres = <String>[
+      for (final ElementoCatalogo f in catalogo)
+        if (suyas.contains(f.id)) f.nombre,
+    ];
+    return ListTile(
+      title: const Text(Textos.usuarioFacultades),
+      subtitle: Text(
+        nombres.isEmpty ? Textos.usuarioSinFacultad : nombres.join(', '),
+      ),
+      // El botón dice «Cambiar»; su nombre accesible dice de quién (WCAG 2.4.6).
+      trailing: Tooltip(
+        message: Textos.usuarioCambiarFacultadesDe(
+          usuario.nombre.isEmpty ? usuario.correo : usuario.nombre,
+        ),
+        child: TextButton(
+          onPressed: () => showDialog<void>(
+            context: context,
+            builder: (BuildContext _) => _DialogoFacultades(
+              usuario: usuario,
+              catalogo: catalogo,
+              iniciales: suyas.toSet(),
+            ),
+          ),
+          child: const Text(Textos.usuarioCambiar),
+        ),
+      ),
+    );
+  }
+}
+
+class _DialogoFacultades extends ConsumerStatefulWidget {
+  const _DialogoFacultades({
+    required this.usuario,
+    required this.catalogo,
+    required this.iniciales,
+  });
+
+  final UsuarioVista usuario;
+  final List<ElementoCatalogo> catalogo;
+  final Set<String> iniciales;
+
+  @override
+  ConsumerState<_DialogoFacultades> createState() => _DialogoFacultadesState();
+}
+
+class _DialogoFacultadesState extends ConsumerState<_DialogoFacultades> {
+  late final Set<String> _elegidas = <String>{...widget.iniciales};
+  bool _guardando = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(
+        Textos.usuarioFacultadesDe(
+          widget.usuario.nombre.isEmpty
+              ? widget.usuario.correo
+              : widget.usuario.nombre,
+        ),
+      ),
+      content: Wrap(
+        spacing: 8,
+        children: <Widget>[
+          for (final ElementoCatalogo f in widget.catalogo)
+            FilterChip(
+              label: Text(f.nombre),
+              selected: _elegidas.contains(f.id),
+              onSelected: (_) => setState(() {
+                if (!_elegidas.remove(f.id)) {
+                  _elegidas.add(f.id);
+                }
+              }),
+            ),
+        ],
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed: _guardando ? null : () => Navigator.of(context).pop(),
+          child: const Text(Textos.botonCancelar),
+        ),
+        FilledButton(
+          onPressed: _guardando
+              ? null
+              : () async {
+                  setState(() => _guardando = true);
+                  final NavigatorState navegador = Navigator.of(context);
+                  await _ejecutar(
+                    context,
+                    () => ref
+                        .read(repositorioAdminProvider)
+                        .cambiarFacultades(
+                          uid: widget.usuario.uid,
+                          facultades: _elegidas.toList(),
+                        ),
+                    Textos.usuarioFacultadesGuardadas,
+                  );
+                  if (mounted) {
+                    navegador.pop();
+                  }
+                },
+          child: const Text(Textos.grupoGuardar),
+        ),
+      ],
     );
   }
 }

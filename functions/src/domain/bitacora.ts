@@ -40,6 +40,8 @@ export const TIPOS_EVENTO = [
   'GRUPO_MODIFICADO',
   // 2.0 (RF-CAT-04): alta, cambio, desactivación o reactivación en un catálogo.
   'CATALOGO_MODIFICADO',
+  // 2.0 (RF-FAC-01): a qué facultades de una sede pertenece una persona.
+  'USUARIO_FACULTADES_CAMBIADAS',
   'MENSAJE_CREADO',
   'MENSAJE_PROGRAMADO',
   'MENSAJE_SUSPENDIDO',

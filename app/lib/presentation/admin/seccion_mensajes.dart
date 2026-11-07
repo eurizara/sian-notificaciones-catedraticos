@@ -37,6 +37,9 @@ import 'borrador_prefijado.dart';
 import 'plantillas.dart';
 import '../../infrastructure/firebase/repositorio_plantillas.dart';
 import '../shared/textos.dart';
+import '../../application/proveedores_catalogos.dart';
+import '../../application/proveedores_sede.dart';
+import '../../infrastructure/firebase/repositorio_catalogos.dart';
 
 final Provider<RepositorioEnvio> repositorioEnvioProvider =
     Provider<RepositorioEnvio>((Ref ref) => RepositorioEnvio());
@@ -49,7 +52,7 @@ final FutureProvider<List<PersonaDestinataria>> personasDestinatariasProvider =
     );
 
 /// Todos, unos grupos o unas personas concretas (RF-USR-06).
-enum ModoDestino { todos, grupos, personas }
+enum ModoDestino { todos, grupos, personas, facultades }
 
 final Provider<RepositorioAdjuntos> repositorioAdjuntosProvider =
     Provider<RepositorioAdjuntos>((Ref ref) => RepositorioAdjuntos());
@@ -115,6 +118,9 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
   /// [hora]» no le sirve a nadie.
   Set<String> _marcadores = <String>{};
   ModoDestino _modo = ModoDestino.todos;
+
+  /// Facultades elegidas en el modo «Facultad» (2.0, RF-FAC-02).
+  final Set<String> _facultadesElegidas = <String>{};
   final Set<String> _gruposElegidos = <String>{};
 
   /// En el orden en que se eligieron: así se leen en la confirmación.
@@ -203,6 +209,9 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
     ModoDestino.personas => Destinatarios.individual(
       _personasElegidas.keys.toList(),
     ),
+    ModoDestino.facultades => Destinatarios.facultades(
+      _facultadesElegidas.toList(),
+    ),
   };
 
   /// Flujo completo de envío: validar, contar, confirmar y despachar.
@@ -224,6 +233,10 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
     }
     if (_modo == ModoDestino.personas && _personasElegidas.isEmpty) {
       _avisar(Textos.validacionElijePersona, tono: TonoAviso.error);
+      return;
+    }
+    if (_modo == ModoDestino.facultades && _facultadesElegidas.isEmpty) {
+      _avisar(Textos.validacionElijeFacultad, tono: TonoAviso.error);
       return;
     }
 
@@ -615,6 +628,19 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
 
   @override
   Widget build(BuildContext context) {
+    // Al cambiar de sede, los grupos y facultades elegidos son de la otra: se
+    // sueltan antes de que el servidor tenga que rechazarlos (2.0).
+    ref.listen<String>(sedeDeTrabajoProvider, (String? antes, String ahora) {
+      if (antes != null && antes != ahora) {
+        setState(() {
+          _gruposElegidos.clear();
+          _facultadesElegidas.clear();
+          if (_modo == ModoDestino.facultades) {
+            _modo = ModoDestino.todos;
+          }
+        });
+      }
+    });
     // Si la sección ya estaba abierta cuando Alcance preparó el aviso.
     ref.listen<BorradorPrefijado?>(borradorPrefijadoProvider, (
       BorradorPrefijado? _,
@@ -755,6 +781,12 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
                       setState(() => _personasElegidas[p.uid] = p),
                   alQuitarPersona: (String uid) =>
                       setState(() => _personasElegidas.remove(uid)),
+                  facultades: _facultadesElegidas,
+                  alAlternarFacultad: (String id) => setState(() {
+                    if (!_facultadesElegidas.remove(id)) {
+                      _facultadesElegidas.add(id);
+                    }
+                  }),
                 ),
                 const SizedBox(height: 16),
 
@@ -871,8 +903,12 @@ class _Destinatarios extends ConsumerWidget {
     required this.alAlternarGrupo,
     required this.alAgregarPersona,
     required this.alQuitarPersona,
+    required this.facultades,
+    required this.alAlternarFacultad,
   });
 
+  final Set<String> facultades;
+  final ValueChanged<String> alAlternarFacultad;
   final ModoDestino modo;
   final Set<String> elegidos;
   final Map<String, PersonaDestinataria> personas;
@@ -884,6 +920,8 @@ class _Destinatarios extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData tema = Theme.of(context);
+    // RF-FAC-04: con menos de dos facultades no se ofrece elegir facultad.
+    final bool porFacultad = ref.watch(hayFacultadesParaElegirProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -893,23 +931,29 @@ class _Destinatarios extends ConsumerWidget {
         RadioGroup<ModoDestino>(
           groupValue: modo,
           onChanged: (ModoDestino? v) => alCambiarModo(v ?? ModoDestino.todos),
-          child: const Column(
+          child: Column(
             children: <Widget>[
-              RadioListTile<ModoDestino>(
+              const RadioListTile<ModoDestino>(
                 value: ModoDestino.todos,
                 title: Text(Textos.destinatariosTodos),
                 contentPadding: EdgeInsets.zero,
               ),
-              RadioListTile<ModoDestino>(
+              const RadioListTile<ModoDestino>(
                 value: ModoDestino.grupos,
                 title: Text(Textos.destinatariosGrupos),
                 contentPadding: EdgeInsets.zero,
               ),
-              RadioListTile<ModoDestino>(
+              const RadioListTile<ModoDestino>(
                 value: ModoDestino.personas,
                 title: Text(Textos.destinatariosPersonas),
                 contentPadding: EdgeInsets.zero,
               ),
+              if (porFacultad)
+                const RadioListTile<ModoDestino>(
+                  value: ModoDestino.facultades,
+                  title: Text(Textos.destinatariosFacultades),
+                  contentPadding: EdgeInsets.zero,
+                ),
             ],
           ),
         ),
@@ -920,6 +964,34 @@ class _Destinatarios extends ConsumerWidget {
             elegidas: personas,
             alAgregar: alAgregarPersona,
             alQuitar: alQuitarPersona,
+          ),
+        if (modo == ModoDestino.facultades && porFacultad)
+          _Facultades(elegidas: facultades, alAlternar: alAlternarFacultad),
+      ],
+    );
+  }
+}
+
+/// Elegir una o varias facultades de la sede (2.0, RF-FAC-02).
+class _Facultades extends ConsumerWidget {
+  const _Facultades({required this.elegidas, required this.alAlternar});
+
+  final Set<String> elegidas;
+  final ValueChanged<String> alAlternar;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final List<ElementoCatalogo> lista =
+        ref.watch(facultadesActivasProvider).value ??
+        const <ElementoCatalogo>[];
+    return Wrap(
+      spacing: 8,
+      children: <Widget>[
+        for (final ElementoCatalogo f in lista)
+          FilterChip(
+            label: Text(f.nombre),
+            selected: elegidas.contains(f.id),
+            onSelected: (_) => alAlternar(f.id),
           ),
       ],
     );

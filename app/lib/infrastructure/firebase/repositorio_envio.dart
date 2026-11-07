@@ -16,24 +16,35 @@ class Destinatarios {
   const Destinatarios.todos()
     : modo = 'TODOS',
       gruposIds = const <String>[],
-      usuariosIds = const <String>[];
+      usuariosIds = const <String>[],
+      facultadesIds = const <String>[];
 
   const Destinatarios.grupos(this.gruposIds)
     : modo = 'GRUPOS',
-      usuariosIds = const <String>[];
+      usuariosIds = const <String>[],
+      facultadesIds = const <String>[];
 
   const Destinatarios.individual(this.usuariosIds)
     : modo = 'INDIVIDUAL',
-      gruposIds = const <String>[];
+      gruposIds = const <String>[],
+      facultadesIds = const <String>[];
+
+  /// Los miembros de la sede en esas facultades (2.0, RF-FAC-02).
+  const Destinatarios.facultades(this.facultadesIds)
+    : modo = 'FACULTAD',
+      gruposIds = const <String>[],
+      usuariosIds = const <String>[];
 
   final String modo;
   final List<String> gruposIds;
   final List<String> usuariosIds;
+  final List<String> facultadesIds;
 
   Map<String, Object?> aMapa() => <String, Object?>{
     'modo': modo,
     'gruposIds': gruposIds,
     'usuariosIds': usuariosIds,
+    if (modo == 'FACULTAD') 'facultadesIds': facultadesIds,
   };
 }
 
@@ -126,9 +137,9 @@ class RepositorioEnvio {
   Future<ConteoDestinatarios> contar(Destinatarios destinatarios) async {
     final HttpsCallableResult<Object?> r = await _fn
         .httpsCallable('contarDestinatarios')
-        .call<Object?>(conSede(<String, Object?>{
-          'destinatarios': destinatarios.aMapa(),
-        }));
+        .call<Object?>(
+          conSede(<String, Object?>{'destinatarios': destinatarios.aMapa()}),
+        );
 
     final Map<Object?, Object?> d =
         (r.data as Map<Object?, Object?>?) ?? <Object?, Object?>{};
@@ -162,23 +173,25 @@ class RepositorioEnvio {
   }) async {
     final HttpsCallableResult<Object?> r = await _fn
         .httpsCallable('enviarInmediato')
-        .call<Object?>(conSede(<String, Object?>{
-          'titulo': titulo,
-          'cuerpo': cuerpo,
-          'tipo': urgente ? 'URGENTE' : 'INFORMATIVO',
-          'requiereConfirmacion': requiereConfirmacion,
-          'destinatarios': destinatarios.aMapa(),
-          'confirmacionUrgente': confirmacionUrgente,
-          'mensajeId': ?mensajeId,
-          // Una lista, y en su orden: es el que eligió quien redactó y el que
-          // verá quien reciba.
-          if (adjuntos.isNotEmpty)
-            'adjuntos': <String, Object?>{
-              'lista': <Map<String, Object?>>[
-                for (final AdjuntoSubido a in adjuntos) a.aMapa(),
-              ],
-            },
-        }));
+        .call<Object?>(
+          conSede(<String, Object?>{
+            'titulo': titulo,
+            'cuerpo': cuerpo,
+            'tipo': urgente ? 'URGENTE' : 'INFORMATIVO',
+            'requiereConfirmacion': requiereConfirmacion,
+            'destinatarios': destinatarios.aMapa(),
+            'confirmacionUrgente': confirmacionUrgente,
+            'mensajeId': ?mensajeId,
+            // Una lista, y en su orden: es el que eligió quien redactó y el que
+            // verá quien reciba.
+            if (adjuntos.isNotEmpty)
+              'adjuntos': <String, Object?>{
+                'lista': <Map<String, Object?>>[
+                  for (final AdjuntoSubido a in adjuntos) a.aMapa(),
+                ],
+              },
+          }),
+        );
 
     final Map<Object?, Object?> d =
         (r.data as Map<Object?, Object?>?) ?? <Object?, Object?>{};

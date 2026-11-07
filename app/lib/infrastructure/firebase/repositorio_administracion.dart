@@ -39,7 +39,30 @@ class UsuarioVista {
     required this.puedeEmitirUrgentes,
     required this.recibeAvisos,
     required this.puedeCrearRecurrentes,
+    this.membresias = const <String, Object?>{},
   });
+
+  /// Sus sedes, tal como están en el perfil (2.0). Vacío: de antes de la
+  /// migración, es de `bdm` con [rol].
+  final Map<String, Object?> membresias;
+
+  Map<String, Object?>? _en(String sede) {
+    final Object? m = membresias[sede];
+    return m is Map ? m.cast<String, Object?>() : null;
+  }
+
+  /// ¿Pertenece a esa sede?
+  bool perteneceA(String sede) =>
+      membresias.isEmpty ? sede == 'bdm' : _en(sede) != null;
+
+  /// Su rol en esa sede; el global si el perfil aún no tiene membresías.
+  String rolEn(String sede) => (_en(sede)?['rol'] as String?) ?? rol;
+
+  /// Sus facultades en esa sede (RF-FAC-01).
+  List<String> facultadesEn(String sede) =>
+      ((_en(sede)?['facultades'] as List<Object?>?) ?? const <Object?>[])
+          .map((Object? f) => '$f')
+          .toList();
 
   final String uid;
   final String correo;
@@ -174,6 +197,11 @@ class RepositorioAdministracion {
               ? x['recibeAvisos'] as bool
               : (x['rol'] as String?) == 'CATEDRATICO',
           puedeCrearRecurrentes: x['puedeCrearRecurrentes'] == true,
+          membresias: x['membresias'] is Map
+              ? (x['membresias'] as Map<Object?, Object?>).map(
+                  (Object? k, Object? v) => MapEntry<String, Object?>('$k', v),
+                )
+              : const <String, Object?>{},
         );
       }).toList();
 
@@ -221,11 +249,13 @@ class RepositorioAdministracion {
   }) async {
     final HttpsCallableResult<Object?> r = await _fn
         .httpsCallable('crearInvitaciones')
-        .call<Object?>(conSede(<String, Object?>{
-          'correo': correo,
-          'rol': rol,
-          'nombre': nombre,
-        }));
+        .call<Object?>(
+          conSede(<String, Object?>{
+            'correo': correo,
+            'rol': rol,
+            'nombre': nombre,
+          }),
+        );
     return _interpretarCarga(r.data);
   }
 
@@ -261,25 +291,38 @@ class RepositorioAdministracion {
   }
 
   Future<void> revocarInvitacion(String correo) async {
-    await _fn.httpsCallable('revocarInvitacion').call<Object?>(conSede(
-      <String, Object?>{'correo': correo}),
-    );
+    await _fn
+        .httpsCallable('revocarInvitacion')
+        .call<Object?>(conSede(<String, Object?>{'correo': correo}));
+  }
+
+  /// Las facultades de una persona en la sede de trabajo (2.0, RF-FAC-01).
+  Future<void> cambiarFacultades({
+    required String uid,
+    required List<String> facultades,
+  }) async {
+    await _fn
+        .httpsCallable('cambiarFacultades')
+        .call<Object?>(
+          conSede(<String, Object?>{'uid': uid, 'facultades': facultades}),
+        );
   }
 
   Future<void> cambiarRol({required String uid, required String rol}) async {
-    await _fn.httpsCallable('cambiarRol').call<Object?>(conSede(<String, Object?>{
-      'uid': uid,
-      'rol': rol,
-    }));
+    await _fn
+        .httpsCallable('cambiarRol')
+        .call<Object?>(conSede(<String, Object?>{'uid': uid, 'rol': rol}));
   }
 
   Future<void> cambiarEstado({
     required String uid,
     required bool activo,
   }) async {
-    await _fn.httpsCallable('cambiarEstadoUsuario').call<Object?>(conSede(
-      <String, Object?>{'uid': uid, 'activo': activo}),
-    );
+    await _fn
+        .httpsCallable('cambiarEstadoUsuario')
+        .call<Object?>(
+          conSede(<String, Object?>{'uid': uid, 'activo': activo}),
+        );
   }
 
   Future<void> cambiarAutorizaciones({
@@ -290,11 +333,13 @@ class RepositorioAdministracion {
   }) async {
     await _fn
         .httpsCallable('cambiarAutorizacionesFinas')
-        .call<Object?>(conSede(<String, Object?>{
-          'uid': uid,
-          'puedeEmitirUrgentes': ?puedeEmitirUrgentes,
-          'puedeCrearRecurrentes': ?puedeCrearRecurrentes,
-          'recibeAvisos': ?recibeAvisos,
-        }));
+        .call<Object?>(
+          conSede(<String, Object?>{
+            'uid': uid,
+            'puedeEmitirUrgentes': ?puedeEmitirUrgentes,
+            'puedeCrearRecurrentes': ?puedeCrearRecurrentes,
+            'recibeAvisos': ?recibeAvisos,
+          }),
+        );
   }
 }

@@ -20,6 +20,7 @@ import 'package:sian/infrastructure/firebase/repositorio_programacion.dart';
 import 'package:sian/domain/rol.dart';
 import 'package:sian/domain/sesion.dart';
 import 'package:sian/infrastructure/firebase/repositorio_respuestas.dart';
+import 'package:sian/infrastructure/firebase/repositorio_catalogos.dart';
 
 class RepositorioSesionFalso implements RepositorioSesion {
   RepositorioSesionFalso({Sesion inicial = const SesionAnonima()})
@@ -535,6 +536,7 @@ class RepositorioGruposFalso extends RepositorioGrupos {
   String? ultimoNombre;
   List<String>? ultimosMiembros;
   String? ultimoGrupoId;
+  String? ultimaFacultadId;
 
   final List<({String grupoId, bool activo})> cambiosDeEstado =
       <({String grupoId, bool activo})>[];
@@ -549,11 +551,13 @@ class RepositorioGruposFalso extends RepositorioGrupos {
     required String descripcion,
     required List<String> miembros,
     String? grupoId,
+    String? facultadId,
   }) async {
     vecesQueGuardo += 1;
     ultimoNombre = nombre;
     ultimosMiembros = miembros;
     ultimoGrupoId = grupoId;
+    ultimaFacultadId = facultadId;
     return grupoId ?? 'g-nuevo';
   }
 
@@ -714,3 +718,21 @@ class RepositorioRespuestasFalso extends RepositorioRespuestas {
     leidos.add((mensajeId: mensajeId, hiloUid: hiloUid));
   }
 }
+
+/// Un catálogo en memoria (2.0): sedes o facultades para las pruebas.
+class FuenteCatalogoEnMemoria implements FuenteCatalogo {
+  FuenteCatalogoEnMemoria(this.elementos);
+
+  List<ElementoCatalogo> elementos;
+  final List<Map<String, Object?>> guardados = <Map<String, Object?>>[];
+
+  @override
+  Stream<List<ElementoCatalogo>> observar() =>
+      Stream<List<ElementoCatalogo>>.value(ordenarCatalogo(elementos));
+
+  @override
+  Future<void> guardar({required String nombre, String? id, bool? activa}) async {
+    guardados.add(<String, Object?>{'id': id, 'nombre': nombre, 'activa': activa});
+  }
+}
+

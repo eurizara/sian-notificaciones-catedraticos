@@ -68,13 +68,13 @@ decisiones; documento 14). **Ninguna está empezada.**
 | 2 | RF-SED-01 | Cada aviso, grupo, carpeta y registro de bitácora pertenece a una sede | Funcionalidad | Alta | En desarrollo | 2.0 | #232 | 2026-11-07 |
 | 3 | RF-SED-02 | Una persona en varias sedes, con un rol en cada una | Funcionalidad | Alta | En desarrollo | 2.0 | #231 | 2026-11-07 |
 | 4 | RF-SED-03 | «Enviar a todos» significa todos los de la sede elegida | Funcionalidad | Alta | En desarrollo | 2.0 | #232 | 2026-11-07 |
-| 5 | RF-SED-04 | Quien está en más de una sede elige en cuál trabaja; con una sola, no se le pregunta | Funcionalidad | Alta | En desarrollo | 2.0 | 2.0-e1 | 2026-11-07 |
+| 5 | RF-SED-04 | Quien está en más de una sede elige en cuál trabaja; con una sola, no se le pregunta | Funcionalidad | Alta | En desarrollo | 2.0 | #235 | 2026-11-07 |
 | 6 | RF-SED-05 | Nadie ve ni modifica nada de una sede a la que no pertenece | Seguridad | Alta | En desarrollo | 2.0 | #232 | 2026-11-07 |
 | 7 | RF-SED-06 | Rol de administración general: crea sedes y asigna a sus coordinadores | Funcionalidad | Alta | En desarrollo | 2.0 | #234 | 2026-11-07 |
-| 8 | RF-FAC-01 | Cada sede tiene facultades; una persona pertenece a una o varias | Funcionalidad | Alta | En desarrollo | 2.0 | #234 | 2026-11-07 |
-| 9 | RF-FAC-02 | Un aviso puede dirigirse a toda una facultad | Funcionalidad | Alta | En desarrollo | 2.0 | #232 | 2026-11-07 |
-| 10 | RF-FAC-03 | Los grupos pueden pertenecer a una facultad y se filtran por ella | Funcionalidad | Media | En desarrollo | 2.0 | #232 | 2026-11-07 |
-| 11 | RF-FAC-04 | Con una sola facultad o ninguna, no se pregunta ni se muestra | Funcionalidad | Media | Aprobada | 2.0 | — | 2026-11-06 |
+| 8 | RF-FAC-01 | Cada sede tiene facultades; una persona pertenece a una o varias | Funcionalidad | Alta | En desarrollo | 2.0 | #234, 2.0-e2 | 2026-11-07 |
+| 9 | RF-FAC-02 | Un aviso puede dirigirse a toda una facultad | Funcionalidad | Alta | En desarrollo | 2.0 | #232, 2.0-e2 | 2026-11-07 |
+| 10 | RF-FAC-03 | Los grupos pueden pertenecer a una facultad y se filtran por ella | Funcionalidad | Media | En desarrollo | 2.0 | #232, 2.0-e2 | 2026-11-07 |
+| 11 | RF-FAC-04 | Con una sola facultad o ninguna, no se pregunta ni se muestra | Funcionalidad | Media | En desarrollo | 2.0 | 2.0-e2 | 2026-11-07 |
 | 12 | RF-FAC-05 | Los reportes se filtran por facultad | Funcionalidad | Media | Aprobada | 2.0 | — | 2026-11-06 |
 | 13 | RF-CAT-01 | Pantalla de mantenimiento por catálogo: buscador, alta, edición, activar/desactivar | Funcionalidad | Alta | En desarrollo | 2.0 | #234 | 2026-11-07 |
 | 14 | RF-CAT-02 | Lo que está en uso no se borra: se desactiva y conserva su nombre | Funcionalidad | Alta | En desarrollo | 2.0 | #234 | 2026-11-07 |
@@ -365,9 +365,9 @@ decisiones; documento 14). **Ninguna está empezada.**
   - [x] 2.0-b (PR #232, en desarrollo) · Avisos, grupos y bitácora con `sedeId`; «todos» dentro de la sede; envío a una facultad; Alcance, grupos y usuarios por sede
   - [x] 2.0-c (PR #233) · Guion de migración idempotente (`scripts/migrar-sedes.py`, con pruebas en la CI), corrido en desarrollo el 07/11: 114 escrituras, segunda corrida sin cambios
   - [x] 2.0-d (PR #234) · Mantenimiento de sedes y facultades (sección Catálogos, componente común)
-  - [ ] 2.0-e1 · La sede de trabajo en cada llamada; selector de sede; grupos y programados por sede
-  - [ ] 2.0-e2 · Envío y grupos por facultad; facultades en Usuarios
-  - [ ] 2.0-f · Las reglas exigen la sede, con pruebas cruzadas
+  - [x] 2.0-e1 (PR #235) · La sede de trabajo en cada llamada; selector de sede; grupos y programados por sede
+  - [ ] 2.0-e2 · Envío y grupos por facultad; facultades de cada persona en Usuarios. RF-FAC-05 (reportes por facultad) queda para después de la 2.0-f
+  - [ ] 2.0-f · Las reglas exigen la sede, con pruebas cruzadas. **Espera decisión del responsable** sobre la bitácora vieja, las entregas y la lista de usuarios (ADR-009, «2.0-f: lo que falta decidir»)
 - **Pruebas:** reglas por sede contra el emulador, dominio («todos» por sede), migración
   contra el emulador, guion en el documento 09; regresión completa.
 - **Accesibilidad y usabilidad:** la sede actual siempre visible (estado del sistema); el

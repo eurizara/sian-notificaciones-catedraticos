@@ -217,3 +217,40 @@ export function conRolEnSede(
   }
   return nuevas;
 }
+
+/**
+ * Las facultades de una persona en una sede (RF-FAC-01), sin tocar su rol ni
+ * sus otras sedes. Tiene que pertenecer a la sede, y cada facultad tiene que
+ * estar en el catálogo de esa sede y activa: una facultad inventada dejaría a
+ * esa persona fuera de los avisos por facultad sin que nadie lo notara.
+ */
+export function conFacultadesEnSede(
+  perfil: { readonly rol: Rol; readonly membresias?: unknown },
+  sedeId: string,
+  facultades: unknown,
+  catalogo: readonly { readonly id: string; readonly activa: boolean }[],
+): Membresias {
+  const actuales = membresiasDe(perfil);
+  const membresia = actuales[sedeId];
+  if (membresia === undefined) {
+    throw new ErrorValidacion('NO_PERTENECE_A_LA_SEDE', 'Esa persona no pertenece a esta sede.');
+  }
+  if (!Array.isArray(facultades) || !facultades.every(esIdDeFacultad)) {
+    throw new ErrorValidacion('FACULTADES_INVALIDAS', 'La lista de facultades no es válida.');
+  }
+  const activas = new Set(catalogo.filter((f) => f.activa).map((f) => f.id));
+  for (const f of facultades) {
+    if (!activas.has(f)) {
+      throw new ErrorValidacion(
+        'FACULTAD_INEXISTENTE',
+        `La facultad «${f}» no existe o está inactiva en esta sede.`,
+        { facultadId: f },
+      );
+    }
+  }
+  return {
+    ...actuales,
+    [sedeId]: { rol: membresia.rol, facultades: [...new Set(facultades)].sort() },
+  };
+}
+

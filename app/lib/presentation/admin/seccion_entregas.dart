@@ -321,6 +321,7 @@ class _ReporteState extends ConsumerState<_Reporte> {
                       mensaje.nombresGrupos,
                     ),
                     'INDIVIDUAL' => Textos.destinatariosIndividual,
+                    'FACULTAD' => Textos.destinatariosFacultadCorto,
                     _ => Textos.destinatariosTodosCorto,
                   },
                 ),

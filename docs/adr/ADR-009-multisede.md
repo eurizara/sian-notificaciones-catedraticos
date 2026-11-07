@@ -77,8 +77,28 @@ desarrollo; ninguno rompe lo anterior:
 | 2.0-b | Avisos, grupos y bitácora nuevos con `sedeId`; «todos» dentro de la sede; envío a una facultad; Alcance, grupos y usuarios por sede | En dev (PR #232) |
 | 2.0-c | Guion de migración idempotente (`scripts/migrar-sedes.py`), con pruebas en la CI: `bdm` e Ingeniería en Sistemas en lo existente | En dev (PR #233); corrido en desarrollo el 07/11 |
 | 2.0-d | Catálogos: mantenimiento de sedes (administración general) y facultades (coordinación), con un componente común y reglas de lectura por sede | En dev (PR #234) |
-| 2.0-e | Aplicación. **e1:** la sede de trabajo va en cada llamada; selector de sede (solo con más de una); grupos y programados filtrados por sede. **e2:** envío y grupos por facultad, facultades en Usuarios | e1 en desarrollo |
-| 2.0-f | Contraer: las reglas exigen la sede; pruebas cruzadas sede A / sede B. Las consultas de la aplicación pasan a filtrar por `sedeId` en Firestore (hoy filtran en el aparato, porque las reglas aún no lo exigen) | Pendiente |
+| 2.0-e | Aplicación. **e1:** la sede de trabajo va en cada llamada; selector de sede (solo con más de una); grupos, programados y usuarios filtrados por sede. **e2:** envío y grupos por facultad, facultades de cada persona en Usuarios (`cambiarFacultades`) | e1 en dev (PR #235); e2 en desarrollo |
+| 2.0-f | Contraer: las reglas exigen la sede; pruebas cruzadas sede A / sede B. Las consultas de la aplicación pasan a filtrar por `sedeId` en Firestore (hoy filtran en el aparato, porque las reglas aún no lo exigen) | **Espera decisión** (ver abajo) |
+
+**2.0-f: lo que falta decidir antes de contraer (07/11/2026).** Que las reglas exijan la sede
+obliga a que las consultas de la aplicación la pidan (`where('sedeId', '==', sede)`):
+Firestore no evalúa reglas fila por fila en una consulta, y la consulta tiene que demostrar
+por sí misma que solo trae lo permitido. Eso choca con tres cosas:
+
+1. **La bitácora vieja no tiene `sedeId`**, y una consulta por sede no devuelve documentos
+   sin el campo: los asientos de antes de la 2.0 dejarían de verse. Opciones:
+   (a) que la migración les ponga `sedeId: 'bdm'` —solo clasifica, no cambia qué pasó, pero
+   toca una colección que hoy tratamos como inmutable—; o (b) que la bitácora anterior a la
+   2.0 la vea solo la administración general. **Se recomienda (a)**, dejando constancia en un
+   asiento de la propia migración.
+2. **Las entregas no llevan sede**, y el historial y los reportes las leen con consultas de
+   grupo de colecciones. Hay que escribir `sedeId` en cada entrega nueva y migrar las viejas.
+3. **La lista de usuarios:** las reglas no pueden recorrer las membresías de una persona.
+   Hace falta un campo `sedesIds` (lista) en cada perfil y en el token la lista de sedes donde
+   se coordina, para comprobar `sedesIds.hasAny(...)`.
+
+Con una sola sede ninguno de los tres cambia lo que se ve hoy; por eso el 2.0-f espera la
+decisión del responsable y no bloquea probar lo demás en desarrollo.
 
 **Compatibilidad durante la migración.** Un perfil sin `membresias` y un token sin `sedes`
 equivalen a la sede inicial (`bdm`) con su rol de siempre (`membresiasDe`, `sedesDelToken`).
