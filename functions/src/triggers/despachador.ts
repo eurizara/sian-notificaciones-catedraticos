@@ -52,6 +52,7 @@ import { escribirAsiento } from '../infrastructure/repositorios';
 import { insistirDondeNoHuboAcuse } from './insistencia';
 import { despacharMensaje } from './envio';
 import { encolar } from './programacion';
+import { sedeDelDocumento } from '../domain/sede';
 
 const ZONA_INSTITUCIONAL = 'America/Guatemala';
 
@@ -211,6 +212,7 @@ async function procesar(item: ItemCola, ahora: Date): Promise<void> {
           desviacionSegundos: desviacionSegundos(item.ejecutarEn, ahora),
         },
         origen: 'PLANIFICADOR',
+        sedeId: sedeDelDocumento(mensaje.data()),
       }),
     );
     await programarSiguiente(refMensaje, mensajeId);
@@ -236,6 +238,7 @@ async function procesar(item: ItemCola, ahora: Date): Promise<void> {
         desviacionSegundos: desviacionSegundos(item.ejecutarEn, ahora),
       },
       origen: 'PLANIFICADOR',
+      sedeId: sedeDelDocumento(mensaje.data()),
     }),
   );
 

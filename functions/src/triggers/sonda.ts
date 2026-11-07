@@ -64,6 +64,7 @@ import type { Rol } from '../domain/tipos';
 import { fallosDeLasUltimas24Horas, olvidarFallosViejos } from './fallos';
 import { OPCIONES_LLAMABLE, RUTAS, db } from '../infrastructure/firebase';
 import { escribirAsiento } from '../infrastructure/repositorios';
+import { rolDelPerfilEnSede, sujetoEnSede } from '../application/sedeDeLaPeticion';
 
 const ZONA_INSTITUCIONAL = 'America/Guatemala';
 
@@ -442,19 +443,22 @@ interface FilaDeAtencion {
   readonly versionApp: string;
 }
 
+/** Quién pide y en qué sede (2.0): Alcance enseña solo a la gente de esa sede. */
 function sujetoDe(peticion: {
   auth?: { uid: string; token: Record<string, unknown> };
-}): Sujeto {
+  data?: unknown;
+}): Sujeto & { sedeId: string } {
   if (!peticion.auth) {
     throw new HttpsError('unauthenticated', 'Hay que iniciar sesión.');
   }
-  return {
-    uid: peticion.auth.uid,
-    rol: (peticion.auth.token.rol as Rol | undefined) ?? 'CATEDRATICO',
-    activo: peticion.auth.token.activo === true,
-    puedeEmitirUrgentes: peticion.auth.token.puedeEmitirUrgentes === true,
-    puedeCrearRecurrentes: peticion.auth.token.puedeCrearRecurrentes === true,
-  };
+  try {
+    return sujetoEnSede(peticion.auth, (peticion.data as { sedeId?: unknown } | undefined)?.sedeId);
+  } catch (e) {
+    throw new HttpsError(
+      'permission-denied',
+      e instanceof Error ? e.message : 'No se pudo decidir la sede.',
+    );
+  }
 }
 
 /**
@@ -522,12 +526,19 @@ export const dispositivosQueNecesitanAtencion = onCall(OPCIONES_LLAMABLE, async 
     porUid.set(d.uid, lista);
   }
 
+  // UN solo criterio para la lista, el total y las versiones: activo, de esta
+  // sede, y que reciba con el rol que tiene en ella (el de «todos»).
+  const esDestinatarioAqui = (d: { get(campo: string): unknown; data(): Record<string, unknown> | undefined }): boolean => {
+    if (d.get('activo') !== true) {
+      return false;
+    }
+    const rolAqui = rolDelPerfilEnSede(d.data() ?? {}, sujeto.sedeId);
+    return rolAqui !== null && recibeAvisos(rolAqui, d.get('recibeAvisos') as boolean | undefined);
+  };
+
   const filas: FilaDeAtencion[] = [];
 
   for (const doc of usuarios.docs) {
-    if (doc.get('activo') !== true) {
-      continue;
-    }
     // ────────────────────────────────────────────────────────────────────────
     // La población es EXACTAMENTE la del modo TODOS. Se usa el mismo predicado.
     // ────────────────────────────────────────────────────────────────────────
@@ -544,7 +555,10 @@ export const dispositivosQueNecesitanAtencion = onCall(OPCIONES_LLAMABLE, async 
     // Una pantalla que predice quién no va a recibir y calcula sobre otra
     // población no se equivoca a veces: miente siempre, y de la peor forma,
     // diciendo que todo está bien.
-    if (!recibeAvisos(doc.get('rol') as Rol, doc.get('recibeAvisos') as boolean | undefined)) {
+    //
+    // Y desde la 2.0, la de ESTA sede, con el rol que la persona tiene en ella:
+    // el mismo criterio que «todos» (RF-SED-03).
+    if (!esDestinatarioAqui(doc)) {
       continue;
     }
 
@@ -592,22 +606,14 @@ export const dispositivosQueNecesitanAtencion = onCall(OPCIONES_LLAMABLE, async 
     // «5». Sale del MISMO criterio que la lista de arriba, no de un filtro
     // parecido: si los dos números se calcularan por separado volverían a
     // discrepar en cuanto alguien cambiara uno.
-    catedraticos: usuarios.docs.filter(
-      (d) =>
-        d.get('activo') === true &&
-        recibeAvisos(d.get('rol') as Rol, d.get('recibeAvisos') as boolean | undefined),
-    ).length,
+    catedraticos: usuarios.docs.filter(esDestinatarioAqui).length,
     filas,
     // Qué versión tiene cada aparato de cada destinatario, estén bien o mal de
     // canal: quien recibe perfectamente con una versión vieja no sale en la
     // lista de arriba, y es justo a quien hay que pedirle actualizar.
     versiones: resumirVersiones(
       usuarios.docs
-        .filter(
-          (d) =>
-            d.get('activo') === true &&
-            recibeAvisos(d.get('rol') as Rol, d.get('recibeAvisos') as boolean | undefined),
-        )
+        .filter(esDestinatarioAqui)
         .map((d) => ({
           uid: d.id,
           nombre: (d.get('nombre') as string | undefined) ?? '',

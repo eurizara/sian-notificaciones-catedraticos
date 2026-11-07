@@ -169,13 +169,22 @@ function validarAdjuntos(lista: readonly Adjunto[]): FormatoMensaje[] {
 function validarDestinatarios(d: Destinatarios): void {
   const grupos = d.gruposIds ?? [];
   const usuarios = d.usuariosIds ?? [];
+  const facultades = d.facultadesIds ?? [];
 
   switch (d.modo) {
     case 'TODOS':
       exigir(
-        grupos.length === 0 && usuarios.length === 0,
+        grupos.length === 0 && usuarios.length === 0 && facultades.length === 0,
         'DESTINATARIOS_INCOHERENTES',
-        'El modo TODOS no admite listas de grupos ni de usuarios.',
+        'El modo TODOS no admite listas de grupos, de usuarios ni de facultades.',
+      );
+      return;
+
+    case 'FACULTAD':
+      exigir(
+        facultades.length > 0,
+        'DESTINATARIOS_SIN_FACULTADES',
+        'El modo FACULTAD exige al menos una facultad.',
       );
       return;
 

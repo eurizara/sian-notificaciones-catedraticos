@@ -292,3 +292,157 @@ describe('personasElegibles · a quién se puede elegir en un envío individual 
   });
 });
 
+
+// ---------------------------------------------------------------------------
+// 2.0 · Varias sedes y facultades (RF-SED-03, RF-SED-05, RF-FAC-02)
+// ---------------------------------------------------------------------------
+
+describe('2.0 · todo se resuelve dentro de una sede', () => {
+  const m = (sedes: Record<string, { rol: CandidatoDestinatario['rol']; facultades?: string[] }>) =>
+    Object.fromEntries(
+      Object.entries(sedes).map(([s, v]) => [s, { rol: v.rol, facultades: v.facultades ?? [] }]),
+    );
+
+  const DOS_SEDES: CandidatoDestinatario[] = [
+    // De antes de la migración, sin membresías: es de bdm.
+    persona('vieja'),
+    persona('ana', { membresias: m({ bdm: { rol: 'CATEDRATICO', facultades: ['ing-sistemas'] } }) }),
+    persona('beto', { membresias: m({ otra: { rol: 'CATEDRATICO' } }) }),
+    // Coordina en bdm y da clases en la otra.
+    persona('carla', {
+      rol: 'COORDINADOR',
+      membresias: m({ bdm: { rol: 'COORDINADOR' }, otra: { rol: 'CATEDRATICO', facultades: ['derecho'] } }),
+    }),
+  ];
+
+  it('«todos» son los catedráticos de ESA sede, con el rol que tienen en ella', () => {
+    expect(resolverDestinatarios({ modo: 'TODOS' }, DOS_SEDES, [], null, 'bdm').uids).toEqual([
+      'vieja',
+      'ana',
+    ]);
+    expect(resolverDestinatarios({ modo: 'TODOS' }, DOS_SEDES, [], null, 'otra').uids).toEqual([
+      'beto',
+      'carla',
+    ]);
+  });
+
+  it('sin sede dicha, la inicial: igual que antes de la 2.0', () => {
+    expect(resolverDestinatarios({ modo: 'TODOS' }, DOS_SEDES, []).uids).toEqual(['vieja', 'ana']);
+  });
+
+  it('alguien de otra sede elegido a mano queda fuera, y consta por qué', () => {
+    const r = resolverDestinatarios(
+      { modo: 'INDIVIDUAL', usuariosIds: ['ana', 'beto'] },
+      DOS_SEDES,
+      [],
+      null,
+      'bdm',
+    );
+    expect(r.uids).toEqual(['ana']);
+    expect(r.excluidos).toEqual([{ uid: 'beto', motivo: 'OTRA_SEDE' }]);
+  });
+
+  it('un grupo de otra sede se rechaza entero', () => {
+    esperarCodigo(
+      () =>
+        resolverDestinatarios(
+          { modo: 'GRUPOS', gruposIds: ['g-otra'] },
+          DOS_SEDES,
+          [{ id: 'g-otra', activo: true, miembros: ['beto'], sedeId: 'otra' }],
+          null,
+          'bdm',
+        ),
+      'GRUPO_DE_OTRA_SEDE',
+    );
+  });
+
+  it('un grupo sin sede es de la inicial', () => {
+    expect(
+      resolverDestinatarios(
+        { modo: 'GRUPOS', gruposIds: ['g'] },
+        DOS_SEDES,
+        [grupo('g', ['ana', 'vieja'])],
+        null,
+        'bdm',
+      ).uids,
+    ).toEqual(['ana', 'vieja']);
+  });
+
+  it('las personas elegibles son solo las de la sede', () => {
+    expect(personasElegibles(DOS_SEDES, 'nadie', 'otra').map((p) => p.uid).sort()).toEqual([
+      'beto',
+      'carla',
+    ]);
+  });
+});
+
+describe('2.0 · enviar a una facultad (RF-FAC-02)', () => {
+  const m = (rol: CandidatoDestinatario['rol'], facultades: string[]) => ({ bdm: { rol, facultades } });
+  const PADRON_FAC: CandidatoDestinatario[] = [
+    persona('ana', { membresias: m('CATEDRATICO', ['ing-sistemas']) }),
+    persona('beto', { membresias: m('CATEDRATICO', ['derecho']) }),
+    persona('carla', { membresias: m('CATEDRATICO', ['ing-sistemas', 'derecho']) }),
+    persona('dario', { membresias: m('CATEDRATICO', []) }),
+    persona('elena', { rol: 'COORDINADOR', membresias: m('COORDINADOR', ['ing-sistemas']) }),
+  ];
+  const CATALOGO = [
+    { id: 'ing-sistemas', activa: true },
+    { id: 'derecho', activa: true },
+    { id: 'cerrada', activa: false },
+  ];
+
+  it('llega a quien pertenece a la facultad, y una sola vez aunque esté en dos', () => {
+    const r = resolverDestinatarios(
+      { modo: 'FACULTAD', facultadesIds: ['ing-sistemas', 'derecho'] },
+      PADRON_FAC,
+      [],
+      null,
+      'bdm',
+      CATALOGO,
+    );
+    expect(r.uids).toEqual(['ana', 'beto', 'carla']);
+    // La coordinadora pertenece a la facultad, pero su rol no recibe.
+    expect(r.excluidos).toEqual([{ uid: 'elena', motivo: 'ROL_NO_RECIBE' }]);
+  });
+
+  it('una facultad inexistente o inactiva hace fallar el envío', () => {
+    esperarCodigo(
+      () =>
+        resolverDestinatarios(
+          { modo: 'FACULTAD', facultadesIds: ['quimica'] },
+          PADRON_FAC,
+          [],
+          null,
+          'bdm',
+          CATALOGO,
+        ),
+      'FACULTAD_INEXISTENTE',
+    );
+    esperarCodigo(
+      () =>
+        resolverDestinatarios(
+          { modo: 'FACULTAD', facultadesIds: ['cerrada'] },
+          PADRON_FAC,
+          [],
+          null,
+          'bdm',
+          CATALOGO,
+        ),
+      'FACULTAD_INACTIVA',
+    );
+  });
+
+  it('las facultades son de la sede: la misma facultad en otra sede no cuenta', () => {
+    const otra = persona('fede', { membresias: { otra: { rol: 'CATEDRATICO', facultades: ['ing-sistemas'] } } });
+    expect(
+      resolverDestinatarios(
+        { modo: 'FACULTAD', facultadesIds: ['ing-sistemas'] },
+        [...PADRON_FAC, otra],
+        [],
+        null,
+        'bdm',
+        CATALOGO,
+      ).uids,
+    ).toEqual(['ana', 'carla']);
+  });
+});

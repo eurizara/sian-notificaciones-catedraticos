@@ -207,13 +207,19 @@ export function normalizarAdjuntos(adjuntos?: Adjuntos): readonly Adjunto[] {
 // Destinatarios (RF-USR-06)
 // ---------------------------------------------------------------------------
 
-export const MODOS_DESTINATARIO = ['TODOS', 'GRUPOS', 'INDIVIDUAL'] as const;
+/**
+ * `FACULTAD` desde la 2.0 (RF-FAC-02): los miembros de la sede que pertenecen
+ * a esas facultades. «Todos» es siempre todos los de UNA sede (RF-SED-03).
+ */
+export const MODOS_DESTINATARIO = ['TODOS', 'GRUPOS', 'INDIVIDUAL', 'FACULTAD'] as const;
 export type ModoDestinatario = (typeof MODOS_DESTINATARIO)[number];
 
 export interface Destinatarios {
   readonly modo: ModoDestinatario;
   readonly gruposIds?: readonly string[];
   readonly usuariosIds?: readonly string[];
+  /** Solo en el modo `FACULTAD`. */
+  readonly facultadesIds?: readonly string[];
 }
 
 // ---------------------------------------------------------------------------

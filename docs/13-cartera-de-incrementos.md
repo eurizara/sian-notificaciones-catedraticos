@@ -65,15 +65,15 @@ decisiones; documento 14). **Ninguna está empezada.**
 
 | Orden | ID | Incremento | Tipo | Prioridad | Estado | Versión | PR | Actualizado |
 |---|---|---|---|---|---|---|---|---|
-| 2 | RF-SED-01 | Cada aviso, grupo, carpeta y registro de bitácora pertenece a una sede | Funcionalidad | Alta | Aprobada | 2.0 | — | 2026-11-06 |
-| 3 | RF-SED-02 | Una persona en varias sedes, con un rol en cada una | Funcionalidad | Alta | En desarrollo | 2.0 | 2.0-a | 2026-11-07 |
-| 4 | RF-SED-03 | «Enviar a todos» significa todos los de la sede elegida | Funcionalidad | Alta | Aprobada | 2.0 | — | 2026-11-06 |
+| 2 | RF-SED-01 | Cada aviso, grupo, carpeta y registro de bitácora pertenece a una sede | Funcionalidad | Alta | En desarrollo | 2.0 | 2.0-b | 2026-11-07 |
+| 3 | RF-SED-02 | Una persona en varias sedes, con un rol en cada una | Funcionalidad | Alta | En desarrollo | 2.0 | #231 | 2026-11-07 |
+| 4 | RF-SED-03 | «Enviar a todos» significa todos los de la sede elegida | Funcionalidad | Alta | En desarrollo | 2.0 | 2.0-b | 2026-11-07 |
 | 5 | RF-SED-04 | Quien está en más de una sede elige en cuál trabaja; con una sola, no se le pregunta | Funcionalidad | Alta | Aprobada | 2.0 | — | 2026-11-06 |
-| 6 | RF-SED-05 | Nadie ve ni modifica nada de una sede a la que no pertenece | Seguridad | Alta | Aprobada | 2.0 | — | 2026-11-06 |
+| 6 | RF-SED-05 | Nadie ve ni modifica nada de una sede a la que no pertenece | Seguridad | Alta | En desarrollo | 2.0 | 2.0-b | 2026-11-07 |
 | 7 | RF-SED-06 | Rol de administración general: crea sedes y asigna a sus coordinadores | Funcionalidad | Alta | Aprobada | 2.0 | — | 2026-11-06 |
 | 8 | RF-FAC-01 | Cada sede tiene facultades; una persona pertenece a una o varias | Funcionalidad | Alta | Aprobada | 2.0 | — | 2026-11-06 |
-| 9 | RF-FAC-02 | Un aviso puede dirigirse a toda una facultad | Funcionalidad | Alta | Aprobada | 2.0 | — | 2026-11-06 |
-| 10 | RF-FAC-03 | Los grupos pueden pertenecer a una facultad y se filtran por ella | Funcionalidad | Media | Aprobada | 2.0 | — | 2026-11-06 |
+| 9 | RF-FAC-02 | Un aviso puede dirigirse a toda una facultad | Funcionalidad | Alta | En desarrollo | 2.0 | 2.0-b | 2026-11-07 |
+| 10 | RF-FAC-03 | Los grupos pueden pertenecer a una facultad y se filtran por ella | Funcionalidad | Media | En desarrollo | 2.0 | 2.0-b | 2026-11-07 |
 | 11 | RF-FAC-04 | Con una sola facultad o ninguna, no se pregunta ni se muestra | Funcionalidad | Media | Aprobada | 2.0 | — | 2026-11-06 |
 | 12 | RF-FAC-05 | Los reportes se filtran por facultad | Funcionalidad | Media | Aprobada | 2.0 | — | 2026-11-06 |
 | 13 | RF-CAT-01 | Pantalla de mantenimiento por catálogo: buscador, alta, edición, activar/desactivar | Funcionalidad | Alta | Aprobada | 2.0 | — | 2026-11-06 |
@@ -361,8 +361,8 @@ decisiones; documento 14). **Ninguna está empezada.**
   - [ ] Respaldo de producción verificado antes de migrar; correr la migración dos veces deja lo mismo
   - [ ] Probado en desarrollo y QA con datos parecidos a los de producción
 - **Avance por pasos** (ADR-009, «Plan de implementación»):
-  - [ ] 2.0-a · Membresías con rol por sede; `sedes` y `adminGeneral` en el token; todos los claims desde `claimsDe` (corrige que cambiar un rol borraba `recibeAvisos` del token)
-  - [ ] 2.0-b · Avisos, grupos y bitácora con `sedeId`; «todos» dentro de la sede; envío a una facultad
+  - [x] 2.0-a (PR #231, en desarrollo) · Membresías con rol por sede; `sedes` y `adminGeneral` en el token; todos los claims desde `claimsDe` (corrige que cambiar un rol borraba `recibeAvisos` del token)
+  - [ ] 2.0-b · Avisos, grupos y bitácora con `sedeId`; «todos» dentro de la sede; envío a una facultad; Alcance, grupos y usuarios por sede
   - [ ] 2.0-c · Guion de migración idempotente, corrido en desarrollo
   - [ ] 2.0-d · Mantenimiento de sedes y facultades
   - [ ] 2.0-e · Aplicación: selector de sede, envío por facultad, membresías en Usuarios

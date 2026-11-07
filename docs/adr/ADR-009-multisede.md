@@ -73,8 +73,8 @@ desarrollo; ninguno rompe lo anterior:
 
 | Paso | Qué | Estado |
 |---|---|---|
-| 2.0-a | Membresías con rol por sede; `sedes` y `adminGeneral` en el token; todos los claims desde `claimsDe` | En desarrollo |
-| 2.0-b | Avisos, grupos y bitácora nuevos con `sedeId`; «todos» dentro de la sede; envío a una facultad | Pendiente |
+| 2.0-a | Membresías con rol por sede; `sedes` y `adminGeneral` en el token; todos los claims desde `claimsDe` | En desarrollo (PR #231) |
+| 2.0-b | Avisos, grupos y bitácora nuevos con `sedeId`; «todos» dentro de la sede; envío a una facultad; Alcance, grupos y usuarios por sede | En desarrollo |
 | 2.0-c | Guion de migración idempotente: `bdm` e Ingeniería en Sistemas en lo existente | Pendiente |
 | 2.0-d | Catálogos: mantenimiento de sedes (administración general) y facultades (coordinación) | Pendiente |
 | 2.0-e | Aplicación: selector de sede, envío por facultad, membresías en Usuarios | Pendiente |
