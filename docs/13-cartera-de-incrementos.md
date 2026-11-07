@@ -126,7 +126,7 @@ después.
 
 | Orden | ID | Incremento | Tipo | Prioridad | Estado | Versión | PR | Actualizado |
 |---|---|---|---|---|---|---|---|---|
-| 36 | DOC-07 | Estados viejos en el resumen del documento 07 (DT-07, DT-21, DT-23) | Documentación | Baja | En desarrollo | — | — | 2026-11-06 |
+| 36 | DOC-07 | Estados viejos en el resumen del documento 07 (DT-07, DT-21, DT-23) | Documentación | Baja | En desarrollo | — | #222 | 2026-11-06 |
 | 37 | DOC-CAT | El guion de la cátedra dice 12 pasos de despliegue y son 15 | Documentación | Baja | Aprobada | — | — | 2026-11-06 |
 
 ### H. Bloqueadas por algo externo
@@ -442,7 +442,7 @@ después.
 
 ### DOC-07 · Estados viejos en el resumen del documento 07
 
-- **Estado:** En desarrollo (este PR) · **Prioridad:** Baja · **Origen:** revisión del 2026-11-06
+- **Estado:** En desarrollo (PR #222) · **Prioridad:** Baja · **Origen:** revisión del 2026-11-06
 - **Problema:** el resumen decía «Pagada (en desarrollo y QA)» para DT-07, DT-21 y DT-23, que
   están en producción desde la 1.5.11 (2026-09-14).
 - **Criterios de aceptación:**
