@@ -20,6 +20,8 @@ import { crearGrupo, normalizarMiembros, rozaElLimite } from '../domain/grupo';
 import { crearInvitacion, interpretarCsv } from '../domain/invitacion';
 import { exigirPermiso, type Permiso , recibeAvisos } from '../domain/autorizacion';
 import { ROLES, type Rol } from '../domain/tipos';
+import { claimsDe, type PerfilUsuario } from '../application/activarSesion';
+import { conRolEnSede, elegirSede, membresiasDe, rolEnSede, sedePrincipal, sedesDeMembresias } from '../domain/sede';
 import { FieldValue, OPCIONES_LLAMABLE, RUTAS, auth, db } from '../infrastructure/firebase';
 import {
   actualizarPerfil,
@@ -252,21 +254,28 @@ export const cambiarRol = onCall(OPCIONES_LLAMABLE, async (peticion) => {
     throw new HttpsError('failed-precondition', 'No puedes cambiar tu propio rol.');
   }
 
-  await actualizarPerfil(uid, { rol: nuevoRol });
-  await auth.setCustomUserClaims(uid, {
-    rol: nuevoRol,
-    activo: perfil.activo,
-    puedeEmitirUrgentes: perfil.puedeEmitirUrgentes,
-    puedeCrearRecurrentes: perfil.puedeCrearRecurrentes,
-  });
+  // El rol es por sede (2.0). Sin sede en la petición, la de la persona si
+  // tiene una sola, que es lo que hacía la aplicación antes de la 2.0.
+  let sedeId: string;
+  try {
+    sedeId = elegirSede(sedesDeMembresias(membresiasDe(perfil)), (peticion.data as { sedeId?: unknown }).sedeId);
+  } catch (e) {
+    throw comoHttps(e);
+  }
+  const membresias = conRolEnSede(perfil, sedeId, nuevoRol);
+  // `rol` sigue siendo el de la sede principal, para las versiones anteriores.
+  const rolPrincipal = membresias[sedePrincipal(membresias)]?.rol ?? nuevoRol;
+  const actualizado: PerfilUsuario = { ...perfil, rol: rolPrincipal, membresias };
+  await actualizarPerfil(uid, { rol: rolPrincipal, membresias });
+  await auth.setCustomUserClaims(uid, { ...claimsDe(actualizado) });
   await escribirAsiento(
     asiento(
       'USUARIO_ROL_CAMBIADO',
       solicitante,
       'USUARIO',
       uid,
-      `Rol de ${perfil.correo}: ${perfil.rol} → ${nuevoRol}`,
-      { rolAnterior: perfil.rol, rolNuevo: nuevoRol },
+      `Rol de ${perfil.correo} en ${sedeId}: ${rolEnSede(sedesDeMembresias(membresiasDe(perfil)), sedeId) ?? '—'} → ${nuevoRol}`,
+      { rolAnterior: rolEnSede(sedesDeMembresias(membresiasDe(perfil)), sedeId) ?? '', rolNuevo: nuevoRol, sedeId },
     ),
   );
 
@@ -291,12 +300,7 @@ export const cambiarEstadoUsuario = onCall(OPCIONES_LLAMABLE, async (peticion) =
 
   // RN-10: se desactiva, no se borra. El historial queda íntegro.
   await actualizarPerfil(uid, { activo });
-  await auth.setCustomUserClaims(uid, {
-    rol: perfil.rol,
-    activo,
-    puedeEmitirUrgentes: perfil.puedeEmitirUrgentes,
-    puedeCrearRecurrentes: perfil.puedeCrearRecurrentes,
-  });
+  await auth.setCustomUserClaims(uid, { ...claimsDe({ ...perfil, activo }) });
   // Revocar los tokens hace efectiva la desactivación de inmediato; sin esto
   // el usuario seguiría operando hasta que su token caducara, hasta una hora.
   await auth.revokeRefreshTokens(uid);
@@ -346,11 +350,12 @@ export const cambiarAutorizacionesFinas = onCall(OPCIONES_LLAMABLE, async (petic
     recibeAvisos: recibeFinal,
   });
   await auth.setCustomUserClaims(uid, {
-    rol: perfil.rol,
-    activo: perfil.activo,
-    puedeEmitirUrgentes: urgentes,
-    puedeCrearRecurrentes: recurrentes,
-    recibeAvisos: recibeFinal,
+    ...claimsDe({
+      ...perfil,
+      puedeEmitirUrgentes: urgentes,
+      puedeCrearRecurrentes: recurrentes,
+      recibeAvisos: recibeFinal,
+    }),
   });
   await escribirAsiento(
     asiento(

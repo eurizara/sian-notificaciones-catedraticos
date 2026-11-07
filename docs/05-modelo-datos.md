@@ -145,13 +145,15 @@ El identificador del documento es el UID de Firebase Authentication.
 |-------|------|:---:|-------------|
 | `correo` | string | Sí | Correo institucional, en minúsculas. Único |
 | `nombre` | string | Sí | Nombre completo |
-| `rol` | string | Sí | `COORDINADOR` · `ADMINISTRADORA` · `CATEDRATICO` · `AUDITOR` |
+| `rol` | string | Sí | `COORDINADOR` · `ADMINISTRADORA` · `CATEDRATICO` · `AUDITOR`. Desde la 2.0 es el rol en su **sede principal** (la inicial si pertenece a ella); el rol en cada sede está en `membresias` |
 | `activo` | boolean | Sí | `false` desactiva sin borrar (RN-10) |
 | `proveedorAuth` | string | Sí | `google.com` o `password` |
 | `unidadAcademica` | string | No | Facultad o escuela |
 | `puedeEmitirUrgentes` | boolean | Sí | Autorización fina para el rol Administradora |
 | `puedeCrearRecurrentes` | boolean | Sí | Autorización fina para el rol Administradora |
 | `zonaHoraria` | string | No | Heredada de la configuración institucional si está vacía |
+| `membresias` | map | No (2.0) | Sedes a las que pertenece: `{ bdm: { rol: 'CATEDRATICO', facultades: ['ing-sistemas'] } }`. **Ausente equivale a `{ bdm: { rol, facultades: [] } }`**: así los perfiles de antes de la 2.0 siguen igual hasta que la migración lo escribe. Las altas nuevas nacen con él. Máximo 15 sedes, para que el token no pase de 1000 bytes |
+| `adminGeneral` | boolean | No (2.0) | Administración general: crea sedes y asigna a sus coordinadores (RF-SED-06). Ausente = `false` |
 | `creadoEn` | timestamp | Sí | |
 | `actualizadoEn` | timestamp | Sí | |
 | `ultimoAcceso` | timestamp | No | |

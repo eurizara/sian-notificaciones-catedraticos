@@ -53,7 +53,7 @@ responsable el 06/11/2026.
 
 | Orden | ID | Incremento | Tipo | Prioridad | Estado | Versión | PR | Actualizado |
 |---|---|---|---|---|---|---|---|---|
-| 1 | DT-35 | Tocar la notificación de una respuesta no la abre en iPhone | Corrección | Media | En dev | 1.6.20 | #226 | 2026-11-06 |
+| 1 | DT-35 | Tocar la notificación de una respuesta no la abre en iPhone | Corrección | Media | En QA | 1.6.20 | #226, #229 | 2026-11-07 |
 
 ### B. Funcionalidades nuevas aprobadas el 23/09/2026 y pedidas el 06/11/2026
 
@@ -66,7 +66,7 @@ decisiones; documento 14). **Ninguna está empezada.**
 | Orden | ID | Incremento | Tipo | Prioridad | Estado | Versión | PR | Actualizado |
 |---|---|---|---|---|---|---|---|---|
 | 2 | RF-SED-01 | Cada aviso, grupo, carpeta y registro de bitácora pertenece a una sede | Funcionalidad | Alta | Aprobada | 2.0 | — | 2026-11-06 |
-| 3 | RF-SED-02 | Una persona en varias sedes, con un rol en cada una | Funcionalidad | Alta | Aprobada | 2.0 | — | 2026-11-06 |
+| 3 | RF-SED-02 | Una persona en varias sedes, con un rol en cada una | Funcionalidad | Alta | En desarrollo | 2.0 | 2.0-a | 2026-11-07 |
 | 4 | RF-SED-03 | «Enviar a todos» significa todos los de la sede elegida | Funcionalidad | Alta | Aprobada | 2.0 | — | 2026-11-06 |
 | 5 | RF-SED-04 | Quien está en más de una sede elige en cuál trabaja; con una sola, no se le pregunta | Funcionalidad | Alta | Aprobada | 2.0 | — | 2026-11-06 |
 | 6 | RF-SED-05 | Nadie ve ni modifica nada de una sede a la que no pertenece | Seguridad | Alta | Aprobada | 2.0 | — | 2026-11-06 |
@@ -254,7 +254,7 @@ decisiones; documento 14). **Ninguna está empezada.**
 
 ### DT-35 · Tocar la notificación de una respuesta no la abre en iPhone
 
-- **Estado:** En dev (1.6.20, PR #226): falta probarla en iPhone · **Prioridad:** Media · **Origen:** responsable, 2026-09-24
+- **Estado:** En QA (1.6.20, PR #229, 2026-11-07); el PR a producción es el #230 · **Prioridad:** Media · **Origen:** responsable, 2026-09-24
 - **Problema:** en Android, tocar la notificación abre la respuesta. En iPhone la aplicación
   se queda en la bandeja. Desde 1.6.15 la respuesta devuelve el aviso a «Sin leer», así que
   no se pierde, pero no se llega directo a ella.
@@ -360,6 +360,13 @@ decisiones; documento 14). **Ninguna está empezada.**
   - [ ] RF-SED-06 · Solo la administración general crea sedes y asigna coordinadores
   - [ ] Respaldo de producción verificado antes de migrar; correr la migración dos veces deja lo mismo
   - [ ] Probado en desarrollo y QA con datos parecidos a los de producción
+- **Avance por pasos** (ADR-009, «Plan de implementación»):
+  - [ ] 2.0-a · Membresías con rol por sede; `sedes` y `adminGeneral` en el token; todos los claims desde `claimsDe` (corrige que cambiar un rol borraba `recibeAvisos` del token)
+  - [ ] 2.0-b · Avisos, grupos y bitácora con `sedeId`; «todos» dentro de la sede; envío a una facultad
+  - [ ] 2.0-c · Guion de migración idempotente, corrido en desarrollo
+  - [ ] 2.0-d · Mantenimiento de sedes y facultades
+  - [ ] 2.0-e · Aplicación: selector de sede, envío por facultad, membresías en Usuarios
+  - [ ] 2.0-f · Las reglas exigen la sede, con pruebas cruzadas
 - **Pruebas:** reglas por sede contra el emulador, dominio («todos» por sede), migración
   contra el emulador, guion en el documento 09; regresión completa.
 - **Accesibilidad y usabilidad:** la sede actual siempre visible (estado del sistema); el

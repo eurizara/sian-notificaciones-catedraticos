@@ -16,6 +16,7 @@ export * from './mensaje';
 export * from './bitacora';
 export * from './invitacion';
 export * from './grupo';
+export * from './sede';
 export * from './dispositivo';
 export * from './estados/maquinaEstados';
 export * from './recurrencia/estrategiaRecurrencia';

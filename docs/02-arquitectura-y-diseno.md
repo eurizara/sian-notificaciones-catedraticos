@@ -997,7 +997,7 @@ Plegado no cambia nada. Ahí se hojea una lista, y no había nada que arreglar.
 |---------|----------------|
 | Autenticación | Firebase Authentication: Google OAuth y correo/contraseña |
 | Lista blanca institucional | Colección `invitaciones` con los correos autorizados. Una Function verifica la pertenencia en el primer inicio de sesión y crea el perfil; si no está, rechaza y registra el intento |
-| Autorización | *Custom claims* con el rol, sembrados por Function y verificados en reglas de Firestore, reglas de Storage y en cada Function |
+| Autorización | *Custom claims* con el rol, sembrados por Function y verificados en reglas de Firestore, reglas de Storage y en cada Function. Desde la 2.0 también `sedes` (sede → rol) y `adminGeneral`. Todos los claims salen de una sola función, `claimsDe`: armarlos a mano en otro sitio fue lo que borró `recibeAvisos` del token al cambiar un rol (corregido en la 2.0) |
 | Cifrado en tránsito | TLS obligatorio, impuesto por Firebase Hosting |
 | Cifrado en reposo | Cifrado por omisión de Google Cloud |
 | Bitácora inmutable | Reglas que niegan `update` y `delete` sobre `bitacora` a todo cliente; solo el SDK de administración escribe |
