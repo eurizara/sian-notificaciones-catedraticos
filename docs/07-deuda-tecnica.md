@@ -306,7 +306,7 @@ gratuita.
 | DT-32 | Las funciones corren en Node.js 20, que Google retira el 30/10/2026 | Plataforma | **Alta** | **Pagada** (1.5.13, en producción desde el 24/09/2026) | 0 USD |
 | DT-33 | Sin App Check: las funciones aceptan llamadas de fuera de la aplicación | Plataforma | Media | **En pago**: en observación en los tres ambientes (desarrollo desde el 26/09; QA y producción desde el 28/09). Falta exigirlo, tras una semana sin llamadas `MISSING` | 0 USD |
 | DT-34 | Un fallo en el aparato no deja rastro en el servidor | Conocimiento | Media | **Pagada** (1.6.10, en producción desde el 28/09/2026) | 0 USD |
-| DT-35 | Tocar una notificación no abre el aviso ni la respuesta: siempre cae en la bandeja | Alcance | **Media** | **En pago** (1.6.20, en desarrollo): causa probable en iPhone encontrada (la app leía el destino antes de que el worker lo guardara) y corregida con reintentos; falta probarla en un iPhone real. Mitigada desde 1.6.15 | 0 USD |
+| DT-35 | Tocar una notificación no abre el aviso ni la respuesta: siempre cae en la bandeja | Alcance | **Media** | **En pago** (1.6.20, en desarrollo, PR #226): causa probable en iPhone encontrada (la app leía el destino antes de que el worker lo guardara) y corregida con reintentos; falta probarla en un iPhone real. Mitigada desde 1.6.15 | 0 USD |
 | DT-28 | El manual no se alcanza desde dentro de la aplicación | Alcance | Baja | **Pagada** (en producción desde 1.5.11) | 0 USD |
 
 **Prioridad de pago recomendada, en orden:** DT-03 → DT-14 → DT-04 → DT-01.

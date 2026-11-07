@@ -53,7 +53,7 @@ responsable el 06/11/2026.
 
 | Orden | ID | Incremento | Tipo | Prioridad | Estado | Versión | PR | Actualizado |
 |---|---|---|---|---|---|---|---|---|
-| 1 | DT-35 | Tocar la notificación de una respuesta no la abre en iPhone | Corrección | Media | En desarrollo | 1.6.20 | este PR | 2026-11-06 |
+| 1 | DT-35 | Tocar la notificación de una respuesta no la abre en iPhone | Corrección | Media | En dev | 1.6.20 | #226 | 2026-11-06 |
 
 ### B. Funcionalidades nuevas aprobadas el 23/09/2026 y pedidas el 06/11/2026
 
@@ -254,7 +254,7 @@ decisiones; documento 14). **Ninguna está empezada.**
 
 ### DT-35 · Tocar la notificación de una respuesta no la abre en iPhone
 
-- **Estado:** En desarrollo (1.6.20) · **Prioridad:** Media · **Origen:** responsable, 2026-09-24
+- **Estado:** En dev (1.6.20, PR #226): falta probarla en iPhone · **Prioridad:** Media · **Origen:** responsable, 2026-09-24
 - **Problema:** en Android, tocar la notificación abre la respuesta. En iPhone la aplicación
   se queda en la bandeja. Desde 1.6.15 la respuesta devuelve el aviso a «Sin leer», así que
   no se pierde, pero no se llega directo a ella.
@@ -273,7 +273,7 @@ decisiones; documento 14). **Ninguna está empezada.**
 - **Accesibilidad y usabilidad:** heurística de Nielsen «estado visible del sistema»: la
   persona debe ver la respuesta que motivó la notificación.
 - **Documentos tocados:** 07 (DT-35), 09, manual del catedrático.
-- **Historial:** 2026-09-24 Aprobada · 2026-09-28 mitigada en producción (1.6.0, 1.6.15) · 2026-11-06 En desarrollo (1.6.20): causa probable encontrada y corregida con reintentos, más diagnóstico `apertura`
+- **Historial:** 2026-09-24 Aprobada · 2026-09-28 mitigada en producción (1.6.0, 1.6.15) · 2026-11-06 En dev (1.6.20, PR #226): causa probable encontrada y corregida con reintentos, más diagnóstico `apertura`
 
 ### S-4 · Exigir App Check en las funciones
 
