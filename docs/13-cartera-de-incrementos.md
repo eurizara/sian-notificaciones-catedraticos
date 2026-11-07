@@ -367,7 +367,7 @@ decisiones; documento 14). **Ninguna está empezada.**
   - [x] 2.0-d (PR #234) · Mantenimiento de sedes y facultades (sección Catálogos, componente común)
   - [x] 2.0-e1 (PR #235) · La sede de trabajo en cada llamada; selector de sede; grupos y programados por sede
   - [ ] 2.0-e2 · Envío y grupos por facultad; facultades de cada persona en Usuarios. RF-FAC-05 (reportes por facultad) queda para después de la 2.0-f
-  - [ ] 2.0-f · Las reglas exigen la sede, con pruebas cruzadas
+  - [ ] 2.0-f · Las reglas exigen la sede, con pruebas cruzadas. **Espera decisión del responsable** sobre la bitácora vieja, las entregas y la lista de usuarios (ADR-009, «2.0-f: lo que falta decidir»)
 - **Pruebas:** reglas por sede contra el emulador, dominio («todos» por sede), migración
   contra el emulador, guion en el documento 09; regresión completa.
 - **Accesibilidad y usabilidad:** la sede actual siempre visible (estado del sistema); el
