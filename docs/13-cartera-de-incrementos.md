@@ -179,7 +179,7 @@ documento 14). **Ninguna está empezada.**
 |---|---|---|---|---|---|---|---|---|
 | 68 | DOC-07 | Estados viejos en el resumen del documento 07 (DT-07, DT-21, DT-23) | Documentación | Baja | En dev | — | #222 | 2026-11-06 |
 | 69 | DOC-CAT | El guion de la cátedra dice 12 pasos de despliegue y son 15 | Documentación | Baja | Aprobada | — | — | 2026-11-06 |
-| 70 | DOC-14 | Análisis de facultades, catálogos, caja chica y encuestas | Documentación | Alta | En desarrollo | — | este PR | 2026-11-06 |
+| 70 | DOC-14 | Análisis de facultades, catálogos, caja chica y encuestas | Documentación | Alta | En desarrollo | — | #223 | 2026-11-06 |
 
 ### H. Bloqueadas por algo externo
 
@@ -581,7 +581,7 @@ documento 14). **Ninguna está empezada.**
 
 ### DOC-14 · Análisis de facultades, catálogos, caja chica y encuestas
 
-- **Estado:** En desarrollo (este PR) · **Prioridad:** Alta · **Origen:** responsable, 06/11/2026
+- **Estado:** En desarrollo (PR #223) · **Prioridad:** Alta · **Origen:** responsable, 06/11/2026
 - **Criterios de aceptación:**
   - [x] Documento 14 con lo pedido, modelo, riesgos, decisiones y orden recomendado
   - [x] Requisitos propuestos en el documento 01, sección 3.10
