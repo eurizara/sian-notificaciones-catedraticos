@@ -721,6 +721,7 @@ pantalla**, en iPhone y en Android.
 | C6-6 | Con el aviso ya **confirmado** o en «Leídos», quien lo envió contesta. El catedrático abre SIAN (tocando la notificación o no) | El aviso aparece en **«Sin leer»** con «Respuesta nueva de quien lo envió», y cuenta en la pestaña y en el icono. Al desplegarlo se ve la respuesta; al salir, el aviso vuelve a «Leídos» y sigue confirmado. Solo le pasa a quien recibió la respuesta (1.6.15) |
 | C6-4 | Con la app abierta redactando algo, tocar una notificación | La app pasa al frente y abre el destino **sin recargarse** |
 | C6-5 | Tocar la notificación de prueba del registro del aparato | Abre la bandeja, como antes |
+| C6-7 | **iPhone (1.6.20).** Con la app en segundo plano unos minutos (que iOS la congele), tocar la notificación de una respuesta. Repetir tres veces, una con la app cerrada del todo | Lleva **a esa respuesta** en los tres casos, a lo sumo en unos segundos. Después, en Alcance → Fallos de los aparatos: si aparece «Abrir lo que se tocó en una notificación (diagnóstico)», anotar el detalle (intento y milisegundos) en la ficha DT-35 |
 
 ## Probar App Check en modo observación (DT-33, 1.6.9)
 

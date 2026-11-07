@@ -306,7 +306,7 @@ gratuita.
 | DT-32 | Las funciones corren en Node.js 20, que Google retira el 30/10/2026 | Plataforma | **Alta** | **Pagada** (1.5.13, en producción desde el 24/09/2026) | 0 USD |
 | DT-33 | Sin App Check: las funciones aceptan llamadas de fuera de la aplicación | Plataforma | Media | **En pago**: en observación en los tres ambientes (desarrollo desde el 26/09; QA y producción desde el 28/09). Falta exigirlo, tras una semana sin llamadas `MISSING` | 0 USD |
 | DT-34 | Un fallo en el aparato no deja rastro en el servidor | Conocimiento | Media | **Pagada** (1.6.10, en producción desde el 28/09/2026) | 0 USD |
-| DT-35 | Tocar una notificación no abre el aviso ni la respuesta: siempre cae en la bandeja | Alcance | **Media** | **Mitigada** (1.6.0 y 1.6.15, en producción desde el 28/09/2026): Android abre la respuesta; en iPhone la respuesta aparece en «Sin leer». La causa en iOS sigue abierta | 0 USD |
+| DT-35 | Tocar una notificación no abre el aviso ni la respuesta: siempre cae en la bandeja | Alcance | **Media** | **En pago** (1.6.20, en desarrollo): causa probable en iPhone encontrada (la app leía el destino antes de que el worker lo guardara) y corregida con reintentos; falta probarla en un iPhone real. Mitigada desde 1.6.15 | 0 USD |
 | DT-28 | El manual no se alcanza desde dentro de la aplicación | Alcance | Baja | **Pagada** (en producción desde 1.5.11) | 0 USD |
 
 **Prioridad de pago recomendada, en orden:** DT-03 → DT-14 → DT-04 → DT-01.
@@ -2497,5 +2497,32 @@ una respuesta **sigue** abriendo la bandeja en «Sin leer». Mientras se encuent
 entrega del destino no llega a la aplicación en iOS, el aviso respondido **vuelve a «Sin
 leer»** para quien recibió la respuesta, con una marca que lo explica: ahí es justo donde cae
 la aplicación. La entrega no se toca. Queda abierto entender el fallo de iOS.
+
+### 1.6.20 — La carrera que explica iPhone (06/11/2026)
+
+Revisando el código antes de instrumentar, apareció una causa que encaja con todo lo
+observado. Al volver al frente, la aplicación leía el destino guardado **una sola vez, en
+el instante** en que volvía (`didChangeAppLifecycleState` → `_recoger`). En iPhone, tocar
+la notificación hace dos cosas a la vez: trae la app al frente y despierta al worker para
+que atienda `notificationclick`. Si la app leía antes de que el worker terminara de guardar,
+encontraba el almacén vacío. El tercer camino, el mensaje `sian:abrir`, se pierde con la app
+congelada. Resultado: ningún camino llegaba y la app se quedaba en la bandeja. En Android el
+mensaje sí llega, y por eso allí funcionaba.
+
+**Lo que se hizo:** al arrancar y al volver al frente, la app mira el almacén y, si el
+destino no está, vuelve a mirar a los 0,3 · 1 · 2,5 y 5,5 segundos. Para en cuanto fija un
+destino y deja de buscar si la app pasa a segundo plano; el destino sigue valiendo dos
+minutos (`aperturaVigente`). Una prueba de widget reproduce la carrera (el worker guarda
+400 ms después de volver al frente) y **falla sin los reintentos**.
+
+**Para confirmarlo en producción** se usa DT-34: el tipo nuevo de reporte `apertura` avisa
+cuando el destino llegó **tarde** (con el intento y los milisegundos) o **solo por el
+mensaje**. Si tras la 1.6.20 aparecen reportes «guardado tarde» desde iPhone, la carrera
+queda confirmada como causa. Si el iPhone sigue cayendo en la bandeja **sin ningún
+reporte**, el worker no llegó a guardar, y el siguiente paso es reportar desde el propio
+worker.
+
+**Pendiente:** que el responsable lo pruebe en su iPhone (guion C6 del documento 09, con la
+fila C6-7 nueva).
 
 
