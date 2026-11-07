@@ -601,6 +601,7 @@ abstract final class Textos {
       'por fecha, tipo de evento, actor y mensaje.';
 
   static const String iteracion12 = 'Llega en la iteración 1.2';
+  static const String iteracion20 = 'Llega en la versión 2.0';
   static const String iteracion13 = 'Llega en la iteración 1.3';
   static const String iteracion14 = 'Llega en la iteración 1.4';
 
@@ -1475,4 +1476,44 @@ abstract final class Textos {
   static const String avisoEmuladorSinPush =
       'Los emuladores no entregan notificaciones push reales. FCM no tiene '
       'emulador: la llegada al dispositivo solo se verifica desplegando.';
+
+  // ── Catálogos (2.0 · RF-CAT-01, RF-SED-06, RF-FAC-01) ──────────────────────
+  static const String seccionCatalogos = 'Catálogos';
+  static const String seccionCatalogosTitulo = 'Catálogos';
+  static const String seccionCatalogosDescripcion =
+      'Las listas de las que se elige en el resto de SIAN: las facultades de su '
+      'sede y, para la administración general, las sedes.';
+  static const String catalogoFacultadesExplicacion =
+      'Sirven para enviar un aviso a toda una facultad y para ordenar los grupos.';
+  static const String catalogoSedesExplicacion =
+      'Cada sede tiene su propia gente, sus grupos y sus avisos. Solo la '
+      'administración general las mantiene.';
+  static String catalogoFacultadesDe(String sede) => 'Facultades de $sede';
+  static const String catalogoSedes = 'Sedes';
+  static String catalogoAgregar(String elemento) => 'Agregar $elemento';
+  static String catalogoBuscar(String elemento) => 'Buscar $elemento';
+  static String catalogoVacio(String elemento) =>
+      'Todavía no hay ninguna $elemento. Use «Agregar $elemento».';
+  static const String catalogoNoSePudoLeer =
+      'No se pudo leer la lista. Revise la conexión y vuelva a abrir esta sección.';
+  static const String catalogoNoSeGuardo =
+      'No se pudo guardar el cambio. Inténtelo de nuevo.';
+  static const String catalogoActiva = 'Activa';
+  static const String catalogoInactiva = 'Inactiva: no se ofrece para elegir';
+  static String catalogoCambiarNombre(String nombre) =>
+      'Cambiar el nombre de «$nombre»';
+  static const String catalogoNombre = 'Nombre';
+  static const String catalogoNombreAyuda =
+      'Como se verá en las listas. Se puede cambiar después.';
+  static const String catalogoNombreCorto =
+      'Escriba un nombre de al menos 2 caracteres.';
+  static String catalogoDesactivarTitulo(String nombre) =>
+      '¿Desactivar «$nombre»?';
+  static String catalogoDesactivarExplicacion(String elemento) =>
+      'Dejará de ofrecerse para elegir. Lo ya registrado conserva su nombre, y '
+      'puede reactivar esta $elemento cuando quiera.';
+  static String catalogoReactivarTitulo(String nombre) =>
+      '¿Reactivar «$nombre»?';
+  static String catalogoReactivarExplicacion(String elemento) =>
+      'Volverá a ofrecerse para elegir, tal como estaba.';
 }

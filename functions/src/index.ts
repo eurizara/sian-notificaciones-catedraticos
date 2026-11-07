@@ -69,4 +69,5 @@ export {
 } from './triggers/administracion';
 
 /** El dominio se exporta para que las pruebas y los scripts lo consuman. */
+export { guardarFacultad, guardarSede } from './triggers/catalogos';
 export * as dominio from './domain';

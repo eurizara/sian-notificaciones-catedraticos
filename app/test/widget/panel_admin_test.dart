@@ -39,6 +39,8 @@ void main() {
         Textos.seccionProgramacion,
         Textos.seccionGrupos,
         Textos.seccionUsuarios,
+        // 2.0: facultades de su sede y, con la bandera, las sedes.
+        Textos.seccionCatalogos,
         Textos.seccionEntregas,
         Textos.seccionBitacora,
       ]);
