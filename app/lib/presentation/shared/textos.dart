@@ -1516,4 +1516,7 @@ abstract final class Textos {
       '¿Reactivar «$nombre»?';
   static String catalogoReactivarExplicacion(String elemento) =>
       'Volverá a ofrecerse para elegir, tal como estaba.';
+
+  // ── Sede de trabajo (2.0 · RF-SED-04) ─────────────────────────────────────
+  static String sedeDeTrabajo(String sede) => 'Sede de trabajo: $sede. Cambiar';
 }

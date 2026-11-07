@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/sesion.dart';
 import '../infrastructure/firebase/repositorio_programacion.dart';
 import 'proveedores_sesion.dart';
+import 'proveedores_sede.dart';
 
 final Provider<RepositorioProgramacion> repositorioProgramacionProvider =
     Provider<RepositorioProgramacion>((Ref ref) => RepositorioProgramacion());
@@ -24,7 +25,15 @@ final programadosProvider = StreamProvider<List<MensajeProgramado>>((Ref ref) {
       ? sesion.usuario.uid
       : null;
 
+  // Solo los de la sede de trabajo (2.0). Hasta que las reglas exijan la sede
+  // (2.0-f) el filtro es aquí; después irá en la consulta.
+  final String sede = ref.watch(sedeDeTrabajoProvider);
   return ref
       .watch(repositorioProgramacionProvider)
-      .observarProgramados(soloDe: soloDe);
+      .observarProgramados(soloDe: soloDe)
+      .map(
+        (List<MensajeProgramado> todos) => todos
+            .where((MensajeProgramado m) => m.sedeId == sede)
+            .toList(),
+      );
 });
