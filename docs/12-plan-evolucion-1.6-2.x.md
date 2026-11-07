@@ -376,7 +376,11 @@ lo tocaría.
 
 ---
 
-## 7. Repositorio de archivos (iteraciones 2.1 y 2.2) · ADR-010
+## 7. Repositorio de archivos (iteraciones 2.1 y 2.2, hoy 2.4 y 2.5) · ADR-010
+
+> El 06/11/2026 el responsable aprobó adelantar caja chica y encuestas (documento 14). El
+> repositorio pasa a las versiones **2.4** (administración) y **2.5** (catedrático); el
+> contenido de esta sección no cambia.
 
 Resumen aquí; el análisis completo en [ADR-010](adr/ADR-010-repositorio-archivos.md).
 

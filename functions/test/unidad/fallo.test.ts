@@ -36,6 +36,12 @@ describe('leerReporte', () => {
     expect(leerReporte(bueno)).toEqual(bueno);
   });
 
+  it('acepta el diagnóstico de apertura de DT-35 (1.6.20)', () => {
+    const r = leerReporte({ ...bueno, que: 'apertura', detalle: 'guardado tarde: intento 2, 1012 ms' });
+    expect(r?.que).toBe('apertura');
+    expect(r?.detalle).toBe('guardado tarde: intento 2, 1012 ms');
+  });
+
   it('solo los tipos de la lista: lo demás se descarta', () => {
     expect(leerReporte({ ...bueno, que: 'lo-que-sea' })).toBeNull();
     expect(leerReporte({ ...bueno, que: undefined })).toBeNull();
