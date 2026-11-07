@@ -499,6 +499,7 @@ abstract final class Textos {
     'notificacion' => 'Mostrar una notificación con la app abierta',
     'app-check' => 'La comprobación de la aplicación (App Check)',
     'no-controlado' => 'Un error inesperado',
+    'apertura' => 'Abrir lo que se tocó en una notificación (diagnóstico)',
     _ => clave,
   };
 

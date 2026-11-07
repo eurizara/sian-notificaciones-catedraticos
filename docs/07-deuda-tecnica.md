@@ -279,7 +279,7 @@ gratuita.
 | DT-04 | Acceso a adjuntos sin verificar destinatario | Plataforma | Media | Abierta | 0 USD |
 | DT-05 | Precisión del planificador de 60 s | Costo | Baja | Aceptada | — |
 | DT-06 | Dominio duplicado Dart / TypeScript | Conocimiento | Media | Mitigada | 0 USD |
-| DT-07 | Sin observabilidad ni alertas | Alcance | Media | **Pagada** (en desarrollo y QA) | 0 USD |
+| DT-07 | Sin observabilidad ni alertas | Alcance | Media | **Pagada** (en producción desde 1.5.11) | 0 USD |
 | DT-08 | Grupos limitados a 200 miembros | Alcance | Baja | Aceptada | 0 USD |
 | DT-09 | Sin multi-idioma | Alcance | Baja | Mitigada | 0 USD |
 | DT-10 | Sin cifrado de extremo a extremo | Alcance | Baja | Aceptada | — |
@@ -293,9 +293,9 @@ gratuita.
 | DT-18 | Se acumula un token de FCM por cada ingreso en iOS | Plataforma | **Alta** | **Pagada** | 0 USD |
 | DT-19 | Entrar con Google falla en la PWA de iOS por aislamiento de almacenamiento | Plataforma | Alta | **Pagada** | 0 USD |
 | DT-20 | Instalada como aplicación, nada dice en qué ambiente se está | Conocimiento | **Media** | **Pagada** | 0 USD |
-| DT-21 | El tema oscuro está construido pero apagado, y no se puede elegir | Alcance | Baja | **Pagada** (en desarrollo y QA) | 0 USD |
+| DT-21 | El tema oscuro está construido pero apagado, y no se puede elegir | Alcance | Baja | **Pagada** (en producción desde 1.5.11) | 0 USD |
 | DT-22 | Un token muerto solo se descubre cuando falla un aviso real | Alcance | **Alta** | **Pagada** | 0 USD |
-| DT-23 | El service worker no atiende `pushsubscriptionchange` | Plataforma | **Media** | **Pagada** (en desarrollo y QA) | 0 USD |
+| DT-23 | El service worker no atiende `pushsubscriptionchange` | Plataforma | **Media** | **Pagada** (en producción desde 1.5.11) | 0 USD |
 | DT-24 | Un envío con algún fallo deja la pantalla igual y se manda dos veces | Conocimiento | **Alta** | **Pagada** | 0 USD |
 | DT-25 | El entorno local compila con un Flutter distinto del que despliega | Conocimiento | **Media** | **Pagada** | 0 USD |
 | DT-26 | En Android el contador del icono se queda encendido con todo leído | Plataforma | **Media** | **Pagada** | 0 USD |
@@ -306,7 +306,7 @@ gratuita.
 | DT-32 | Las funciones corren en Node.js 20, que Google retira el 30/10/2026 | Plataforma | **Alta** | **Pagada** (1.5.13, en producción desde el 24/09/2026) | 0 USD |
 | DT-33 | Sin App Check: las funciones aceptan llamadas de fuera de la aplicación | Plataforma | Media | **En pago**: en observación en los tres ambientes (desarrollo desde el 26/09; QA y producción desde el 28/09). Falta exigirlo, tras una semana sin llamadas `MISSING` | 0 USD |
 | DT-34 | Un fallo en el aparato no deja rastro en el servidor | Conocimiento | Media | **Pagada** (1.6.10, en producción desde el 28/09/2026) | 0 USD |
-| DT-35 | Tocar una notificación no abre el aviso ni la respuesta: siempre cae en la bandeja | Alcance | **Media** | **Mitigada** (1.6.0 y 1.6.15, en producción desde el 28/09/2026): Android abre la respuesta; en iPhone la respuesta aparece en «Sin leer». La causa en iOS sigue abierta | 0 USD |
+| DT-35 | Tocar una notificación no abre el aviso ni la respuesta: siempre cae en la bandeja | Alcance | **Media** | **En pago** (1.6.20, en desarrollo, PR #226): causa probable en iPhone encontrada (la app leía el destino antes de que el worker lo guardara) y corregida con reintentos; falta probarla en un iPhone real. Mitigada desde 1.6.15 | 0 USD |
 | DT-28 | El manual no se alcanza desde dentro de la aplicación | Alcance | Baja | **Pagada** (en producción desde 1.5.11) | 0 USD |
 
 **Prioridad de pago recomendada, en orden:** DT-03 → DT-14 → DT-04 → DT-01.
@@ -2497,5 +2497,37 @@ una respuesta **sigue** abriendo la bandeja en «Sin leer». Mientras se encuent
 entrega del destino no llega a la aplicación en iOS, el aviso respondido **vuelve a «Sin
 leer»** para quien recibió la respuesta, con una marca que lo explica: ahí es justo donde cae
 la aplicación. La entrega no se toca. Queda abierto entender el fallo de iOS.
+
+### 1.6.20 — La carrera que explica iPhone (06/11/2026)
+
+Revisando el código antes de instrumentar, apareció una causa que encaja con todo lo
+observado. Al volver al frente, la aplicación leía el destino guardado **una sola vez, en
+el instante** en que volvía (`didChangeAppLifecycleState` → `_recoger`). En iPhone, tocar
+la notificación hace dos cosas a la vez: trae la app al frente y despierta al worker para
+que atienda `notificationclick`. Si la app leía antes de que el worker terminara de guardar,
+encontraba el almacén vacío. El tercer camino, el mensaje `sian:abrir`, se pierde con la app
+congelada. Resultado: ningún camino llegaba y la app se quedaba en la bandeja. En Android el
+mensaje sí llega, y por eso allí funcionaba.
+
+**Lo que se hizo:** al arrancar y al volver al frente, la app mira el almacén y, si el
+destino no está, vuelve a mirar a los 0,3 · 1 · 2,5 y 5,5 segundos. Para en cuanto fija un
+destino y deja de buscar si la app pasa a segundo plano; el destino sigue valiendo dos
+minutos (`aperturaVigente`). Una prueba de widget reproduce la carrera (el worker guarda
+400 ms después de volver al frente) y **falla sin los reintentos**.
+
+**Para confirmarlo en producción** se usa DT-34: el tipo nuevo de reporte `apertura` avisa
+cuando el destino llegó **tarde** (con el intento y los milisegundos) o **solo por el
+mensaje**. Si tras la 1.6.20 aparecen reportes «guardado tarde» desde iPhone, la carrera
+queda confirmada como causa. Si el iPhone sigue cayendo en la bandeja **sin ningún
+reporte**, el worker no llegó a guardar, y el siguiente paso es reportar desde el propio
+worker.
+
+**Probado el 07/11/2026** por el responsable en su iPhone, en desarrollo: tocar la
+notificación de una respuesta **lleva a esa respuesta**. En Alcance no apareció ningún
+reporte `apertura` de su aparato (solo el de la prueba de humo): en esas pruebas el destino
+se encontró a la primera, así que **no quedó demostrado** que la carrera fuera la causa en
+cada caso, aunque la corrección la cubre. El diagnóstico sigue activo en producción: si un
+iPhone necesita los reintentos, aparecerá ahí y se anota en esta ficha. La ficha se cierra
+como pagada cuando funcione también en producción.
 
 

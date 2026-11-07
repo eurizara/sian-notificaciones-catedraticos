@@ -7,6 +7,8 @@
 /// ni la pantalla en que se haya quedado la aplicación.
 library;
 
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,8 +16,10 @@ import 'package:sian/application/proveedores_dispositivos.dart';
 import 'package:sian/application/proveedores_programacion.dart';
 import 'package:sian/application/proveedores_respuestas.dart';
 import 'package:sian/application/proveedores_sesion.dart';
+import 'package:sian/core/fallos.dart';
 import 'package:sian/core/navegador.dart';
 import 'package:sian/core/plataforma/apertura.dart';
+import 'package:sian/core/plataforma/envio_reporte_vm.dart';
 import 'package:sian/domain/repositorios.dart';
 import 'package:sian/domain/rol.dart';
 import 'package:sian/domain/sesion.dart';
@@ -267,6 +271,83 @@ void main() {
       expect(find.text('Cuerpo de Aviso ya leído.'), findsOneWidget);
       expect(c.read(aperturaPendienteProvider), isNull);
       expect(aperturaGuardadaDePrueba, isNull, reason: 'se borra al tomarlo');
+    });
+
+    testWidgets('iPhone: el worker guarda DESPUÉS de que la app volvió al frente (1.6.20)', (
+      WidgetTester tester,
+    ) async {
+      // La carrera que dejaba al iPhone en la bandeja: la app volvía al frente,
+      // miraba el almacén vacío, y el mensaje del worker se perdía. Ahora vuelve
+      // a mirar unos segundos, y avisa al servidor de que llegó tarde.
+      ReporteDeFallos.reiniciar();
+      reportesDePrueba.clear();
+      ReporteDeFallos.configurar(proyecto: 'sian-prueba', usaEmulador: true);
+      addTearDown(ReporteDeFallos.reiniciar);
+      final ProviderContainer c = await montar(tester, tres);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('Cuerpo de Aviso ya leído.'), findsNothing);
+
+      // El worker termina de guardar un momento después.
+      aperturaGuardadaDePrueba = <String, String>{
+        'abrir': 'aviso',
+        'aviso': 'm-leido',
+        'hilo': '',
+      };
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Cuerpo de Aviso ya leído.'), findsOneWidget);
+      expect(c.read(aperturaPendienteProvider), isNull);
+      final List<Map<String, dynamic>> enviados = <Map<String, dynamic>>[
+        for (final ReporteEnviado r in reportesDePrueba)
+          jsonDecode(r.cuerpo) as Map<String, dynamic>,
+      ];
+      expect(<Object?>[for (final Map<String, dynamic> r in enviados) r['que']], <String>['apertura']);
+      expect(enviados.single['detalle'], startsWith('guardado tarde: intento 1'));
+    });
+
+    testWidgets('si el destino no aparece, deja de buscar a los pocos segundos', (
+      WidgetTester tester,
+    ) async {
+      final ProviderContainer c = await montar(tester, tres);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump(EscuchaDeAperturasReintentos.total + const Duration(seconds: 1));
+
+      // Ya no mira: un destino guardado ahora no se abre solo.
+      aperturaGuardadaDePrueba = <String, String>{
+        'abrir': 'aviso',
+        'aviso': 'm-leido',
+        'hilo': '',
+      };
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+      expect(c.read(aperturaPendienteProvider), isNull);
+      expect(find.text('Cuerpo de Aviso ya leído.'), findsNothing);
+      aperturaGuardadaDePrueba = null;
+    });
+
+    testWidgets('al pasar a segundo plano se dejan de buscar destinos', (
+      WidgetTester tester,
+    ) async {
+      final ProviderContainer c = await montar(tester, tres);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump(const Duration(milliseconds: 100));
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+
+      aperturaGuardadaDePrueba = <String, String>{
+        'abrir': 'aviso',
+        'aviso': 'm-leido',
+        'hilo': '',
+      };
+      await tester.pump(const Duration(seconds: 6));
+      expect(c.read(aperturaPendienteProvider), isNull);
+      expect(aperturaGuardadaDePrueba, isNotNull, reason: 'nadie lo tomó');
+      aperturaGuardadaDePrueba = null;
     });
 
     testWidgets('el guardado manda sobre el mensaje, y el mismo destino no se abre dos veces', (

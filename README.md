@@ -5,9 +5,11 @@ académico y a personal administrativo autorizado emitir notificaciones informat
 urgentes (texto, voz e imagen), programarlas, repetirlas con un patrón definido y llevar
 trazabilidad completa con confirmación de lectura.
 
-> **Estado:** Fase 1 **en producción** desde el 26 de agosto de 2026. Los tres ambientes
-> van en **1.6.17**, la iteración de mejoras de uso, liberada el 28/09/2026
-> ([plan](docs/08-plan-iteraciones.md), [evolución](docs/12-plan-evolucion-1.6-2.x.md)).
+> **Estado:** Fase 1 **en producción** desde el 26 de agosto de 2026. Producción va en
+> **1.6.19** (03/11/2026) y la **1.6.20** (DT-35: en iPhone, tocar la notificación de una
+> respuesta lleva a ella) está en camino. Lo que falta, en orden, está en la
+> [cartera](docs/13-cartera-de-incrementos.md) ([plan](docs/08-plan-iteraciones.md),
+> [evolución](docs/12-plan-evolucion-1.6-2.x.md), [análisis 2.x](docs/14-analisis-facultades-catalogos-caja-chica-encuestas.md)).
 >
 > | Ambiente | Aplicación | Manuales |
 > |---|---|---|
@@ -99,10 +101,14 @@ solo se verifica desplegando a `dev` (documento 06, etapa D.5).
 | — | **Notas de la versión dentro de los manuales** | En producción |
 | 1.5 | Alcance distingue reinstalaciones (1.5.12); Node.js 22, respaldos de Firestore y presupuestos (1.5.13) | En producción |
 | 1.6 | Tocar una notificación abre lo que la originó; copiar, enlaces y guardar imágenes; tabulador; manual en modo oscuro; envío a personas; mensajes de 1000 caracteres; mejoras de Alcance; App Check; reporte de fallos del aparato; carga más ligera; dependencias mensuales; plantillas; respuestas en «Sin leer»; listas plegables (1.6.0–1.6.17) | En producción |
-| 2.0 | Varias sedes, una persona en más de una ([ADR-009](docs/adr/ADR-009-multisede.md)) | Aprobada, sin empezar |
-| 2.1 · 2.2 | Repositorio de archivos por carpetas y grupos ([ADR-010](docs/adr/ADR-010-repositorio-archivos.md)) | Aprobada, sin empezar |
+| 1.6 | Mantenimiento de octubre y noviembre, demostraciones de CI/CD, cartera de incrementos (1.6.18–1.6.19) | En producción |
+| 1.6 | En iPhone, tocar la notificación de una respuesta lleva a ella (1.6.20, DT-35) | Probada en desarrollo |
+| 2.0 | Varias sedes y facultades, una persona en más de una, mantenimiento de catálogos ([ADR-009](docs/adr/ADR-009-multisede.md), [documento 14](docs/14-analisis-facultades-catalogos-caja-chica-encuestas.md)) | Aprobada, sin empezar |
+| 2.1 · 2.2 | Caja chica por sede y facultad: kárdex, aportes y reportes ([documento 14](docs/14-analisis-facultades-catalogos-caja-chica-encuestas.md)) | Aprobada, sin empezar |
+| 2.3 | Encuestas ([documento 14](docs/14-analisis-facultades-catalogos-caja-chica-encuestas.md)) | Aprobada, sin empezar |
+| 2.4 · 2.5 | Repositorio de archivos por carpetas y grupos ([ADR-010](docs/adr/ADR-010-repositorio-archivos.md)) | Aprobada, sin empezar |
 
-**Versión:** 1.6.17 en los tres ambientes (liberada a producción el 28/09/2026). La aplicación enseña su versión en el pie y avisa cuando hay una más reciente.
+**Versión:** 1.6.19 en producción (03/11/2026); 1.6.20 en camino. La aplicación enseña su versión en el pie y avisa cuando hay una más reciente.
 Qué trae cada una, para quien usa SIAN, está en las **notas de la versión**
 (`/manuales/notas/`); el detalle técnico y el esquema, en el documento 08.
 
@@ -127,8 +133,9 @@ continua corren en cada solicitud de incorporación.
 | 09 | [Guion de pruebas](docs/09-guion-de-pruebas.md) | Qué probar en cada ronda, paso a paso, con su alcance y lo que queda fuera |
 | 10 | [Especificación de casos de uso](docs/10-casos-de-uso.md) | Los doce casos de uso en formato extendido ISO/IEC/IEEE 29148: actores, precondiciones, garantías, flujos principales, alternativos y de excepción, y trazabilidad a requisitos |
 | 11 | [Ambientes](docs/11-ambientes.md) | Los tres ambientes: proyectos, URL, quién tiene acceso, configuración por ambiente, costo real medido y cómo se promueve un cambio |
-| 12 | [Plan de evolución 1.6 · 2.0 · 2.1](docs/12-plan-evolucion-1.6-2.x.md) | **Aprobado el 23/09/2026.** 1.5.13 y 1.6 en producción; siguen varias sedes (2.0) y el repositorio de archivos (2.1 · 2.2) |
+| 12 | [Plan de evolución 1.6 · 2.0 · 2.1](docs/12-plan-evolucion-1.6-2.x.md) | **Aprobado el 23/09/2026.** 1.5.13 y 1.6 en producción; siguen varias sedes (2.0) y el repositorio de archivos (hoy 2.4 · 2.5, ver documento 14) |
 | 13 | [Cartera de incrementos](docs/13-cartera-de-incrementos.md) | La única lista de lo pendiente, en el orden en que se pide, con el estado de cada punto (propuesta, aprobada, en dev, en QA, en producción) y sus criterios de aceptación |
+| 14 | [Análisis: facultades, catálogos, caja chica y encuestas](docs/14-analisis-facultades-catalogos-caja-chica-encuestas.md) | **Aprobado el 06/11/2026**, con sus diez decisiones. Qué se pidió, modelo de datos, cómo se protege el dinero de la caja chica, decisiones pendientes y el orden recomendado de todo lo que falta |
 
 ---
 
