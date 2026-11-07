@@ -353,6 +353,48 @@ orden y la estrategia están en el [documento 12](12-plan-evolucion-1.6-2.x.md).
 | RNF-23 | Los formularios se recorren con el tabulador en el orden en que se leen, y al revés con Mayús+Tab | D | **1.6.4 ✓** |
 | RNF-24 | Los manuales siguen la apariencia elegida en la aplicación, o la del dispositivo si no se eligió ninguna, con contraste AA en los dos modos | D | **1.6.5 ✓** |
 
+### 3.10 Propuestos el 06/11/2026: facultades, catálogos, caja chica y encuestas
+
+Pedidos por el responsable el 6 de noviembre de 2026. **Todavía no están aprobados**: el
+análisis, las decisiones pendientes y el orden recomendado están en el
+[documento 14](14-analisis-facultades-catalogos-caja-chica-encuestas.md), y el estado de cada
+uno en la [cartera](13-cartera-de-incrementos.md).
+
+| ID | Requisito | Prioridad | Iteración |
+|----|-----------|:---:|:---:|
+| RF-FAC-01 | Cada sede puede tener facultades; una persona pertenece a una o varias facultades de su sede | B | 2.0 |
+| RF-FAC-02 | Un aviso puede dirigirse a toda una facultad | B | 2.0 |
+| RF-FAC-03 | Los grupos pueden pertenecer a una facultad, y se filtran por ella | B | 2.0 |
+| RF-FAC-04 | Con una sola facultad o ninguna, la aplicación no pregunta ni muestra la facultad | B | 2.0 |
+| RF-FAC-05 | Los reportes se pueden filtrar por facultad | P | 2.0 |
+| RF-CAT-01 | Cada catálogo tiene una pantalla de mantenimiento con buscador, alta, edición y activar/desactivar | B | 2.0 |
+| RF-CAT-02 | Un elemento en uso no se borra: se desactiva y se conserva su nombre en lo ya registrado | B | 2.0 |
+| RF-CAT-03 | No se aceptan nombres repetidos dentro del mismo catálogo y sede | B | 2.0 |
+| RF-CAT-04 | Cada alta, cambio o baja de un catálogo queda en la bitácora | B | 2.0 |
+| RF-CAT-05 | Cada catálogo lo mantiene solo el rol indicado en el documento 14; los demás solo lo usan | B | 2.0 |
+| RF-CCH-01 | La coordinación crea una caja chica y registra su carga inicial | B | por fijar |
+| RF-CCH-02 | La coordinación asigna uno o varios catedráticos como operadores de una caja | B | por fijar |
+| RF-CCH-03 | Solo los operadores registran entradas y salidas | B | por fijar |
+| RF-CCH-04 | Cada movimiento lleva fecha, tipo, monto, observación y quién lo registró | B | por fijar |
+| RF-CCH-05 | Los tipos de entrada y de salida son catálogos que mantiene la coordinación | B | por fijar |
+| RF-CCH-06 | Un aporte de catedrático exige elegir al catedrático y entra al kárdex | B | por fijar |
+| RF-CCH-07 | El kárdex muestra los movimientos en orden con el saldo después de cada uno | B | por fijar |
+| RF-CCH-08 | El saldo lo calcula el servidor, en la misma transacción que el movimiento | B | por fijar |
+| RF-CCH-09 | Ninguna salida puede dejar el saldo en negativo | B | por fijar |
+| RF-CCH-10 | Los movimientos no se editan ni se borran; un error se corrige con una anulación que indica el motivo | B | por fijar |
+| RF-CCH-11 | Todos los catedráticos de la sede ven el saldo de la caja | B | por fijar |
+| RF-CCH-12 | Reporte de aportes acumulados por catedrático | P | por fijar |
+| RF-CCH-13 | Reporte por rango de fechas y totales por tipo de entrada y de salida | P | por fijar |
+| RF-CCH-14 | Exportar el kárdex a CSV | P | por fijar |
+| RF-ENC-01 | La coordinación y la administración crean encuestas con preguntas de opción única, opción múltiple, escala y texto corto | B | por fijar |
+| RF-ENC-02 | Una encuesta se envía con los mismos destinatarios que un aviso, y llega por notificación | B | por fijar |
+| RF-ENC-03 | Cada persona responde una sola vez, hasta la fecha de cierre | B | por fijar |
+| RF-ENC-04 | Una encuesta puede ser anónima: nadie puede saber quién dio qué respuesta | B | por fijar |
+| RF-ENC-05 | Los resultados se muestran sumados por pregunta | B | por fijar |
+| RF-ENC-06 | Se ve quién respondió y quién no; en las anónimas, solo la participación | B | por fijar |
+| RF-ENC-07 | Recordatorio a quien no respondió | P | por fijar |
+| RF-ENC-08 | Los resultados se exportan a CSV | P | por fijar |
+
 ---
 
 ## 4. Requisitos no funcionales

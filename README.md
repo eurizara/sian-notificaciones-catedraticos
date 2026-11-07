@@ -129,6 +129,7 @@ continua corren en cada solicitud de incorporación.
 | 11 | [Ambientes](docs/11-ambientes.md) | Los tres ambientes: proyectos, URL, quién tiene acceso, configuración por ambiente, costo real medido y cómo se promueve un cambio |
 | 12 | [Plan de evolución 1.6 · 2.0 · 2.1](docs/12-plan-evolucion-1.6-2.x.md) | **Aprobado el 23/09/2026.** 1.5.13 y 1.6 en producción; siguen varias sedes (2.0) y el repositorio de archivos (2.1 · 2.2) |
 | 13 | [Cartera de incrementos](docs/13-cartera-de-incrementos.md) | La única lista de lo pendiente, en el orden en que se pide, con el estado de cada punto (propuesta, aprobada, en dev, en QA, en producción) y sus criterios de aceptación |
+| 14 | [Análisis: facultades, catálogos, caja chica y encuestas](docs/14-analisis-facultades-catalogos-caja-chica-encuestas.md) | **Propuesta del 06/11/2026.** Qué se pidió, modelo de datos, cómo se protege el dinero de la caja chica, decisiones pendientes y el orden recomendado de todo lo que falta |
 
 ---
 
