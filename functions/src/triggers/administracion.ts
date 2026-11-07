@@ -21,7 +21,17 @@ import { crearInvitacion, interpretarCsv } from '../domain/invitacion';
 import { exigirPermiso, type Permiso , recibeAvisos } from '../domain/autorizacion';
 import { ROLES, type Rol } from '../domain/tipos';
 import { claimsDe, type PerfilUsuario } from '../application/activarSesion';
-import { conRolEnSede, elegirSede, membresiasDe, rolEnSede, sedePrincipal, sedesDeMembresias } from '../domain/sede';
+import {
+  conRolEnSede,
+  esIdDeFacultad,
+  membresiasDe,
+  perteneceASede,
+  rolEnSede,
+  sedeDelDocumento,
+  sedePrincipal,
+  sedesDeMembresias,
+} from '../domain/sede';
+import { rolDelPerfilEnSede, sedeDeLaPeticion } from '../application/sedeDeLaPeticion';
 import { FieldValue, OPCIONES_LLAMABLE, RUTAS, auth, db } from '../infrastructure/firebase';
 import {
   actualizarPerfil,
@@ -38,7 +48,10 @@ import {
 
 interface Solicitante {
   readonly actor: Actor;
+  /** El rol EN la sede donde actúa (2.0). */
   readonly rol: Rol;
+  /** La sede donde actúa: solo administra gente y grupos de ella (RF-SED-05). */
+  readonly sedeId: string;
 }
 
 /**
@@ -56,12 +69,21 @@ async function exigir(
   }
 
   const uid = peticion.auth.uid;
-  const rol = peticion.auth.token.rol as Rol | undefined;
+  const rolGlobal = peticion.auth.token.rol as Rol | undefined;
   const activo = peticion.auth.token.activo === true;
   const correo = (peticion.auth.token.email as string | undefined) ?? '';
 
-  if (!rol || !ROLES.includes(rol)) {
+  if (!rolGlobal || !ROLES.includes(rolGlobal)) {
     throw new HttpsError('permission-denied', 'Tu sesión no tiene un rol asignado.');
+  }
+
+  // El permiso se mira con el rol en la sede donde actúa (2.0).
+  let sedeId: string;
+  let rol: Rol;
+  try {
+    ({ sedeId, rol } = sedeDeLaPeticion(peticion.auth.token, (peticion.data as { sedeId?: unknown } | undefined)?.sedeId));
+  } catch (e) {
+    throw new HttpsError('permission-denied', e instanceof Error ? e.message : 'No se pudo decidir la sede.');
   }
 
   try {
@@ -82,7 +104,19 @@ async function exigir(
     );
   }
 
-  return { actor: { uid, correo, rol }, rol };
+  return { actor: { uid, correo, rol }, rol, sedeId };
+}
+
+/**
+ * Un coordinador solo administra a gente de su sede (RF-SED-05). Para quien no
+ * es de ella se responde lo mismo que si no existiera: no se confirma ni que
+ * esa persona exista en otra sede.
+ */
+function exigirDeLaSede(perfil: PerfilUsuario | null, solicitante: Solicitante): PerfilUsuario {
+  if (!perfil || !perteneceASede(perfil, solicitante.sedeId)) {
+    throw new HttpsError('not-found', 'Ese usuario no existe.');
+  }
+  return perfil;
 }
 
 /** Traduce un error del dominio a algo que el cliente pueda mostrar. */
@@ -244,25 +278,21 @@ export const cambiarRol = onCall(OPCIONES_LLAMABLE, async (peticion) => {
     throw new HttpsError('invalid-argument', 'Hace falta el usuario y un rol válido.');
   }
 
-  const perfil = await buscarPerfil(uid);
-  if (!perfil) {
-    throw new HttpsError('not-found', 'Ese usuario no existe.');
-  }
+  const perfil = exigirDeLaSede(await buscarPerfil(uid), solicitante);
   if (uid === solicitante.actor.uid) {
     // Quitarse a uno mismo el rol de coordinador dejaría el sistema sin nadie
     // que pueda administrarlo.
     throw new HttpsError('failed-precondition', 'No puedes cambiar tu propio rol.');
   }
 
-  // El rol es por sede (2.0). Sin sede en la petición, la de la persona si
-  // tiene una sola, que es lo que hacía la aplicación antes de la 2.0.
-  let sedeId: string;
+  // El rol es por sede (2.0): se cambia en la sede donde actúa quien lo pide.
+  const sedeId = solicitante.sedeId;
+  let membresias;
   try {
-    sedeId = elegirSede(sedesDeMembresias(membresiasDe(perfil)), (peticion.data as { sedeId?: unknown }).sedeId);
+    membresias = conRolEnSede(perfil, sedeId, nuevoRol);
   } catch (e) {
     throw comoHttps(e);
   }
-  const membresias = conRolEnSede(perfil, sedeId, nuevoRol);
   // `rol` sigue siendo el de la sede principal, para las versiones anteriores.
   const rolPrincipal = membresias[sedePrincipal(membresias)]?.rol ?? nuevoRol;
   const actualizado: PerfilUsuario = { ...perfil, rol: rolPrincipal, membresias };
@@ -293,10 +323,7 @@ export const cambiarEstadoUsuario = onCall(OPCIONES_LLAMABLE, async (peticion) =
     throw new HttpsError('failed-precondition', 'No puedes desactivar tu propia cuenta.');
   }
 
-  const perfil = await buscarPerfil(uid);
-  if (!perfil) {
-    throw new HttpsError('not-found', 'Ese usuario no existe.');
-  }
+  const perfil = exigirDeLaSede(await buscarPerfil(uid), solicitante);
 
   // RN-10: se desactiva, no se borra. El historial queda íntegro.
   await actualizarPerfil(uid, { activo });
@@ -333,10 +360,7 @@ export const cambiarAutorizacionesFinas = onCall(OPCIONES_LLAMABLE, async (petic
     throw new HttpsError('invalid-argument', 'Falta el usuario.');
   }
 
-  const perfil = await buscarPerfil(uid);
-  if (!perfil) {
-    throw new HttpsError('not-found', 'Ese usuario no existe.');
-  }
+  const perfil = exigirDeLaSede(await buscarPerfil(uid), solicitante);
 
   const urgentes = puedeEmitirUrgentes ?? perfil.puedeEmitirUrgentes;
   const recurrentes = puedeCrearRecurrentes ?? perfil.puedeCrearRecurrentes;
@@ -386,14 +410,19 @@ export const cambiarAutorizacionesFinas = onCall(OPCIONES_LLAMABLE, async (petic
 
 export const guardarGrupo = onCall(OPCIONES_LLAMABLE, async (peticion) => {
   const solicitante = await exigir(peticion, 'ADMINISTRAR_GRUPOS');
-  const { grupoId, nombre, descripcion, miembros } = peticion.data as {
+  const { grupoId, nombre, descripcion, miembros, facultadId } = peticion.data as {
     grupoId?: string;
     nombre?: string;
     descripcion?: string;
     miembros?: string[];
+    /** Opcional (RF-FAC-03): la facultad a la que pertenece el grupo. */
+    facultadId?: string | null;
   };
 
   try {
+    if (facultadId !== undefined && facultadId !== null && !esIdDeFacultad(facultadId)) {
+      throw new HttpsError('invalid-argument', 'La facultad no es válida.');
+    }
     const grupo = crearGrupo({
       nombre: nombre ?? '',
       descripcion: descripcion ?? '',
@@ -405,8 +434,19 @@ export const guardarGrupo = onCall(OPCIONES_LLAMABLE, async (peticion) => {
       ? db.collection(RUTAS.grupos).doc(grupoId)
       : db.collection(RUTAS.grupos).doc();
 
+    // Un grupo es de una sede (RF-SED-01): la de quien lo crea. Editar uno de
+    // otra sede se responde como si no existiera.
+    if (grupoId) {
+      const previo = await ref.get();
+      if (!previo.exists || sedeDelDocumento(previo.data()) !== solicitante.sedeId) {
+        throw new HttpsError('not-found', 'Ese grupo no existe.');
+      }
+    }
+
     await ref.set(
       {
+        sedeId: solicitante.sedeId,
+        ...(facultadId === undefined ? {} : { facultadId: facultadId ?? null }),
         nombre: grupo.nombre,
         descripcion: grupo.descripcion,
         miembros: grupo.miembros,
@@ -465,7 +505,7 @@ export const cambiarEstadoGrupo = onCall(OPCIONES_LLAMABLE, async (peticion) => 
     const ref = db.collection(RUTAS.grupos).doc(grupoId);
     const instantanea = await ref.get();
 
-    if (!instantanea.exists) {
+    if (!instantanea.exists || sedeDelDocumento(instantanea.data()) !== solicitante.sedeId) {
       throw new HttpsError('not-found', 'Ese grupo no existe.');
     }
 
@@ -509,7 +549,7 @@ export const cambiarEstadoGrupo = onCall(OPCIONES_LLAMABLE, async (peticion) => 
  * para hacerse un directorio.
  */
 export const destinatariosElegibles = onCall(OPCIONES_LLAMABLE, async (peticion) => {
-  await exigir(peticion, 'ADMINISTRAR_GRUPOS');
+  const solicitante = await exigir(peticion, 'ADMINISTRAR_GRUPOS');
 
   const instantanea = await db.collection(RUTAS.usuarios).get();
 
@@ -518,10 +558,9 @@ export const destinatariosElegibles = onCall(OPCIONES_LLAMABLE, async (peticion)
       if (d.get('activo') !== true) {
         return false;
       }
-      return recibeAvisos(
-        d.get('rol') as Rol,
-        d.get('recibeAvisos') as boolean | undefined,
-      );
+      // Solo la gente de la sede, con el rol que tiene en ella (2.0).
+      const rolAqui = rolDelPerfilEnSede(d.data(), solicitante.sedeId);
+      return rolAqui !== null && recibeAvisos(rolAqui, d.get('recibeAvisos') as boolean | undefined);
     })
     .map((d) => ({
       uid: d.id,

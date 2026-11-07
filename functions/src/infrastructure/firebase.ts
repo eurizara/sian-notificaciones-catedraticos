@@ -67,6 +67,9 @@ export const RUTAS = {
   // Fallos que reportan los aparatos (DT-34). Solo las funciones leen y escriben.
   fallos: 'fallos_aparato',
   fallosPorDia: 'fallos_por_dia',
+  // Catálogo de sedes (2.0, ADR-009) y, dentro de cada una, sus facultades.
+  sedes: 'sedes',
+  facultades: 'facultades',
 } as const;
 
 export const DOC_CONFIGURACION = `${RUTAS.configuracion}/institucional`;

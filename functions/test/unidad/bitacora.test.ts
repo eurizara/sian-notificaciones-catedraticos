@@ -40,6 +40,11 @@ describe('RF-BIT-02 · contenido obligatorio del asiento', () => {
     expect(a.origen).toBe('APP_DOCENTE');
   });
 
+  it('2.0 · lleva la sede cuando se le dice, y nada cuando no (RF-SED-01)', () => {
+    expect(crearAsiento(entradaValida({ sedeId: 'bdm' })).sedeId).toBe('bdm');
+    expect(crearAsiento(entradaValida())).not.toHaveProperty('sedeId');
+  });
+
   it('usa el panel web como origen por omisión', () => {
     expect(crearAsiento(entradaValida()).origen).toBe('PANEL_WEB');
   });

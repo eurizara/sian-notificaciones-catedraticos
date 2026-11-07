@@ -293,6 +293,20 @@ describe('RF-USR-06 · coherencia de los destinatarios', () => {
       () => crear({ destinatarios: { modo: 'TODOS', gruposIds: ['g1'] } }),
       'DESTINATARIOS_INCOHERENTES',
     );
+    esperarCodigo(
+      () => crear({ destinatarios: { modo: 'TODOS', facultadesIds: ['ing-sistemas'] } }),
+      'DESTINATARIOS_INCOHERENTES',
+    );
+  });
+
+  it('2.0 · FACULTAD exige al menos una facultad (RF-FAC-02)', () => {
+    expect(() =>
+      crear({ destinatarios: { modo: 'FACULTAD', facultadesIds: ['ing-sistemas'] } }),
+    ).not.toThrow();
+    esperarCodigo(
+      () => crear({ destinatarios: { modo: 'FACULTAD', facultadesIds: [] } }),
+      'DESTINATARIOS_SIN_FACULTADES',
+    );
   });
 });
 

@@ -34,18 +34,32 @@ import type {
 } from '../domain/tipos';
 import { FieldValue, OPCIONES_LLAMABLE, RUTAS, aTimestamp, db } from '../infrastructure/firebase';
 import { escribirAsiento, nombreDe } from '../infrastructure/repositorios';
+import { sedeDelDocumento } from '../domain/sede';
+import { sedeDeLaPeticion } from '../application/sedeDeLaPeticion';
 
 const ZONA_INSTITUCIONAL = 'America/Guatemala';
 
+/**
+ * Quién pide y en qué sede (2.0): el rol que cuenta es el de esa sede. Si la
+ * sede no se puede decidir sin adivinar, el error ya va traducido.
+ */
 function sujetoDe(peticion: {
   auth?: { uid: string; token: Record<string, unknown> };
-}): Sujeto {
+  data?: unknown;
+}): Sujeto & { sedeId: string } {
   if (!peticion.auth) {
     throw new HttpsError('unauthenticated', 'Hay que iniciar sesión.');
   }
+  let sede: { sedeId: string; rol: Rol };
+  try {
+    sede = sedeDeLaPeticion(peticion.auth.token, (peticion.data as { sedeId?: unknown } | undefined)?.sedeId);
+  } catch (e) {
+    throw traducir(e);
+  }
   return {
     uid: peticion.auth.uid,
-    rol: (peticion.auth.token.rol as Rol | undefined) ?? 'CATEDRATICO',
+    rol: sede.rol,
+    sedeId: sede.sedeId,
     activo: peticion.auth.token.activo === true,
     puedeEmitirUrgentes: peticion.auth.token.puedeEmitirUrgentes === true,
     puedeCrearRecurrentes: peticion.auth.token.puedeCrearRecurrentes === true,
@@ -202,6 +216,9 @@ export const programarMensaje = onCall(OPCIONES_LLAMABLE, async (peticion) => {
       : db.collection(RUTAS.mensajes).doc();
 
     await refMensaje.create({
+      // La sede del aviso es la de quien lo programa (RF-SED-01); el despacho
+      // resolverá los destinatarios dentro de ella.
+      sedeId: sujeto.sedeId,
       ...mensaje,
       creadoEn: aTimestamp(mensaje.creadoEn),
       estado: 'PROGRAMADO',
@@ -244,6 +261,7 @@ export const programarMensaje = onCall(OPCIONES_LLAMABLE, async (peticion) => {
           zonaHoraria: ZONA_INSTITUCIONAL,
         },
         origen: 'PANEL_WEB',
+        sedeId: sujeto.sedeId,
       }),
     );
 
@@ -266,7 +284,9 @@ export const programarMensaje = onCall(OPCIONES_LLAMABLE, async (peticion) => {
  * veces y aquí se comprueba el estado antes de tocar nada.
  */
 export const cambiarProgramacion = onCall(OPCIONES_LLAMABLE, async (peticion) => {
-  const sujeto = sujetoDe(peticion);
+  if (!peticion.auth) {
+    throw new HttpsError('unauthenticated', 'Hay que iniciar sesión.');
+  }
   const correo = (peticion.auth?.token.email as string | undefined) ?? '';
   const { mensajeId, accion } = peticion.data as {
     mensajeId?: string;
@@ -284,6 +304,10 @@ export const cambiarProgramacion = onCall(OPCIONES_LLAMABLE, async (peticion) =>
     if (!doc.exists) {
       throw new HttpsError('not-found', 'Ese mensaje no existe.');
     }
+
+    // La sede la dice el mensaje, no la petición (2.0): se mira con el rol que
+    // la persona tiene ALLÍ, y si no pertenece a esa sede, no puede tocarlo.
+    const sujeto = sujetoDe({ auth: peticion.auth, data: { sedeId: sedeDelDocumento(doc.data()) } });
 
     // Alcance PROPIO para la administradora: solo sobre lo que ella creó.
     exigirPermiso(sujeto, 'CANCELAR_PROGRAMACION', {
@@ -343,6 +367,7 @@ export const cambiarProgramacion = onCall(OPCIONES_LLAMABLE, async (peticion) =>
         resumen: `«${doc.get('titulo') as string}» — ${accion.toLowerCase()}`,
         datos: { accion, estadoAnterior: estado, estadoNuevo: nuevoEstado },
         origen: 'PANEL_WEB',
+        sedeId: sujeto.sedeId,
       }),
     );
 

@@ -96,6 +96,11 @@ export interface AsientoBitacora {
   readonly datos: Readonly<Record<string, unknown>>;
   readonly ocurridoEn: Date;
   readonly origen: OrigenEvento;
+  /**
+   * La sede donde ocurrió (2.0, RF-SED-01). Ausente en lo que no es de una
+   * sede —un inicio de sesión— y en lo anterior a la 2.0, que es de la inicial.
+   */
+  readonly sedeId?: string;
 }
 
 export interface EntradaAsiento {
@@ -107,6 +112,7 @@ export interface EntradaAsiento {
   readonly datos?: Readonly<Record<string, unknown>>;
   readonly origen?: OrigenEvento;
   readonly ocurridoEn?: Date;
+  readonly sedeId?: string;
 }
 
 /**
@@ -152,6 +158,7 @@ export function crearAsiento(entrada: EntradaAsiento): AsientoBitacora {
     datos: Object.freeze({ ...(entrada.datos ?? {}) }),
     ocurridoEn: entrada.ocurridoEn ?? new Date(),
     origen: entrada.origen ?? 'PANEL_WEB',
+    ...(entrada.sedeId === undefined ? {} : { sedeId: entrada.sedeId }),
   });
 }
 

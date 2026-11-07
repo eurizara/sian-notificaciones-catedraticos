@@ -32,10 +32,14 @@ import { getMessaging, type TokenMessage } from 'firebase-admin/messaging';
 
 import {
   type CandidatoDestinatario,
+  type FacultadResuelta,
   type GrupoResuelto,
   personasElegibles,
   resolverDestinatarios,
 } from '../application/resolverDestinatarios';
+import { sedeDelDocumento } from '../domain/sede';
+import { sedeDeLaPeticion } from '../application/sedeDeLaPeticion';
+import { leerFacultades } from '../infrastructure/sedes';
 import { LARGO_DE_ACUSE, armarSeña, cabecerasDeEnvio } from '../domain/acuse';
 import {
   type SuscripcionWeb,
@@ -63,6 +67,8 @@ const TAMANO_LOTE = 400;
 const OCURRENCIA_INMEDIATA = 'inmediata';
 
 interface PeticionEnvio {
+  /** La sede desde la que se envía (2.0). Sin ella, la única de quien envía. */
+  sedeId?: string;
   titulo?: string;
   cuerpo?: string;
   tipo?: TipoMensaje;
@@ -81,24 +87,51 @@ interface PeticionEnvio {
   adjuntos?: Adjuntos;
 }
 
-/** Lee el sujeto del token. La fuente de verdad son los custom claims (RN-01). */
-function sujetoDe(peticion: { auth?: { uid: string; token: Record<string, unknown> } }): Sujeto {
+/**
+ * Lee el sujeto del token y la sede en que actúa (2.0). La fuente de verdad son
+ * los custom claims (RN-01), y el rol que cuenta es el que tiene EN esa sede:
+ * alguien puede coordinar en una y solo dar clases en otra.
+ */
+function sujetoDe(
+  peticion: { auth?: { uid: string; token: Record<string, unknown> }; data?: unknown },
+): Sujeto & { sedeId: string } {
   if (!peticion.auth) {
     throw new HttpsError('unauthenticated', 'Hay que iniciar sesión.');
   }
+  const { sedeId, rol } = sedeDeLaPeticion(
+    peticion.auth.token,
+    (peticion.data as { sedeId?: unknown } | undefined)?.sedeId,
+  );
   return {
     uid: peticion.auth.uid,
-    rol: (peticion.auth.token.rol as Rol | undefined) ?? 'CATEDRATICO',
+    rol,
+    sedeId,
     activo: peticion.auth.token.activo === true,
     puedeEmitirUrgentes: peticion.auth.token.puedeEmitirUrgentes === true,
     puedeCrearRecurrentes: peticion.auth.token.puedeCrearRecurrentes === true,
   };
 }
 
+/** El sujeto, o el error traducido para el cliente si la sede no se puede decidir. */
+function sujetoOError(
+  peticion: { auth?: { uid: string; token: Record<string, unknown> }; data?: unknown },
+): Sujeto & { sedeId: string } {
+  try {
+    return sujetoDe(peticion);
+  } catch (e) {
+    throw traducirError(e);
+  }
+}
+
 /** Lee de Firestore lo que la resolución pura necesita para decidir. */
 async function leerPadron(
   destinatarios: Destinatarios,
-): Promise<{ usuarios: CandidatoDestinatario[]; grupos: GrupoResuelto[] }> {
+  sedeId: string,
+): Promise<{
+  usuarios: CandidatoDestinatario[];
+  grupos: GrupoResuelto[];
+  facultades: FacultadResuelta[];
+}> {
   const instantanea = await db.collection(RUTAS.usuarios).get();
 
   const usuarios: CandidatoDestinatario[] = instantanea.docs.map((d) => ({
@@ -106,10 +139,15 @@ async function leerPadron(
     activo: d.get('activo') === true,
     rol: (d.get('rol') as Rol | undefined) ?? 'CATEDRATICO',
     recibeAvisos: d.get('recibeAvisos') as boolean | undefined,
+    membresias: d.get('membresias') as unknown,
   }));
 
+  if (destinatarios.modo === 'FACULTAD') {
+    return { usuarios, grupos: [], facultades: await leerFacultades(sedeId) };
+  }
+
   if (destinatarios.modo !== 'GRUPOS') {
-    return { usuarios, grupos: [] };
+    return { usuarios, grupos: [], facultades: [] };
   }
 
   const ids = destinatarios.gruposIds ?? [];
@@ -123,9 +161,10 @@ async function leerPadron(
       id: d.id,
       activo: d.get('activo') === true,
       miembros: (d.get('miembros') as string[] | undefined) ?? [],
+      sedeId: sedeDelDocumento(d.data()),
     }));
 
-  return { usuarios, grupos };
+  return { usuarios, grupos, facultades: [] };
 }
 
 /**
@@ -136,7 +175,7 @@ async function leerPadron(
  * Después ya no hay vuelta atrás: RN-03 lo impide.
  */
 export const contarDestinatarios = onCall(OPCIONES_LLAMABLE, async (peticion) => {
-  const sujeto = sujetoDe(peticion);
+  const sujeto = sujetoOError(peticion);
 
   try {
     exigirPermiso(sujeto, 'CREAR_AVISO_INFORMATIVO');
@@ -146,10 +185,18 @@ export const contarDestinatarios = onCall(OPCIONES_LLAMABLE, async (peticion) =>
       throw new HttpsError('invalid-argument', 'Faltan los destinatarios.');
     }
 
-    const { usuarios, grupos } = await leerPadron(destinatarios);
+    const { usuarios, grupos, facultades } = await leerPadron(destinatarios, sujeto.sedeId);
     // Se pasa el autor para que el conteo coincida exactamente con el envío:
-    // si aquí saliera uno más que allí, el número mentiría.
-    const resultado = resolverDestinatarios(destinatarios, usuarios, grupos, sujeto.uid);
+    // si aquí saliera uno más que allí, el número mentiría. Y la sede, por lo
+    // mismo.
+    const resultado = resolverDestinatarios(
+      destinatarios,
+      usuarios,
+      grupos,
+      sujeto.uid,
+      sujeto.sedeId,
+      facultades,
+    );
 
     return {
       total: resultado.uids.length,
@@ -174,7 +221,7 @@ export const contarDestinatarios = onCall(OPCIONES_LLAMABLE, async (peticion) =>
  * correo de quien puede recibir, con el mismo permiso que redactar.
  */
 export const personasDestinatarias = onCall(OPCIONES_LLAMABLE, async (peticion) => {
-  const sujeto = sujetoDe(peticion);
+  const sujeto = sujetoOError(peticion);
   try {
     exigirPermiso(sujeto, 'CREAR_AVISO_INFORMATIVO');
     const instantanea = await db.collection(RUTAS.usuarios).get();
@@ -187,8 +234,10 @@ export const personasDestinatarias = onCall(OPCIONES_LLAMABLE, async (peticion) 
           activo: d.get('activo') === true,
           rol: (d.get('rol') as Rol | undefined) ?? 'CATEDRATICO',
           recibeAvisos: d.get('recibeAvisos') as boolean | undefined,
+          membresias: d.get('membresias') as unknown,
         })),
         sujeto.uid,
+        sujeto.sedeId,
       ),
     };
   } catch (e) {
@@ -204,7 +253,7 @@ export const personasDestinatarias = onCall(OPCIONES_LLAMABLE, async (peticion) 
  * RN-03 quiere evitar. Aquí, o hay mensaje con entregas, o no hay nada.
  */
 export const enviarInmediato = onCall(OPCIONES_LLAMABLE, async (peticion) => {
-  const sujeto = sujetoDe(peticion);
+  const sujeto = sujetoOError(peticion);
   const datos = peticion.data as PeticionEnvio;
   const correo = (peticion.auth?.token.email as string | undefined) ?? '';
 
@@ -256,12 +305,14 @@ export const enviarInmediato = onCall(OPCIONES_LLAMABLE, async (peticion) => {
       creadoPor: sujeto.uid,
     });
 
-    const { usuarios, grupos } = await leerPadron(destinatarios);
+    const { usuarios, grupos, facultades } = await leerPadron(destinatarios, sujeto.sedeId);
     const resolucion = resolverDestinatarios(
       destinatarios,
       usuarios,
       grupos,
       sujeto.uid,
+      sujeto.sedeId,
+      facultades,
     );
 
     if (resolucion.uids.length === 0) {
@@ -283,6 +334,8 @@ export const enviarInmediato = onCall(OPCIONES_LLAMABLE, async (peticion) => {
     // impide pisar un mensaje ajeno pasando su identificador.
     await refMensaje.create({
       ...mensaje,
+      // La sede del aviso es la de quien lo envía (RF-SED-01).
+      sedeId: sujeto.sedeId,
       creadoEn: aTimestamp(mensaje.creadoEn),
       estado: 'EN_ENVIO',
       // El nombre viaja CON el mensaje: el receptor no puede leer `usuarios`,
@@ -327,6 +380,7 @@ export const enviarInmediato = onCall(OPCIONES_LLAMABLE, async (peticion) => {
           modoDestinatarios: destinatarios.modo,
         },
         origen: 'PANEL_WEB',
+        sedeId: sujeto.sedeId,
       }),
     );
 
@@ -353,6 +407,7 @@ export const enviarInmediato = onCall(OPCIONES_LLAMABLE, async (peticion) => {
           estadoFinal,
         },
         origen: 'PANEL_WEB',
+        sedeId: sujeto.sedeId,
       }),
     );
 
@@ -893,12 +948,17 @@ export async function despacharMensaje(
   };
 
   const destinatarios = doc.get('destinatarios') as Destinatarios;
-  const { usuarios, grupos } = await leerPadron(destinatarios);
+  // La sede es la del mensaje, la de quien lo programó. Sin el campo, de
+  // antes de la 2.0: la inicial.
+  const sedeId = sedeDelDocumento(doc.data());
+  const { usuarios, grupos, facultades } = await leerPadron(destinatarios, sedeId);
   const resolucion = resolverDestinatarios(
     destinatarios,
     usuarios,
     grupos,
     doc.get('creadoPor') as string | undefined ?? null,
+    sedeId,
+    facultades,
   );
 
   if (resolucion.uids.length === 0) {

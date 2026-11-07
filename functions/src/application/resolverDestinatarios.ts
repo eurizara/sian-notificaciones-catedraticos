@@ -18,6 +18,7 @@
 
 import { recibeAvisos } from '../domain/autorizacion';
 import { ErrorValidacion } from '../domain/errores';
+import { SEDE_INICIAL, membresiasDe, sedeDelDocumento } from '../domain/sede';
 import type { Destinatarios, Rol } from '../domain/tipos';
 
 /** Lo mínimo que hay que saber de alguien para decidir si le llega. */
@@ -33,12 +34,34 @@ export interface CandidatoDestinatario {
    * tienen y no hace falta migrarlos.
    */
   readonly recibeAvisos?: boolean;
+  /**
+   * Sus sedes, con su rol y sus facultades en cada una (2.0). Sin el campo, la
+   * sede inicial con `rol`: un perfil de antes de la migración.
+   */
+  readonly membresias?: unknown;
 }
 
 export interface GrupoResuelto {
   readonly id: string;
   readonly activo: boolean;
   readonly miembros: readonly string[];
+  /** Sin el campo, la sede inicial (2.0). */
+  readonly sedeId?: string;
+}
+
+/** Una facultad del catálogo de la sede, ya leída (RF-FAC-02). */
+export interface FacultadResuelta {
+  readonly id: string;
+  readonly activa: boolean;
+}
+
+/** El rol y las facultades de alguien EN esta sede, o `null` si no pertenece. */
+function enSede(
+  u: CandidatoDestinatario,
+  sedeId: string,
+): { rol: Rol; facultades: readonly string[] } | null {
+  const m = membresiasDe(u)[sedeId];
+  return m === undefined ? null : m;
 }
 
 export interface ResultadoResolucion {
@@ -69,6 +92,15 @@ export function resolverDestinatarios(
    * confirmación. Su propio aviso no es algo de lo que haya que enterarse.
    */
   autor: string | null = null,
+  /**
+   * La sede desde la que se envía (2.0). Todo se resuelve DENTRO de ella:
+   * «todos» son los de esta sede (RF-SED-03), un grupo de otra sede se rechaza,
+   * y una persona de otra sede elegida a mano queda fuera, con su motivo
+   * (RF-SED-05). Por omisión la inicial, que es como se comportó siempre.
+   */
+  sedeId: string = SEDE_INICIAL,
+  /** Las facultades del catálogo de la sede, para el modo `FACULTAD`. */
+  facultades: readonly FacultadResuelta[] = [],
 ): ResultadoResolucion {
   const porUid = new Map<string, CandidatoDestinatario>();
   for (const u of usuarios) {
@@ -79,13 +111,49 @@ export function resolverDestinatarios(
 
   switch (destinatarios.modo) {
     case 'TODOS':
-      // «Todos» son los catedráticos. Coordinación, administración académica
-      // y auditoría trabajan SOBRE el sistema de avisos en vez de ser su
-      // destino.
+      // «Todos» son los catedráticos DE ESTA SEDE. Coordinación, administración
+      // académica y auditoría trabajan SOBRE el sistema de avisos en vez de ser
+      // su destino. Se mira el rol en esta sede: alguien puede coordinar en
+      // otra y dar clases aquí.
       candidatos.push(
-        ...usuarios.filter((u) => recibeAvisos(u.rol, u.recibeAvisos)).map((u) => u.uid),
+        ...usuarios
+          .filter((u) => {
+            const m = enSede(u, sedeId);
+            return m !== null && recibeAvisos(m.rol, u.recibeAvisos);
+          })
+          .map((u) => u.uid),
       );
       break;
+
+    case 'FACULTAD': {
+      // Como con los grupos: una facultad que no existe o está inactiva hace
+      // fallar el envío. Mandar a menos gente de la que se cree es peor que no
+      // mandar.
+      const pedidas = new Set(destinatarios.facultadesIds ?? []);
+      const porId = new Map(facultades.map((f) => [f.id, f]));
+      for (const id of pedidas) {
+        const f = porId.get(id);
+        if (f === undefined) {
+          throw new ErrorValidacion(
+            'FACULTAD_INEXISTENTE',
+            `La facultad «${id}» no existe en esta sede. No se envía nada.`,
+            { facultadId: id, sedeId },
+          );
+        }
+        if (!f.activa) {
+          throw new ErrorValidacion('FACULTAD_INACTIVA', `La facultad «${id}» está inactiva.`, {
+            facultadId: id,
+            sedeId,
+          });
+        }
+      }
+      candidatos.push(
+        ...usuarios
+          .filter((u) => enSede(u, sedeId)?.facultades.some((f) => pedidas.has(f)) === true)
+          .map((u) => u.uid),
+      );
+      break;
+    }
 
     case 'GRUPOS': {
       const pedidos = new Set(destinatarios.gruposIds ?? []);
@@ -104,6 +172,13 @@ export function resolverDestinatarios(
       for (const g of grupos) {
         if (!pedidos.has(g.id)) {
           continue;
+        }
+        if (sedeDelDocumento(g) !== sedeId) {
+          throw new ErrorValidacion(
+            'GRUPO_DE_OTRA_SEDE',
+            `El grupo «${g.id}» es de otra sede.`,
+            { grupoId: g.id, sedeId },
+          );
         }
         if (!g.activo) {
           throw new ErrorValidacion(
@@ -151,6 +226,14 @@ export function resolverDestinatarios(
       continue;
     }
 
+    // RF-SED-05: alguien de otra sede no recibe, aunque esté en un grupo o se
+    // haya elegido a mano. Consta, para que el emisor lo vea en el conteo.
+    const membresia = enSede(usuario, sedeId);
+    if (membresia === null) {
+      excluidos.push({ uid, motivo: 'OTRA_SEDE' });
+      continue;
+    }
+
     // También en GRUPOS e INDIVIDUAL, no solo en TODOS.
     //
     // Y esto es lo que evita el limbo: quien no recibe queda fuera ANTES de
@@ -160,7 +243,7 @@ export function resolverDestinatarios(
     //
     // Aquí la exclusión CONSTA, con su motivo, y el emisor la ve en el conteo
     // antes de enviar.
-    if (!recibeAvisos(usuario.rol, usuario.recibeAvisos)) {
+    if (!recibeAvisos(membresia.rol, usuario.recibeAvisos)) {
       excluidos.push({ uid, motivo: 'ROL_NO_RECIBE' });
       continue;
     }
@@ -192,9 +275,13 @@ export interface PersonaElegible {
 export function personasElegibles(
   usuarios: readonly (CandidatoDestinatario & { nombre?: string; correo?: string })[],
   autor: string,
+  sedeId: string = SEDE_INICIAL,
 ): PersonaElegible[] {
   return usuarios
-    .filter((u) => u.uid !== autor && u.activo && recibeAvisos(u.rol, u.recibeAvisos))
+    .filter((u) => {
+      const m = enSede(u, sedeId);
+      return u.uid !== autor && u.activo && m !== null && recibeAvisos(m.rol, u.recibeAvisos);
+    })
     .map((u) => ({ uid: u.uid, nombre: (u.nombre ?? '').trim(), correo: (u.correo ?? '').trim() }))
     .sort((a, b) => (a.nombre || a.correo).localeCompare(b.nombre || b.correo, 'es'));
 }

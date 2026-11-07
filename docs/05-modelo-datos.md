@@ -207,6 +207,8 @@ El identificador del documento es el UID de Firebase Authentication.
 | `creadoPor` | string | UID |
 | `creadoEn` | timestamp | |
 | `activo` | boolean | |
+| `sedeId` | string | Sede del grupo (2.0, RF-SED-01). Ausente = `bdm`. Un grupo de otra sede no se puede usar ni editar |
+| `facultadId` | string \| null | Facultad a la que pertenece (2.0, RF-FAC-03). Opcional |
 
 ### 2.4 `mensajes/{mensajeId}`
 
@@ -219,7 +221,8 @@ El identificador del documento es el UID de Firebase Authentication.
 | `adjuntos` | map | `{ audio: {ruta, bytes, duracionSeg}, imagen: {ruta, bytes, ancho, alto} }` |
 | `requiereConfirmacion` | boolean | RF-MSG-12 |
 | `estado` | string | Según la máquina de estados del documento 01, sección 9 |
-| `destinatarios` | map | `{ modo: 'TODOS'\|'GRUPOS'\|'INDIVIDUAL', gruposIds: [], usuariosIds: [] }` |
+| `destinatarios` | map | `{ modo: 'TODOS'\|'GRUPOS'\|'INDIVIDUAL'\|'FACULTAD', gruposIds: [], usuariosIds: [], facultadesIds: [] }`. `TODOS` son los de la sede del mensaje; `FACULTAD` (2.0) los miembros de la sede en esas facultades |
+| `sedeId` | string | Sede desde la que se envió (2.0, RF-SED-01). Ausente = `bdm`. Los destinatarios se resuelven dentro de ella; alguien de otra sede queda excluido con el motivo `OTRA_SEDE` |
 | `destinatariosUids` | array de string | Lista plana de UID ya resueltos. **Existe únicamente para que las reglas de seguridad puedan decidir si el lector es destinatario**, cosa que no pueden hacer consultando otra colección. Lo escribe la Function al despachar |
 | `programacion` | map | Ver estructura en 2.5 |
 | `totalDestinatarios` | number | Resuelto en el momento del despacho |
@@ -391,6 +394,7 @@ Colección de nivel raíz, **inmutable** (RF-BIT-03).
 | `datos` | map | Detalle estructurado, sin datos personales innecesarios |
 | `ocurridoEn` | timestamp | UTC |
 | `origen` | string | `PANEL_WEB` · `APP_DOCENTE` · `PLANIFICADOR` |
+| `sedeId` | string | Sede donde ocurrió (2.0). Ausente en lo que no es de una sede (un inicio de sesión) y en lo anterior a la 2.0, que es de `bdm`. La bitácora no se reescribe: lo viejo sin sede se lee como de `bdm` |
 | `hashPrevio` | string | Encadenamiento opcional contra manipulación (RF-BIT-10) |
 
 ### 2.10 `invitaciones/{correoNormalizado}`
