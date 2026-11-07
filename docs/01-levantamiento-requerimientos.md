@@ -372,7 +372,7 @@ uno en la [cartera](13-cartera-de-incrementos.md).
 | RF-CAT-03 | No se aceptan nombres repetidos dentro del mismo catálogo y sede | B | 2.0 |
 | RF-CAT-04 | Cada alta, cambio o baja de un catálogo queda en la bitácora | B | 2.0 |
 | RF-CAT-05 | Cada catálogo lo mantiene solo el rol indicado en el documento 14; los demás solo lo usan | B | 2.0 |
-| RF-CCH-01 | La coordinación crea una caja chica y registra su carga inicial | B | por fijar |
+| RF-CCH-01 | La coordinación crea la caja chica de cada sede y facultad y registra su carga inicial | B | por fijar |
 | RF-CCH-02 | La coordinación asigna uno o varios catedráticos como operadores de una caja | B | por fijar |
 | RF-CCH-03 | Solo los operadores registran entradas y salidas | B | por fijar |
 | RF-CCH-04 | Cada movimiento lleva fecha, tipo, monto, observación y quién lo registró | B | por fijar |
@@ -382,15 +382,16 @@ uno en la [cartera](13-cartera-de-incrementos.md).
 | RF-CCH-08 | El saldo lo calcula el servidor, en la misma transacción que el movimiento | B | por fijar |
 | RF-CCH-09 | Ninguna salida puede dejar el saldo en negativo | B | por fijar |
 | RF-CCH-10 | Los movimientos no se editan ni se borran; un error se corrige con una anulación que indica el motivo | B | por fijar |
-| RF-CCH-11 | Todos los catedráticos de la sede ven el saldo de la caja | B | por fijar |
-| RF-CCH-12 | Reporte de aportes acumulados por catedrático | P | por fijar |
+| RF-CCH-11 | Todos los catedráticos de la sede y facultad ven solo el saldo de la caja; el kárdex lo ven solo los encargados | B | por fijar |
+| RF-CCH-12 | Reporte de aportes acumulados por catedrático, solo para los encargados | P | por fijar |
 | RF-CCH-13 | Reporte por rango de fechas y totales por tipo de entrada y de salida | P | por fijar |
-| RF-CCH-14 | Exportar el kárdex a CSV | P | por fijar |
-| RF-ENC-01 | La coordinación y la administración crean encuestas con preguntas de opción única, opción múltiple, escala y texto corto | B | por fijar |
+| RF-CCH-14 | Exportar el kárdex a CSV, solo los encargados | P | por fijar |
+| RF-CCH-15 | Cada catedrático ve sus propios aportes; solo los encargados de la caja ven los de todos | B | por fijar |
+| RF-ENC-01 | Quienes pueden emitir avisos crean encuestas con preguntas de opción única, opción múltiple, escala y texto corto | B | por fijar |
 | RF-ENC-02 | Una encuesta se envía con los mismos destinatarios que un aviso, y llega por notificación | B | por fijar |
 | RF-ENC-03 | Cada persona responde una sola vez, hasta la fecha de cierre | B | por fijar |
 | RF-ENC-04 | Una encuesta puede ser anónima: nadie puede saber quién dio qué respuesta | B | por fijar |
-| RF-ENC-05 | Los resultados se muestran sumados por pregunta | B | por fijar |
+| RF-ENC-05 | Los resultados se muestran sumados por pregunta, solo a quienes pueden emitir avisos | B | por fijar |
 | RF-ENC-06 | Se ve quién respondió y quién no; en las anónimas, solo la participación | B | por fijar |
 | RF-ENC-07 | Recordatorio a quien no respondió | P | por fijar |
 | RF-ENC-08 | Los resultados se exportan a CSV | P | por fijar |

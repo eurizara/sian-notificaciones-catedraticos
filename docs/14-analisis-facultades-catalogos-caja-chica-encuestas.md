@@ -1,6 +1,7 @@
 # 14 · Análisis: facultades, catálogos, caja chica y encuestas
 
-**Estado:** **propuesta**, pendiente de aprobación del responsable · 6 de noviembre de 2026
+**Estado:** **propuesta**, pendiente de aprobación del responsable · 6 de noviembre de 2026 ·
+**seis decisiones resueltas** el mismo día (sección 7)
 
 **Qué es este documento.** Recoge lo que pidió el responsable el 06/11/2026 y lo analiza
 **antes** de escribir código: qué se pidió, cómo encaja con lo que ya existe, qué modelo de
@@ -58,11 +59,12 @@ grupos y, más tarde, carpetas y cajas.
 | RF-FAC-04 | Con una sola facultad o ninguna, la aplicación no pregunta ni muestra la facultad |
 | RF-FAC-05 | Los reportes (Alcance, Respuestas, caja chica) se pueden filtrar por facultad |
 
-**Decisiones que faltan**
+**Decisiones**
 
-1. ¿Una persona puede estar en más de una facultad? (Se propone que sí.)
-2. ¿La facultad tiene coordinación propia, o la coordina la sede?
-3. ¿Qué facultades hay hoy en Boca del Monte, para cargarlas en la migración?
+1. ¿Una persona puede estar en más de una facultad? (Se propone que sí.) — *pendiente*
+2. ¿La facultad tiene coordinación propia, o la coordina la sede? — *pendiente*
+3. ¿Qué facultades hay hoy en Boca del Monte? — **resuelta el 06/11/2026: por ahora solo
+   Ingeniería en Sistemas.** Habrá más; el catálogo de facultades permite agregarlas sin código.
 
 ---
 
@@ -115,8 +117,11 @@ aplicación usa para elegir. Hoy existen grupos y plantillas; con lo pedido se s
   catedrático que aportó**.
 - El **kárdex** es la lista de movimientos en orden, cada uno con el **saldo después del
   movimiento**, como una libreta.
-- Todos los catedráticos de la sede ven el **saldo** de la caja. Lo que ven del detalle queda
-  por decidir (sección 4.5).
+- **Hay una caja por sede y facultad** (decisión del 06/11/2026). Con Ingeniería en Sistemas
+  como única facultad, Boca del Monte empieza con una sola caja.
+- Todos los catedráticos de esa sede y facultad ven **solo el saldo**. El kárdex completo y los
+  aportes de todos los ven **solo los encargados** de la caja (sus operadores). Cada
+  catedrático ve **sus propios aportes**.
 
 ### 4.2 Catálogos de tipos (valores iniciales sugeridos)
 
@@ -133,7 +138,7 @@ Cada tipo indica si **exige catedrático** (los aportes) y si **exige observaci�
 
 ### 4.3 Modelo propuesto
 
-- `sedes/{s}/cajas/{c}` — nombre, facultad (opcional), moneda (`GTQ`), **operadores**
+- `sedes/{s}/cajas/{facultadId}` — una por facultad; nombre, facultad, moneda (`GTQ`), **operadores**
   (UIDs), saldo en centavos, número del último movimiento, activa.
 - `sedes/{s}/cajas/{c}/movimientos/{m}` — número correlativo, fecha, clase (`ENTRADA` o
   `SALIDA`), tipo, **monto en centavos** (entero, para no arrastrar errores de redondeo),
@@ -165,7 +170,7 @@ nota en un saldo que no cuadra.
 
 | ID | Requisito |
 |---|---|
-| RF-CCH-01 | La coordinación crea una caja chica y registra su carga inicial |
+| RF-CCH-01 | La coordinación crea la caja chica de cada sede y facultad y registra su carga inicial |
 | RF-CCH-02 | La coordinación asigna uno o varios catedráticos como operadores de una caja |
 | RF-CCH-03 | Solo los operadores registran entradas y salidas |
 | RF-CCH-04 | Cada movimiento lleva fecha, tipo, monto, observación y quién lo registró |
@@ -175,23 +180,24 @@ nota en un saldo que no cuadra.
 | RF-CCH-08 | El saldo lo calcula el servidor, en la misma transacción que el movimiento |
 | RF-CCH-09 | Ninguna salida puede dejar el saldo en negativo |
 | RF-CCH-10 | Los movimientos no se editan ni se borran; un error se corrige con una anulación que indica el motivo |
-| RF-CCH-11 | Todos los catedráticos de la sede ven el saldo de la caja |
-| RF-CCH-12 | Reporte de aportes acumulados por catedrático |
+| RF-CCH-11 | Todos los catedráticos de la sede y facultad ven **solo el saldo** de la caja; el kárdex lo ven solo los encargados |
+| RF-CCH-12 | Reporte de aportes acumulados por catedrático (solo los encargados) |
 | RF-CCH-13 | Reporte por rango de fechas y totales por tipo de entrada y de salida |
-| RF-CCH-14 | Exportar el kárdex a CSV |
+| RF-CCH-14 | Exportar el kárdex a CSV (solo los encargados) |
+| RF-CCH-15 | Cada catedrático ve sus propios aportes; solo los encargados ven los de todos |
 
-### 4.6 Decisiones que faltan
+### 4.6 Decisiones
 
-1. ¿**Una caja por sede**, una por facultad, o varias cajas libres?
-2. ¿Los catedráticos ven **solo el saldo** o también el **kárdex completo**?
-3. ¿Cada catedrático ve **los aportes de todos** o **solo los suyos**? Es un tema de
-   privacidad: se propone que cada uno vea los suyos, y los operadores y la coordinación todos.
+1. ¿Cuántas cajas? — **resuelta: una por sede y facultad.**
+2. ¿Qué ven los catedráticos? — **resuelta: solo el saldo.**
+3. ¿De quién ven los aportes? — **resuelta: cada uno los suyos; solo los encargados de la
+   caja ven los de todos.**
 4. ¿Los aportes tienen **monto fijo** (una cuota) o libre? ¿Hay cuota periódica que deba
-   marcar quién está al día?
-5. ¿Las salidas llevan **foto del comprobante**? (Se puede, con el mismo mecanismo de
-   Storage del repositorio.)
-6. ¿Una salida grande necesita **aprobación** de una segunda persona? ¿A partir de qué monto?
-7. ¿Solo quetzales?
+   marcar quién está al día? — *pendiente* (se propone monto libre)
+5. ¿Las salidas llevan **foto del comprobante**? — **resuelta: no.**
+6. ¿Una salida grande necesita **aprobación** de una segunda persona? — *pendiente* (se
+   propone que no en la base)
+7. ¿Solo quetzales? — *pendiente* (se propone que sí)
 
 ---
 
@@ -217,20 +223,20 @@ funcionan, y no hace falta construir un canal nuevo.
 
 | ID | Requisito |
 |---|---|
-| RF-ENC-01 | La coordinación y la administración crean encuestas con preguntas de opción única, opción múltiple, escala y texto corto |
+| RF-ENC-01 | Quienes pueden emitir avisos (coordinación y administración) crean encuestas con preguntas de opción única, opción múltiple, escala y texto corto |
 | RF-ENC-02 | Una encuesta se envía con los mismos destinatarios que un aviso, y llega por notificación |
 | RF-ENC-03 | Cada persona responde una sola vez, hasta la fecha de cierre |
 | RF-ENC-04 | Una encuesta puede ser anónima: nadie, ni la coordinación, puede saber quién dio qué respuesta |
-| RF-ENC-05 | Los resultados se muestran sumados por pregunta |
+| RF-ENC-05 | Los resultados se muestran sumados por pregunta, solo a quienes pueden emitir avisos |
 | RF-ENC-06 | Se ve quién respondió y quién no (en las anónimas, solo si participó, no qué respondió) |
 | RF-ENC-07 | Recordatorio a quien no respondió, con el mismo mecanismo propuesto en RF-CNF-09 |
 | RF-ENC-08 | Los resultados se exportan a CSV |
 
-**Decisiones que faltan**
+**Decisiones**
 
-1. ¿Quién puede crear encuestas: solo coordinación y administración, o también catedráticos?
-2. ¿Quién ve los resultados: quien la creó, la coordinación, o también los que respondieron?
-3. ¿Se necesitan otros tipos de pregunta (fecha, número)?
+1. ¿Quién crea encuestas? — **resuelta: los mismos que pueden emitir avisos.**
+2. ¿Quién ve los resultados? — **resuelta: los mismos que pueden emitir avisos.**
+3. ¿Se necesitan otros tipos de pregunta (fecha, número)? — *pendiente*
 
 ---
 
@@ -266,17 +272,20 @@ repositorio.
 
 ---
 
-## 7. Lo que el responsable tiene que decidir
+## 7. Decisiones del responsable
 
-| # | Pregunta | Propuesta |
-|---|---|---|
-| 1 | ¿Se aprueba el orden de la sección 6, o se mantiene el repositorio antes? | Orden de la sección 6 |
-| 2 | ¿Una persona puede estar en varias facultades? | Sí |
-| 3 | ¿Qué facultades hay hoy en Boca del Monte? | — |
-| 4 | ¿Una caja por sede, por facultad o varias libres? | Varias, cada una opcionalmente ligada a una facultad |
-| 5 | ¿Los catedráticos ven solo el saldo o también el kárdex? | Saldo y kárdex, sin los aportes de otros |
-| 6 | ¿Cada catedrático ve los aportes de todos o solo los suyos? | Solo los suyos; operadores y coordinación, todos |
-| 7 | ¿Aportes con cuota fija o periódica? | Monto libre en la base; cuotas, si se piden, en una versión aparte |
-| 8 | ¿Foto del comprobante en las salidas? | Sí, opcional, después de la base |
-| 9 | ¿Aprobación de una segunda persona para salidas grandes? | No en la base; se puede agregar con un monto umbral |
-| 10 | ¿Quién crea encuestas y quién ve los resultados? | Coordinación y administración crean; ven los resultados quien la creó y la coordinación |
+Respondidas el 06/11/2026 las marcadas como **resuelta**; las demás siguen con la propuesta
+como valor por omisión hasta que se decidan.
+
+| # | Pregunta | Estado | Decisión |
+|---|---|---|---|
+| 1 | ¿Se aprueba el orden de la sección 6, o se mantiene el repositorio antes? | *Pendiente* | Propuesta: orden de la sección 6 |
+| 2 | ¿Una persona puede estar en varias facultades? | *Pendiente* | Propuesta: sí |
+| 3 | ¿Qué facultades hay hoy en Boca del Monte? | **Resuelta** | Por ahora solo **Ingeniería en Sistemas**; habrá más |
+| 4 | ¿Una caja por sede, por facultad o varias libres? | **Resuelta** | **Una por sede y facultad** |
+| 5 | ¿Los catedráticos ven solo el saldo o también el kárdex? | **Resuelta** | **Solo el saldo** |
+| 6 | ¿Cada catedrático ve los aportes de todos o solo los suyos? | **Resuelta** | **Los suyos**; solo los encargados de la caja ven todos |
+| 7 | ¿Aportes con cuota fija o periódica? | *Pendiente* | Propuesta: monto libre |
+| 8 | ¿Foto del comprobante en las salidas? | **Resuelta** | **No** |
+| 9 | ¿Aprobación de una segunda persona para salidas grandes? | *Pendiente* | Propuesta: no en la base |
+| 10 | ¿Quién crea encuestas y quién ve los resultados? | **Resuelta** | **Los mismos que pueden emitir avisos** (coordinación y administración) |
