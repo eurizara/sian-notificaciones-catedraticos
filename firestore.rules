@@ -48,6 +48,22 @@ service cloud.firestore {
       return autenticado() && request.auth.uid == uid;
     }
 
+    // ---------------------------------------------------------------------
+    // Sedes (2.0, ADR-009). El token lleva `sedes`: sede → rol. Un token de
+    // antes de la 2.0 no lo lleva y equivale a la sede inicial, `bdm`, igual
+    // que en el servidor (`sedesDelToken`).
+    // ---------------------------------------------------------------------
+
+    function esDeLaSede(sedeId) {
+      return activo()
+        && (('sedes' in claims() && sedeId in claims().sedes)
+            || (!('sedes' in claims()) && sedeId == 'bdm'));
+    }
+
+    function esAdminGeneral() {
+      return activo() && claims().get('adminGeneral', false) == true;
+    }
+
     // Lo que el propio usuario SÍ puede editar de su perfil (RF-USR-08).
     //
     // Es una lista blanca a propósito. Con una lista negra, cualquier campo
@@ -268,6 +284,23 @@ service cloud.firestore {
     match /configuracion/{doc} {
       allow read: if activo();
       allow write: if false;
+    }
+
+    // ---------------------------------------------------------------------
+    // sedes/{sedeId} y sus facultades (2.0 · RF-SED-06, RF-FAC-01). Las lee
+    // quien pertenece a la sede y la administración general; listarlas todas,
+    // solo esta última. Escribir, solo las funciones `guardarSede` y
+    // `guardarFacultad`, que validan nombres y dejan asiento (RF-CAT).
+    // ---------------------------------------------------------------------
+
+    match /sedes/{sedeId} {
+      allow read: if esDeLaSede(sedeId) || esAdminGeneral();
+      allow write: if false;
+
+      match /facultades/{facultadId} {
+        allow read: if esDeLaSede(sedeId) || esAdminGeneral();
+        allow write: if false;
+      }
     }
 
     // Demostración 2 (CI/CD): avisos fijos que la aplicación solo muestra.

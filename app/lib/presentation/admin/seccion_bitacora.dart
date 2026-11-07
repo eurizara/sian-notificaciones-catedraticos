@@ -51,6 +51,7 @@ const List<({String valor, String etiqueta})> _tiposFiltrables =
       (valor: 'INVITACION_ELIMINADA', etiqueta: 'Invitaciones revocadas'),
       (valor: 'GRUPO_CREADO', etiqueta: 'Grupos creados'),
       (valor: 'GRUPO_MODIFICADO', etiqueta: 'Grupos modificados'),
+      (valor: 'CATALOGO_MODIFICADO', etiqueta: 'Cambios en catálogos'),
     ];
 
 class SeccionBitacora extends ConsumerStatefulWidget {
@@ -257,6 +258,7 @@ class _Asiento extends StatelessWidget {
     'INVITACION_ACTUALIZADA' => Icons.drafts_outlined,
     'INVITACION_ELIMINADA' => Icons.unsubscribe_outlined,
     'GRUPO_CREADO' || 'GRUPO_MODIFICADO' => Icons.groups_outlined,
+    'CATALOGO_MODIFICADO' => Icons.category_outlined,
     _ => Icons.circle_outlined,
   };
 }

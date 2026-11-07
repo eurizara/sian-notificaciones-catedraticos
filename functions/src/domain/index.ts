@@ -17,6 +17,7 @@ export * from './bitacora';
 export * from './invitacion';
 export * from './grupo';
 export * from './sede';
+export * from './catalogo';
 export * from './dispositivo';
 export * from './estados/maquinaEstados';
 export * from './recurrencia/estrategiaRecurrencia';

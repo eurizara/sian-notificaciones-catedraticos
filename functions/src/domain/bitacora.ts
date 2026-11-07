@@ -38,6 +38,8 @@ export const TIPOS_EVENTO = [
   'INVITACION_ELIMINADA',
   'GRUPO_CREADO',
   'GRUPO_MODIFICADO',
+  // 2.0 (RF-CAT-04): alta, cambio, desactivación o reactivación en un catálogo.
+  'CATALOGO_MODIFICADO',
   'MENSAJE_CREADO',
   'MENSAJE_PROGRAMADO',
   'MENSAJE_SUSPENDIDO',
@@ -62,6 +64,7 @@ export const ENTIDADES = [
   'MENSAJE',
   'USUARIO',
   'GRUPO',
+  'CATALOGO',
   'ENTREGA',
   'SESION',
   'CONFIGURACION',

@@ -292,7 +292,7 @@ primero sin `--aplicar`.
 
 | Ambiente | Corrido | Resultado |
 |---|---|---|
-| Desarrollo | Pendiente | — |
+| Desarrollo | 07/11/2026, con `--facultad-a-todos` | 114 de 114 escritas: sede y facultad creadas, 8 perfiles, 3 grupos, 101 mensajes. La segunda corrida no tuvo nada que hacer |
 | QA | Pendiente | — |
 | Producción | Pendiente | — |
 

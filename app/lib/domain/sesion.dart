@@ -19,6 +19,8 @@ class UsuarioSesion {
     this.puedeEmitirUrgentes = false,
     this.puedeCrearRecurrentes = false,
     this.recibeAvisos = false,
+    this.adminGeneral = false,
+    this.sedes = const <String, Rol>{},
   });
 
   final String uid;
@@ -38,7 +40,27 @@ class UsuarioSesion {
   /// sistema, y si eres destinatario. Un catedrático nombrado administrador
   /// académico sigue dando clases y tiene que enterarse de una evacuación.
   final bool recibeAvisos;
+
+  /// Administración general (2.0, RF-SED-06): mantiene las sedes y asigna a sus
+  /// coordinadores. Es una bandera, no un rol. El servidor lo vuelve a mirar.
+  final bool adminGeneral;
+
+  /// Sus sedes con el rol en cada una, tal como vienen en el token (2.0). Vacío
+  /// en un token de antes de la 2.0: equivale a `bdm` con [rol].
+  final Map<String, Rol> sedes;
+
+  /// La sede donde trabaja por omisión: la inicial si pertenece a ella, si no
+  /// la primera. Es el mismo criterio que `sedePrincipal` en el servidor.
+  String get sedePrincipal {
+    if (sedes.isEmpty || sedes.containsKey(sedeInicial)) {
+      return sedeInicial;
+    }
+    return (sedes.keys.toList()..sort()).first;
+  }
 }
+
+/// La sede con que nació SIAN, Boca del Monte (ADR-009).
+const String sedeInicial = 'bdm';
 
 /// Por qué se rechazó un intento de entrada.
 enum MotivoRechazo {

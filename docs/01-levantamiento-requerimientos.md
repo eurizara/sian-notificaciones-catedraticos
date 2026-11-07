@@ -84,6 +84,8 @@ y no distingue lo urgente de lo informativo.
 | Ver bitácora completa | Sí | No | No | Sí |
 | Administrar usuarios y roles | Sí | No | No | No |
 | Administrar grupos de destinatarios | Sí | Sí | No | No |
+| Mantener los catálogos de su sede: facultades (2.0, RF-CAT-05) | Sí | No | No | No |
+| Mantener las sedes (2.0, RF-SED-06): administración general, una bandera que se da a quien coordina | Con la bandera | No | No | No |
 | Recibir notificaciones | Opcional | Opcional | Sí | No |
 | Confirmar lectura | Sí | Sí | Sí | No |
 | Ver historial propio de mensajes recibidos | Sí | Sí | Sí | No |

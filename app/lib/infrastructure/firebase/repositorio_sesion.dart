@@ -223,6 +223,8 @@ class RepositorioSesionFirebase implements RepositorioSesion {
         recibeAvisos: datos['recibeAvisos'] is bool
             ? datos['recibeAvisos'] as bool
             : rol.recibeMensajes,
+        adminGeneral: token.claims?['adminGeneral'] == true,
+        sedes: sedesDelToken(token.claims?['sedes']),
       ),
     );
   }
@@ -330,3 +332,20 @@ class _SesionAfirmada extends _EventoSesion {
   const _SesionAfirmada(this.sesion);
   final Sesion sesion;
 }
+
+/// Las sedes del token: `sedeId` → rol (2.0). Lo que no tiene forma válida se
+/// descarta; un token sin `sedes` da un mapa vacío, que significa `bdm`.
+Map<String, Rol> sedesDelToken(Object? crudo) {
+  final Map<String, Rol> sedes = <String, Rol>{};
+  if (crudo is Map) {
+    for (final MapEntry<Object?, Object?> e in crudo.entries) {
+      final Rol? rol = Rol.desdeClaim(e.value);
+      final String id = '${e.key}';
+      if (rol != null && RegExp(r'^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$').hasMatch(id)) {
+        sedes[id] = rol;
+      }
+    }
+  }
+  return sedes;
+}
+

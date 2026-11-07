@@ -456,6 +456,24 @@ coordinador y la administradora activos (`esEmisor()`); nadie más.
 Las **predefinidas** (recordatorio de actualizar, de responder, simulacro, suspensión, reunión,
 evacuación inmediata) no están aquí: vienen en el código (`presentation/admin/plantillas.dart`).
 
+### 2.10c `sedes/{sedeId}` y `sedes/{sedeId}/facultades/{facultadId}` (2.0)
+
+Catálogos (RF-SED-06, RF-FAC-01, RF-CAT). El identificador nace del nombre al dar de alta
+(«Ingeniería en Sistemas» → `ingenieria-en-sistemas`) y **no cambia nunca**: está en rutas,
+tokens y datos. La sede inicial es `bdm` y su primera facultad `ing-sistemas`, que crea la
+migración (2.0-c).
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `nombre` | string | Visible en las listas. 2 a 80 caracteres; no se repite en el mismo catálogo sin distinguir tildes ni mayúsculas |
+| `activa` | boolean | `false` deja de ofrecerla para elegir. No se borra nada (RF-CAT-02) |
+| `creadaEn` / `actualizadaEn` | timestamp | |
+
+Reglas: las lee quien pertenece a la sede (o, con un token anterior a la 2.0, `bdm`) y la
+administración general, que además puede listar todas las sedes. Nadie las escribe desde la
+aplicación: solo `guardarSede` (administración general que coordina en alguna sede) y
+`guardarFacultad` (coordinación de esa sede), que dejan un asiento `CATALOGO_MODIFICADO`.
+
 ### 2.11 `configuracion/institucional`
 
 Documento único con los parámetros globales.
@@ -484,6 +502,7 @@ Documento único con los parámetros globales.
 | `USUARIO_ROL_CAMBIADO` | Function | Cambio de rol |
 | `USUARIO_DESACTIVADO` | Function | Desactivación |
 | `GRUPO_CREADO` / `GRUPO_MODIFICADO` | Function | |
+| `CATALOGO_MODIFICADO` | Function | 2.0: alta, nombre, desactivación o reactivación de una sede o facultad. `entidad: 'CATALOGO'` |
 | `MENSAJE_CREADO` | Function | Se guarda el borrador |
 | `MENSAJE_PROGRAMADO` | Function | Se define la programación |
 | `MENSAJE_SUSPENDIDO` / `MENSAJE_REANUDADO` | Function | RF-PRG-10 |

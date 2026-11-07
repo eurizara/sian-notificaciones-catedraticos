@@ -121,6 +121,10 @@ beforeEach(async () => {
     });
     await setDoc(doc(db, 'invitaciones', 'nuevo@umg.edu.gt'), { rolAsignado: 'CATEDRATICO' });
     await setDoc(doc(db, 'configuracion', 'institucional'), { zonaHoraria: 'America/Guatemala' });
+    await setDoc(doc(db, 'sedes', 'bdm'), { nombre: 'Boca del Monte', activa: true });
+    await setDoc(doc(db, 'sedes', 'bdm', 'facultades', 'ing-sistemas'), { nombre: 'Ingeniería en Sistemas', activa: true });
+    await setDoc(doc(db, 'sedes', 'otra'), { nombre: 'Otra sede', activa: true });
+    await setDoc(doc(db, 'sedes', 'otra', 'facultades', 'derecho'), { nombre: 'Derecho', activa: true });
     await setDoc(doc(db, 'demostraciones', 'd-1'), { texto: 'Aviso fijo' });
   });
 });
@@ -628,3 +632,46 @@ describe('Demostración 2 · colección de solo lectura', () => {
     await assertFails(setDoc(doc(db, 'demostraciones', 'd-2'), { texto: 'Inventado' }));
   });
 });
+
+describe('2.0 · Sedes y facultades (ADR-009, RF-SED-05, RF-SED-06)', () => {
+  it('un token de antes de la 2.0 lee la sede inicial y sus facultades, y nada de otra', async () => {
+    const db = contexto(UID.catedratico, 'CATEDRATICO');
+    await assertSucceeds(getDoc(doc(db, 'sedes', 'bdm')));
+    await assertSucceeds(getDoc(doc(db, 'sedes', 'bdm', 'facultades', 'ing-sistemas')));
+    await assertFails(getDoc(doc(db, 'sedes', 'otra')));
+    await assertFails(getDoc(doc(db, 'sedes', 'otra', 'facultades', 'derecho')));
+  });
+
+  it('con sedes en el token, solo las suyas', async () => {
+    const db = contexto(UID.catedratico, 'CATEDRATICO', true, { sedes: { otra: 'CATEDRATICO' } });
+    await assertSucceeds(getDoc(doc(db, 'sedes', 'otra')));
+    await assertSucceeds(getDoc(doc(db, 'sedes', 'otra', 'facultades', 'derecho')));
+    await assertFails(getDoc(doc(db, 'sedes', 'bdm')));
+    await assertFails(getDocs(collection(db, 'sedes')));
+  });
+
+  it('la administración general las lee y las lista todas', async () => {
+    const db = contexto(UID.coordinador, 'COORDINADOR', true, {
+      sedes: { bdm: 'COORDINADOR' },
+      adminGeneral: true,
+    });
+    await assertSucceeds(getDoc(doc(db, 'sedes', 'otra')));
+    await assertSucceeds(getDocs(collection(db, 'sedes')));
+    await assertSucceeds(getDocs(collection(db, 'sedes', 'otra', 'facultades')));
+  });
+
+  it('nadie las escribe desde la aplicación, ni la administración general', async () => {
+    const admin = contexto(UID.coordinador, 'COORDINADOR', true, { adminGeneral: true });
+    await assertFails(setDoc(doc(admin, 'sedes', 'nueva'), { nombre: 'Nueva', activa: true }));
+    await assertFails(updateDoc(doc(admin, 'sedes', 'bdm'), { activa: false }));
+    await assertFails(
+      setDoc(doc(admin, 'sedes', 'bdm', 'facultades', 'medicina'), { nombre: 'Medicina', activa: true }),
+    );
+  });
+
+  it('un desactivado no lee ni su sede', async () => {
+    const db = contexto(UID.catedratico, 'CATEDRATICO', false);
+    await assertFails(getDoc(doc(db, 'sedes', 'bdm')));
+  });
+});
+

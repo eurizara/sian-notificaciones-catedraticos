@@ -20,6 +20,7 @@ import '../shared/apertura.dart';
 import 'borrador_prefijado.dart';
 import '../shared/barra_sesion.dart';
 import 'seccion_bitacora.dart';
+import 'seccion_catalogos.dart';
 import 'seccion_entregas.dart';
 import 'seccion_mis_mensajes.dart';
 import 'seccion_canal.dart';
@@ -155,6 +156,20 @@ final List<SeccionAdmin> _secciones = <SeccionAdmin>[
     iteracion: Textos.iteracion12,
     construir: SeccionUsuarios.new,
     // Solo el coordinador administra usuarios y roles.
+    visiblePara: (Rol rol) => rol == Rol.coordinador,
+  ),
+  // 2.0: las facultades las mantiene la coordinación de la sede; las sedes, la
+  // administración general (RF-CAT-05). Esta es una bandera que se le da a
+  // quien coordina, no un rol: un auditor o una administradora con la bandera
+  // no tendrían por qué mantener catálogos, y el servidor tampoco se lo deja.
+  SeccionAdmin(
+    icono: Icons.category_outlined,
+    etiqueta: Textos.seccionCatalogos,
+    titulo: Textos.seccionCatalogosTitulo,
+    descripcion: Textos.seccionCatalogosDescripcion,
+    requisitos: const <String>['RF-CAT-01', 'RF-FAC-01', 'RF-SED-06'],
+    iteracion: Textos.iteracion20,
+    construir: SeccionCatalogos.new,
     visiblePara: (Rol rol) => rol == Rol.coordinador,
   ),
   SeccionAdmin(
