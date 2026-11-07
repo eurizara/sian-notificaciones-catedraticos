@@ -327,7 +327,8 @@ sobre el control de confirmación. Abrir un mensaje nunca lo marca como confirma
 ### 3.9 Aprobados para las iteraciones 1.6, 2.0 y 2.1
 
 Pedidos y **aprobados** el 23 de septiembre de 2026. Los de **1.6 están implementados**
-(1.6.0 a 1.6.17, en producción desde el 28/09); los de 2.0 y 2.1/2.2 todavía no. El análisis, el
+(1.6.0 a 1.6.17, en producción desde el 28/09); los de 2.0 y del repositorio (2.4 y 2.5 desde el
+06/11/2026; antes 2.1 y 2.2) todavía no. El análisis, el
 orden y la estrategia están en el [documento 12](12-plan-evolucion-1.6-2.x.md).
 
 | ID | Requisito | Prioridad | Iteración |
@@ -343,20 +344,20 @@ orden y la estrategia están en el [documento 12](12-plan-evolucion-1.6-2.x.md).
 | RF-SED-04 | Quien pertenece a más de una sede elige en cuál trabaja; con una sola, no se le pregunta | D | 2.0 |
 | RF-SED-05 | Una persona no ve ni modifica nada de una sede a la que no pertenece | D | 2.0 |
 | RF-SED-06 | La administración general crea sedes y asigna a sus coordinadores | D | 2.0 |
-| RF-REP-01 | Coordinación y administración crean, renombran y borran carpetas, hasta dos niveles | D | 2.1 |
-| RF-REP-02 | Coordinación y administración suben archivos de tipos permitidos, de hasta 25 MB | D | 2.1 |
-| RF-REP-03 | Cada sede tiene un cupo de almacenamiento (2 GB por omisión) que no se puede superar | D | 2.1 |
-| RF-REP-04 | El acceso a una carpeta se concede por grupos | D | 2.1 |
-| RF-REP-05 | El catedrático ve y descarga solo las carpetas de sus grupos | D | 2.2 |
-| RF-REP-06 | La descarga se hace con un enlace que caduca, y queda en la bitácora | D | 2.2 |
-| RF-REP-07 | No se aceptan ejecutables ni archivos comprimidos | D | 2.1 |
+| RF-REP-01 | Coordinación y administración crean, renombran y borran carpetas, hasta dos niveles | D | 2.4 |
+| RF-REP-02 | Coordinación y administración suben archivos de tipos permitidos, de hasta 25 MB | D | 2.4 |
+| RF-REP-03 | Cada sede tiene un cupo de almacenamiento (2 GB por omisión) que no se puede superar | D | 2.4 |
+| RF-REP-04 | El acceso a una carpeta se concede por grupos | D | 2.4 |
+| RF-REP-05 | El catedrático ve y descarga solo las carpetas de sus grupos | D | 2.5 |
+| RF-REP-06 | La descarga se hace con un enlace que caduca, y queda en la bitácora | D | 2.5 |
+| RF-REP-07 | No se aceptan ejecutables ni archivos comprimidos | D | 2.4 |
 | RNF-23 | Los formularios se recorren con el tabulador en el orden en que se leen, y al revés con Mayús+Tab | D | **1.6.4 ✓** |
 | RNF-24 | Los manuales siguen la apariencia elegida en la aplicación, o la del dispositivo si no se eligió ninguna, con contraste AA en los dos modos | D | **1.6.5 ✓** |
 
-### 3.10 Propuestos el 06/11/2026: facultades, catálogos, caja chica y encuestas
+### 3.10 Aprobados el 06/11/2026: facultades, catálogos, caja chica y encuestas
 
-Pedidos por el responsable el 6 de noviembre de 2026. **Todavía no están aprobados**: el
-análisis, las decisiones pendientes y el orden recomendado están en el
+Pedidos y **aprobados** por el responsable el 6 de noviembre de 2026, con sus diez decisiones.
+El análisis, las decisiones y el orden están en el
 [documento 14](14-analisis-facultades-catalogos-caja-chica-encuestas.md), y el estado de cada
 uno en la [cartera](13-cartera-de-incrementos.md).
 
@@ -372,29 +373,31 @@ uno en la [cartera](13-cartera-de-incrementos.md).
 | RF-CAT-03 | No se aceptan nombres repetidos dentro del mismo catálogo y sede | B | 2.0 |
 | RF-CAT-04 | Cada alta, cambio o baja de un catálogo queda en la bitácora | B | 2.0 |
 | RF-CAT-05 | Cada catálogo lo mantiene solo el rol indicado en el documento 14; los demás solo lo usan | B | 2.0 |
-| RF-CCH-01 | La coordinación crea la caja chica de cada sede y facultad y registra su carga inicial | B | por fijar |
-| RF-CCH-02 | La coordinación asigna uno o varios catedráticos como operadores de una caja | B | por fijar |
-| RF-CCH-03 | Solo los operadores registran entradas y salidas | B | por fijar |
-| RF-CCH-04 | Cada movimiento lleva fecha, tipo, monto, observación y quién lo registró | B | por fijar |
-| RF-CCH-05 | Los tipos de entrada y de salida son catálogos que mantiene la coordinación | B | por fijar |
-| RF-CCH-06 | Un aporte de catedrático exige elegir al catedrático y entra al kárdex | B | por fijar |
-| RF-CCH-07 | El kárdex muestra los movimientos en orden con el saldo después de cada uno | B | por fijar |
-| RF-CCH-08 | El saldo lo calcula el servidor, en la misma transacción que el movimiento | B | por fijar |
-| RF-CCH-09 | Ninguna salida puede dejar el saldo en negativo | B | por fijar |
-| RF-CCH-10 | Los movimientos no se editan ni se borran; un error se corrige con una anulación que indica el motivo | B | por fijar |
-| RF-CCH-11 | Todos los catedráticos de la sede y facultad ven solo el saldo de la caja; el kárdex lo ven solo los encargados | B | por fijar |
-| RF-CCH-12 | Reporte de aportes acumulados por catedrático, solo para los encargados | P | por fijar |
-| RF-CCH-13 | Reporte por rango de fechas y totales por tipo de entrada y de salida | P | por fijar |
-| RF-CCH-14 | Exportar el kárdex a CSV, solo los encargados | P | por fijar |
-| RF-CCH-15 | Cada catedrático ve sus propios aportes; solo los encargados de la caja ven los de todos | B | por fijar |
-| RF-ENC-01 | Quienes pueden emitir avisos crean encuestas con preguntas de opción única, opción múltiple, escala y texto corto | B | por fijar |
-| RF-ENC-02 | Una encuesta se envía con los mismos destinatarios que un aviso, y llega por notificación | B | por fijar |
-| RF-ENC-03 | Cada persona responde una sola vez, hasta la fecha de cierre | B | por fijar |
-| RF-ENC-04 | Una encuesta puede ser anónima: nadie puede saber quién dio qué respuesta | B | por fijar |
-| RF-ENC-05 | Los resultados se muestran sumados por pregunta, solo a quienes pueden emitir avisos | B | por fijar |
-| RF-ENC-06 | Se ve quién respondió y quién no; en las anónimas, solo la participación | B | por fijar |
-| RF-ENC-07 | Recordatorio a quien no respondió | P | por fijar |
-| RF-ENC-08 | Los resultados se exportan a CSV | P | por fijar |
+| RF-CCH-01 | La coordinación crea la caja chica de cada sede y facultad y registra su carga inicial | B | 2.1 |
+| RF-CCH-02 | La coordinación asigna uno o varios catedráticos como operadores de una caja | B | 2.1 |
+| RF-CCH-03 | Solo los operadores registran entradas y salidas | B | 2.1 |
+| RF-CCH-04 | Cada movimiento lleva fecha, tipo, monto, observación y quién lo registró | B | 2.1 |
+| RF-CCH-05 | Los tipos de entrada y de salida son catálogos que mantiene la coordinación | B | 2.1 |
+| RF-CCH-06 | Un aporte de catedrático exige elegir al catedrático y entra al kárdex | B | 2.1 |
+| RF-CCH-07 | El kárdex muestra los movimientos en orden con el saldo después de cada uno | B | 2.1 |
+| RF-CCH-08 | El saldo lo calcula el servidor, en la misma transacción que el movimiento | B | 2.1 |
+| RF-CCH-09 | Ninguna salida puede dejar el saldo en negativo | B | 2.1 |
+| RF-CCH-10 | Los movimientos no se editan ni se borran; un error se corrige con una anulación que indica el motivo | B | 2.1 |
+| RF-CCH-11 | Todos los catedráticos de la sede y facultad ven solo el saldo de la caja; el kárdex lo ven solo los encargados | B | 2.1 |
+| RF-CCH-12 | Reporte de aportes acumulados por catedrático, solo para los encargados | P | 2.2 |
+| RF-CCH-13 | Reporte por rango de fechas y totales por tipo de entrada y de salida | P | 2.2 |
+| RF-CCH-14 | Exportar el kárdex a CSV, solo los encargados | P | 2.2 |
+| RF-CCH-15 | Cada catedrático ve sus propios aportes; solo los encargados de la caja ven los de todos | B | 2.1 |
+| RF-CCH-16 | Un aporte puede ser periódico (cuota con monto y frecuencia), eventual o de monto libre | B | 2.1 |
+| RF-CCH-17 | Para las cuotas periódicas, cada catedrático ve si está al día y los encargados ven quién tiene pendientes | P | 2.2 |
+| RF-ENC-01 | Quienes pueden emitir avisos crean encuestas con preguntas de opción única, opción múltiple, escala y texto corto | B | 2.3 |
+| RF-ENC-02 | Una encuesta se envía con los mismos destinatarios que un aviso, y llega por notificación | B | 2.3 |
+| RF-ENC-03 | Cada persona responde una sola vez, hasta la fecha de cierre | B | 2.3 |
+| RF-ENC-04 | Una encuesta puede ser anónima: nadie puede saber quién dio qué respuesta | B | 2.3 |
+| RF-ENC-05 | Los resultados se muestran sumados por pregunta, solo a quienes pueden emitir avisos | B | 2.3 |
+| RF-ENC-06 | Se ve quién respondió y quién no; en las anónimas, solo la participación | B | 2.3 |
+| RF-ENC-07 | Recordatorio a quien no respondió | P | 2.3 |
+| RF-ENC-08 | Los resultados se exportan a CSV | P | 2.3 |
 
 ---
 

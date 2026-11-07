@@ -1,7 +1,7 @@
 # 14 · Análisis: facultades, catálogos, caja chica y encuestas
 
-**Estado:** **propuesta**, pendiente de aprobación del responsable · 6 de noviembre de 2026 ·
-**seis decisiones resueltas** el mismo día (sección 7)
+**Estado:** **aprobado** por el responsable el 6 de noviembre de 2026, con las diez decisiones
+de la sección 7 resueltas y el orden de la sección 6, que fija las versiones 2.0 a 2.5
 
 **Qué es este documento.** Recoge lo que pidió el responsable el 06/11/2026 y lo analiza
 **antes** de escribir código: qué se pidió, cómo encaja con lo que ya existe, qué modelo de
@@ -61,8 +61,9 @@ grupos y, más tarde, carpetas y cajas.
 
 **Decisiones**
 
-1. ¿Una persona puede estar en más de una facultad? (Se propone que sí.) — *pendiente*
-2. ¿La facultad tiene coordinación propia, o la coordina la sede? — *pendiente*
+1. ¿Una persona puede estar en más de una facultad? — **resuelta: sí.**
+2. ¿La facultad tiene coordinación propia, o la coordina la sede? — *sin preguntar todavía*;
+   se diseña con la coordinación de la sede y se revisa al hacer la 2.0
 3. ¿Qué facultades hay hoy en Boca del Monte? — **resuelta el 06/11/2026: por ahora solo
    Ingeniería en Sistemas.** Habrá más; el catálogo de facultades permite agregarlas sin código.
 
@@ -129,7 +130,7 @@ aplicación usa para elegir. Hoy existen grupos y plantillas; con lo pedido se s
 |---|---|
 | Carga inicial | Publicidad |
 | Donación | Compra de pastel |
-| Aporte de catedrático (pide elegir al catedrático) | Compra de almuerzos |
+| Aporte de catedrático (pide elegir al catedrático y si es cuota periódica, eventual o libre) | Compra de almuerzos |
 | Otro ingreso | Convivios |
 | | Otro egreso |
 
@@ -185,6 +186,8 @@ nota en un saldo que no cuadra.
 | RF-CCH-13 | Reporte por rango de fechas y totales por tipo de entrada y de salida |
 | RF-CCH-14 | Exportar el kárdex a CSV (solo los encargados) |
 | RF-CCH-15 | Cada catedrático ve sus propios aportes; solo los encargados ven los de todos |
+| RF-CCH-16 | Un aporte puede ser periódico (cuota con monto y frecuencia que definen los encargados), eventual o de monto libre |
+| RF-CCH-17 | Para las cuotas periódicas, cada catedrático ve si está al día y los encargados ven quién tiene cuotas pendientes |
 
 ### 4.6 Decisiones
 
@@ -192,11 +195,11 @@ nota en un saldo que no cuadra.
 2. ¿Qué ven los catedráticos? — **resuelta: solo el saldo.**
 3. ¿De quién ven los aportes? — **resuelta: cada uno los suyos; solo los encargados de la
    caja ven los de todos.**
-4. ¿Los aportes tienen **monto fijo** (una cuota) o libre? ¿Hay cuota periódica que deba
-   marcar quién está al día? — *pendiente* (se propone monto libre)
+4. ¿Cómo son los aportes? — **resuelta: los tres tipos.** Periódicos (una cuota con
+   frecuencia, y se ve quién está al día), eventuales (una sola vez) y de monto variable o
+   libre. Requisitos RF-CCH-16 y RF-CCH-17.
 5. ¿Las salidas llevan **foto del comprobante**? — **resuelta: no.**
-6. ¿Una salida grande necesita **aprobación** de una segunda persona? — *pendiente* (se
-   propone que no en la base)
+6. ¿Una salida grande necesita **aprobación** de una segunda persona? — **resuelta: no.**
 7. ¿Solo quetzales? — *pendiente* (se propone que sí)
 
 ---
@@ -246,24 +249,24 @@ Criterios, en este orden: (1) las correcciones antes que lo nuevo; (2) lo que es
 cosas va primero, para no migrar dos veces; (3) lo que maneja dinero se hace con la mayor
 prueba y sin prisa; (4) a igual base, primero lo que más se usa y menos alternativas tiene hoy.
 
-| Paso | Qué | Por qué en este lugar |
-|:---:|---|---|
-| 1 | **DT-35** · abrir la respuesta en iPhone (1.6.x) | Es una corrección y es pequeña |
-| — | **OPS-1 y OPS-2** · personas sin canal, aparatos viejos | No es código; se hace en paralelo y desbloquea App Check |
-| 2 | **2.0 · Sedes + facultades + mantenimiento de catálogos de sedes y facultades** | Todo lo demás cuelga de la sede y la facultad. Juntas son **una sola migración** |
-| 3 | **Caja chica, base** · cajas, operadores, catálogos de tipos, carga inicial, kárdex, saldo visible (RF-CCH-01 a 11) | Maneja dinero real y hoy no tiene trazabilidad dentro de SIAN; no depende del repositorio |
-| 4 | **Caja chica, reportes** · aportes por catedrático, rangos, totales, CSV (RF-CCH-12 a 14) | Se apoya en los movimientos ya registrados; separarla deja la base en uso antes |
-| 5 | **Encuestas** (RF-ENC-01 a 08) | Reutiliza envío y Alcance; hoy se puede suplir con un formulario externo, por eso no va antes |
-| 6 | **Repositorio: administración** (RF-REP-01 a 04 y 07) | Aprobado; hoy se puede suplir con una carpeta compartida |
-| 7 | **Repositorio: catedrático** (RF-REP-05 y 06; cierra DT-04) | Depende del paso 6 |
-| — | **S-4** · exigir App Check | En cuanto OPS-2 llegue a cero, en cualquier punto |
+| Paso | Versión | Qué | Por qué en este lugar |
+|:---:|:---:|---|---|
+| 1 | 1.6.20 | **DT-35** · abrir la respuesta en iPhone | Es una corrección y es pequeña |
+| — | — | **OPS-1 y OPS-2** · personas sin canal, aparatos viejos | No es código; se hace en paralelo y desbloquea App Check |
+| 2 | **2.0** | **Sedes + facultades + mantenimiento de catálogos de sedes y facultades** | Todo lo demás cuelga de la sede y la facultad. Juntas son **una sola migración** |
+| 3 | **2.1** | **Caja chica, base** · caja por sede y facultad, encargados, catálogos de tipos, carga inicial, aportes (periódicos, eventuales, libres), kárdex, saldo visible (RF-CCH-01 a 11, 15 y 16) | Maneja dinero real y hoy no tiene trazabilidad dentro de SIAN; no depende del repositorio |
+| 4 | **2.2** | **Caja chica, reportes** · aportes por catedrático, cuotas al día, rangos, totales, CSV (RF-CCH-12 a 14 y 17) | Se apoya en los movimientos ya registrados; separarla deja la base en uso antes |
+| 5 | **2.3** | **Encuestas** (RF-ENC-01 a 08) | Reutiliza envío y Alcance; hoy se puede suplir con un formulario externo, por eso no va antes |
+| 6 | **2.4** | **Repositorio: administración** (RF-REP-01 a 04 y 07) | Aprobado el 23/09; hoy se puede suplir con una carpeta compartida |
+| 7 | **2.5** | **Repositorio: catedrático** (RF-REP-05 y 06; cierra DT-04) | Depende del paso 6 |
+| — | — | **S-4** · exigir App Check | En cuanto OPS-2 llegue a cero, en cualquier punto |
 
 **Lo que cambia respecto de lo aprobado el 23/09.** Allí el orden era 2.0 sedes → 2.1 y 2.2
 repositorio. Esta recomendación **adelanta la caja chica y las encuestas** antes del
 repositorio, porque el repositorio tiene hoy una alternativa sencilla (una carpeta
 compartida) y la caja chica no. Si el responsable prefiere mantener el repositorio primero,
 la caja chica y las encuestas van después sin ningún problema técnico: no dependen de él.
-**La numeración de versiones se fija cuando el responsable apruebe el orden.**
+**El responsable aprobó este orden el 06/11/2026**: el repositorio pasa de 2.1 y 2.2 a 2.4 y 2.5.
 
 **Costo.** Ninguna de estas funcionalidades sale de la cuota gratuita con el uso esperado:
 son documentos pequeños (un movimiento de caja o una respuesta de encuesta pesan menos de
@@ -274,18 +277,17 @@ repositorio.
 
 ## 7. Decisiones del responsable
 
-Respondidas el 06/11/2026 las marcadas como **resuelta**; las demás siguen con la propuesta
-como valor por omisión hasta que se decidan.
+Las diez se respondieron el 06/11/2026.
 
 | # | Pregunta | Estado | Decisión |
 |---|---|---|---|
-| 1 | ¿Se aprueba el orden de la sección 6, o se mantiene el repositorio antes? | *Pendiente* | Propuesta: orden de la sección 6 |
-| 2 | ¿Una persona puede estar en varias facultades? | *Pendiente* | Propuesta: sí |
+| 1 | ¿Se aprueba el orden de la sección 6, o se mantiene el repositorio antes? | **Resuelta** | **Se aprueba el orden de la sección 6** |
+| 2 | ¿Una persona puede estar en varias facultades? | **Resuelta** | **Sí** |
 | 3 | ¿Qué facultades hay hoy en Boca del Monte? | **Resuelta** | Por ahora solo **Ingeniería en Sistemas**; habrá más |
 | 4 | ¿Una caja por sede, por facultad o varias libres? | **Resuelta** | **Una por sede y facultad** |
 | 5 | ¿Los catedráticos ven solo el saldo o también el kárdex? | **Resuelta** | **Solo el saldo** |
 | 6 | ¿Cada catedrático ve los aportes de todos o solo los suyos? | **Resuelta** | **Los suyos**; solo los encargados de la caja ven todos |
-| 7 | ¿Aportes con cuota fija o periódica? | *Pendiente* | Propuesta: monto libre |
+| 7 | ¿Aportes con cuota fija o periódica? | **Resuelta** | **Periódicos, eventuales y de monto variable o libre** (RF-CCH-16 y 17) |
 | 8 | ¿Foto del comprobante en las salidas? | **Resuelta** | **No** |
-| 9 | ¿Aprobación de una segunda persona para salidas grandes? | *Pendiente* | Propuesta: no en la base |
+| 9 | ¿Aprobación de una segunda persona para salidas grandes? | **Resuelta** | **No** |
 | 10 | ¿Quién crea encuestas y quién ve los resultados? | **Resuelta** | **Los mismos que pueden emitir avisos** (coordinación y administración) |
