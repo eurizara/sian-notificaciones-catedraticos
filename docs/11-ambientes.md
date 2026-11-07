@@ -272,6 +272,30 @@ plantillas y cola—. La base temporal se borró al terminar. Para repetirlo:
 python3 scripts/comparar-restauracion.py sian-umg-bdm-dev restauracion-AAAAMMDD 2026-10-04T02:22
 ```
 
+**Migración a varias sedes (2.0, ADR-009, una vez por ambiente).** La 2.0 no exige nada
+hasta el paso «contraer» (2.0-f): mientras tanto, un perfil sin `membresias` o un mensaje
+sin `sedeId` se tratan como de `bdm`. El guion `scripts/migrar-sedes.py` escribe ese dato en
+lo que ya existe, para que al contraer no quede nada sin sede:
+
+```
+python3 scripts/migrar-sedes.py <proyecto>                          # solo el plan
+python3 scripts/migrar-sedes.py <proyecto> --aplicar [--facultad-a-todos] [--admin-general <correo>]
+```
+
+Crea `sedes/bdm` (Boca del Monte) y `sedes/bdm/facultades/ing-sistemas` (Ingeniería en
+Sistemas), da a cada perfil sin membresías la de omisión y pone `sedeId: 'bdm'` a mensajes y
+grupos. **No toca la bitácora**, que es inmutable: un asiento sin sede se lee como de `bdm`.
+Es idempotente (la segunda corrida no escribe nada) y cada escritura lleva una
+precondición: crea solo lo que no existe y actualiza solo lo que sí. Sus pruebas corren en
+la integración continua. **Antes de producción:** respaldo del día comprobado, y correrlo
+primero sin `--aplicar`.
+
+| Ambiente | Corrido | Resultado |
+|---|---|---|
+| Desarrollo | Pendiente | — |
+| QA | Pendiente | — |
+| Producción | Pendiente | — |
+
 **App Check (desde 1.6.9, DT-33).** Comprueba que una llamada a las funciones sale de la
 aplicación y no de un guion con la configuración pública del proyecto. Va en **dos pasos**, y
 el segundo no se da hasta que el primero lo justifique.
