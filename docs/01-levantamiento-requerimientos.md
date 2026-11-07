@@ -85,6 +85,7 @@ y no distingue lo urgente de lo informativo.
 | Administrar usuarios y roles | Sí | No | No | No |
 | Administrar grupos de destinatarios | Sí | Sí | No | No |
 | Mantener los catálogos de su sede: facultades (2.0, RF-CAT-05) | Sí | No | No | No |
+| Decidir a qué facultades de su sede pertenece cada persona (2.0, RF-FAC-01) | Sí | No | No | No |
 | Mantener las sedes (2.0, RF-SED-06): administración general, una bandera que se da a quien coordina | Con la bandera | No | No | No |
 | Recibir notificaciones | Opcional | Opcional | Sí | No |
 | Confirmar lectura | Sí | Sí | Sí | No |

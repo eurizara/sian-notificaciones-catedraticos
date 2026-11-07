@@ -835,12 +835,14 @@ abstract final class Textos {
   static const String destinatariosTodos = 'Todos los catedráticos';
   static const String destinatariosGrupos = 'Grupos concretos';
   static const String destinatariosPersonas = 'Personas concretas';
+  static const String destinatariosFacultades = 'Una o varias facultades';
   static const String buscarPersona = 'Buscar por nombre o correo';
   static const String personasSinCoincidencias = 'Nadie coincide con esa búsqueda.';
   static const String personasCargando = 'Cargando personas…';
   static const String personasFallo =
       'No se pudo cargar la lista de personas. Vuelve a intentarlo.';
   static const String validacionElijePersona = 'Elige al menos una persona.';
+  static const String validacionElijeFacultad = 'Elige al menos una facultad.';
   static String quitarPersona(String nombre) => 'Quitar a $nombre';
 
   /// En la confirmación de un envío individual: A QUIÉN va, con nombres.
@@ -1189,6 +1191,7 @@ abstract final class Textos {
 
   static const String destinatariosTodosCorto = 'A todos los catedráticos';
   static const String destinatariosIndividual = 'A personas concretas';
+  static const String destinatariosFacultadCorto = 'A una o varias facultades';
   static const String llevaNotaDeVoz = 'Nota de voz';
   static const String llevaImagenAdjunta = 'Imagen';
   static const String pideConfirmacion = 'Pide confirmación';
@@ -1519,4 +1522,16 @@ abstract final class Textos {
 
   // ── Sede de trabajo (2.0 · RF-SED-04) ─────────────────────────────────────
   static String sedeDeTrabajo(String sede) => 'Sede de trabajo: $sede. Cambiar';
+
+  // ── Facultades en grupos y usuarios (2.0 · RF-FAC-01, RF-FAC-03) ─────────
+  static const String grupoFacultad = 'Facultad (opcional)';
+  static const String grupoSinFacultad = 'Sin facultad';
+  static const String filtroTodasLasFacultades = 'Todas las facultades';
+  static const String usuarioFacultades = 'Facultades';
+  static const String usuarioSinFacultad = 'Sin facultad';
+  static const String usuarioCambiar = 'Cambiar';
+  static String usuarioCambiarFacultadesDe(String nombre) =>
+      'Cambiar las facultades de $nombre';
+  static String usuarioFacultadesDe(String nombre) => 'Facultades de $nombre';
+  static const String usuarioFacultadesGuardadas = 'Facultades actualizadas.';
 }

@@ -22,6 +22,7 @@ import { exigirPermiso, type Permiso , recibeAvisos } from '../domain/autorizaci
 import { ROLES, type Rol } from '../domain/tipos';
 import { claimsDe, type PerfilUsuario } from '../application/activarSesion';
 import {
+  conFacultadesEnSede,
   conRolEnSede,
   esIdDeFacultad,
   membresiasDe,
@@ -32,6 +33,7 @@ import {
   sedesDeMembresias,
 } from '../domain/sede';
 import { rolDelPerfilEnSede, sedeDeLaPeticion } from '../application/sedeDeLaPeticion';
+import { leerFacultades } from '../infrastructure/sedes';
 import { FieldValue, OPCIONES_LLAMABLE, RUTAS, auth, db } from '../infrastructure/firebase';
 import {
   actualizarPerfil,
@@ -402,6 +404,48 @@ export const cambiarAutorizacionesFinas = onCall(OPCIONES_LLAMABLE, async (petic
     puedeCrearRecurrentes: recurrentes,
     recibeAvisos: recibeFinal,
   };
+});
+
+/**
+ * A qué facultades de su sede pertenece una persona (2.0 · RF-FAC-01).
+ *
+ * Solo la coordinación de esa sede, y solo con facultades activas del catálogo
+ * de la sede. No cambia el token: las facultades no viajan en él, se leen del
+ * perfil al resolver un envío por facultad.
+ */
+export const cambiarFacultades = onCall(OPCIONES_LLAMABLE, async (peticion) => {
+  const solicitante = await exigir(peticion, 'ADMINISTRAR_USUARIOS');
+  const { uid, facultades } = peticion.data as { uid?: string; facultades?: unknown };
+  if (!uid) {
+    throw new HttpsError('invalid-argument', 'Falta el usuario.');
+  }
+  const perfil = exigirDeLaSede(await buscarPerfil(uid), solicitante);
+
+  try {
+    const membresias = conFacultadesEnSede(
+      perfil,
+      solicitante.sedeId,
+      facultades,
+      await leerFacultades(solicitante.sedeId),
+    );
+    const antes = membresiasDe(perfil)[solicitante.sedeId]?.facultades ?? [];
+    const despues = membresias[solicitante.sedeId]?.facultades ?? [];
+    await actualizarPerfil(uid, { membresias });
+    await escribirAsiento(
+      crearAsiento({
+        tipo: 'USUARIO_FACULTADES_CAMBIADAS',
+        actor: solicitante.actor,
+        entidad: 'USUARIO',
+        entidadId: uid,
+        resumen: `Facultades de ${perfil.correo} en ${solicitante.sedeId}: ${antes.join(', ') || '—'} → ${despues.join(', ') || '—'}`,
+        datos: { antes, despues },
+        sedeId: solicitante.sedeId,
+      }),
+    );
+    return { uid, facultades: despues };
+  } catch (e) {
+    throw comoHttps(e);
+  }
 });
 
 // ---------------------------------------------------------------------------

@@ -23,13 +23,27 @@ import '../../application/proveedores_grupos.dart';
 import '../../infrastructure/firebase/repositorio_grupos.dart';
 import '../shared/tema.dart';
 import '../shared/textos.dart';
+import '../../application/proveedores_catalogos.dart';
+import '../../infrastructure/firebase/repositorio_catalogos.dart';
 
-class SeccionGrupos extends ConsumerWidget {
+class SeccionGrupos extends ConsumerStatefulWidget {
   const SeccionGrupos({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SeccionGrupos> createState() => _SeccionGruposState();
+}
+
+class _SeccionGruposState extends ConsumerState<SeccionGrupos> {
+  /// La facultad por la que se filtra la lista (2.0, RF-FAC-03). Nulo: todas.
+  String? _facultad;
+
+  @override
+  Widget build(BuildContext context) {
     final AsyncValue<List<GrupoDetalle>> grupos = ref.watch(gruposProvider);
+    final bool porFacultad = ref.watch(hayFacultadesParaElegirProvider);
+    final List<ElementoCatalogo> facultades =
+        ref.watch(facultadesActivasProvider).value ??
+        const <ElementoCatalogo>[];
 
     return Scaffold(
       body: grupos.when(
@@ -40,7 +54,33 @@ class SeccionGrupos extends ConsumerWidget {
             : ListView(
                 padding: const EdgeInsets.all(16),
                 children: <Widget>[
-                  for (final GrupoDetalle g in lista) _FilaGrupo(grupo: g),
+                  // RF-FAC-04: con menos de dos facultades no hay filtro.
+                  if (porFacultad)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Wrap(
+                        spacing: 8,
+                        children: <Widget>[
+                          ChoiceChip(
+                            label: const Text(Textos.filtroTodasLasFacultades),
+                            selected: _facultad == null,
+                            onSelected: (_) => setState(() => _facultad = null),
+                          ),
+                          for (final ElementoCatalogo f in facultades)
+                            ChoiceChip(
+                              label: Text(f.nombre),
+                              selected: _facultad == f.id,
+                              onSelected: (_) =>
+                                  setState(() => _facultad = f.id),
+                            ),
+                        ],
+                      ),
+                    ),
+                  for (final GrupoDetalle g in lista)
+                    if (!porFacultad ||
+                        _facultad == null ||
+                        g.facultadId == _facultad)
+                      _FilaGrupo(grupo: g),
                   const SizedBox(height: 80),
                 ],
               ),
@@ -201,6 +241,9 @@ class _EditorGrupoState extends ConsumerState<EditorGrupo> {
   );
   late final Set<String> _elegidos = <String>{...?widget.grupo?.miembros};
 
+  /// La facultad del grupo (2.0, RF-FAC-03). Solo se pregunta con dos o más.
+  late String? _facultad = widget.grupo?.facultadId;
+
   final TextEditingController _busqueda = TextEditingController();
   bool _guardando = false;
   String? _error;
@@ -245,6 +288,7 @@ class _EditorGrupoState extends ConsumerState<EditorGrupo> {
             nombre: _nombre.text,
             descripcion: _descripcion.text,
             miembros: _elegidos.toList(),
+            facultadId: _facultad,
           );
       if (mounted) {
         Navigator.of(context).pop();
@@ -325,6 +369,30 @@ class _EditorGrupoState extends ConsumerState<EditorGrupo> {
                 border: OutlineInputBorder(),
               ),
             ),
+            // RF-FAC-04: con menos de dos facultades no se pregunta.
+            if (ref.watch(hayFacultadesParaElegirProvider)) ...<Widget>[
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String?>(
+                initialValue: _facultad,
+                decoration: const InputDecoration(
+                  labelText: Textos.grupoFacultad,
+                  border: OutlineInputBorder(),
+                ),
+                items: <DropdownMenuItem<String?>>[
+                  const DropdownMenuItem<String?>(
+                    child: Text(Textos.grupoSinFacultad),
+                  ),
+                  for (final ElementoCatalogo f
+                      in ref.watch(facultadesActivasProvider).value ??
+                          const <ElementoCatalogo>[])
+                    DropdownMenuItem<String?>(
+                      value: f.id,
+                      child: Text(f.nombre),
+                    ),
+                ],
+                onChanged: (String? v) => setState(() => _facultad = v),
+              ),
+            ],
             const SizedBox(height: 16),
 
             Row(

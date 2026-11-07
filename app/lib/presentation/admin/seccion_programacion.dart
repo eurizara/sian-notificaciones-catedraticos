@@ -213,6 +213,7 @@ class _Fila extends ConsumerWidget {
                       mensaje.nombresGrupos,
                     ),
                     'INDIVIDUAL' => Textos.destinatariosIndividual,
+                    'FACULTAD' => Textos.destinatariosFacultadCorto,
                     _ => Textos.destinatariosTodosCorto,
                   },
                 ),

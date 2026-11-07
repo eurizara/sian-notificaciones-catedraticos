@@ -61,6 +61,7 @@ export {
   cambiarAutorizacionesFinas,
   cambiarEstadoGrupo,
   cambiarEstadoUsuario,
+  cambiarFacultades,
   cambiarRol,
   crearInvitaciones,
   destinatariosElegibles,

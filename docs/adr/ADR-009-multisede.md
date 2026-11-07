@@ -77,7 +77,7 @@ desarrollo; ninguno rompe lo anterior:
 | 2.0-b | Avisos, grupos y bitácora nuevos con `sedeId`; «todos» dentro de la sede; envío a una facultad; Alcance, grupos y usuarios por sede | En dev (PR #232) |
 | 2.0-c | Guion de migración idempotente (`scripts/migrar-sedes.py`), con pruebas en la CI: `bdm` e Ingeniería en Sistemas en lo existente | En dev (PR #233); corrido en desarrollo el 07/11 |
 | 2.0-d | Catálogos: mantenimiento de sedes (administración general) y facultades (coordinación), con un componente común y reglas de lectura por sede | En dev (PR #234) |
-| 2.0-e | Aplicación. **e1:** la sede de trabajo va en cada llamada; selector de sede (solo con más de una); grupos y programados filtrados por sede. **e2:** envío y grupos por facultad, facultades en Usuarios | e1 en desarrollo |
+| 2.0-e | Aplicación. **e1:** la sede de trabajo va en cada llamada; selector de sede (solo con más de una); grupos, programados y usuarios filtrados por sede. **e2:** envío y grupos por facultad, facultades de cada persona en Usuarios (`cambiarFacultades`) | e1 en dev (PR #235); e2 en desarrollo |
 | 2.0-f | Contraer: las reglas exigen la sede; pruebas cruzadas sede A / sede B. Las consultas de la aplicación pasan a filtrar por `sedeId` en Firestore (hoy filtran en el aparato, porque las reglas aún no lo exigen) | Pendiente |
 
 **Compatibilidad durante la migración.** Un perfil sin `membresias` y un token sin `sedes`
