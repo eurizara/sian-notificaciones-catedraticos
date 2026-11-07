@@ -27,6 +27,10 @@ describe('integración continua', () => {
     expect(bloqueDe('resumen')).toMatch(/needs: \[functions, reglas, secretos, flutter\]/);
   });
 
+  it('los guiones de operación se prueban en cada integración (2.0-c)', () => {
+    expect(bloqueDe('functions')).toMatch(/python3 -m unittest discover -s scripts -p 'test_\*\.py'/);
+  });
+
   it('todos corren en Linux (ubuntu-latest)', () => {
     const maquinas = [...ci.matchAll(/runs-on: (\S+)/g)].map((m) => m[1]);
     expect(maquinas).toHaveLength(5);

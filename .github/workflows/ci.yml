@@ -81,6 +81,13 @@ jobs:
         continue-on-error: true
         run: npm audit --audit-level=high
 
+      # Los guiones que tocan datos de un ambiente (la migración a sedes de la
+      # 2.0, primero) tienen sus pruebas como el resto del código: un guion que
+      # corre una sola vez en producción es justo el que no se puede equivocar.
+      - name: Pruebas de los guiones de operación
+        working-directory: .
+        run: python3 -m unittest discover -s scripts -p 'test_*.py' -v
+
       - name: Publicar reporte de cobertura
         if: always()
         uses: actions/upload-artifact@v7

@@ -37,3 +37,6 @@ app/coverage/
 Thumbs.db
 .idea/
 .vscode/settings.json
+
+# Caché de Python de los guiones y sus pruebas
+__pycache__/

@@ -546,7 +546,7 @@ están protegidas: no se fusiona nada si alguno falla.
 
 | Trabajo | Qué comprueba |
 |---|---|
-| Dominio y Cloud Functions | Analizador estático, compilación de TypeScript, pruebas con cobertura y `npm audit` de lo que se despliega |
+| Dominio y Cloud Functions | Analizador estático, compilación de TypeScript, pruebas con cobertura, `npm audit` de lo que se despliega y, desde la 2.0, las pruebas de los guiones de operación (`scripts/test_*.py`) |
 | Reglas de seguridad (RNF-08) | Las pruebas de `firestore.rules` contra el emulador |
 | Búsqueda de secretos (RNF-10, RES-10) | Que no haya claves ni contraseñas en el repositorio |
 | Aplicación Flutter | `flutter analyze` sin una sola advertencia y `flutter test` |
