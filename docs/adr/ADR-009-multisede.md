@@ -65,6 +65,27 @@ producción.
     sede única de la persona cuando falta.
 - **Deuda que genera:** ninguna prevista, si la migración se cierra (paso «contraer»).
 
+## Plan de implementación (2.0, aprobado el 06/11/2026)
+
+La 2.0 suma **facultades** dentro de la sede y el **mantenimiento de catálogos** (documento
+14), en la misma migración. Se hace en seis pasos, cada uno en su propio PR y todos en
+desarrollo; ninguno rompe lo anterior:
+
+| Paso | Qué | Estado |
+|---|---|---|
+| 2.0-a | Membresías con rol por sede; `sedes` y `adminGeneral` en el token; todos los claims desde `claimsDe` | En desarrollo |
+| 2.0-b | Avisos, grupos y bitácora nuevos con `sedeId`; «todos» dentro de la sede; envío a una facultad | Pendiente |
+| 2.0-c | Guion de migración idempotente: `bdm` e Ingeniería en Sistemas en lo existente | Pendiente |
+| 2.0-d | Catálogos: mantenimiento de sedes (administración general) y facultades (coordinación) | Pendiente |
+| 2.0-e | Aplicación: selector de sede, envío por facultad, membresías en Usuarios | Pendiente |
+| 2.0-f | Contraer: las reglas exigen la sede; pruebas cruzadas sede A / sede B | Pendiente |
+
+**Compatibilidad durante la migración.** Un perfil sin `membresias` y un token sin `sedes`
+equivalen a la sede inicial (`bdm`) con su rol de siempre (`membresiasDe`, `sedesDelToken`).
+El campo `rol` sigue diciendo el rol en la sede principal, porque las versiones de la
+aplicación anteriores a la 2.0 solo leen ese campo. Un documento sin `sedeId` es de `bdm`
+(`sedeDelDocumento`). Con una sola sede nadie elige nada (`elegirSede`).
+
 ## Requisitos relacionados
 
 RF-SED-01 a RF-SED-06 (documento 01, sección 3.9) · RF-USR-06 · DT-04 · documento 12,

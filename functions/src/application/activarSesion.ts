@@ -25,6 +25,13 @@ import {
 import { CorreoInstitucional } from '../domain/objetosDeValor';
 import { recibeAvisos } from '../domain/autorizacion';
 import type { Invitacion } from '../domain/invitacion';
+import {
+  SEDE_INICIAL,
+  membresiasDe,
+  sedesDeMembresias,
+  type Membresias,
+  type SedesDelToken,
+} from '../domain/sede';
 import type { Rol } from '../domain/tipos';
 
 /** Perfil tal como vive en `usuarios/{uid}` (documento 05, sección 2.1). */
@@ -40,6 +47,14 @@ export interface PerfilUsuario {
   readonly puedeEmitirUrgentes: boolean;
   readonly puedeCrearRecurrentes: boolean;
   readonly zonaHoraria: string;
+  /**
+   * Sedes a las que pertenece, con su rol y sus facultades (2.0, ADR-009).
+   * Ausente en los perfiles de antes de la migración: equivale a la sede
+   * inicial con `rol` (ver `membresiasDe`).
+   */
+  readonly membresias?: Membresias;
+  /** Administración general: crea sedes y asigna a sus coordinadores (RF-SED-06). */
+  readonly adminGeneral?: boolean;
 }
 
 /** Custom claims que se siembran en el token (documento 02, sección 12). */
@@ -56,6 +71,14 @@ export interface ClaimsUsuario {
    * el servidor: esto es solo para pintar la pantalla (RN-01).
    */
   readonly recibeAvisos: boolean;
+  /**
+   * Sus sedes con el rol en cada una (2.0). Las reglas y las funciones deciden
+   * con esto en qué sede puede actuar, sin leer Firestore. `rol` sigue
+   * diciendo el rol en su sede principal, para las versiones anteriores de la
+   * aplicación, que solo saben leer ese campo.
+   */
+  readonly sedes: SedesDelToken;
+  readonly adminGeneral: boolean;
 }
 
 export type MotivoRechazo = 'FUERA_DE_LISTA_BLANCA' | 'CUENTA_DESACTIVADA';
@@ -106,7 +129,13 @@ export type ResultadoActivacion =
       readonly borrarCredencial: boolean;
     };
 
-/** Claims derivados de un perfil. Una sola fuente, para que no diverjan. */
+/**
+ * Claims derivados de un perfil. Una sola fuente, para que no diverjan.
+ *
+ * Todo cambio de token pasa por aquí. Antes, cambiar el rol o el estado de
+ * alguien armaba los claims a mano y se olvidaba `recibeAvisos`: la decisión
+ * del coordinador desaparecía del token hasta el siguiente inicio de sesión.
+ */
 export function claimsDe(perfil: PerfilUsuario): ClaimsUsuario {
   return {
     rol: perfil.rol,
@@ -114,6 +143,8 @@ export function claimsDe(perfil: PerfilUsuario): ClaimsUsuario {
     puedeEmitirUrgentes: perfil.puedeEmitirUrgentes,
     puedeCrearRecurrentes: perfil.puedeCrearRecurrentes,
     recibeAvisos: recibeAvisos(perfil.rol, perfil.recibeAvisos),
+    sedes: sedesDeMembresias(membresiasDe(perfil)),
+    adminGeneral: perfil.adminGeneral === true,
   };
 }
 
@@ -226,6 +257,9 @@ export function decidirActivacion(solicitud: SolicitudActivacion): ResultadoActi
     puedeEmitirUrgentes: false,
     puedeCrearRecurrentes: false,
     zonaHoraria: solicitud.zonaHorariaInstitucional,
+    // Nace migrado: en la sede inicial, con el rol de su invitación. Las
+    // invitaciones aún no dicen sede; cuando haya una segunda, la dirán.
+    membresias: { [SEDE_INICIAL]: { rol: invitacion.rolAsignado, facultades: [] } },
   };
 
   return {

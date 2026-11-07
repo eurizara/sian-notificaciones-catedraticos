@@ -7,6 +7,7 @@ import type { AsientoBitacora } from '../domain/bitacora';
 import { decidirCarga, type Invitacion } from '../domain/invitacion';
 import type { Rol } from '../domain/tipos';
 import { DOC_CONFIGURACION, FieldValue, RUTAS, aTimestamp, db } from './firebase';
+import { membresiasDe } from '../domain/sede';
 
 // ---------------------------------------------------------------------------
 // Bitácora — RF-BIT-01, RF-BIT-02, RF-BIT-03
@@ -203,6 +204,10 @@ export async function buscarPerfil(uid: string): Promise<PerfilUsuario | null> {
       typeof d.recibeAvisos === 'boolean' ? d.recibeAvisos : undefined,
     puedeCrearRecurrentes: d.puedeCrearRecurrentes === true,
     zonaHoraria: (d.zonaHoraria as string) ?? '',
+    // Sin membresías guardadas, `membresiasDe` da la sede inicial con su rol:
+    // así un perfil de antes de la 2.0 se comporta igual que siempre.
+    ...(d.membresias === undefined ? {} : { membresias: membresiasDe({ rol: d.rol as Rol, membresias: d.membresias }) }),
+    ...(d.adminGeneral === true ? { adminGeneral: true } : {}),
   };
 }
 
@@ -244,6 +249,7 @@ export async function guardarPerfil(perfil: PerfilUsuario): Promise<void> {
         : { recibeAvisos: perfil.recibeAvisos }),
       puedeCrearRecurrentes: perfil.puedeCrearRecurrentes,
       zonaHoraria: perfil.zonaHoraria,
+      ...(perfil.membresias === undefined ? {} : { membresias: perfil.membresias }),
       creadoEn: FieldValue.serverTimestamp(),
       actualizadoEn: FieldValue.serverTimestamp(),
     },
