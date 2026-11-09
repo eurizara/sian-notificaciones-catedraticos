@@ -504,6 +504,8 @@ Documento único con los parámetros globales.
 | `GRUPO_CREADO` / `GRUPO_MODIFICADO` | Function | |
 | `CATALOGO_MODIFICADO` | Function | 2.0: alta, nombre, desactivación o reactivación de una sede o facultad. `entidad: 'CATALOGO'` |
 | `USUARIO_FACULTADES_CAMBIADAS` | Function | 2.0: a qué facultades de una sede pertenece una persona (`cambiarFacultades`), con antes y después |
+| `USUARIO_SEDES_CAMBIADAS` | Function | 2.0.1: alta o baja de una persona en una sede, o su rol allí (`asignarSede`, `quitarSede`) |
+| `USUARIO_ADMIN_GENERAL_CAMBIADO` | Function | 2.0.1: se da o se quita la administración general (`cambiarAdminGeneral`) |
 | `MENSAJE_CREADO` | Function | Se guarda el borrador |
 | `MENSAJE_PROGRAMADO` | Function | Se define la programación |
 | `MENSAJE_SUSPENDIDO` / `MENSAJE_REANUDADO` | Function | RF-PRG-10 |

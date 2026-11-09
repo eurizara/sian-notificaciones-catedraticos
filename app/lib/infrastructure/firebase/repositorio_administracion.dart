@@ -40,7 +40,21 @@ class UsuarioVista {
     required this.recibeAvisos,
     required this.puedeCrearRecurrentes,
     this.membresias = const <String, Object?>{},
+    this.adminGeneral = false,
   });
+
+  /// Administración general (2.0, RF-SED-06).
+  final bool adminGeneral;
+
+  /// Sus sedes con el rol en cada una (2.0.1). Sin membresías, `bdm` con [rol].
+  Map<String, String> get sedesConRol {
+    if (membresias.isEmpty) {
+      return <String, String>{'bdm': rol};
+    }
+    return <String, String>{
+      for (final String s in membresias.keys) s: rolEn(s),
+    };
+  }
 
   /// Sus sedes, tal como están en el perfil (2.0). Vacío: de antes de la
   /// migración, es de `bdm` con [rol].
@@ -197,6 +211,7 @@ class RepositorioAdministracion {
               ? x['recibeAvisos'] as bool
               : (x['rol'] as String?) == 'CATEDRATICO',
           puedeCrearRecurrentes: x['puedeCrearRecurrentes'] == true,
+          adminGeneral: x['adminGeneral'] == true,
           membresias: x['membresias'] is Map
               ? (x['membresias'] as Map<Object?, Object?>).map(
                   (Object? k, Object? v) => MapEntry<String, Object?>('$k', v),
@@ -246,6 +261,8 @@ class RepositorioAdministracion {
     required String correo,
     required String rol,
     String nombre = '',
+    /// Facultades de la sede con que entra (2.0.1). Vacía: ninguna.
+    List<String> facultades = const <String>[],
   }) async {
     final HttpsCallableResult<Object?> r = await _fn
         .httpsCallable('crearInvitaciones')
@@ -254,6 +271,7 @@ class RepositorioAdministracion {
             'correo': correo,
             'rol': rol,
             'nombre': nombre,
+            if (facultades.isNotEmpty) 'facultades': facultades,
           }),
         );
     return _interpretarCarga(r.data);

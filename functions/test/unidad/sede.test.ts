@@ -24,6 +24,7 @@ import {
   sedePrincipal,
   sedesDeMembresias,
   sedesDelToken,
+  sinSede,
 } from '../../src/domain/sede';
 
 describe('membresiasDe: un perfil de antes de la 2.0 es de la sede inicial', () => {
@@ -319,5 +320,63 @@ describe('conFacultadesEnSede (RF-FAC-01)', () => {
     expect(() => conFacultadesEnSede({ rol: 'CATEDRATICO' }, 'bdm', ['Con Espacio'], CATALOGO)).toThrow(
       ErrorValidacion,
     );
+  });
+});
+
+describe('sinSede (RF-SED-06)', () => {
+  it('saca de una sede sin tocar las otras', () => {
+    expect(
+      sinSede(
+        {
+          rol: 'CATEDRATICO',
+          membresias: {
+            bdm: { rol: 'CATEDRATICO', facultades: ['ing-sistemas'] },
+            otra: { rol: 'COORDINADOR', facultades: [] },
+          },
+        },
+        'otra',
+      ),
+    ).toEqual({ bdm: { rol: 'CATEDRATICO', facultades: ['ing-sistemas'] } });
+  });
+
+  it('nunca de la última: para eso está desactivar la cuenta', () => {
+    expect(() => sinSede({ rol: 'CATEDRATICO' }, 'bdm')).toThrow(/única sede/);
+  });
+
+  it('de una sede a la que no pertenece, se rechaza', () => {
+    expect(() => sinSede({ rol: 'CATEDRATICO' }, 'otra')).toThrow(/no pertenece/);
+  });
+});
+
+describe('2.0.1 · la invitación dice la sede y las facultades', () => {
+  const base = {
+    correo: 'nueva@umg.edu.gt',
+    rolAsignado: 'CATEDRATICO' as const,
+    nombre: 'Nueva',
+    consumida: false,
+    creadaPor: 'coord',
+    creadaEn: new Date('2026-11-08T00:00:00Z'),
+  };
+  const activar = (invitacion: typeof base & { sedeId?: string; facultades?: string[] }) =>
+    decidirActivacion({
+      uid: 'nuevo',
+      correo: 'nueva@umg.edu.gt',
+      proveedorAuth: 'google.com',
+      invitacion,
+      perfilExistente: null,
+      zonaHorariaInstitucional: 'America/Guatemala',
+    });
+
+  it('entra en la sede de quien la invitó, con sus facultades', () => {
+    const r = activar({ ...base, sedeId: 'otra', facultades: ['derecho'] });
+    if (r.tipo !== 'PERFIL_CREADO') throw new Error(r.tipo);
+    expect(r.perfil.membresias).toEqual({ otra: { rol: 'CATEDRATICO', facultades: ['derecho'] } });
+    expect(r.claims.sedes).toEqual({ otra: 'CATEDRATICO' });
+  });
+
+  it('una invitación de antes no dice sede: la inicial', () => {
+    const r = activar(base);
+    if (r.tipo !== 'PERFIL_CREADO') throw new Error(r.tipo);
+    expect(r.perfil.membresias).toEqual({ bdm: { rol: 'CATEDRATICO', facultades: [] } });
   });
 });

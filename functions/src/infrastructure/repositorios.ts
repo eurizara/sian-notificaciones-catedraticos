@@ -59,6 +59,8 @@ export async function buscarInvitacion(correo: string): Promise<Invitacion | nul
     consumidaPor: d.consumidaPor as string | undefined,
     creadaPor: (d.creadaPor as string) ?? '',
     creadaEn: (d.creadaEn?.toDate?.() as Date) ?? new Date(0),
+    ...(typeof d.sedeId === 'string' ? { sedeId: d.sedeId } : {}),
+    ...(Array.isArray(d.facultades) ? { facultades: (d.facultades as unknown[]).map(String) } : {}),
   };
 }
 
@@ -143,6 +145,8 @@ export async function guardarInvitaciones(
       lote.set(referencia, {
         rolAsignado: i.rolAsignado,
         nombre: i.nombre,
+        ...(i.sedeId === undefined ? {} : { sedeId: i.sedeId }),
+        ...(i.facultades === undefined ? {} : { facultades: [...i.facultades] }),
         consumida: false,
         creadaPor: i.creadaPor,
         creadaEn: aTimestamp(i.creadaEn),
@@ -157,6 +161,8 @@ export async function guardarInvitaciones(
       {
         rolAsignado: i.rolAsignado,
         nombre: i.nombre,
+        ...(i.sedeId === undefined ? {} : { sedeId: i.sedeId }),
+        ...(i.facultades === undefined ? {} : { facultades: [...i.facultades] }),
         creadaPor: i.creadaPor,
         creadaEn: aTimestamp(i.creadaEn),
       },

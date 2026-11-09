@@ -170,6 +170,11 @@ class _Invitaciones extends ConsumerWidget {
     final TextEditingController csv = TextEditingController();
     String rol = 'CATEDRATICO';
     bool masiva = false;
+    // 2.0.1: entra en la sede de trabajo, y con las facultades que se elijan.
+    final Set<String> facultades = <String>{};
+    final List<ElementoCatalogo> catalogo =
+        ref.read(facultadesActivasProvider).value ??
+        const <ElementoCatalogo>[];
 
     final bool? enviar = await showDialog<bool>(
       context: context,
@@ -242,6 +247,25 @@ class _Invitaciones extends ConsumerWidget {
                       ],
                       onChanged: (String? v) => recargar(() => rol = v ?? rol),
                     ),
+                    if (catalogo.isNotEmpty) ...<Widget>[
+                      const SizedBox(height: 12),
+                      const Text(Textos.invitarFacultades),
+                      Wrap(
+                        spacing: 8,
+                        children: <Widget>[
+                          for (final ElementoCatalogo f in catalogo)
+                            FilterChip(
+                              label: Text(f.nombre),
+                              selected: facultades.contains(f.id),
+                              onSelected: (_) => recargar(() {
+                                if (!facultades.remove(f.id)) {
+                                  facultades.add(f.id);
+                                }
+                              }),
+                            ),
+                        ],
+                      ),
+                    ],
                   ] else ...<Widget>[
                     const Text(Textos.ayudaCsv),
                     const SizedBox(height: 12),
@@ -286,6 +310,7 @@ class _Invitaciones extends ConsumerWidget {
               correo: correo.text,
               rol: rol,
               nombre: nombre.text,
+              facultades: facultades.toList(),
             );
 
       if (!context.mounted) {
@@ -423,7 +448,11 @@ class _FilaUsuario extends ConsumerWidget {
     // El rol que se ve y se cambia es el de la sede de trabajo (2.0).
     final String sede = ref.watch(sedeDeTrabajoProvider);
     final String rol = usuario.rolEn(sede);
-    final bool porFacultad = ref.watch(hayFacultadesParaElegirProvider);
+    // Mantener a qué facultades pertenece cada uno se puede en cuanto exista
+    // una: cuando llegue la segunda, la gente ya estará bien repartida.
+    final bool porFacultad =
+        (ref.watch(facultadesActivasProvider).value ?? const <ElementoCatalogo>[])
+            .isNotEmpty;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -475,7 +504,7 @@ class _FilaUsuario extends ConsumerWidget {
             ),
           ),
           // Solo tienen sentido para quien emite.
-          // RF-FAC-01 · RF-FAC-04: con dos o más facultades, a cuáles pertenece.
+          // RF-FAC-01: a qué facultades de la sede pertenece.
           if (porFacultad) _FacultadesDeLaPersona(usuario: usuario, sede: sede),
           if (rol == 'ADMINISTRADORA') ...<Widget>[
             SwitchListTile(

@@ -257,9 +257,15 @@ export function decidirActivacion(solicitud: SolicitudActivacion): ResultadoActi
     puedeEmitirUrgentes: false,
     puedeCrearRecurrentes: false,
     zonaHoraria: solicitud.zonaHorariaInstitucional,
-    // Nace migrado: en la sede inicial, con el rol de su invitación. Las
-    // invitaciones aún no dicen sede; cuando haya una segunda, la dirán.
-    membresias: { [SEDE_INICIAL]: { rol: invitacion.rolAsignado, facultades: [] } },
+    // Nace migrado: en la sede de quien lo invitó (2.0.1), con el rol y las
+    // facultades de su invitación. Una invitación de antes no dice sede: la
+    // inicial.
+    membresias: {
+      [invitacion.sedeId ?? SEDE_INICIAL]: {
+        rol: invitacion.rolAsignado,
+        facultades: [...(invitacion.facultades ?? [])],
+      },
+    },
   };
 
   return {
