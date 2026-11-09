@@ -158,10 +158,10 @@ final List<SeccionAdmin> _secciones = <SeccionAdmin>[
     // Solo el coordinador administra usuarios y roles.
     visiblePara: (Rol rol) => rol == Rol.coordinador,
   ),
-  // 2.0: las facultades las mantiene la coordinación de la sede; las sedes, la
-  // administración general (RF-CAT-05). Esta es una bandera que se le da a
-  // quien coordina, no un rol: un auditor o una administradora con la bandera
-  // no tendrían por qué mantener catálogos, y el servidor tampoco se lo deja.
+  // 2.0: las facultades las mantiene la coordinación de la sede; las sedes y
+  // las sedes de cada persona, la administración general, que la coordinación
+  // le da a quien decida (2.0.3). Por eso la sección depende de la persona y no
+  // solo del rol.
   SeccionAdmin(
     icono: Icons.category_outlined,
     etiqueta: Textos.seccionCatalogos,
@@ -170,7 +170,9 @@ final List<SeccionAdmin> _secciones = <SeccionAdmin>[
     requisitos: const <String>['RF-CAT-01', 'RF-FAC-01', 'RF-SED-06'],
     iteracion: Textos.iteracion20,
     construir: SeccionCatalogos.new,
-    visiblePara: (Rol rol) => rol == Rol.coordinador,
+    visiblePara: (Rol rol) => rol.usaPanelAdministrativo,
+    visibleSegunPersona: (UsuarioSesion u) =>
+        u.rol == Rol.coordinador || u.adminGeneral,
   ),
   SeccionAdmin(
     icono: Icons.fact_check_outlined,

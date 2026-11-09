@@ -25,7 +25,6 @@ import {
   esIdDeSede,
   membresiasDe,
   sedePrincipal,
-  sedesDelToken,
   motivoParaNoCambiarAdminGeneral,
   sinSede,
   type Membresias,
@@ -63,9 +62,9 @@ function leer(instantanea: QuerySnapshot): ElementoCatalogo[] {
  * para trabajar en ella. Reactivarla la devuelve tal como estaba.
  */
 /**
- * Quien pide es la administración general (RF-SED-06): la bandera, activa, y
- * coordinando en alguna sede. Un auditor o una administradora con la bandera
- * no mantienen sedes ni reparten gente entre ellas (RF-CAT-05).
+ * Quien pide tiene la administración general (RF-SED-06), activa. Se la da la
+ * coordinación a quien decida (2.0.3); con ella mantiene las sedes y reparte a
+ * la gente entre ellas.
  */
 function exigirAdminGeneral(peticion: CallableRequest): { uid: string; correo: string; rol: Rol } {
   if (!peticion.auth) {
@@ -73,8 +72,7 @@ function exigirAdminGeneral(peticion: CallableRequest): { uid: string; correo: s
   }
   const token = peticion.auth.token;
   const rol: Rol = (ROLES as readonly string[]).includes(token.rol as string) ? (token.rol as Rol) : 'CATEDRATICO';
-  const coordinaEnAlguna = Object.values(sedesDelToken(token, rol)).includes('COORDINADOR');
-  if (token.activo !== true || token.adminGeneral !== true || !coordinaEnAlguna) {
+  if (token.activo !== true || token.adminGeneral !== true) {
     throw new HttpsError('permission-denied', 'Solo la administración general puede hacer esto.');
   }
   return { uid: peticion.auth.uid, correo: (token.email as string | undefined) ?? '', rol };
@@ -304,8 +302,7 @@ export const cambiarAdminGeneral = onCall(OPCIONES_LLAMABLE, async (peticion) =>
     if (token.activo !== true) {
       throw new HttpsError('permission-denied', 'Su cuenta no está activa.');
     }
-    // 2.0.2: la da la coordinación de la sede (desde Usuarios) o la
-    // administración general (desde Personas y sedes).
+    // 2.0.3: la da solo quien coordina, a gente de su sede (desde Usuarios).
     const { sedeId, rol: rolEnSede } = sedeDeLaPeticion(token, datos.sedeId);
     const actor = { uid: peticion.auth.uid, correo: (token.email as string | undefined) ?? '', rol: rolEnSede };
     const perfil = await perfilOError(datos.uid);
@@ -314,7 +311,6 @@ export const cambiarAdminGeneral = onCall(OPCIONES_LLAMABLE, async (peticion) =>
     }
     const motivo = motivoParaNoCambiarAdminGeneral({
       actorUid: actor.uid,
-      actorEsAdminGeneral: token.adminGeneral === true,
       actorRolEnSede: rolEnSede,
       sedeId,
       objetivo: perfil,

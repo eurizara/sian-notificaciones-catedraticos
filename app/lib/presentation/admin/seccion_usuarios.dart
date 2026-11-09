@@ -14,6 +14,7 @@ import '../../application/proveedores_catalogos.dart';
 import '../../application/proveedores_sede.dart';
 import '../../infrastructure/firebase/repositorio_catalogos.dart';
 import '../../application/proveedores_sesion.dart';
+import '../../domain/rol.dart';
 import '../../domain/sesion.dart';
 
 final Provider<RepositorioAdministracion> repositorioAdminProvider =
@@ -453,6 +454,13 @@ class _FilaUsuario extends ConsumerWidget {
     final Sesion sesion = ref.watch(sesionActualProvider);
     final bool esUnoMismo =
         sesion is SesionActiva && sesion.usuario.uid == usuario.uid;
+    // Quien está usando la aplicación coordina en la sede de trabajo.
+    final bool yoCoordino =
+        sesion is SesionActiva &&
+        (sesion.usuario.sedes[sede] ?? sesion.usuario.rol) == Rol.coordinador;
+    final bool soloCatedratico = usuario.sedesConRol.values.every(
+      (String r) => r == 'CATEDRATICO',
+    );
     // Mantener a qué facultades pertenece cada uno se puede en cuanto exista
     // una: cuando llegue la segunda, la gente ya estará bien repartida.
     final bool porFacultad =
@@ -556,22 +564,25 @@ class _FilaUsuario extends ConsumerWidget {
             ),
           ),
 
-          // 2.0.2: la da la coordinación, solo a quien coordina, y nunca a sí
-          // misma (el servidor lo vuelve a comprobar).
+          // 2.0.3: la da solo quien coordina, a quien decida de su sede, salvo a
+          // un catedrático (no tiene panel), y nunca a sí mismo. El servidor lo
+          // vuelve a comprobar (`motivoParaNoCambiarAdminGeneral`).
           SwitchListTile(
             title: const Text(Textos.administracionGeneral),
             subtitle: Text(
-              esUnoMismo
+              !yoCoordino
+                  ? Textos.adminGeneralSoloCoordinacion
+                  : esUnoMismo
                   ? Textos.adminGeneralPropia
-                  : (rol == 'COORDINADOR' || usuario.adminGeneral)
+                  : (usuario.adminGeneral || !soloCatedratico)
                   ? Textos.administracionGeneralAyuda
-                  : Textos.adminGeneralSoloCoordinadores,
+                  : Textos.adminGeneralSinPanel,
             ),
             value: usuario.adminGeneral,
             onChanged:
-                esUnoMismo ||
-                    (!usuario.adminGeneral &&
-                        !usuario.sedesConRol.values.contains('COORDINADOR'))
+                !yoCoordino ||
+                    esUnoMismo ||
+                    (!usuario.adminGeneral && soloCatedratico)
                 ? null
                 : (bool v) => _ejecutar(
                     context,

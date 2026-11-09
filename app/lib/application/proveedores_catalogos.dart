@@ -73,3 +73,19 @@ final Provider<RepositorioPersonasYSedes> repositorioPersonasYSedesProvider =
       (Ref ref) => RepositorioPersonasYSedes(),
     );
 
+/// Todas las facultades de una sede, activas e inactivas: para el resumen del
+/// bloque de Catálogos. Si no se pueden leer, la lista queda vacía.
+final facultadesDeLaSedeProvider =
+    StreamProvider.family<List<ElementoCatalogo>, String>((
+      Ref ref,
+      String sede,
+    ) {
+      try {
+        return ref
+            .watch(fuenteFacultadesProvider(sede))
+            .observar()
+            .handleError((Object _) {});
+      } on Object {
+        return Stream<List<ElementoCatalogo>>.value(const <ElementoCatalogo>[]);
+      }
+    });

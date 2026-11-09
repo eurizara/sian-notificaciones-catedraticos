@@ -31,7 +31,14 @@ const Map<String, String> _roles = <String, String>{
 };
 
 class PersonasYSedes extends ConsumerStatefulWidget {
-  const PersonasYSedes({required this.miUid, super.key});
+  const PersonasYSedes({
+    required this.miUid,
+    this.mostrarTitulo = true,
+    super.key,
+  });
+
+  /// Sin título cuando va dentro de un bloque desplegable, que ya lo lleva.
+  final bool mostrarTitulo;
 
   /// Quien está usando la aplicación: sus propias sedes las cambia otra
   /// persona de la administración general.
@@ -78,11 +85,16 @@ class _PersonasYSedesState extends ConsumerState<PersonasYSedes> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Semantics(
-          header: true,
-          child: Text(Textos.personasYSedes, style: tema.textTheme.titleMedium),
-        ),
-        const SizedBox(height: 4),
+        if (widget.mostrarTitulo) ...<Widget>[
+          Semantics(
+            header: true,
+            child: Text(
+              Textos.personasYSedes,
+              style: tema.textTheme.titleMedium,
+            ),
+          ),
+          const SizedBox(height: 4),
+        ],
         Text(Textos.personasYSedesExplicacion, style: tema.textTheme.bodySmall),
         const SizedBox(height: 8),
         Buscador(
@@ -133,8 +145,9 @@ class _PersonasYSedesState extends ConsumerState<PersonasYSedes> {
   }
 }
 
-/// En qué sedes está una persona, con qué rol, y si tiene la administración
-/// general. Se guarda todo junto: primero altas y cambios, después bajas.
+/// En qué sedes está una persona y con qué rol. Se guarda todo junto: primero
+/// altas y cambios, después bajas. La administración general se da en
+/// Usuarios, que es donde la coordinación maneja a su gente (2.0.3).
 class DialogoSedes extends ConsumerStatefulWidget {
   const DialogoSedes({
     required this.persona,
@@ -155,11 +168,8 @@ class _DialogoSedesState extends ConsumerState<DialogoSedes> {
   late final Map<String, String> _deseado = <String, String>{
     ...widget.persona.sedesConRol,
   };
-  late bool _adminGeneral = widget.persona.adminGeneral;
   bool _guardando = false;
   String? _error;
-
-  bool get _coordinaEnAlguna => _deseado.values.contains('COORDINADOR');
 
   Future<void> _guardar() async {
     if (_deseado.isEmpty) {
@@ -185,9 +195,6 @@ class _DialogoSedesState extends ConsumerState<DialogoSedes> {
           case QuitarSede(:final String sedeId):
             await repo.quitarSede(uid: uid, sedeId: sedeId);
         }
-      }
-      if (_adminGeneral != widget.persona.adminGeneral) {
-        await repo.cambiarAdminGeneral(uid: uid, valor: _adminGeneral);
       }
       if (mounted) {
         Navigator.of(context).pop();
@@ -266,16 +273,6 @@ class _DialogoSedesState extends ConsumerState<DialogoSedes> {
                         ),
                     ],
                   ),
-              const Divider(height: 24),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text(Textos.administracionGeneral),
-                subtitle: const Text(Textos.administracionGeneralAyuda),
-                value: _adminGeneral,
-                onChanged: bloqueado || (!_adminGeneral && !_coordinaEnAlguna)
-                    ? null
-                    : (bool v) => setState(() => _adminGeneral = v),
-              ),
               if (_error != null)
                 Text(
                   _error!,

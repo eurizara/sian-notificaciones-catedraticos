@@ -133,18 +133,11 @@ void main() {
     expect(repo.llamadas, isEmpty);
   });
 
-  testWidgets('la administración general solo se da a quien coordina', (
+  testWidgets('la administración general ya no se da aquí: se da en Usuarios', (
     WidgetTester tester,
   ) async {
     await _montar(tester, unoMismo: false);
-    final SwitchListTile interruptor = tester.widget(
-      find.byType(SwitchListTile),
-    );
-    expect(
-      interruptor.onChanged,
-      isNull,
-      reason: 'Ana no coordina en ninguna sede',
-    );
+    expect(find.text(Textos.administracionGeneral), findsNothing);
   });
 
   testWidgets(

@@ -1,7 +1,8 @@
-/// Administración general desde Usuarios (2.0.2).
+/// Administración general desde Usuarios (2.0.3).
 ///
-/// La da la coordinación, solo a quien coordina, y nunca a sí misma. El
-/// servidor lo vuelve a comprobar (`motivoParaNoCambiarAdminGeneral`).
+/// La da solo quien coordina, a quien decida de su sede —salvo a un
+/// catedrático, que no tiene panel— y nunca a sí mismo. El servidor lo vuelve
+/// a comprobar (`motivoParaNoCambiarAdminGeneral`).
 library;
 
 import 'package:flutter/material.dart';
@@ -45,6 +46,7 @@ Future<RepositorioAdminFalso> _montar(WidgetTester tester) async {
       _persona('yo', 'Yo Mismo', 'COORDINADOR', adminGeneral: true),
       _persona('beto', 'Beto Coordinador', 'COORDINADOR'),
       _persona('carla', 'Carla Catedrática', 'CATEDRATICO'),
+      _persona('dina', 'Dina Administradora', 'ADMINISTRADORA'),
     ],
   );
   await tester.pumpWidget(
@@ -90,14 +92,27 @@ void main() {
     expect(admin.cambiosAdminGeneral.single, (uid: 'beto', valor: true));
   });
 
-  testWidgets('a quien no coordina no se le da, y se dice por qué', (
+  testWidgets('se le da a quien la coordinación decida, aunque no coordine', (
+    WidgetTester tester,
+  ) async {
+    final RepositorioAdminFalso admin = await _montar(tester);
+    await tester.tap(find.text('Dina Administradora'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.widgetWithText(SwitchListTile, Textos.administracionGeneral),
+    );
+    await tester.pumpAndSettle();
+    expect(admin.cambiosAdminGeneral.single, (uid: 'dina', valor: true));
+  });
+
+  testWidgets('a un catedrático no: no tiene panel, y se dice por qué', (
     WidgetTester tester,
   ) async {
     await _montar(tester);
     await tester.tap(find.text('Carla Catedrática'));
     await tester.pumpAndSettle();
     expect(_interruptor(tester).onChanged, isNull);
-    expect(find.text(Textos.adminGeneralSoloCoordinadores), findsOneWidget);
+    expect(find.text(Textos.adminGeneralSinPanel), findsOneWidget);
   });
 
   testWidgets('la propia no se cambia', (WidgetTester tester) async {

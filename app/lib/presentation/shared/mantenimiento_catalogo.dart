@@ -28,8 +28,12 @@ class MantenimientoCatalogo extends StatefulWidget {
     required this.titulo,
     required this.elemento,
     this.explicacion,
+    this.mostrarTitulo = true,
     super.key,
   });
+
+  /// Sin título cuando va dentro de un bloque desplegable, que ya lo lleva.
+  final bool mostrarTitulo;
 
   final FuenteCatalogo fuente;
 
@@ -90,13 +94,15 @@ class _MantenimientoCatalogoState extends State<MantenimientoCatalogo> {
             Row(
               children: <Widget>[
                 Expanded(
-                  child: Semantics(
-                    header: true,
-                    child: Text(
-                      widget.titulo,
-                      style: tema.textTheme.titleMedium,
-                    ),
-                  ),
+                  child: widget.mostrarTitulo
+                      ? Semantics(
+                          header: true,
+                          child: Text(
+                            widget.titulo,
+                            style: tema.textTheme.titleMedium,
+                          ),
+                        )
+                      : const SizedBox.shrink(),
                 ),
                 FilledButton.tonalIcon(
                   onPressed: () => _editar(context),
