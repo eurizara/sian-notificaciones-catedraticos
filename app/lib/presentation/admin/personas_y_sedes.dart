@@ -25,16 +25,10 @@ const Map<String, String> _roles = <String, String>{
 /// altas y cambios, después bajas. La administración general se da en
 /// Usuarios, que es donde la coordinación maneja a su gente (2.0.3).
 class DialogoSedes extends ConsumerStatefulWidget {
-  const DialogoSedes({
-    required this.persona,
-    required this.sedes,
-    required this.esUnoMismo,
-    super.key,
-  });
+  const DialogoSedes({required this.persona, required this.sedes, super.key});
 
   final UsuarioVista persona;
   final List<ElementoCatalogo> sedes;
-  final bool esUnoMismo;
 
   @override
   ConsumerState<DialogoSedes> createState() => _DialogoSedesState();
@@ -92,7 +86,7 @@ class _DialogoSedesState extends ConsumerState<DialogoSedes> {
     final String nombre = widget.persona.nombre.isEmpty
         ? widget.persona.correo
         : widget.persona.nombre;
-    final bool bloqueado = widget.esUnoMismo || _guardando;
+    final bool bloqueado = _guardando;
     return AlertDialog(
       title: Text(Textos.sedesDe(nombre)),
       content: SizedBox(
@@ -102,11 +96,6 @@ class _DialogoSedesState extends ConsumerState<DialogoSedes> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              if (widget.esUnoMismo)
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 8),
-                  child: Text(Textos.sedesPropias),
-                ),
               for (final ElementoCatalogo s in widget.sedes)
                 if (s.activa || _deseado.containsKey(s.id))
                   Row(
@@ -163,13 +152,10 @@ class _DialogoSedesState extends ConsumerState<DialogoSedes> {
           onPressed: _guardando ? null : () => Navigator.of(context).pop(),
           child: const Text(Textos.botonCancelar),
         ),
-        if (!widget.esUnoMismo)
-          FilledButton(
-            onPressed: _guardando ? null : _guardar,
-            child: Text(
-              _guardando ? Textos.grupoGuardando : Textos.grupoGuardar,
-            ),
-          ),
+        FilledButton(
+          onPressed: _guardando ? null : _guardar,
+          child: Text(_guardando ? Textos.grupoGuardando : Textos.grupoGuardar),
+        ),
       ],
     );
   }

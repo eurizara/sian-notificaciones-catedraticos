@@ -370,7 +370,8 @@ decisiones; documento 14). **Ninguna está empezada.**
   - [x] 2.0.1 (PR #239) · Sedes y personas desde la aplicación: Personas y sedes, administración general, invitaciones con sede y facultades
   - [x] 2.0.2 (PR #240) · La administración general se da también desde Usuarios, por quien coordina
   - [x] 2.0.3 (PR #241) · Catálogos en bloques plegados
-  - [ ] 2.0.4 · Superadministrador (reemplaza a la administración general); rol, facultades y sedes de cada persona en Usuarios; Catálogos solo con listas
+  - [x] 2.0.4 (PR #242) · Superadministrador (reemplaza a la administración general); rol, facultades y sedes de cada persona en Usuarios; Catálogos solo con listas
+  - [ ] 2.0.5 · Corrección: quitar una sede la quita de verdad (`update` en vez de `set` con merge); el superadministrador cambia sus propias sedes
   - [ ] Propuesta: al desactivar una sede con personas, avisar cuántas quedarían sin sede activa
   - [ ] 2.0-f · Las reglas exigen la sede, con pruebas cruzadas. **Espera decisión del responsable** sobre la bitácora vieja, las entregas y la lista de usuarios (ADR-009, «2.0-f: lo que falta decidir»)
 - **Pruebas:** reglas por sede contra el emulador, dominio («todos» por sede), migración

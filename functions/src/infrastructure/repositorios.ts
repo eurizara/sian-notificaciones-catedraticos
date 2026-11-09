@@ -7,7 +7,7 @@ import type { AsientoBitacora } from '../domain/bitacora';
 import { decidirCarga, type Invitacion } from '../domain/invitacion';
 import type { Rol } from '../domain/tipos';
 import { DOC_CONFIGURACION, FieldValue, RUTAS, aTimestamp, db } from './firebase';
-import { membresiasDe } from '../domain/sede';
+import { membresiasDe, type Membresias } from '../domain/sede';
 
 // ---------------------------------------------------------------------------
 // Bitácora — RF-BIT-01, RF-BIT-02, RF-BIT-03
@@ -271,6 +271,34 @@ export async function actualizarPerfil(
     .collection(RUTAS.usuarios)
     .doc(uid)
     .set({ ...cambios, actualizadoEn: FieldValue.serverTimestamp() }, { merge: true });
+}
+
+/**
+ * Reemplaza las membresías completas de un perfil (y, si se da, su rol).
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * `update`, NO `set` con `merge`: fusionar un mapa no borra sus claves.
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * Con `set(..., { merge: true })` Firestore fusiona los mapas por dentro:
+ * agrega y cambia claves, pero nunca quita las que faltan. Quitar una sede no
+ * hacía nada: el 08/11/2026 a María se le quitó Boca del Monte, la bitácora y
+ * su token dijeron «solo Villa Nueva» y su perfil siguió con las dos.
+ * `update` reemplaza el campo entero.
+ */
+export async function reemplazarMembresias(
+  uid: string,
+  membresias: Membresias,
+  rol?: Rol,
+): Promise<void> {
+  await db
+    .collection(RUTAS.usuarios)
+    .doc(uid)
+    .update({
+      membresias,
+      ...(rol === undefined ? {} : { rol }),
+      actualizadoEn: FieldValue.serverTimestamp(),
+    });
 }
 
 export async function registrarUltimoAcceso(uid: string): Promise<void> {

@@ -1,8 +1,7 @@
 /// Personas y sedes (2.0.1 · RF-SED-02, RF-SED-06).
 ///
-/// La administración general pone a cada persona en sus sedes con su rol, y da
-/// o quita la administración general. Nadie se cambia a sí mismo, y nadie se
-/// queda sin sede.
+/// El superadministrador pone a cada persona en sus sedes con su rol. Desde la
+/// 2.0.5 también cambia las suyas, como sus facultades; nadie se queda sin sede.
 library;
 
 import 'package:flutter/material.dart';
@@ -56,7 +55,6 @@ const UsuarioVista _ana = UsuarioVista(
 
 Future<_RepoFalso> _montar(
   WidgetTester tester, {
-  required bool unoMismo,
   UsuarioVista persona = _ana,
 }) async {
   final _RepoFalso repo = _RepoFalso();
@@ -66,11 +64,7 @@ Future<_RepoFalso> _montar(
       child: MaterialApp(
         theme: TemaSian.claro(),
         home: Scaffold(
-          body: DialogoSedes(
-            persona: persona,
-            sedes: _sedes,
-            esUnoMismo: unoMismo,
-          ),
+          body: DialogoSedes(persona: persona, sedes: _sedes),
         ),
       ),
     ),
@@ -113,7 +107,7 @@ void main() {
   testWidgets('poner a alguien en otra sede y darle un rol allí', (
     WidgetTester tester,
   ) async {
-    final _RepoFalso repo = await _montar(tester, unoMismo: false);
+    final _RepoFalso repo = await _montar(tester);
     await tester.tap(find.text('Otra sede'));
     await tester.pumpAndSettle();
     await tester.tap(find.text(Textos.grupoGuardar));
@@ -124,7 +118,7 @@ void main() {
   testWidgets('no se puede dejar a nadie sin sede', (
     WidgetTester tester,
   ) async {
-    final _RepoFalso repo = await _montar(tester, unoMismo: false);
+    final _RepoFalso repo = await _montar(tester);
     await tester.tap(find.text('Boca del Monte'));
     await tester.pumpAndSettle();
     await tester.tap(find.text(Textos.grupoGuardar));
@@ -136,16 +130,24 @@ void main() {
   testWidgets('la administración general ya no se da aquí: se da en Usuarios', (
     WidgetTester tester,
   ) async {
-    await _montar(tester, unoMismo: false);
+    await _montar(tester);
     expect(find.text(Textos.administracionGeneral), findsNothing);
   });
 
   testWidgets(
-    'las propias sedes no se cambian: se dice por qué y no hay guardar',
+    'cambiar de sede (lo de María): se pide quitar la que deja, después de dar la nueva',
     (WidgetTester tester) async {
-      await _montar(tester, unoMismo: true);
-      expect(find.text(Textos.sedesPropias), findsOneWidget);
-      expect(find.text(Textos.grupoGuardar), findsNothing);
+      // 2.0.5: el diálogo es el mismo para uno mismo y para otros; el
+      // superadministrador también cambia sus propias sedes.
+      final _RepoFalso repo = await _montar(tester);
+      expect(find.text(Textos.grupoGuardar), findsOneWidget);
+      await tester.tap(find.text('Otra sede'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Boca del Monte'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(Textos.grupoGuardar));
+      await tester.pumpAndSettle();
+      expect(repo.llamadas, <String>['asignar otra CATEDRATICO', 'quitar bdm']);
     },
   );
 }
