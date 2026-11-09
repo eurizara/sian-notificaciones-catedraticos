@@ -7,6 +7,11 @@
  * Se ejecutan en serie (--runInBand) porque comparten una única instancia
  * de emulador y se limpian entre pruebas.
  */
+// El SDK de administración (prueba de membresías, 2.0.5) necesita saber el
+// proyecto. En la CI el emulador se arranca sin --project y no lo hay; con un
+// id «demo-» el SDK nunca intenta salir a un proyecto real.
+process.env.GCLOUD_PROJECT = process.env.GCLOUD_PROJECT || 'demo-sian';
+
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
