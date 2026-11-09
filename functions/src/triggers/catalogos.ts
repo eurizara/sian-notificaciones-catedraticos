@@ -10,7 +10,7 @@
  * vive en un sitio (`domain/catalogo.ts`) y queda en la bitácora.
  */
 
-import { HttpsError, onCall } from 'firebase-functions/v2/https';
+import { HttpsError, onCall, type CallableRequest } from 'firebase-functions/v2/https';
 import { logger } from 'firebase-functions/v2';
 import type { QuerySnapshot } from 'firebase-admin/firestore';
 
@@ -19,10 +19,19 @@ import { exigirPermiso } from '../domain/autorizacion';
 import { crearAsiento } from '../domain/bitacora';
 import { decidirGuardado, type ElementoCatalogo } from '../domain/catalogo';
 import { ErrorAutorizacion, ErrorDominio } from '../domain/errores';
-import { esIdDeSede, sedesDelToken } from '../domain/sede';
+import { claimsDe, type PerfilUsuario } from '../application/activarSesion';
+import {
+  conRolEnSede,
+  esIdDeSede,
+  membresiasDe,
+  sedePrincipal,
+  sedesDelToken,
+  sinSede,
+  type Membresias,
+} from '../domain/sede';
 import { ROLES, type Rol } from '../domain/tipos';
-import { FieldValue, OPCIONES_LLAMABLE, RUTAS, db } from '../infrastructure/firebase';
-import { escribirAsiento } from '../infrastructure/repositorios';
+import { FieldValue, OPCIONES_LLAMABLE, RUTAS, auth, db } from '../infrastructure/firebase';
+import { actualizarPerfil, buscarPerfil, escribirAsiento } from '../infrastructure/repositorios';
 
 function traducir(e: unknown): HttpsError {
   if (e instanceof HttpsError) {
@@ -52,19 +61,26 @@ function leer(instantanea: QuerySnapshot): ElementoCatalogo[] {
  * Desactivar una sede no saca a nadie de ella ni borra nada: deja de ofrecerse
  * para trabajar en ella. Reactivarla la devuelve tal como estaba.
  */
-export const guardarSede = onCall(OPCIONES_LLAMABLE, async (peticion) => {
+/**
+ * Quien pide es la administración general (RF-SED-06): la bandera, activa, y
+ * coordinando en alguna sede. Un auditor o una administradora con la bandera
+ * no mantienen sedes ni reparten gente entre ellas (RF-CAT-05).
+ */
+function exigirAdminGeneral(peticion: CallableRequest): { uid: string; correo: string; rol: Rol } {
   if (!peticion.auth) {
     throw new HttpsError('unauthenticated', 'Hay que iniciar sesión.');
   }
   const token = peticion.auth.token;
-  const correo = (token.email as string | undefined) ?? '';
   const rol: Rol = (ROLES as readonly string[]).includes(token.rol as string) ? (token.rol as Rol) : 'CATEDRATICO';
-  // La bandera se le da a quien coordina: un auditor o una administradora con
-  // ella no mantienen sedes (RF-CAT-05).
   const coordinaEnAlguna = Object.values(sedesDelToken(token, rol)).includes('COORDINADOR');
   if (token.activo !== true || token.adminGeneral !== true || !coordinaEnAlguna) {
-    throw new HttpsError('permission-denied', 'Solo la administración general mantiene las sedes.');
+    throw new HttpsError('permission-denied', 'Solo la administración general puede hacer esto.');
   }
+  return { uid: peticion.auth.uid, correo: (token.email as string | undefined) ?? '', rol };
+}
+
+export const guardarSede = onCall(OPCIONES_LLAMABLE, async (peticion) => {
+  const { uid: actorUid, correo, rol } = exigirAdminGeneral(peticion);
 
   try {
     const decision = decidirGuardado(
@@ -90,7 +106,7 @@ export const guardarSede = onCall(OPCIONES_LLAMABLE, async (peticion) => {
     await escribirAsiento(
       crearAsiento({
         tipo: 'CATALOGO_MODIFICADO',
-        actor: { uid: peticion.auth.uid, correo, rol },
+        actor: { uid: actorUid, correo, rol },
         entidad: 'CATALOGO',
         entidadId: `sedes/${elemento.id}`,
         resumen: `Sede «${elemento.nombre}»: ${decision.cambios.join(', ')}`,
@@ -165,3 +181,151 @@ export const guardarFacultad = onCall(OPCIONES_LLAMABLE, async (peticion) => {
     throw traducir(e);
   }
 });
+
+// ---------------------------------------------------------------------------
+// Personas y sedes (2.0.1 · RF-SED-02, RF-SED-06) — administración general
+// ---------------------------------------------------------------------------
+
+/** Escribe las membresías, el rol de la sede principal y el token, de una vez. */
+async function aplicarMembresias(perfil: PerfilUsuario, membresias: Membresias): Promise<PerfilUsuario> {
+  // `rol` sigue diciendo el rol en la sede principal: las versiones anteriores
+  // a la 2.0 solo leen ese campo.
+  const rol = membresias[sedePrincipal(membresias)]?.rol ?? perfil.rol;
+  const actualizado: PerfilUsuario = { ...perfil, rol, membresias };
+  await actualizarPerfil(perfil.uid, { rol, membresias });
+  await auth.setCustomUserClaims(perfil.uid, { ...claimsDe(actualizado) });
+  return actualizado;
+}
+
+async function perfilOError(uid: unknown): Promise<PerfilUsuario> {
+  if (typeof uid !== 'string' || uid === '') {
+    throw new HttpsError('invalid-argument', 'Falta la persona.');
+  }
+  const perfil = await buscarPerfil(uid);
+  if (!perfil) {
+    throw new HttpsError('not-found', 'Esa persona no existe.');
+  }
+  return perfil;
+}
+
+function resumenSedes(m: Membresias): string {
+  return Object.entries(m)
+    .map(([s, v]) => `${s}:${v.rol}`)
+    .join(', ');
+}
+
+/**
+ * Pone a una persona en una sede con un rol, o le cambia el rol allí
+ * (RF-SED-02, RF-SED-06). La sede tiene que existir y estar activa.
+ */
+export const asignarSede = onCall(OPCIONES_LLAMABLE, async (peticion) => {
+  const actor = exigirAdminGeneral(peticion);
+  const datos = (peticion.data ?? {}) as { uid?: unknown; sedeId?: unknown; rol?: unknown };
+  try {
+    const perfil = await perfilOError(datos.uid);
+    if (perfil.uid === actor.uid) {
+      // Quitarse a uno mismo el rol de coordinador podría dejar el sistema sin
+      // nadie que lo administre: lo hace otra persona.
+      throw new HttpsError('failed-precondition', 'No puede cambiar sus propias sedes.');
+    }
+    const rol = String(datos.rol ?? '').toUpperCase() as Rol;
+    if (!(ROLES as readonly string[]).includes(rol)) {
+      throw new HttpsError('invalid-argument', 'El rol no es válido.');
+    }
+    if (!esIdDeSede(datos.sedeId)) {
+      throw new HttpsError('invalid-argument', 'La sede no es válida.');
+    }
+    const sede = await db.collection(RUTAS.sedes).doc(datos.sedeId).get();
+    if (!sede.exists || sede.get('activa') === false) {
+      throw new HttpsError('failed-precondition', 'Esa sede no existe o está inactiva.');
+    }
+    const antes = membresiasDe(perfil);
+    const despues = await aplicarMembresias(perfil, conRolEnSede(perfil, datos.sedeId, rol));
+    await escribirAsiento(
+      crearAsiento({
+        tipo: 'USUARIO_SEDES_CAMBIADAS',
+        actor,
+        entidad: 'USUARIO',
+        entidadId: perfil.uid,
+        resumen: `Sedes de ${perfil.correo}: ${resumenSedes(antes)} → ${resumenSedes(despues.membresias ?? {})}`,
+        datos: { sedeId: datos.sedeId, rol },
+        sedeId: datos.sedeId,
+      }),
+    );
+    return { uid: perfil.uid, sedes: Object.keys(despues.membresias ?? {}) };
+  } catch (e) {
+    throw traducir(e);
+  }
+});
+
+/** Saca a una persona de una sede (RF-SED-06). Nunca de la última. */
+export const quitarSede = onCall(OPCIONES_LLAMABLE, async (peticion) => {
+  const actor = exigirAdminGeneral(peticion);
+  const datos = (peticion.data ?? {}) as { uid?: unknown; sedeId?: unknown };
+  try {
+    const perfil = await perfilOError(datos.uid);
+    if (perfil.uid === actor.uid) {
+      throw new HttpsError('failed-precondition', 'No puede cambiar sus propias sedes.');
+    }
+    if (!esIdDeSede(datos.sedeId)) {
+      throw new HttpsError('invalid-argument', 'La sede no es válida.');
+    }
+    const antes = membresiasDe(perfil);
+    const despues = await aplicarMembresias(perfil, sinSede(perfil, datos.sedeId));
+    await escribirAsiento(
+      crearAsiento({
+        tipo: 'USUARIO_SEDES_CAMBIADAS',
+        actor,
+        entidad: 'USUARIO',
+        entidadId: perfil.uid,
+        resumen: `Sedes de ${perfil.correo}: ${resumenSedes(antes)} → ${resumenSedes(despues.membresias ?? {})}`,
+        datos: { quitada: datos.sedeId },
+        sedeId: datos.sedeId,
+      }),
+    );
+    return { uid: perfil.uid, sedes: Object.keys(despues.membresias ?? {}) };
+  } catch (e) {
+    throw traducir(e);
+  }
+});
+
+/**
+ * Da o quita la administración general (RF-SED-06). Solo a quien coordina en
+ * alguna sede, y nunca a uno mismo: así siempre queda alguien que la tenga.
+ */
+export const cambiarAdminGeneral = onCall(OPCIONES_LLAMABLE, async (peticion) => {
+  const actor = exigirAdminGeneral(peticion);
+  const datos = (peticion.data ?? {}) as { uid?: unknown; valor?: unknown };
+  try {
+    const perfil = await perfilOError(datos.uid);
+    if (perfil.uid === actor.uid) {
+      throw new HttpsError('failed-precondition', 'No puede cambiar su propia administración general.');
+    }
+    if (typeof datos.valor !== 'boolean') {
+      throw new HttpsError('invalid-argument', 'Falta si se da o se quita.');
+    }
+    if (datos.valor && !Object.values(membresiasDe(perfil)).some((m) => m.rol === 'COORDINADOR')) {
+      throw new HttpsError(
+        'failed-precondition',
+        'La administración general se da a quien coordina en alguna sede.',
+      );
+    }
+    const actualizado: PerfilUsuario = { ...perfil, adminGeneral: datos.valor };
+    await actualizarPerfil(perfil.uid, { adminGeneral: datos.valor });
+    await auth.setCustomUserClaims(perfil.uid, { ...claimsDe(actualizado) });
+    await escribirAsiento(
+      crearAsiento({
+        tipo: 'USUARIO_ADMIN_GENERAL_CAMBIADO',
+        actor,
+        entidad: 'USUARIO',
+        entidadId: perfil.uid,
+        resumen: `${datos.valor ? 'Se da' : 'Se quita'} la administración general a ${perfil.correo}`,
+        datos: { valor: datos.valor },
+      }),
+    );
+    return { uid: perfil.uid, adminGeneral: datos.valor };
+  } catch (e) {
+    throw traducir(e);
+  }
+});
+

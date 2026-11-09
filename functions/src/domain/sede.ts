@@ -254,3 +254,31 @@ export function conFacultadesEnSede(
   };
 }
 
+/**
+ * Saca a una persona de una sede (RF-SED-06), sin tocar las demás. No puede
+ * quedarse sin ninguna: una cuenta sin sede no tendría dónde trabajar ni de
+ * dónde recibir avisos; para eso está desactivarla.
+ */
+export function sinSede(
+  perfil: { readonly rol: Rol; readonly membresias?: unknown },
+  sedeId: string,
+): Membresias {
+  const actuales = membresiasDe(perfil);
+  if (actuales[sedeId] === undefined) {
+    throw new ErrorValidacion('NO_PERTENECE_A_LA_SEDE', 'Esa persona no pertenece a esa sede.');
+  }
+  const restantes: Record<string, Membresia> = {};
+  for (const [id, m] of Object.entries(actuales)) {
+    if (id !== sedeId) {
+      restantes[id] = m;
+    }
+  }
+  if (Object.keys(restantes).length === 0) {
+    throw new ErrorValidacion(
+      'ULTIMA_SEDE',
+      'Es su única sede. Si ya no debe usar SIAN, desactive la cuenta en lugar de quitarle la sede.',
+    );
+  }
+  return restantes;
+}
+

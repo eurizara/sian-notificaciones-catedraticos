@@ -33,7 +33,7 @@
 library;
 
 /// La versión de este código. Ver arriba qué significa cada número.
-const String versionSian = '2.0.0';
+const String versionSian = '2.0.1';
 
 /// Desde qué versión el aparato sabe avisar de que mostró una notificación.
 ///

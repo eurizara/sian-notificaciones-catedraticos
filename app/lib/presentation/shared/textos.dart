@@ -1534,4 +1534,31 @@ abstract final class Textos {
       'Cambiar las facultades de $nombre';
   static String usuarioFacultadesDe(String nombre) => 'Facultades de $nombre';
   static const String usuarioFacultadesGuardadas = 'Facultades actualizadas.';
+
+  // ── Personas y sedes (2.0.1 · RF-SED-02, RF-SED-06) ──────────────────────
+  static const String personasYSedes = 'Personas y sedes';
+  static const String personasYSedesExplicacion =
+      'En qué sedes está cada persona y con qué rol en cada una. Lo de dentro '
+      'de cada sede (facultades, grupos) lo mantiene su coordinación.';
+  static const String administracionGeneral = 'Administración general';
+  static const String administracionGeneralAyuda =
+      'Mantiene las sedes y reparte a la gente entre ellas. Solo para quien '
+      'coordina en alguna sede.';
+  static const String botonSedes = 'Sedes';
+  static String cambiarSedesDe(String nombre) => 'Cambiar las sedes de $nombre';
+  static String sedesDe(String nombre) => 'Sedes de $nombre';
+  static String rolEn(String sede) => 'Rol en $sede';
+  static const String sedesAlMenosUna =
+      'Tiene que quedar en al menos una sede. Si ya no debe usar SIAN, '
+      'desactive su cuenta en Usuarios.';
+  static const String sedesPropias =
+      'Sus propias sedes y su administración general las cambia otra persona '
+      'de la administración general.';
+  static const String sedesGuardadas =
+      'Sedes actualizadas. La persona las verá la próxima vez que abra SIAN.';
+  static const String sedesSoloAdministracionGeneral =
+      'Las sedes y la asignación de personas a sedes las mantiene la '
+      'administración general.';
+  static const String invitarFacultades =
+      'Facultades con que entra (opcional). Entra en la sede donde está trabajando.';
 }

@@ -114,3 +114,79 @@ class FuenteFacultades implements FuenteCatalogo {
     });
   }
 }
+
+/// Repartir a la gente entre sedes (2.0.1 · RF-SED-02, RF-SED-06). Solo la
+/// administración general; el servidor lo vuelve a comprobar.
+class RepositorioPersonasYSedes {
+  RepositorioPersonasYSedes({FirebaseFunctions? functions})
+    : _functionsDado = functions;
+
+  final FirebaseFunctions? _functionsDado;
+  late final FirebaseFunctions _fn =
+      _functionsDado ?? FirebaseFunctions.instance;
+
+  Future<void> asignarSede({
+    required String uid,
+    required String sedeId,
+    required String rol,
+  }) => _fn.httpsCallable('asignarSede').call<Object?>(<String, Object?>{
+    'uid': uid,
+    'sedeId': sedeId,
+    'rol': rol,
+  });
+
+  Future<void> quitarSede({required String uid, required String sedeId}) =>
+      _fn.httpsCallable('quitarSede').call<Object?>(<String, Object?>{
+        'uid': uid,
+        'sedeId': sedeId,
+      });
+
+  Future<void> cambiarAdminGeneral({
+    required String uid,
+    required bool valor,
+  }) => _fn.httpsCallable('cambiarAdminGeneral').call<Object?>(
+    <String, Object?>{'uid': uid, 'valor': valor},
+  );
+}
+
+/// Un cambio de sedes de una persona, ya decidido.
+sealed class CambioDeSede {
+  const CambioDeSede(this.sedeId);
+  final String sedeId;
+}
+
+class AsignarSede extends CambioDeSede {
+  const AsignarSede(super.sedeId, this.rol);
+  final String rol;
+
+  @override
+  bool operator ==(Object other) =>
+      other is AsignarSede && other.sedeId == sedeId && other.rol == rol;
+  @override
+  int get hashCode => Object.hash(sedeId, rol);
+}
+
+class QuitarSede extends CambioDeSede {
+  const QuitarSede(super.sedeId);
+
+  @override
+  bool operator ==(Object other) => other is QuitarSede && other.sedeId == sedeId;
+  @override
+  int get hashCode => sedeId.hashCode;
+}
+
+/// Qué hay que pedirle al servidor para pasar de [actual] a [deseado]
+/// (sede → rol). Primero las altas y cambios, después las bajas: así nunca se
+/// pasa por un momento sin ninguna sede.
+List<CambioDeSede> cambiosDeSedes(
+  Map<String, String> actual,
+  Map<String, String> deseado,
+) {
+  return <CambioDeSede>[
+    for (final MapEntry<String, String> e in deseado.entries)
+      if (actual[e.key] != e.value) AsignarSede(e.key, e.value),
+    for (final String s in actual.keys)
+      if (!deseado.containsKey(s)) QuitarSede(s),
+  ];
+}
+

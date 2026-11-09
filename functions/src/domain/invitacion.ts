@@ -24,6 +24,13 @@ export interface Invitacion {
   readonly consumidaPor?: string;
   readonly creadaPor: string;
   readonly creadaEn: Date;
+  /**
+   * Sede donde entra la persona (2.0.1): la de quien invita. Ausente en las
+   * invitaciones de antes: la sede inicial.
+   */
+  readonly sedeId?: string;
+  /** Facultades de esa sede con que entra. Opcional. */
+  readonly facultades?: readonly string[];
 }
 
 export interface EntradaInvitacion {

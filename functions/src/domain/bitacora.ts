@@ -42,6 +42,10 @@ export const TIPOS_EVENTO = [
   'CATALOGO_MODIFICADO',
   // 2.0 (RF-FAC-01): a qué facultades de una sede pertenece una persona.
   'USUARIO_FACULTADES_CAMBIADAS',
+  // 2.0.1 (RF-SED-02, RF-SED-06): asignar o quitar una sede, y la
+  // administración general.
+  'USUARIO_SEDES_CAMBIADAS',
+  'USUARIO_ADMIN_GENERAL_CAMBIADO',
   'MENSAJE_CREADO',
   'MENSAJE_PROGRAMADO',
   'MENSAJE_SUSPENDIDO',

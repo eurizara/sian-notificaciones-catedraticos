@@ -53,6 +53,8 @@ const List<({String valor, String etiqueta})> _tiposFiltrables =
       (valor: 'GRUPO_MODIFICADO', etiqueta: 'Grupos modificados'),
       (valor: 'CATALOGO_MODIFICADO', etiqueta: 'Cambios en catálogos'),
       (valor: 'USUARIO_FACULTADES_CAMBIADAS', etiqueta: 'Facultades de una persona'),
+      (valor: 'USUARIO_SEDES_CAMBIADAS', etiqueta: 'Sedes de una persona'),
+      (valor: 'USUARIO_ADMIN_GENERAL_CAMBIADO', etiqueta: 'Administración general'),
     ];
 
 class SeccionBitacora extends ConsumerStatefulWidget {
@@ -261,6 +263,8 @@ class _Asiento extends StatelessWidget {
     'GRUPO_CREADO' || 'GRUPO_MODIFICADO' => Icons.groups_outlined,
     'CATALOGO_MODIFICADO' => Icons.category_outlined,
     'USUARIO_FACULTADES_CAMBIADAS' => Icons.school_outlined,
+    'USUARIO_SEDES_CAMBIADAS' => Icons.location_city_outlined,
+    'USUARIO_ADMIN_GENERAL_CAMBIADO' => Icons.admin_panel_settings_outlined,
     _ => Icons.circle_outlined,
   };
 }

@@ -17,11 +17,12 @@ import { HttpsError, onCall, type CallableRequest } from 'firebase-functions/v2/
 import { crearAsiento, type Actor, type TipoEvento } from '../domain/bitacora';
 import { ErrorDominio } from '../domain/errores';
 import { crearGrupo, normalizarMiembros, rozaElLimite } from '../domain/grupo';
-import { crearInvitacion, interpretarCsv } from '../domain/invitacion';
+import { crearInvitacion, interpretarCsv, type Invitacion } from '../domain/invitacion';
 import { exigirPermiso, type Permiso , recibeAvisos } from '../domain/autorizacion';
 import { ROLES, type Rol } from '../domain/tipos';
 import { claimsDe, type PerfilUsuario } from '../application/activarSesion';
 import {
+  SEDE_INICIAL,
   conFacultadesEnSede,
   conRolEnSede,
   esIdDeFacultad,
@@ -164,13 +165,17 @@ export const crearInvitaciones = onCall(OPCIONES_LLAMABLE, async (peticion) => {
       rol?: string;
       nombre?: string;
       csv?: string;
+      /** 2.0.1: facultades de la sede con que entra. Opcional. */
+      facultades?: unknown;
     };
+    // La persona entra en la sede de quien la invita (2.0.1).
+    const conSede = (i: Invitacion): Invitacion => ({ ...i, sedeId: solicitante.sedeId });
 
     // Dos formas de entrada, un solo camino de validación: una invitación
     // suelta es una carga masiva de una línea.
     if (typeof datos.csv === 'string' && datos.csv.trim().length > 0) {
       const resultado = interpretarCsv(datos.csv, solicitante.actor.uid);
-      const guardado = await guardarInvitaciones(resultado.validas);
+      const guardado = await guardarInvitaciones(resultado.validas.map(conSede));
       const rolDe = new Map(resultado.validas.map((i) => [i.correo, i.rolAsignado]));
 
       // Cada asiento dice lo que de verdad ocurrió con ese correo. Antes se
@@ -214,7 +219,21 @@ export const crearInvitaciones = onCall(OPCIONES_LLAMABLE, async (peticion) => {
       creadaPor: solicitante.actor.uid,
     });
 
-    const guardado = await guardarInvitaciones([invitacion]);
+    // Las facultades, solo activas del catálogo de la sede (RF-FAC-01).
+    let facultades: string[] = [];
+    if (datos.facultades !== undefined) {
+      facultades = [
+        ...(conFacultadesEnSede(
+          { rol: invitacion.rolAsignado },
+          SEDE_INICIAL,
+          datos.facultades,
+          await leerFacultades(solicitante.sedeId),
+        )[SEDE_INICIAL]?.facultades ?? []),
+      ];
+    }
+    const guardado = await guardarInvitaciones([
+      { ...conSede(invitacion), ...(facultades.length > 0 ? { facultades } : {}) },
+    ]);
 
     if (guardado.yaEntraron.length === 0) {
       const nueva = guardado.creadas.length === 1;

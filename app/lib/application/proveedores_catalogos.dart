@@ -61,3 +61,15 @@ final StreamProvider<List<ElementoCatalogo>> facultadesActivasProvider =
 final Provider<bool> hayFacultadesParaElegirProvider = Provider<bool>(
   (Ref ref) => (ref.watch(facultadesActivasProvider).value?.length ?? 0) >= 2,
 );
+
+/// Las sedes del catálogo, para la administración general.
+final StreamProvider<List<ElementoCatalogo>> sedesProvider =
+    StreamProvider<List<ElementoCatalogo>>(
+      (Ref ref) => ref.watch(fuenteSedesProvider).observar(),
+    );
+
+final Provider<RepositorioPersonasYSedes> repositorioPersonasYSedesProvider =
+    Provider<RepositorioPersonasYSedes>(
+      (Ref ref) => RepositorioPersonasYSedes(),
+    );
+
