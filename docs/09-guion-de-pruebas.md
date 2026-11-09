@@ -891,3 +891,17 @@ botón de **anular suscripción** bien visible.
 En pruebas es un incordio. En producción, quien lo toque por error deja de recibir avisos sin
 saberlo (DT-30). Las pruebas de volumen van en desarrollo, y con títulos que se parezcan a
 un aviso real.
+
+## Probar las facultades por sede (2.0.6)
+
+Con una cuenta de superadministrador y otra de coordinación en una sola sede.
+
+| Paso | Acción | Resultado esperado |
+|---|---|---|
+| F-1 | Superadministrador: Catálogos → **Facultades de la UMG** → Agregar «Psicología» | Aparece en la lista; en la bitácora, «Facultad «Psicología» (catálogo): alta» |
+| F-2 | Superadministrador: **Facultades que ofrece cada sede** → elegir Villa Nueva → marcar Psicología | «Psicología: se ofrece en Villa Nueva.» |
+| F-3 | Coordinación: Catálogos → **Facultades de su sede** | No hay «Agregar facultad»; se ven las de la lista de la UMG con casillas |
+| F-4 | Superadministrador: Usuarios → una persona de Villa Nueva → Sedes → Cambiar | Debajo de Villa Nueva, «Facultades en Villa Nueva» con solo las que ofrece; marcar Psicología y guardar |
+| F-5 | Coordinación (o superadministrador) de Villa Nueva: desmarcar Psicología en lo que ofrece la sede | No se retira: «La tiene 1 persona en esta sede. Quítesela primero en Usuarios…» |
+| F-6 | Quitarle Psicología a esa persona y repetir F-5 | Se retira: «Psicología: ya no se ofrece en Villa Nueva.» |
+| F-7 | Superadministrador: desactivar en la lista de la UMG una facultad que alguna sede ofrece | No se desactiva: dice qué sedes la ofrecen |

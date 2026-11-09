@@ -284,7 +284,9 @@ python3 scripts/migrar-sedes.py <proyecto> --aplicar [--facultad-a-todos] [--adm
 
 Crea `sedes/bdm` (Boca del Monte) y `sedes/bdm/facultades/ing-sistemas` (Ingeniería en
 Sistemas), da a cada perfil sin membresías la de omisión y pone `sedeId: 'bdm'` a mensajes y
-grupos. **No toca la bitácora**, que es inmutable: un asiento sin sede se lee como de `bdm`.
+grupos. **Desde la 2.0.6** también llena el catálogo único `facultades/` con cada facultad
+que ya tenía alguna sede, con su mismo identificador; si dos sedes usan el mismo nombre con
+identificadores distintos, no adivina: lo muestra como «AVISO» y no crea la segunda. **No toca la bitácora**, que es inmutable: un asiento sin sede se lee como de `bdm`.
 Es idempotente (la segunda corrida no escribe nada) y cada escritura lleva una
 precondición: crea solo lo que no existe y actualiza solo lo que sí. Sus pruebas corren en
 la integración continua. **Antes de producción:** respaldo del día comprobado, y correrlo

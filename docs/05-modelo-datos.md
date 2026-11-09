@@ -471,8 +471,24 @@ migración (2.0-c).
 
 Reglas: las lee quien pertenece a la sede (o, con un token anterior a la 2.0, `bdm`) y la
 administración general, que además puede listar todas las sedes. Nadie las escribe desde la
-aplicación: solo `guardarSede` (administración general que coordina en alguna sede) y
-`guardarFacultad` (coordinación de esa sede), que dejan un asiento `CATALOGO_MODIFICADO`.
+aplicación: solo `guardarSede` (superadministrador) y `ofrecerFacultad` (2.0.6), que dejan un
+asiento `CATALOGO_MODIFICADO`.
+
+**Desde la 2.0.6, `sedes/{sedeId}/facultades/{facultadId}` es lo que la sede ofrece**, no
+una facultad propia: se elige del catálogo único (abajo) con el mismo identificador, y
+`nombre` es una copia del catálogo para que lo que ya leía esta lista (envío por facultad,
+invitaciones) no cambie. `activa: false` = ya no se ofrece. La eligen el superadministrador
+(cualquier sede) y la coordinación (la suya); no se retira mientras alguien de la sede la
+tenga en `membresias.<sede>.facultades`.
+
+### 2.10d `facultades/{facultadId}` — catálogo único (2.0.6)
+
+La lista de facultades de la UMG: cada una existe una vez y es la misma en todas las sedes
+(para los reportes por facultad, RF-FAC-05). Mismos campos que arriba (`nombre`, `activa`,
+`creadaEn`, `actualizadaEn`). La lee cualquier cuenta activa; la escribe solo
+`guardarFacultad`, del superadministrador. Cambiar el nombre lo copia a cada sede que la
+tiene; desactivarla solo se puede si ninguna sede la ofrece. El guion `migrar-sedes.py` la
+llena con las facultades que ya tenían las sedes.
 
 ### 2.11 `configuracion/institucional`
 

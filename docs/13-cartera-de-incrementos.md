@@ -371,7 +371,8 @@ decisiones; documento 14). **Ninguna está empezada.**
   - [x] 2.0.2 (PR #240) · La administración general se da también desde Usuarios, por quien coordina
   - [x] 2.0.3 (PR #241) · Catálogos en bloques plegados
   - [x] 2.0.4 (PR #242) · Superadministrador (reemplaza a la administración general); rol, facultades y sedes de cada persona en Usuarios; Catálogos solo con listas
-  - [ ] 2.0.5 · Corrección: quitar una sede la quita de verdad (`update` en vez de `set` con merge); el superadministrador cambia sus propias sedes
+  - [x] 2.0.5 (PR #243) · Corrección: quitar una sede la quita de verdad (`update` en vez de `set` con merge); el superadministrador cambia sus propias sedes
+  - [ ] 2.0.6 · Catálogo único de facultades (sede → facultad → persona), aprobado el 08/11/2026 con tres decisiones: (1) solo el superadministrador crea facultades en el catálogo; (2) qué facultades ofrece una sede lo deciden el superadministrador y la coordinación de esa sede, eligiendo del catálogo; (3) no se retira una facultad de una sede mientras alguien la tenga asignada (se dice cuántos). Facultades de cada persona por sede en el diálogo Sedes. Tras desplegar: correr `migrar-sedes.py` en desarrollo para adoptar las facultades existentes
   - [ ] Propuesta: al desactivar una sede con personas, avisar cuántas quedarían sin sede activa
   - [ ] 2.0-f · Las reglas exigen la sede, con pruebas cruzadas. **Espera decisión del responsable** sobre la bitácora vieja, las entregas y la lista de usuarios (ADR-009, «2.0-f: lo que falta decidir»)
 - **Pruebas:** reglas por sede contra el emulador, dominio («todos» por sede), migración

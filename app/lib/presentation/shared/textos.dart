@@ -1485,8 +1485,9 @@ abstract final class Textos {
   static const String seccionCatalogos = 'Catálogos';
   static const String seccionCatalogosTitulo = 'Catálogos';
   static const String seccionCatalogosDescripcion =
-      'Las listas de las que se elige en el resto de SIAN: las facultades de su '
-      'sede y, para el superadministrador, las sedes.';
+      'Las listas de las que se elige en el resto de SIAN: las facultades que '
+      'ofrece su sede y, para el superadministrador, las sedes y la lista de '
+      'facultades de la UMG.';
   static const String catalogoFacultadesExplicacion =
       'Sirven para enviar un aviso a toda una facultad y para ordenar los grupos.';
   static const String catalogoSedesExplicacion =
@@ -1592,6 +1593,41 @@ abstract final class Textos {
   static String resumenPersonas(int? total) => total == null
       ? 'Cargando…'
       : '$total ${total == 1 ? 'persona' : 'personas'} en todas las sedes';
+
+  // ── Catálogo único de facultades y lo que ofrece cada sede (2.0.6) ────────
+  static const String catalogoFacultadesUnico = 'Facultades de la UMG';
+  static const String catalogoFacultadesUnicoExplicacion =
+      'La lista única de facultades. Cada facultad existe una sola vez y es la '
+      'misma en todas las sedes; cada sede elige de aquí las que ofrece. Solo '
+      'el superadministrador la mantiene.';
+  static const String ofertaPorSede = 'Facultades que ofrece cada sede';
+  static const String ofertaSede = 'Sede';
+  static const String ofertaExplicacion =
+      'Marque las facultades que ofrece la sede. A cada persona solo se le '
+      'pueden asignar las que su sede ofrece. Si falta una facultad, pídasela '
+      'al superadministrador: él la agrega a la lista de la UMG.';
+  static const String ofertaCatalogoVacio =
+      'La lista de facultades de la UMG está vacía. El superadministrador la '
+      'llena en «Facultades de la UMG».';
+  static const String ofertaDesactivadaEnCatalogo =
+      'Desactivada en la lista de la UMG';
+  static String ofertaOfrecida(String facultad, String sede) =>
+      '$facultad: se ofrece en $sede.';
+  static String ofertaRetirada(String facultad, String sede) =>
+      '$facultad: ya no se ofrece en $sede.';
+  static String resumenOferta(List<ElementoCatalogo>? ofrecidas) {
+    if (ofrecidas == null) {
+      return 'Cargando…';
+    }
+    final int n = ofrecidas.where((ElementoCatalogo e) => e.activa).length;
+    return n == 0
+        ? 'Ninguna facultad ofrecida'
+        : '$n ${n == 1 ? 'facultad ofrecida' : 'facultades ofrecidas'}';
+  }
+
+  static String facultadesEnSede(String sede) => 'Facultades en $sede';
+  static String sedeSinFacultades(String sede) =>
+      '$sede no ofrece facultades todavía.';
 
   // ── Todo de una persona en Usuarios (2.0.4) ───────────────────────────────
   static const String usuariosEstaSede = 'Esta sede';

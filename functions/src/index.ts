@@ -75,6 +75,7 @@ export {
   cambiarAdminGeneral,
   guardarFacultad,
   guardarSede,
+  ofrecerFacultad,
   quitarSede,
 } from './triggers/catalogos';
 export * as dominio from './domain';
