@@ -537,11 +537,8 @@ class _FilaUsuario extends ConsumerWidget {
         child: TextButton(
           onPressed: () => showDialog<void>(
             context: context,
-            builder: (BuildContext _) => DialogoSedes(
-              persona: usuario,
-              sedes: sedes,
-              esUnoMismo: esUnoMismo,
-            ),
+            builder: (BuildContext _) =>
+                DialogoSedes(persona: usuario, sedes: sedes),
           ),
           child: const Text(Textos.usuarioCambiar),
         ),

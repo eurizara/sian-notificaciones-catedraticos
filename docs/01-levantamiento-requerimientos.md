@@ -87,7 +87,7 @@ y no distingue lo urgente de lo informativo.
 | Mantener los catálogos de su sede: facultades (2.0, RF-CAT-05) | Sí | No | No | No |
 | Decidir a qué facultades de su sede pertenece cada persona (2.0, RF-FAC-01) | Sí | No | No | No |
 | Mantener las sedes (2.0, RF-SED-06): superadministrador | Si es superadministrador | Si es superadministrador | No | Si es superadministrador |
-| Poner a una persona en sedes y darle un rol en cada una (2.0.1, RF-SED-02, RF-SED-06) | Si es superadministrador | Si es superadministrador | No | Si es superadministrador |
+| Poner a una persona en sedes y darle un rol en cada una (2.0.1, RF-SED-02, RF-SED-06); también las propias desde la 2.0.5, sin quedarse nunca sin sede | Si es superadministrador | Si es superadministrador | No | Si es superadministrador |
 | Designar o retirar a un superadministrador (2.0.4): solo otro superadministrador; nunca a sí mismo, al último ni a un catedrático | Si es superadministrador | Si es superadministrador | No | Si es superadministrador |
 | Recibir notificaciones | Opcional | Opcional | Sí | No |
 | Confirmar lectura | Sí | Sí | Sí | No |

@@ -31,7 +31,12 @@ import {
 } from '../domain/sede';
 import { ROLES, type Rol } from '../domain/tipos';
 import { FieldValue, OPCIONES_LLAMABLE, RUTAS, auth, db } from '../infrastructure/firebase';
-import { actualizarPerfil, buscarPerfil, escribirAsiento } from '../infrastructure/repositorios';
+import {
+  actualizarPerfil,
+  buscarPerfil,
+  escribirAsiento,
+  reemplazarMembresias,
+} from '../infrastructure/repositorios';
 
 function traducir(e: unknown): HttpsError {
   if (e instanceof HttpsError) {
@@ -191,7 +196,7 @@ async function aplicarMembresias(perfil: PerfilUsuario, membresias: Membresias):
   // a la 2.0 solo leen ese campo.
   const rol = membresias[sedePrincipal(membresias)]?.rol ?? perfil.rol;
   const actualizado: PerfilUsuario = { ...perfil, rol, membresias };
-  await actualizarPerfil(perfil.uid, { rol, membresias });
+  await reemplazarMembresias(perfil.uid, membresias, rol);
   await auth.setCustomUserClaims(perfil.uid, { ...claimsDe(actualizado) });
   return actualizado;
 }
@@ -222,11 +227,9 @@ export const asignarSede = onCall(OPCIONES_LLAMABLE, async (peticion) => {
   const datos = (peticion.data ?? {}) as { uid?: unknown; sedeId?: unknown; rol?: unknown };
   try {
     const perfil = await perfilOError(datos.uid);
-    if (perfil.uid === actor.uid) {
-      // Quitarse a uno mismo el rol de coordinador podría dejar el sistema sin
-      // nadie que lo administre: lo hace otra persona.
-      throw new HttpsError('failed-precondition', 'No puede cambiar sus propias sedes.');
-    }
+    // 2.0.5: el superadministrador sí cambia sus propias sedes, como sus
+    // facultades. Lo que no puede es quedarse sin ninguna (`sinSede`) ni
+    // quitarse el rol de superadministrador (eso lo hace otro).
     const rol = String(datos.rol ?? '').toUpperCase() as Rol;
     if (!(ROLES as readonly string[]).includes(rol)) {
       throw new HttpsError('invalid-argument', 'El rol no es válido.');
@@ -263,9 +266,6 @@ export const quitarSede = onCall(OPCIONES_LLAMABLE, async (peticion) => {
   const datos = (peticion.data ?? {}) as { uid?: unknown; sedeId?: unknown };
   try {
     const perfil = await perfilOError(datos.uid);
-    if (perfil.uid === actor.uid) {
-      throw new HttpsError('failed-precondition', 'No puede cambiar sus propias sedes.');
-    }
     if (!esIdDeSede(datos.sedeId)) {
       throw new HttpsError('invalid-argument', 'La sede no es válida.');
     }

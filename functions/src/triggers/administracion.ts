@@ -43,6 +43,7 @@ import {
   escribirAsiento,
   escribirAsientos,
   guardarInvitaciones,
+  reemplazarMembresias,
 } from '../infrastructure/repositorios';
 
 // ---------------------------------------------------------------------------
@@ -317,7 +318,7 @@ export const cambiarRol = onCall(OPCIONES_LLAMABLE, async (peticion) => {
   // `rol` sigue siendo el de la sede principal, para las versiones anteriores.
   const rolPrincipal = membresias[sedePrincipal(membresias)]?.rol ?? nuevoRol;
   const actualizado: PerfilUsuario = { ...perfil, rol: rolPrincipal, membresias };
-  await actualizarPerfil(uid, { rol: rolPrincipal, membresias });
+  await reemplazarMembresias(uid, membresias, rolPrincipal);
   await auth.setCustomUserClaims(uid, { ...claimsDe(actualizado) });
   await escribirAsiento(
     asiento(
@@ -449,7 +450,7 @@ export const cambiarFacultades = onCall(OPCIONES_LLAMABLE, async (peticion) => {
     );
     const antes = membresiasDe(perfil)[solicitante.sedeId]?.facultades ?? [];
     const despues = membresias[solicitante.sedeId]?.facultades ?? [];
-    await actualizarPerfil(uid, { membresias });
+    await reemplazarMembresias(uid, membresias);
     await escribirAsiento(
       crearAsiento({
         tipo: 'USUARIO_FACULTADES_CAMBIADAS',

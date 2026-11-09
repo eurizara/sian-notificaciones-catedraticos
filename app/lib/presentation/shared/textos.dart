@@ -1552,8 +1552,6 @@ abstract final class Textos {
   static const String sedesAlMenosUna =
       'Tiene que quedar en al menos una sede. Si ya no debe usar SIAN, '
       'desactive su cuenta en Usuarios.';
-  static const String sedesPropias =
-      'Sus propias sedes las cambia otro superadministrador.';
   static const String sedesGuardadas =
       'Sedes actualizadas. La persona las verá la próxima vez que abra SIAN.';
   static const String sedesSoloAdministracionGeneral =

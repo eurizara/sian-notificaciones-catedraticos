@@ -159,6 +159,28 @@ void main() {
     });
 
     testWidgets(
+      'cambia sus propias sedes, como sus facultades (2.0.5); no su rol de superadministrador',
+      (WidgetTester tester) async {
+        await _montar(tester, superadministrador: true);
+        await tester.tap(find.text('Yo Mismo'));
+        await tester.pumpAndSettle();
+        expect(find.text(Textos.usuarioSedes), findsOneWidget);
+        await tester.tap(
+          find.descendant(
+            of: find.widgetWithText(ListTile, Textos.usuarioSedes),
+            matching: find.text(Textos.usuarioCambiar),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text(Textos.sedesDe('Yo Mismo')), findsOneWidget);
+        final FilledButton guardar = tester.widget<FilledButton>(
+          find.widgetWithText(FilledButton, Textos.grupoGuardar),
+        );
+        expect(guardar.onPressed, isNotNull);
+      },
+    );
+
+    testWidgets(
       've las sedes de cada persona y puede ver a la gente de todas las sedes',
       (WidgetTester tester) async {
         await _montar(tester, superadministrador: true);
@@ -195,5 +217,15 @@ void main() {
       );
       expect(find.text(Textos.usuarioSedes), findsNothing);
     });
+
+    testWidgets(
+      'tampoco cambia sus propias sedes: eso es del superadministrador',
+      (WidgetTester tester) async {
+        await _montar(tester, superadministrador: false);
+        await tester.tap(find.text('Yo Mismo'));
+        await tester.pumpAndSettle();
+        expect(find.text(Textos.usuarioSedes), findsNothing);
+      },
+    );
   });
 }
