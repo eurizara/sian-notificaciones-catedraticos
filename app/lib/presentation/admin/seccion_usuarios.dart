@@ -13,6 +13,8 @@ import '../shared/textos.dart';
 import '../../application/proveedores_catalogos.dart';
 import '../../application/proveedores_sede.dart';
 import '../../infrastructure/firebase/repositorio_catalogos.dart';
+import '../../application/proveedores_sesion.dart';
+import '../../domain/sesion.dart';
 
 final Provider<RepositorioAdministracion> repositorioAdminProvider =
     Provider<RepositorioAdministracion>(
@@ -448,6 +450,9 @@ class _FilaUsuario extends ConsumerWidget {
     // El rol que se ve y se cambia es el de la sede de trabajo (2.0).
     final String sede = ref.watch(sedeDeTrabajoProvider);
     final String rol = usuario.rolEn(sede);
+    final Sesion sesion = ref.watch(sesionActualProvider);
+    final bool esUnoMismo =
+        sesion is SesionActiva && sesion.usuario.uid == usuario.uid;
     // Mantener a qué facultades pertenece cada uno se puede en cuanto exista
     // una: cuando llegue la segunda, la gente ya estará bien repartida.
     final bool porFacultad =
@@ -549,6 +554,30 @@ class _FilaUsuario extends ConsumerWidget {
                   repo.cambiarAutorizaciones(uid: usuario.uid, recibeAvisos: v),
               Textos.autorizacionActualizada,
             ),
+          ),
+
+          // 2.0.2: la da la coordinación, solo a quien coordina, y nunca a sí
+          // misma (el servidor lo vuelve a comprobar).
+          SwitchListTile(
+            title: const Text(Textos.administracionGeneral),
+            subtitle: Text(
+              esUnoMismo
+                  ? Textos.adminGeneralPropia
+                  : (rol == 'COORDINADOR' || usuario.adminGeneral)
+                  ? Textos.administracionGeneralAyuda
+                  : Textos.adminGeneralSoloCoordinadores,
+            ),
+            value: usuario.adminGeneral,
+            onChanged:
+                esUnoMismo ||
+                    (!usuario.adminGeneral &&
+                        !usuario.sedesConRol.values.contains('COORDINADOR'))
+                ? null
+                : (bool v) => _ejecutar(
+                    context,
+                    () => repo.cambiarAdminGeneral(uid: usuario.uid, valor: v),
+                    v ? Textos.adminGeneralDada : Textos.adminGeneralQuitada,
+                  ),
           ),
 
           SwitchListTile(

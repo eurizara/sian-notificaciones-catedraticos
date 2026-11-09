@@ -18,6 +18,7 @@ import {
   elegirSede,
   esIdDeSede,
   membresiasDe,
+  motivoParaNoCambiarAdminGeneral,
   perteneceASede,
   rolEnSede,
   sedeDelDocumento,
@@ -378,5 +379,45 @@ describe('2.0.1 · la invitación dice la sede y las facultades', () => {
     const r = activar(base);
     if (r.tipo !== 'PERFIL_CREADO') throw new Error(r.tipo);
     expect(r.perfil.membresias).toEqual({ bdm: { rol: 'CATEDRATICO', facultades: [] } });
+  });
+});
+
+describe('2.0.2 · quién da la administración general', () => {
+  const coord = { uid: 'c', rol: 'COORDINADOR' as const };
+  const cate = { uid: 'k', rol: 'CATEDRATICO' as const };
+  const deOtra = {
+    uid: 'o',
+    rol: 'COORDINADOR' as const,
+    membresias: { otra: { rol: 'COORDINADOR', facultades: [] } },
+  };
+  const base = { actorUid: 'yo', actorEsAdminGeneral: false, actorRolEnSede: 'COORDINADOR' as const, sedeId: 'bdm' };
+
+  it('la coordinación de la sede se la da a un coordinador de su sede', () => {
+    expect(motivoParaNoCambiarAdminGeneral({ ...base, objetivo: coord, valor: true })).toBeNull();
+    expect(motivoParaNoCambiarAdminGeneral({ ...base, objetivo: coord, valor: false })).toBeNull();
+  });
+
+  it('solo a quien coordina; quitarla a cualquiera sí se puede', () => {
+    expect(motivoParaNoCambiarAdminGeneral({ ...base, objetivo: cate, valor: true })).toMatch(/quien coordina/);
+    expect(motivoParaNoCambiarAdminGeneral({ ...base, objetivo: cate, valor: false })).toBeNull();
+  });
+
+  it('quien no coordina en esa sede no la da', () => {
+    expect(
+      motivoParaNoCambiarAdminGeneral({ ...base, actorRolEnSede: 'ADMINISTRADORA', objetivo: coord, valor: true }),
+    ).toMatch(/Solo la coordinación/);
+  });
+
+  it('la coordinación de una sede no la cambia a gente de otra; la administración general sí', () => {
+    expect(motivoParaNoCambiarAdminGeneral({ ...base, objetivo: deOtra, valor: true })).toMatch(/Solo la coordinación/);
+    expect(
+      motivoParaNoCambiarAdminGeneral({ ...base, actorEsAdminGeneral: true, actorRolEnSede: null, objetivo: deOtra, valor: true }),
+    ).toBeNull();
+  });
+
+  it('nadie se la cambia a sí mismo', () => {
+    expect(
+      motivoParaNoCambiarAdminGeneral({ ...base, actorUid: 'c', actorEsAdminGeneral: true, objetivo: coord, valor: false }),
+    ).toMatch(/propia/);
   });
 });

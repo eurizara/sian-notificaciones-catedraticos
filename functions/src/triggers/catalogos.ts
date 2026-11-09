@@ -26,6 +26,7 @@ import {
   membresiasDe,
   sedePrincipal,
   sedesDelToken,
+  motivoParaNoCambiarAdminGeneral,
   sinSede,
   type Membresias,
 } from '../domain/sede';
@@ -294,21 +295,33 @@ export const quitarSede = onCall(OPCIONES_LLAMABLE, async (peticion) => {
  * alguna sede, y nunca a uno mismo: así siempre queda alguien que la tenga.
  */
 export const cambiarAdminGeneral = onCall(OPCIONES_LLAMABLE, async (peticion) => {
-  const actor = exigirAdminGeneral(peticion);
-  const datos = (peticion.data ?? {}) as { uid?: unknown; valor?: unknown };
+  if (!peticion.auth) {
+    throw new HttpsError('unauthenticated', 'Hay que iniciar sesión.');
+  }
+  const token = peticion.auth.token;
+  const datos = (peticion.data ?? {}) as { uid?: unknown; valor?: unknown; sedeId?: unknown };
   try {
-    const perfil = await perfilOError(datos.uid);
-    if (perfil.uid === actor.uid) {
-      throw new HttpsError('failed-precondition', 'No puede cambiar su propia administración general.');
+    if (token.activo !== true) {
+      throw new HttpsError('permission-denied', 'Su cuenta no está activa.');
     }
+    // 2.0.2: la da la coordinación de la sede (desde Usuarios) o la
+    // administración general (desde Personas y sedes).
+    const { sedeId, rol: rolEnSede } = sedeDeLaPeticion(token, datos.sedeId);
+    const actor = { uid: peticion.auth.uid, correo: (token.email as string | undefined) ?? '', rol: rolEnSede };
+    const perfil = await perfilOError(datos.uid);
     if (typeof datos.valor !== 'boolean') {
       throw new HttpsError('invalid-argument', 'Falta si se da o se quita.');
     }
-    if (datos.valor && !Object.values(membresiasDe(perfil)).some((m) => m.rol === 'COORDINADOR')) {
-      throw new HttpsError(
-        'failed-precondition',
-        'La administración general se da a quien coordina en alguna sede.',
-      );
+    const motivo = motivoParaNoCambiarAdminGeneral({
+      actorUid: actor.uid,
+      actorEsAdminGeneral: token.adminGeneral === true,
+      actorRolEnSede: rolEnSede,
+      sedeId,
+      objetivo: perfil,
+      valor: datos.valor,
+    });
+    if (motivo !== null) {
+      throw new HttpsError('permission-denied', motivo);
     }
     const actualizado: PerfilUsuario = { ...perfil, adminGeneral: datos.valor };
     await actualizarPerfil(perfil.uid, { adminGeneral: datos.valor });
