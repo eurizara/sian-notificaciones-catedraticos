@@ -90,11 +90,31 @@ void main() {
     });
 
     test('el auditor solo observa: bitácora y entregas', () {
+      // «Mis mensajes» y «Catálogos» dependen de la persona: el rol solo dice
+      // que PUEDE llegar a verlas (ver las pruebas de abajo).
       expect(etiquetasPara(Rol.auditor), <String>[
         Textos.seccionMisMensajes,
+        Textos.seccionCatalogos,
         Textos.seccionEntregas,
         Textos.seccionBitacora,
       ]);
+    });
+
+    test('2.0.3 · «Catálogos»: la coordinación y a quien le dé la administración general', () {
+      List<String> de(UsuarioSesion u) =>
+          seccionesParaUsuario(u).map((SeccionAdmin s) => s.etiqueta).toList();
+      final UsuarioSesion auditor = usuarioDePrueba(rol: Rol.auditor);
+      const UsuarioSesion conBandera = UsuarioSesion(
+        uid: 'a',
+        correo: 'a@umg.edu.gt',
+        nombre: 'A',
+        rol: Rol.auditor,
+        activo: true,
+        adminGeneral: true,
+      );
+      expect(de(usuarioDePrueba(rol: Rol.coordinador)), contains(Textos.seccionCatalogos));
+      expect(de(auditor), isNot(contains(Textos.seccionCatalogos)));
+      expect(de(conBandera), contains(Textos.seccionCatalogos));
     });
 
     test('«Mis mensajes» depende de la PERSONA, no del rol', () {

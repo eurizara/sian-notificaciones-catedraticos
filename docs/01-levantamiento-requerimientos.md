@@ -86,9 +86,9 @@ y no distingue lo urgente de lo informativo.
 | Administrar grupos de destinatarios | Sí | Sí | No | No |
 | Mantener los catálogos de su sede: facultades (2.0, RF-CAT-05) | Sí | No | No | No |
 | Decidir a qué facultades de su sede pertenece cada persona (2.0, RF-FAC-01) | Sí | No | No | No |
-| Mantener las sedes (2.0, RF-SED-06): administración general, una bandera que se da a quien coordina | Con la bandera | No | No | No |
-| Poner a una persona en sedes y darle un rol en cada una (2.0.1, RF-SED-02, RF-SED-06) | Con la bandera | No | No | No |
-| Dar o quitar la administración general, solo a quien coordina y nunca a sí mismo (2.0.2) | Sí, a gente de su sede (con la bandera, de cualquiera) | No | No | No |
+| Mantener las sedes (2.0, RF-SED-06): administración general, una bandera que la coordinación da a quien decida | Con la bandera | Con la bandera | No | Con la bandera |
+| Poner a una persona en sedes y darle un rol en cada una (2.0.1, RF-SED-02, RF-SED-06) | Con la bandera | Con la bandera | No | Con la bandera |
+| Dar o quitar la administración general (2.0.3): a quien decida de su sede, salvo a un catedrático; nunca a sí mismo | Sí, a gente de su sede | No | No | No |
 | Recibir notificaciones | Opcional | Opcional | Sí | No |
 | Confirmar lectura | Sí | Sí | Sí | No |
 | Ver historial propio de mensajes recibidos | Sí | Sí | Sí | No |

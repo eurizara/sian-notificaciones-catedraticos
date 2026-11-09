@@ -10,6 +10,7 @@ import 'package:flutter/material.dart' show IconData, Icons;
 
 import '../../core/audio/grabacion.dart';
 import '../../domain/politica_contrasena.dart';
+import '../../infrastructure/firebase/repositorio_catalogos.dart';
 
 abstract final class Textos {
   // --- Identidad -----------------------------------------------------------
@@ -1542,8 +1543,8 @@ abstract final class Textos {
       'de cada sede (facultades, grupos) lo mantiene su coordinación.';
   static const String administracionGeneral = 'Administración general';
   static const String administracionGeneralAyuda =
-      'Mantiene las sedes y reparte a la gente entre ellas. Solo para quien '
-      'coordina en alguna sede.';
+      'Mantiene las sedes y reparte a la gente entre ellas. La da quien '
+      'coordina, a quien decida.';
   static const String botonSedes = 'Sedes';
   static String cambiarSedesDe(String nombre) => 'Cambiar las sedes de $nombre';
   static String sedesDe(String nombre) => 'Sedes de $nombre';
@@ -1552,8 +1553,7 @@ abstract final class Textos {
       'Tiene que quedar en al menos una sede. Si ya no debe usar SIAN, '
       'desactive su cuenta en Usuarios.';
   static const String sedesPropias =
-      'Sus propias sedes y su administración general las cambia otra persona '
-      'de la administración general.';
+      'Sus propias sedes las cambia otra persona de la administración general.';
   static const String sedesGuardadas =
       'Sedes actualizadas. La persona las verá la próxima vez que abra SIAN.';
   static const String sedesSoloAdministracionGeneral =
@@ -1563,9 +1563,37 @@ abstract final class Textos {
       'Facultades con que entra (opcional). Entra en la sede donde está trabajando.';
   static const String adminGeneralPropia =
       'La suya la cambia otra persona que coordine.';
-  static const String adminGeneralSoloCoordinadores =
-      'Solo se da a quien coordina en alguna sede.';
+  static const String adminGeneralSoloCoordinacion =
+      'Solo quien coordina puede darla o quitarla.';
+  static const String adminGeneralSinPanel =
+      'Un catedrático no tiene panel de administración: no podría usarla.';
   static const String adminGeneralDada =
       'Administración general concedida. La persona la verá la próxima vez que abra SIAN.';
   static const String adminGeneralQuitada = 'Administración general retirada.';
+
+  // ── Bloques de Catálogos (2.0.3) ──────────────────────────────────────────
+  /// «2 facultades activas · 1 inactiva», o «Cargando…».
+  static String resumenCatalogo(
+    List<ElementoCatalogo>? elementos,
+    String uno,
+    String varios,
+  ) {
+    if (elementos == null) {
+      return 'Cargando…';
+    }
+    final int activas = elementos.where((ElementoCatalogo e) => e.activa).length;
+    final int inactivas = elementos.length - activas;
+    if (elementos.isEmpty) {
+      return 'Ninguna $uno todavía';
+    }
+    final String a =
+        '$activas ${activas == 1 ? '$uno activa' : '$varios activas'}';
+    return inactivas == 0
+        ? a
+        : '$a · $inactivas ${inactivas == 1 ? 'inactiva' : 'inactivas'}';
+  }
+
+  static String resumenPersonas(int? total) => total == null
+      ? 'Cargando…'
+      : '$total ${total == 1 ? 'persona' : 'personas'} en todas las sedes';
 }

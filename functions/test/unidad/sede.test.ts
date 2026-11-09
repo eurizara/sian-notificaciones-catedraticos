@@ -382,42 +382,45 @@ describe('2.0.1 · la invitación dice la sede y las facultades', () => {
   });
 });
 
-describe('2.0.2 · quién da la administración general', () => {
+describe('2.0.3 · quién da la administración general, y a quién', () => {
   const coord = { uid: 'c', rol: 'COORDINADOR' as const };
+  const admin = { uid: 'a', rol: 'ADMINISTRADORA' as const };
   const cate = { uid: 'k', rol: 'CATEDRATICO' as const };
   const deOtra = {
     uid: 'o',
     rol: 'COORDINADOR' as const,
     membresias: { otra: { rol: 'COORDINADOR', facultades: [] } },
   };
-  const base = { actorUid: 'yo', actorEsAdminGeneral: false, actorRolEnSede: 'COORDINADOR' as const, sedeId: 'bdm' };
+  const base = { actorUid: 'yo', actorRolEnSede: 'COORDINADOR' as const, sedeId: 'bdm' };
 
-  it('la coordinación de la sede se la da a un coordinador de su sede', () => {
+  it('quien coordina se la da a quien decida de su sede, coordine o no', () => {
     expect(motivoParaNoCambiarAdminGeneral({ ...base, objetivo: coord, valor: true })).toBeNull();
-    expect(motivoParaNoCambiarAdminGeneral({ ...base, objetivo: coord, valor: false })).toBeNull();
+    expect(motivoParaNoCambiarAdminGeneral({ ...base, objetivo: admin, valor: true })).toBeNull();
   });
 
-  it('solo a quien coordina; quitarla a cualquiera sí se puede', () => {
-    expect(motivoParaNoCambiarAdminGeneral({ ...base, objetivo: cate, valor: true })).toMatch(/quien coordina/);
+  it('a un catedrático no: no tiene panel. Quitársela sí se puede', () => {
+    expect(motivoParaNoCambiarAdminGeneral({ ...base, objetivo: cate, valor: true })).toMatch(/no tiene panel/);
     expect(motivoParaNoCambiarAdminGeneral({ ...base, objetivo: cate, valor: false })).toBeNull();
   });
 
-  it('quien no coordina en esa sede no la da', () => {
-    expect(
-      motivoParaNoCambiarAdminGeneral({ ...base, actorRolEnSede: 'ADMINISTRADORA', objetivo: coord, valor: true }),
-    ).toMatch(/Solo la coordinación/);
+  it('solo la da quien coordina: tener la administración general no alcanza', () => {
+    for (const rol of ['ADMINISTRADORA', 'AUDITOR', 'CATEDRATICO'] as const) {
+      expect(motivoParaNoCambiarAdminGeneral({ ...base, actorRolEnSede: rol, objetivo: coord, valor: true })).toMatch(
+        /Solo quien coordina/,
+      );
+    }
+    expect(motivoParaNoCambiarAdminGeneral({ ...base, actorRolEnSede: null, objetivo: coord, valor: true })).toMatch(
+      /Solo quien coordina/,
+    );
   });
 
-  it('la coordinación de una sede no la cambia a gente de otra; la administración general sí', () => {
-    expect(motivoParaNoCambiarAdminGeneral({ ...base, objetivo: deOtra, valor: true })).toMatch(/Solo la coordinación/);
-    expect(
-      motivoParaNoCambiarAdminGeneral({ ...base, actorEsAdminGeneral: true, actorRolEnSede: null, objetivo: deOtra, valor: true }),
-    ).toBeNull();
+  it('solo a gente de su sede', () => {
+    expect(motivoParaNoCambiarAdminGeneral({ ...base, objetivo: deOtra, valor: true })).toMatch(/no es de su sede/);
   });
 
   it('nadie se la cambia a sí mismo', () => {
-    expect(
-      motivoParaNoCambiarAdminGeneral({ ...base, actorUid: 'c', actorEsAdminGeneral: true, objetivo: coord, valor: false }),
-    ).toMatch(/propia/);
+    expect(motivoParaNoCambiarAdminGeneral({ ...base, actorUid: 'c', objetivo: coord, valor: false })).toMatch(
+      /propia/,
+    );
   });
 });
