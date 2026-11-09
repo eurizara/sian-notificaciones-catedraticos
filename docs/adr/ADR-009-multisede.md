@@ -106,6 +106,24 @@ El campo `rol` sigue diciendo el rol en la sede principal, porque las versiones 
 aplicación anteriores a la 2.0 solo leen ese campo. Un documento sin `sedeId` es de `bdm`
 (`sedeDelDocumento`). Con una sola sede nadie elige nada (`elegirSede`).
 
+## 2.0.6: catálogo único de facultades (decisión del 08/11/2026)
+
+Hasta la 2.0.5 cada sede escribía sus propias facultades: «Ingeniería en Sistemas» se creaba
+por separado en cada una, podía quedar con nombres o identificadores distintos y no había
+forma segura de decir «es la misma facultad» para los reportes por facultad (RF-FAC-05).
+
+**Decisión:** tres niveles, de lo general a la persona. (1) `facultades/{id}`, lista única
+de la UMG, la mantiene solo el superadministrador. (2) `sedes/{sede}/facultades/{id}`, lo que
+ofrece cada sede, elegido del catálogo con el mismo identificador por el superadministrador o
+la coordinación de esa sede. (3) `membresias[sede].facultades`, solo entre lo que ofrece la
+sede. Nada queda colgando: no se retira de una sede una facultad que alguien tiene asignada
+(se dice cuántos), ni se desactiva en el catálogo una que alguna sede ofrece.
+
+Se conservó la ruta y la forma de `sedes/{sede}/facultades` (con una copia del nombre) para
+que lo que ya la leía —envío por facultad, invitaciones, validación de facultades de una
+persona— no cambiara. El catálogo se llenó adoptando lo que ya había, con el mismo
+identificador, así que ninguna facultad ya asignada cambió.
+
 ## Requisitos relacionados
 
 RF-SED-01 a RF-SED-06 (documento 01, sección 3.9) · RF-USR-06 · DT-04 · documento 12,

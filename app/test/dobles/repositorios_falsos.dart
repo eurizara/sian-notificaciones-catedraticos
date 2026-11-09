@@ -8,6 +8,7 @@ library;
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:sian/domain/repositorios.dart';
 import 'package:sian/core/navegador.dart';
@@ -241,6 +242,7 @@ UsuarioSesion usuarioDePrueba({
   String correo = 'prueba@umg.edu.gt',
   bool puedeEmitirUrgentes = false,
   bool puedeCrearRecurrentes = false,
+  bool adminGeneral = false,
 }) {
   return UsuarioSesion(
     uid: uid,
@@ -250,6 +252,7 @@ UsuarioSesion usuarioDePrueba({
     activo: true,
     puedeEmitirUrgentes: puedeEmitirUrgentes,
     puedeCrearRecurrentes: puedeCrearRecurrentes,
+    adminGeneral: adminGeneral,
   );
 }
 
@@ -744,3 +747,28 @@ class FuenteCatalogoEnMemoria implements FuenteCatalogo {
   }
 }
 
+
+/// Lo que ofrece cada sede (2.0.6), en memoria. Con [rechazo], el servidor
+/// no deja el cambio y responde ese mensaje.
+class RepositorioOfertaEnMemoria extends RepositorioOfertaFacultades {
+  RepositorioOfertaEnMemoria({this.rechazo});
+
+  final String? rechazo;
+  final List<String> pedidos = <String>[];
+
+  @override
+  Future<void> ofrecer({
+    required String sedeId,
+    required String facultadId,
+    required bool ofrecer,
+  }) async {
+    pedidos.add('$sedeId $facultadId $ofrecer');
+    final String? motivo = rechazo;
+    if (motivo != null) {
+      throw FirebaseFunctionsException(
+        code: 'invalid-argument',
+        message: motivo,
+      );
+    }
+  }
+}

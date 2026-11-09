@@ -3,7 +3,9 @@
  *
  * Las sedes las mantiene la administración general (`adminGeneral` en el
  * token): son lo que reparte a la gente entre lugares, y nadie de una sede debe
- * poder crear otra. Las facultades de una sede, su coordinación.
+ * poder crear otra. Desde la 2.0.6 las facultades son un catálogo único que
+ * también mantiene el superadministrador; cada sede elige de él las que ofrece
+ * (el superadministrador o su coordinación), ver `domain/facultades.ts`.
  *
  * Toda escritura pasa por aquí, nunca por el cliente: las reglas solo dejan
  * leer. Así la validación —nombre, repetidos, identificador que no cambia—
@@ -18,9 +20,11 @@ import { sedeDeLaPeticion } from '../application/sedeDeLaPeticion';
 import { exigirPermiso } from '../domain/autorizacion';
 import { crearAsiento } from '../domain/bitacora';
 import { decidirGuardado, type ElementoCatalogo } from '../domain/catalogo';
+import { decidirOferta, exigirQueNingunaSedeLaOfrezca } from '../domain/facultades';
 import { ErrorAutorizacion, ErrorDominio } from '../domain/errores';
 import { claimsDe, type PerfilUsuario } from '../application/activarSesion';
 import {
+  conFacultadesEnSede,
   conRolEnSede,
   esIdDeSede,
   membresiasDe,
@@ -37,6 +41,13 @@ import {
   escribirAsiento,
   reemplazarMembresias,
 } from '../infrastructure/repositorios';
+import {
+  contarPersonasConFacultad,
+  leerCatalogoDeFacultades,
+  leerFacultades,
+  propagarNombreDeFacultad,
+  sedesQueOfrecen,
+} from '../infrastructure/sedes';
 
 function traducir(e: unknown): HttpsError {
   if (e instanceof HttpsError) {
@@ -125,46 +136,124 @@ export const guardarSede = onCall(OPCIONES_LLAMABLE, async (peticion) => {
 });
 
 /**
- * Alta o edición de una facultad de la sede donde actúa quien la pide
- * (RF-FAC-01). Solo su coordinación (permiso `ADMINISTRAR_CATALOGOS`).
+ * Alta o edición de una facultad del catálogo único de la UMG (2.0.6). Solo el
+ * superadministrador: así cada facultad existe una vez y es la misma en todas
+ * las sedes. Cada sede elige después cuáles ofrece (`ofrecerFacultad`).
+ *
+ * Cambiar el nombre lo cambia en cada sede que la ofrece. Desactivarla solo se
+ * puede si ninguna sede la ofrece.
  */
 export const guardarFacultad = onCall(OPCIONES_LLAMABLE, async (peticion) => {
-  if (!peticion.auth) {
-    throw new HttpsError('unauthenticated', 'Hay que iniciar sesión.');
-  }
-  const correo = (peticion.auth.token.email as string | undefined) ?? '';
+  const { uid: actorUid, correo, rol } = exigirAdminGeneral(peticion);
 
   try {
     const datos = (peticion.data ?? {}) as Record<string, unknown>;
-    const { sedeId, rol } = sedeDeLaPeticion(peticion.auth.token, datos.sedeId);
-    exigirPermiso(
-      { uid: peticion.auth.uid, rol, activo: peticion.auth.token.activo === true },
-      'ADMINISTRAR_CATALOGOS',
-    );
-    if (!esIdDeSede(sedeId)) {
-      throw new HttpsError('invalid-argument', 'La sede no es válida.');
-    }
-    const sede = await db.collection(RUTAS.sedes).doc(sedeId).get();
-    if (!sede.exists) {
-      // La migración (2.0-c) crea la sede inicial; sin ella no hay dónde
-      // colgar una facultad, y crearla aquí a escondidas sería peor.
-      throw new HttpsError('failed-precondition', 'Esa sede todavía no está dada de alta.');
-    }
-
-    const coleccion = db.collection(RUTAS.sedes).doc(sedeId).collection(RUTAS.facultades);
+    const existentes = await leerCatalogoDeFacultades();
     const decision = decidirGuardado(
       { id: datos.id, nombre: datos.nombre, activa: datos.activa },
-      leer(await coleccion.get()),
+      existentes,
     );
     const { elemento } = decision;
     if (decision.cambios.length === 0) {
       return { id: elemento.id, nuevo: false };
     }
-    await coleccion.doc(elemento.id).set(
+    const previo = existentes.find((e) => e.id === elemento.id);
+    if (previo?.activa === true && !elemento.activa) {
+      exigirQueNingunaSedeLaOfrezca(elemento.nombre, await sedesQueOfrecen(elemento.id));
+    }
+    await db
+      .collection(RUTAS.catalogoFacultades)
+      .doc(elemento.id)
+      .set(
+        {
+          nombre: elemento.nombre,
+          activa: elemento.activa,
+          ...(decision.nuevo ? { creadaEn: FieldValue.serverTimestamp() } : {}),
+          actualizadaEn: FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
+    if (previo !== undefined && previo.nombre !== elemento.nombre) {
+      await propagarNombreDeFacultad(elemento.id, elemento.nombre);
+    }
+    await escribirAsiento(
+      crearAsiento({
+        tipo: 'CATALOGO_MODIFICADO',
+        actor: { uid: actorUid, correo, rol },
+        entidad: 'CATALOGO',
+        entidadId: `facultades/${elemento.id}`,
+        resumen: `Facultad «${elemento.nombre}» (catálogo): ${decision.cambios.join(', ')}`,
+        datos: { catalogo: 'facultades', id: elemento.id, cambios: decision.cambios },
+      }),
+    );
+    return { id: elemento.id, nuevo: decision.nuevo };
+  } catch (e) {
+    throw traducir(e);
+  }
+});
+
+/**
+ * Que una sede ofrezca, o deje de ofrecer, una facultad del catálogo (2.0.6).
+ * El superadministrador, en cualquier sede; la coordinación, en la suya
+ * (permiso `ADMINISTRAR_CATALOGOS` con su rol allí). No se retira una que
+ * alguien de la sede tiene asignada.
+ */
+export const ofrecerFacultad = onCall(OPCIONES_LLAMABLE, async (peticion) => {
+  if (!peticion.auth) {
+    throw new HttpsError('unauthenticated', 'Hay que iniciar sesión.');
+  }
+  const token = peticion.auth.token;
+  const correo = (token.email as string | undefined) ?? '';
+  const datos = (peticion.data ?? {}) as { sedeId?: unknown; facultadId?: unknown; ofrecer?: unknown };
+
+  try {
+    let sedeId: string;
+    let rol: Rol;
+    if (token.activo === true && token.adminGeneral === true) {
+      if (!esIdDeSede(datos.sedeId)) {
+        throw new HttpsError('invalid-argument', 'La sede no es válida.');
+      }
+      sedeId = datos.sedeId;
+      rol = (ROLES as readonly string[]).includes(token.rol as string) ? (token.rol as Rol) : 'CATEDRATICO';
+    } else {
+      ({ sedeId, rol } = sedeDeLaPeticion(token, datos.sedeId));
+      exigirPermiso({ uid: peticion.auth.uid, rol, activo: token.activo === true }, 'ADMINISTRAR_CATALOGOS');
+    }
+    if (!esIdDeSede(datos.facultadId)) {
+      throw new HttpsError('invalid-argument', 'La facultad no es válida.');
+    }
+    if (typeof datos.ofrecer !== 'boolean') {
+      throw new HttpsError('invalid-argument', 'Falta decir si se ofrece o no.');
+    }
+    const facultadId = datos.facultadId;
+    const sede = await db.collection(RUTAS.sedes).doc(sedeId).get();
+    if (!sede.exists) {
+      throw new HttpsError('failed-precondition', 'Esa sede todavía no está dada de alta.');
+    }
+    const enCatalogo = await db.collection(RUTAS.catalogoFacultades).doc(facultadId).get();
+    const oferta = sede.ref.collection(RUTAS.facultades).doc(facultadId);
+    const actual = await oferta.get();
+    const catalogo = enCatalogo.exists
+      ? {
+          nombre: (enCatalogo.get('nombre') as string | undefined) ?? facultadId,
+          activa: enCatalogo.get('activa') !== false,
+        }
+      : undefined;
+    const cambio = decidirOferta({
+      ofrecer: datos.ofrecer,
+      catalogo,
+      actual: actual.exists ? { activa: actual.get('activa') !== false } : undefined,
+      personas: datos.ofrecer ? 0 : await contarPersonasConFacultad(sedeId, facultadId),
+    });
+    if (cambio === null) {
+      return { sedeId, facultadId, ofrecida: datos.ofrecer };
+    }
+    const nombre = catalogo?.nombre ?? ((actual.get('nombre') as string | undefined) ?? facultadId);
+    await oferta.set(
       {
-        nombre: elemento.nombre,
-        activa: elemento.activa,
-        ...(decision.nuevo ? { creadaEn: FieldValue.serverTimestamp() } : {}),
+        nombre,
+        activa: datos.ofrecer,
+        ...(cambio === 'alta' ? { creadaEn: FieldValue.serverTimestamp() } : {}),
         actualizadaEn: FieldValue.serverTimestamp(),
       },
       { merge: true },
@@ -174,13 +263,13 @@ export const guardarFacultad = onCall(OPCIONES_LLAMABLE, async (peticion) => {
         tipo: 'CATALOGO_MODIFICADO',
         actor: { uid: peticion.auth.uid, correo, rol },
         entidad: 'CATALOGO',
-        entidadId: `sedes/${sedeId}/facultades/${elemento.id}`,
-        resumen: `Facultad «${elemento.nombre}»: ${decision.cambios.join(', ')}`,
-        datos: { catalogo: 'facultades', id: elemento.id, cambios: decision.cambios },
+        entidadId: `sedes/${sedeId}/facultades/${facultadId}`,
+        resumen: `Facultad «${nombre}» en la sede: ${cambio === 'retirada' ? 'ya no se ofrece' : 'se ofrece'}`,
+        datos: { catalogo: 'oferta', id: facultadId, cambios: [cambio] },
         sedeId,
       }),
     );
-    return { id: elemento.id, nuevo: decision.nuevo };
+    return { sedeId, facultadId, ofrecida: datos.ofrecer };
   } catch (e) {
     throw traducir(e);
   }
@@ -224,7 +313,7 @@ function resumenSedes(m: Membresias): string {
  */
 export const asignarSede = onCall(OPCIONES_LLAMABLE, async (peticion) => {
   const actor = exigirAdminGeneral(peticion);
-  const datos = (peticion.data ?? {}) as { uid?: unknown; sedeId?: unknown; rol?: unknown };
+  const datos = (peticion.data ?? {}) as { uid?: unknown; sedeId?: unknown; rol?: unknown; facultades?: unknown };
   try {
     const perfil = await perfilOError(datos.uid);
     // 2.0.5: el superadministrador sí cambia sus propias sedes, como sus
@@ -242,7 +331,18 @@ export const asignarSede = onCall(OPCIONES_LLAMABLE, async (peticion) => {
       throw new HttpsError('failed-precondition', 'Esa sede no existe o está inactiva.');
     }
     const antes = membresiasDe(perfil);
-    const despues = await aplicarMembresias(perfil, conRolEnSede(perfil, datos.sedeId, rol));
+    let membresias = conRolEnSede(perfil, datos.sedeId, rol);
+    // 2.0.6: con `facultades`, también las suyas en esa sede, solo entre las
+    // que la sede ofrece. Sin ellas (versiones anteriores), se conservan.
+    if (datos.facultades !== undefined) {
+      membresias = conFacultadesEnSede(
+        { rol: perfil.rol, membresias },
+        datos.sedeId,
+        datos.facultades,
+        await leerFacultades(datos.sedeId),
+      );
+    }
+    const despues = await aplicarMembresias(perfil, membresias);
     await escribirAsiento(
       crearAsiento({
         tipo: 'USUARIO_SEDES_CAMBIADAS',
@@ -250,7 +350,7 @@ export const asignarSede = onCall(OPCIONES_LLAMABLE, async (peticion) => {
         entidad: 'USUARIO',
         entidadId: perfil.uid,
         resumen: `Sedes de ${perfil.correo}: ${resumenSedes(antes)} → ${resumenSedes(despues.membresias ?? {})}`,
-        datos: { sedeId: datos.sedeId, rol },
+        datos: { sedeId: datos.sedeId, rol, facultades: membresias[datos.sedeId]?.facultades ?? [] },
         sedeId: datos.sedeId,
       }),
     );

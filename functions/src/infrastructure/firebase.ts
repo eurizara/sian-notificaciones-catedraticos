@@ -70,6 +70,10 @@ export const RUTAS = {
   // Catálogo de sedes (2.0, ADR-009) y, dentro de cada una, sus facultades.
   sedes: 'sedes',
   facultades: 'facultades',
+  // Catálogo único de facultades de la UMG (2.0.6). Mismo nombre que la
+  // subcolección de cada sede a propósito: arriba, la lista; dentro de una
+  // sede, las que ofrece. Nadie las consulta con collectionGroup.
+  catalogoFacultades: 'facultades',
 } as const;
 
 export const DOC_CONFIGURACION = `${RUTAS.configuracion}/institucional`;

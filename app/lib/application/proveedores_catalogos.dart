@@ -12,9 +12,31 @@ final Provider<FuenteCatalogo> fuenteSedesProvider = Provider<FuenteCatalogo>(
   (Ref ref) => FuenteSedes(),
 );
 
-/// Las facultades de una sede.
-final fuenteFacultadesProvider = Provider.family<FuenteCatalogo, String>(
+/// Las facultades que ofrece una sede (2.0.6: elegidas del catálogo único).
+final fuenteFacultadesProvider = Provider.family<ListaCatalogo, String>(
   (Ref ref, String sedeId) => FuenteFacultades(sedeId),
+);
+
+/// El catálogo único de facultades (2.0.6). Lo mantiene el superadministrador.
+final Provider<FuenteCatalogo> fuenteCatalogoFacultadesProvider =
+    Provider<FuenteCatalogo>((Ref ref) => FuenteCatalogoFacultades());
+
+/// El catálogo único, para elegir de él. Si no se puede leer, queda vacío.
+final StreamProvider<List<ElementoCatalogo>> catalogoFacultadesProvider =
+    StreamProvider<List<ElementoCatalogo>>((Ref ref) {
+      try {
+        return ref
+            .watch(fuenteCatalogoFacultadesProvider)
+            .observar()
+            .handleError((Object _) {});
+      } on Object {
+        return Stream<List<ElementoCatalogo>>.value(const <ElementoCatalogo>[]);
+      }
+    });
+
+final Provider<RepositorioOfertaFacultades>
+repositorioOfertaFacultadesProvider = Provider<RepositorioOfertaFacultades>(
+  (Ref ref) => RepositorioOfertaFacultades(),
 );
 
 /// El nombre visible de una sede («Boca del Monte»), o nulo si no se pudo leer.

@@ -39,7 +39,8 @@ class Valores(unittest.TestCase):
 class Plan(unittest.TestCase):
     def test_crea_la_sede_y_la_facultad_solo_si_faltan(self):
         ops, r = plan(existe_sede=False, existe_facultad=False)
-        self.assertEqual([o[0] for o in ops], ['sedes/bdm', 'sedes/bdm/facultades/ing-sistemas'])
+        self.assertEqual([o[0] for o in ops],
+                         ['sedes/bdm', 'sedes/bdm/facultades/ing-sistemas', 'facultades/ing-sistemas'])
         self.assertTrue(all(o[2] is False for o in ops), 'crear solo si no existe')
         self.assertEqual(plan()[0], [])
 
@@ -89,6 +90,40 @@ class Plan(unittest.TestCase):
     def test_la_bitacora_no_se_toca(self):
         ops, _ = plan(usuarios=[('u1', {'rol': 'CATEDRATICO'})], grupos=[('g', {})], mensajes=[('m', {})])
         self.assertFalse(any(o[0].startswith('bitacora/') for o in ops))
+
+
+
+class CatalogoUnico(unittest.TestCase):
+    """2.0.6: las facultades que ya tienen las sedes pasan al catálogo único."""
+
+    def test_adopta_cada_facultad_una_vez_con_su_mismo_identificador(self):
+        ops, r = plan(facultades_por_sede=[
+            ('bdm', 'ing-sistemas', {'nombre': 'Ingeniería en Sistemas', 'activa': True}),
+            ('bdm', 'psicologia', {'nombre': 'Psicología', 'activa': False}),
+            ('villa-nueva', 'ing-sistemas', {'nombre': 'Ingeniería en Sistemas', 'activa': True}),
+        ], catalogo={})
+        self.assertEqual(ops, [
+            ('facultades/ing-sistemas', {'nombre': 'Ingeniería en Sistemas', 'activa': True}, False),
+            ('facultades/psicologia', {'nombre': 'Psicología', 'activa': True}, False),
+        ])
+        self.assertEqual(r['catalogo_facultades'], 2)
+
+    def test_es_idempotente(self):
+        sedes = [('bdm', 'ing-sistemas', {'nombre': 'Ingeniería en Sistemas'})]
+        self.assertEqual(plan(facultades_por_sede=sedes,
+                              catalogo={'ing-sistemas': {'nombre': 'Ingeniería en Sistemas', 'activa': True}})[0], [])
+
+    def test_mismo_nombre_con_otro_identificador_no_se_adivina(self):
+        ops, r = plan(facultades_por_sede=[
+            ('bdm', 'ing-sistemas', {'nombre': 'Ingeniería en Sistemas'}),
+            ('villa-nueva', 'ingenieria-en-sistemas', {'nombre': 'ingenieria en  sistemas'}),
+        ], catalogo={})
+        self.assertEqual([o[0] for o in ops], ['facultades/ing-sistemas'])
+        self.assertEqual(len(r['conflictos']), 1)
+        self.assertIn('villa-nueva', r['conflictos'][0])
+
+    def test_clave_de_nombre_como_el_servidor(self):
+        self.assertEqual(m.clave_de_nombre('  Ingeniería   en SISTEMAS '), 'ingenieria en sistemas')
 
 
 if __name__ == '__main__':

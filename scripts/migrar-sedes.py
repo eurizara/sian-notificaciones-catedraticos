@@ -10,7 +10,12 @@ comporta nada:
   · da a cada perfil sin `membresias` la de omisión, `{bdm: {rol, facultades}}`,
     que es exactamente lo que el servidor ya suponía;
   · pone `sedeId: 'bdm'` a los mensajes y grupos que no la tienen;
-  · si se pide, marca a una persona como administración general (RF-SED-06).
+  · si se pide, marca a una persona como administración general (RF-SED-06);
+  · (2.0.6) crea el catálogo único de facultades, `facultades/{id}`, con cada
+    facultad que alguna sede ya tenía, con su mismo identificador: así lo que
+    ya está asignado a cada persona sigue valiendo. Si dos sedes tienen el
+    mismo nombre con identificadores distintos, no adivina: lo avisa y no
+    crea la segunda (la decide el superadministrador).
 
 NO toca la bitácora: es inmutable (RF-BIT-03), y un asiento sin sede se lee como
 de `bdm`. Tampoco borra ni reescribe nada que ya tenga su dato: es idempotente,
@@ -28,8 +33,10 @@ producción, el respaldo diario tiene que estar al día (documento 11).
 """
 import json
 import os
+import re
 import subprocess
 import sys
+import unicodedata
 
 SEDE_INICIAL = 'bdm'
 NOMBRE_SEDE_INICIAL = 'Boca del Monte'
@@ -82,18 +89,28 @@ def campos(documento):
 # El plan — puro: recibe lo leído y devuelve qué escribir
 # ---------------------------------------------------------------------------
 
+def clave_de_nombre(nombre):
+    """Como `claveDeNombre` del servidor: sin tildes, sin mayúsculas, sin espacios de más."""
+    sin_tildes = ''.join(c for c in unicodedata.normalize('NFD', nombre) if not unicodedata.combining(c))
+    return re.sub(r'\s+', ' ', sin_tildes.lower()).strip()
+
+
 def planificar(*, usuarios, grupos, mensajes, existe_sede, existe_facultad,
-               facultad_a_todos=False, admin_general=None):
+               facultad_a_todos=False, admin_general=None,
+               facultades_por_sede=(), catalogo=None):
     """
     Cada operación es (ruta, cambios, debe_existir). `debe_existir=False` solo
     crea si no está; `True` solo actualiza lo que ya está. Así ninguna operación
     puede crear un documento a medias ni pisar uno ajeno.
 
     usuarios, grupos, mensajes: listas de (id, campos ya decodificados).
+    facultades_por_sede: lista de (sede, id, campos) de `sedes/*/facultades`.
+    catalogo: {id: campos} del catálogo único `facultades/` tal como está.
     """
     ops = []
     resumen = {'sede': 0, 'facultad': 0, 'usuarios': 0, 'facultad_a_perfiles': 0,
-               'admin_general': 0, 'grupos': 0, 'mensajes': 0}
+               'admin_general': 0, 'grupos': 0, 'mensajes': 0,
+               'catalogo_facultades': 0, 'conflictos': []}
 
     if not existe_sede:
         ops.append((f'sedes/{SEDE_INICIAL}', {'nombre': NOMBRE_SEDE_INICIAL, 'activa': True}, False))
@@ -102,6 +119,26 @@ def planificar(*, usuarios, grupos, mensajes, existe_sede, existe_facultad,
         ops.append((f'sedes/{SEDE_INICIAL}/facultades/{FACULTAD_INICIAL}',
                     {'nombre': NOMBRE_FACULTAD_INICIAL, 'activa': True}, False))
         resumen['facultad'] = 1
+
+    # Catálogo único de facultades (2.0.6): adopta las que ya tienen las sedes.
+    globales = dict(catalogo or {})
+    por_clave = {clave_de_nombre(d.get('nombre') or i): i for i, d in globales.items()}
+    candidatas = list(facultades_por_sede)
+    if not existe_facultad:
+        candidatas.append((SEDE_INICIAL, FACULTAD_INICIAL, {'nombre': NOMBRE_FACULTAD_INICIAL}))
+    for sede, fid, d in candidatas:
+        if fid in globales:
+            continue
+        nombre = d.get('nombre') or fid
+        k = clave_de_nombre(nombre)
+        if k in por_clave and por_clave[k] != fid:
+            resumen['conflictos'].append(
+                f'«{nombre}» de {sede} ({fid}) se llama igual que {por_clave[k]}: no se crea')
+            continue
+        globales[fid] = {'nombre': nombre}
+        por_clave[k] = fid
+        ops.append((f'facultades/{fid}', {'nombre': nombre, 'activa': True}, False))
+        resumen['catalogo_facultades'] += 1
 
     correo_admin = (admin_general or '').strip().lower()
     admin_encontrado = False
@@ -178,15 +215,26 @@ def main(argv):
         r = _curl(cfg, 'GET', f'{base}/{ruta}')
         return 'name' in r
 
+    def hijos(padre, coleccion):
+        q = {'structuredQuery': {'from': [{'collectionId': coleccion}]}}
+        filas = _curl(cfg, 'POST', f'{base}/{padre}:runQuery', q)
+        return [(x['document']['name'].rsplit('/', 1)[1], campos(x['document'])) for x in filas if 'document' in x]
+
+    facultades_por_sede = [(sede, fid, d) for sede, _ in todos('sedes') for fid, d in hijos(f'sedes/{sede}', 'facultades')]
+
     ops, resumen = planificar(
         usuarios=todos('usuarios'), grupos=todos('grupos'), mensajes=todos('mensajes'),
         existe_sede=existe(f'sedes/{SEDE_INICIAL}'),
         existe_facultad=existe(f'sedes/{SEDE_INICIAL}/facultades/{FACULTAD_INICIAL}'),
         facultad_a_todos=facultad_a_todos, admin_general=admin,
+        facultades_por_sede=facultades_por_sede, catalogo=dict(todos('facultades')),
     )
     print(f'Proyecto {proyecto} · {"APLICANDO" if aplicar else "solo el plan (sin escribir)"}')
+    conflictos = resumen.pop('conflictos')
     for clave, n in resumen.items():
         print(f'  {clave:20} {n}')
+    for c in conflictos:
+        print(f'  AVISO: {c}')
     print(f'  {"operaciones":20} {len(ops)}')
     if not aplicar or not ops:
         return 0

@@ -1,7 +1,8 @@
 /// SIAN — Sección «Catálogos» del panel (2.0 · RF-CAT-01, RF-SED-06, RF-FAC-01).
 ///
-/// Solo las listas (2.0.4): la coordinación mantiene las facultades de su
-/// sede; quien tiene la administración general, además, las sedes. A qué sede
+/// Solo las listas (2.0.4). Desde la 2.0.6 las facultades son un catálogo
+/// único que mantiene el superadministrador, junto con las sedes; la
+/// coordinación elige de él las que ofrece su sede. A qué sede
 /// y facultad pertenece cada persona se decide en Usuarios. Cada bloque va
 /// contraído, con lo que contiene dicho en su encabezado (2.0.3).
 library;
@@ -15,6 +16,7 @@ import '../../application/proveedores_sesion.dart';
 import '../../domain/rol.dart';
 import '../../domain/sesion.dart';
 import '../shared/mantenimiento_catalogo.dart';
+import 'oferta_facultades.dart';
 import '../shared/textos.dart';
 
 class SeccionCatalogos extends ConsumerWidget {
@@ -35,22 +37,43 @@ class SeccionCatalogos extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: <Widget>[
-        if (usuario.rol == Rol.coordinador)
+        // El catálogo único (2.0.6): solo el superadministrador lo mantiene.
+        if (usuario.adminGeneral)
           BloqueDesplegable(
-            id: 'facultades',
+            id: 'catalogo-facultades',
             icono: Icons.school_outlined,
-            titulo: Textos.catalogoFacultadesDe(nombreSede),
+            titulo: Textos.catalogoFacultadesUnico,
             resumen: Textos.resumenCatalogo(
-              ref.watch(facultadesDeLaSedeProvider(sede)).value,
+              ref.watch(catalogoFacultadesProvider).value,
               'facultad',
               'facultades',
             ),
             child: MantenimientoCatalogo(
-              fuente: ref.watch(fuenteFacultadesProvider(sede)),
-              titulo: Textos.catalogoFacultadesDe(nombreSede),
+              fuente: ref.watch(fuenteCatalogoFacultadesProvider),
+              titulo: Textos.catalogoFacultadesUnico,
               elemento: 'facultad',
-              explicacion: Textos.catalogoFacultadesExplicacion,
+              explicacion: Textos.catalogoFacultadesUnicoExplicacion,
               mostrarTitulo: false,
+            ),
+          ),
+        // Qué ofrece la sede: la coordinación, la suya; el superadministrador,
+        // cualquiera.
+        if (usuario.rol == Rol.coordinador || usuario.adminGeneral)
+          BloqueDesplegable(
+            id: 'facultades',
+            icono: Icons.account_tree_outlined,
+            titulo: usuario.adminGeneral
+                ? Textos.ofertaPorSede
+                : Textos.catalogoFacultadesDe(nombreSede),
+            resumen: usuario.adminGeneral
+                ? Textos.catalogoFacultadesExplicacion
+                : Textos.resumenOferta(
+                    ref.watch(facultadesDeLaSedeProvider(sede)).value,
+                  ),
+            child: OfertaDeFacultades(
+              key: ValueKey<String>('oferta-$sede'),
+              sedeInicial: sede,
+              puedeElegirSede: usuario.adminGeneral,
             ),
           ),
         if (usuario.adminGeneral) ...<Widget>[

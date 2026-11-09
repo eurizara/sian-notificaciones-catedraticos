@@ -84,7 +84,8 @@ y no distingue lo urgente de lo informativo.
 | Ver bitácora completa | Sí | No | No | Sí |
 | Administrar usuarios y roles | Sí | No | No | No |
 | Administrar grupos de destinatarios | Sí | Sí | No | No |
-| Mantener los catálogos de su sede: facultades (2.0, RF-CAT-05) | Sí | No | No | No |
+| Elegir, del catálogo único, las facultades que ofrece su sede (2.0.6, RF-CAT-05); no se retira una que alguien tiene | Sí | No | No | No |
+| Mantener el catálogo único de facultades de la UMG (2.0.6) | Si es superadministrador | Si es superadministrador | No | Si es superadministrador |
 | Decidir a qué facultades de su sede pertenece cada persona (2.0, RF-FAC-01) | Sí | No | No | No |
 | Mantener las sedes (2.0, RF-SED-06): superadministrador | Si es superadministrador | Si es superadministrador | No | Si es superadministrador |
 | Poner a una persona en sedes y darle un rol en cada una (2.0.1, RF-SED-02, RF-SED-06); también las propias desde la 2.0.5, sin quedarse nunca sin sede | Si es superadministrador | Si es superadministrador | No | Si es superadministrador |
@@ -368,7 +369,7 @@ uno en la [cartera](13-cartera-de-incrementos.md).
 
 | ID | Requisito | Prioridad | Iteración |
 |----|-----------|:---:|:---:|
-| RF-FAC-01 | Cada sede puede tener facultades; una persona pertenece a una o varias facultades de su sede | B | 2.0 |
+| RF-FAC-01 | Cada sede puede tener facultades; una persona pertenece a una o varias facultades de su sede. Desde la 2.0.6, en tres niveles: un catálogo único de la UMG, las que ofrece cada sede (elegidas de él) y las de cada persona en cada sede (solo entre las que su sede ofrece) | B | 2.0 |
 | RF-FAC-02 | Un aviso puede dirigirse a toda una facultad | B | 2.0 |
 | RF-FAC-03 | Los grupos pueden pertenecer a una facultad, y se filtran por ella | B | 2.0 |
 | RF-FAC-04 | Con una sola facultad o ninguna, la aplicación no pregunta ni muestra la facultad | B | 2.0 |

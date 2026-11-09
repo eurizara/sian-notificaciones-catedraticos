@@ -303,6 +303,14 @@ service cloud.firestore {
       }
     }
 
+    // Catálogo único de facultades de la UMG (2.0.6). Solo nombres: lo lee
+    // cualquier cuenta activa (la coordinación elige de aquí las que ofrece su
+    // sede). Lo escribe solo `guardarFacultad`, del superadministrador.
+    match /facultades/{facultadId} {
+      allow read: if activo();
+      allow write: if false;
+    }
+
     // Demostración 2 (CI/CD): avisos fijos que la aplicación solo muestra.
     match /demostraciones/{id} {
       allow read: if activo();

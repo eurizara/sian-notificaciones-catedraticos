@@ -675,3 +675,22 @@ describe('2.0 · Sedes y facultades (ADR-009, RF-SED-05, RF-SED-06)', () => {
   });
 });
 
+describe('2.0.6 · Catálogo único de facultades', () => {
+  it('cualquier cuenta activa lo lee: la coordinación elige de él', async () => {
+    const db = contexto(UID.coordinador, 'COORDINADOR', true, { sedes: { bdm: 'COORDINADOR' } });
+    await assertSucceeds(getDocs(collection(db, 'facultades')));
+    await assertSucceeds(getDoc(doc(db, 'facultades', 'ing-sistemas')));
+    await assertSucceeds(getDoc(doc(contexto(UID.catedratico, 'CATEDRATICO'), 'facultades', 'ing-sistemas')));
+  });
+
+  it('un desactivado no lo lee', async () => {
+    await assertFails(getDocs(collection(contexto(UID.catedratico, 'CATEDRATICO', false), 'facultades')));
+  });
+
+  it('nadie lo escribe desde la aplicación, ni el superadministrador: solo la función', async () => {
+    const admin = contexto(UID.coordinador, 'COORDINADOR', true, { adminGeneral: true });
+    await assertFails(setDoc(doc(admin, 'facultades', 'medicina'), { nombre: 'Medicina', activa: true }));
+    await assertFails(setDoc(doc(admin, 'facultades', 'ing-sistemas'), { activa: false }));
+  });
+});
+
