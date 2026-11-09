@@ -153,7 +153,7 @@ El identificador del documento es el UID de Firebase Authentication.
 | `puedeCrearRecurrentes` | boolean | Sí | Autorización fina para el rol Administradora |
 | `zonaHoraria` | string | No | Heredada de la configuración institucional si está vacía |
 | `membresias` | map | No (2.0) | Sedes a las que pertenece: `{ bdm: { rol: 'CATEDRATICO', facultades: ['ing-sistemas'] } }`. **Ausente equivale a `{ bdm: { rol, facultades: [] } }`**: así los perfiles de antes de la 2.0 siguen igual hasta que la migración lo escribe. Las altas nuevas nacen con él. Máximo 15 sedes, para que el token no pase de 1000 bytes |
-| `adminGeneral` | boolean | No (2.0) | Administración general: crea sedes y asigna a sus coordinadores (RF-SED-06). Ausente = `false` |
+| `adminGeneral` | boolean | No (2.0) | **Superadministrador** (el nombre técnico del campo se conservó para no migrar perfiles ni tokens): crea sedes y pone a la gente en ellas (RF-SED-06). Solo lo designa otro superadministrador; el primero, con `scripts/migrar-sedes.py --admin-general`. Siempre queda al menos uno. Ausente = `false` |
 | `creadoEn` | timestamp | Sí | |
 | `actualizadoEn` | timestamp | Sí | |
 | `ultimoAcceso` | timestamp | No | |

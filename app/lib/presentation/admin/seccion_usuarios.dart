@@ -14,8 +14,8 @@ import '../../application/proveedores_catalogos.dart';
 import '../../application/proveedores_sede.dart';
 import '../../infrastructure/firebase/repositorio_catalogos.dart';
 import '../../application/proveedores_sesion.dart';
-import '../../domain/rol.dart';
 import '../../domain/sesion.dart';
+import 'personas_y_sedes.dart';
 
 final Provider<RepositorioAdministracion> repositorioAdminProvider =
     Provider<RepositorioAdministracion>(
@@ -176,8 +176,7 @@ class _Invitaciones extends ConsumerWidget {
     // 2.0.1: entra en la sede de trabajo, y con las facultades que se elijan.
     final Set<String> facultades = <String>{};
     final List<ElementoCatalogo> catalogo =
-        ref.read(facultadesActivasProvider).value ??
-        const <ElementoCatalogo>[];
+        ref.read(facultadesActivasProvider).value ?? const <ElementoCatalogo>[];
 
     final bool? enviar = await showDialog<bool>(
       context: context,
@@ -418,24 +417,72 @@ class _Invitaciones extends ConsumerWidget {
 // Usuarios ya dados de alta — RF-USR-02, RF-AUT-08
 // ---------------------------------------------------------------------------
 
-class _Usuarios extends ConsumerWidget {
+/// Toda la gente, de todas las sedes: solo la administración general la ve,
+/// para poner en una sede a quien hoy está en otra (2.0.4).
+final StreamProvider<List<UsuarioVista>> usuariosDeTodasLasSedesProvider =
+    StreamProvider<List<UsuarioVista>>(
+      (Ref ref) => ref.watch(repositorioAdminProvider).observarUsuarios(),
+    );
+
+class _Usuarios extends ConsumerStatefulWidget {
   const _Usuarios();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AsyncValue<List<UsuarioVista>> lista = ref.watch(usuariosProvider);
+  ConsumerState<_Usuarios> createState() => _UsuariosState();
+}
 
-    return lista.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (Object e, StackTrace _) => _Error(detalle: e.toString()),
-      data: (List<UsuarioVista> usuarios) => usuarios.isEmpty
-          ? const _Vacio(mensaje: Textos.sinUsuarios)
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: usuarios.length,
-              itemBuilder: (BuildContext c, int i) =>
-                  _FilaUsuario(usuario: usuarios[i]),
+class _UsuariosState extends ConsumerState<_Usuarios> {
+  /// Solo para la administración general: ver también a la gente de otras
+  /// sedes. Por omisión, la de la sede de trabajo.
+  bool _todas = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final Sesion sesion = ref.watch(sesionActualProvider);
+    final bool adminGeneral =
+        sesion is SesionActiva && sesion.usuario.adminGeneral;
+    final bool todas = adminGeneral && _todas;
+    final AsyncValue<List<UsuarioVista>> lista = ref.watch(
+      todas ? usuariosDeTodasLasSedesProvider : usuariosProvider,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        if (adminGeneral)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: SegmentedButton<bool>(
+              segments: const <ButtonSegment<bool>>[
+                ButtonSegment<bool>(
+                  value: false,
+                  label: Text(Textos.usuariosEstaSede),
+                ),
+                ButtonSegment<bool>(
+                  value: true,
+                  label: Text(Textos.usuariosTodasLasSedes),
+                ),
+              ],
+              selected: <bool>{_todas},
+              onSelectionChanged: (Set<bool> s) =>
+                  setState(() => _todas = s.first),
             ),
+          ),
+        Expanded(
+          child: lista.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (Object e, StackTrace _) => _Error(detalle: e.toString()),
+            data: (List<UsuarioVista> usuarios) => usuarios.isEmpty
+                ? const _Vacio(mensaje: Textos.sinUsuarios)
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: usuarios.length,
+                    itemBuilder: (BuildContext c, int i) =>
+                        _FilaUsuario(usuario: usuarios[i]),
+                  ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -454,18 +501,63 @@ class _FilaUsuario extends ConsumerWidget {
     final Sesion sesion = ref.watch(sesionActualProvider);
     final bool esUnoMismo =
         sesion is SesionActiva && sesion.usuario.uid == usuario.uid;
-    // Quien está usando la aplicación coordina en la sede de trabajo.
-    final bool yoCoordino =
-        sesion is SesionActiva &&
-        (sesion.usuario.sedes[sede] ?? sesion.usuario.rol) == Rol.coordinador;
     final bool soloCatedratico = usuario.sedesConRol.values.every(
       (String r) => r == 'CATEDRATICO',
     );
     // Mantener a qué facultades pertenece cada uno se puede en cuanto exista
     // una: cuando llegue la segunda, la gente ya estará bien repartida.
     final bool porFacultad =
-        (ref.watch(facultadesActivasProvider).value ?? const <ElementoCatalogo>[])
+        (ref.watch(facultadesActivasProvider).value ??
+                const <ElementoCatalogo>[])
             .isNotEmpty;
+    // 2.0.4: todo lo de una persona se maneja aquí. Sus sedes, solo la
+    // administración general; alguien de otra sede (visto con «Todas las
+    // sedes») solo muestra sus sedes: su rol y facultades de aquí no existen.
+    final bool adminGeneral =
+        sesion is SesionActiva && sesion.usuario.adminGeneral;
+    final bool deEstaSede = usuario.perteneceA(sede);
+    final List<ElementoCatalogo> sedes = adminGeneral
+        ? (ref.watch(sedesProvider).value ?? const <ElementoCatalogo>[])
+        : const <ElementoCatalogo>[];
+    final Map<String, String> nombresDeSede = <String, String>{
+      for (final ElementoCatalogo s in sedes) s.id: s.nombre,
+    };
+    final Widget filaSedes = ListTile(
+      title: const Text(Textos.usuarioSedes),
+      subtitle: Text(
+        <String>[
+          for (final MapEntry<String, String> e in usuario.sedesConRol.entries)
+            '${nombresDeSede[e.key] ?? e.key} · ${Textos.nombreDeRol(e.value)}',
+        ].join('\n'),
+      ),
+      trailing: Tooltip(
+        message: Textos.cambiarSedesDe(
+          usuario.nombre.isEmpty ? usuario.correo : usuario.nombre,
+        ),
+        child: TextButton(
+          onPressed: () => showDialog<void>(
+            context: context,
+            builder: (BuildContext _) => DialogoSedes(
+              persona: usuario,
+              sedes: sedes,
+              esUnoMismo: esUnoMismo,
+            ),
+          ),
+          child: const Text(Textos.usuarioCambiar),
+        ),
+      ),
+    );
+    if (!deEstaSede) {
+      return Card(
+        margin: const EdgeInsets.only(bottom: 8),
+        child: ExpansionTile(
+          leading: const Icon(Icons.person_outline),
+          title: Text(usuario.nombre.isEmpty ? usuario.correo : usuario.nombre),
+          subtitle: Text('${usuario.correo} · ${Textos.usuarioDeOtraSede}'),
+          children: <Widget>[filaSedes],
+        ),
+      );
+    }
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -519,6 +611,9 @@ class _FilaUsuario extends ConsumerWidget {
           // Solo tienen sentido para quien emite.
           // RF-FAC-01: a qué facultades de la sede pertenece.
           if (porFacultad) _FacultadesDeLaPersona(usuario: usuario, sede: sede),
+          // RF-SED-02: en qué sedes está, con qué rol en cada una. Solo el
+          // superadministrador: la coordinación no pone a nadie en otra sede.
+          if (adminGeneral) filaSedes,
           if (rol == 'ADMINISTRADORA') ...<Widget>[
             SwitchListTile(
               title: const Text(Textos.autorizacionUrgentes),
@@ -564,32 +659,30 @@ class _FilaUsuario extends ConsumerWidget {
             ),
           ),
 
-          // 2.0.3: la da solo quien coordina, a quien decida de su sede, salvo a
-          // un catedrático (no tiene panel), y nunca a sí mismo. El servidor lo
-          // vuelve a comprobar (`motivoParaNoCambiarAdminGeneral`).
-          SwitchListTile(
-            title: const Text(Textos.administracionGeneral),
-            subtitle: Text(
-              !yoCoordino
-                  ? Textos.adminGeneralSoloCoordinacion
-                  : esUnoMismo
-                  ? Textos.adminGeneralPropia
-                  : (usuario.adminGeneral || !soloCatedratico)
-                  ? Textos.administracionGeneralAyuda
-                  : Textos.adminGeneralSinPanel,
+          // 2.0.4: solo un superadministrador designa o retira a otro, nunca a
+          // sí mismo ni a un catedrático; el servidor tampoco deja retirar al
+          // último (`motivoParaNoCambiarSuperadministrador`).
+          if (adminGeneral)
+            SwitchListTile(
+              title: const Text(Textos.administracionGeneral),
+              subtitle: Text(
+                esUnoMismo
+                    ? Textos.adminGeneralPropia
+                    : (usuario.adminGeneral || !soloCatedratico)
+                    ? Textos.administracionGeneralAyuda
+                    : Textos.adminGeneralSinPanel,
+              ),
+              value: usuario.adminGeneral,
+              onChanged:
+                  esUnoMismo || (!usuario.adminGeneral && soloCatedratico)
+                  ? null
+                  : (bool v) => _ejecutar(
+                      context,
+                      () =>
+                          repo.cambiarAdminGeneral(uid: usuario.uid, valor: v),
+                      v ? Textos.adminGeneralDada : Textos.adminGeneralQuitada,
+                    ),
             ),
-            value: usuario.adminGeneral,
-            onChanged:
-                !yoCoordino ||
-                    esUnoMismo ||
-                    (!usuario.adminGeneral && soloCatedratico)
-                ? null
-                : (bool v) => _ejecutar(
-                    context,
-                    () => repo.cambiarAdminGeneral(uid: usuario.uid, valor: v),
-                    v ? Textos.adminGeneralDada : Textos.adminGeneralQuitada,
-                  ),
-          ),
 
           SwitchListTile(
             title: const Text(Textos.cuentaActiva),

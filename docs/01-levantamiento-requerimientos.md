@@ -86,9 +86,9 @@ y no distingue lo urgente de lo informativo.
 | Administrar grupos de destinatarios | Sí | Sí | No | No |
 | Mantener los catálogos de su sede: facultades (2.0, RF-CAT-05) | Sí | No | No | No |
 | Decidir a qué facultades de su sede pertenece cada persona (2.0, RF-FAC-01) | Sí | No | No | No |
-| Mantener las sedes (2.0, RF-SED-06): administración general, una bandera que la coordinación da a quien decida | Con la bandera | Con la bandera | No | Con la bandera |
-| Poner a una persona en sedes y darle un rol en cada una (2.0.1, RF-SED-02, RF-SED-06) | Con la bandera | Con la bandera | No | Con la bandera |
-| Dar o quitar la administración general (2.0.3): a quien decida de su sede, salvo a un catedrático; nunca a sí mismo | Sí, a gente de su sede | No | No | No |
+| Mantener las sedes (2.0, RF-SED-06): superadministrador | Si es superadministrador | Si es superadministrador | No | Si es superadministrador |
+| Poner a una persona en sedes y darle un rol en cada una (2.0.1, RF-SED-02, RF-SED-06) | Si es superadministrador | Si es superadministrador | No | Si es superadministrador |
+| Designar o retirar a un superadministrador (2.0.4): solo otro superadministrador; nunca a sí mismo, al último ni a un catedrático | Si es superadministrador | Si es superadministrador | No | Si es superadministrador |
 | Recibir notificaciones | Opcional | Opcional | Sí | No |
 | Confirmar lectura | Sí | Sí | Sí | No |
 | Ver historial propio de mensajes recibidos | Sí | Sí | Sí | No |
@@ -348,7 +348,7 @@ orden y la estrategia están en el [documento 12](12-plan-evolucion-1.6-2.x.md).
 | RF-SED-03 | «Enviar a todos» significa todos los destinatarios de la sede elegida | D | 2.0 |
 | RF-SED-04 | Quien pertenece a más de una sede elige en cuál trabaja; con una sola, no se le pregunta | D | 2.0 |
 | RF-SED-05 | Una persona no ve ni modifica nada de una sede a la que no pertenece | D | 2.0 |
-| RF-SED-06 | La administración general crea sedes y asigna a sus coordinadores | D | 2.0 |
+| RF-SED-06 | El superadministrador crea sedes y pone a la gente en ellas, con su rol en cada una | D | 2.0 |
 | RF-REP-01 | Coordinación y administración crean, renombran y borran carpetas, hasta dos niveles | D | 2.4 |
 | RF-REP-02 | Coordinación y administración suben archivos de tipos permitidos, de hasta 25 MB | D | 2.4 |
 | RF-REP-03 | Cada sede tiene un cupo de almacenamiento (2 GB por omisión) que no se puede superar | D | 2.4 |

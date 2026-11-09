@@ -369,7 +369,8 @@ decisiones; documento 14). **Ninguna está empezada.**
   - [x] 2.0-e2 (PR #236) · Envío y grupos por facultad; facultades de cada persona en Usuarios. RF-FAC-05 (reportes por facultad) queda para después de la 2.0-f
   - [x] 2.0.1 (PR #239) · Sedes y personas desde la aplicación: Personas y sedes, administración general, invitaciones con sede y facultades
   - [x] 2.0.2 (PR #240) · La administración general se da también desde Usuarios, por quien coordina
-  - [ ] 2.0.3 · Solo la da quien coordina, a quien decida (salvo catedrático), solo en Usuarios; Catálogos en bloques plegados
+  - [x] 2.0.3 (PR #241) · Catálogos en bloques plegados
+  - [ ] 2.0.4 · Superadministrador (reemplaza a la administración general); rol, facultades y sedes de cada persona en Usuarios; Catálogos solo con listas
   - [ ] Propuesta: al desactivar una sede con personas, avisar cuántas quedarían sin sede activa
   - [ ] 2.0-f · Las reglas exigen la sede, con pruebas cruzadas. **Espera decisión del responsable** sobre la bitácora vieja, las entregas y la lista de usuarios (ADR-009, «2.0-f: lo que falta decidir»)
 - **Pruebas:** reglas por sede contra el emulador, dominio («todos» por sede), migración

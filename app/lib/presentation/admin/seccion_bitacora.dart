@@ -54,7 +54,7 @@ const List<({String valor, String etiqueta})> _tiposFiltrables =
       (valor: 'CATALOGO_MODIFICADO', etiqueta: 'Cambios en catálogos'),
       (valor: 'USUARIO_FACULTADES_CAMBIADAS', etiqueta: 'Facultades de una persona'),
       (valor: 'USUARIO_SEDES_CAMBIADAS', etiqueta: 'Sedes de una persona'),
-      (valor: 'USUARIO_ADMIN_GENERAL_CAMBIADO', etiqueta: 'Administración general'),
+      (valor: 'USUARIO_ADMIN_GENERAL_CAMBIADO', etiqueta: 'Superadministrador'),
     ];
 
 class SeccionBitacora extends ConsumerStatefulWidget {

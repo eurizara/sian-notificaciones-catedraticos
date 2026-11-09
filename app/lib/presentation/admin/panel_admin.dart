@@ -158,10 +158,9 @@ final List<SeccionAdmin> _secciones = <SeccionAdmin>[
     // Solo el coordinador administra usuarios y roles.
     visiblePara: (Rol rol) => rol == Rol.coordinador,
   ),
-  // 2.0: las facultades las mantiene la coordinación de la sede; las sedes y
-  // las sedes de cada persona, la administración general, que la coordinación
-  // le da a quien decida (2.0.3). Por eso la sección depende de la persona y no
-  // solo del rol.
+  // 2.0: las facultades las mantiene la coordinación de la sede; las sedes, el
+  // superadministrador (campo `adminGeneral`), que puede no coordinar. Por eso
+  // la sección depende de la persona y no solo del rol.
   SeccionAdmin(
     icono: Icons.category_outlined,
     etiqueta: Textos.seccionCatalogos,

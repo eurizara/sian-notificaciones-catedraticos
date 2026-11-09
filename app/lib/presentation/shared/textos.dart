@@ -1486,12 +1486,12 @@ abstract final class Textos {
   static const String seccionCatalogosTitulo = 'Catálogos';
   static const String seccionCatalogosDescripcion =
       'Las listas de las que se elige en el resto de SIAN: las facultades de su '
-      'sede y, para la administración general, las sedes.';
+      'sede y, para el superadministrador, las sedes.';
   static const String catalogoFacultadesExplicacion =
       'Sirven para enviar un aviso a toda una facultad y para ordenar los grupos.';
   static const String catalogoSedesExplicacion =
-      'Cada sede tiene su propia gente, sus grupos y sus avisos. Solo la '
-      'administración general las mantiene.';
+      'Cada sede tiene su propia gente, sus grupos y sus avisos. Solo el '
+      'superadministrador las mantiene.';
   static String catalogoFacultadesDe(String sede) => 'Facultades de $sede';
   static const String catalogoSedes = 'Sedes';
   static String catalogoAgregar(String elemento) => 'Agregar $elemento';
@@ -1541,10 +1541,10 @@ abstract final class Textos {
   static const String personasYSedesExplicacion =
       'En qué sedes está cada persona y con qué rol en cada una. Lo de dentro '
       'de cada sede (facultades, grupos) lo mantiene su coordinación.';
-  static const String administracionGeneral = 'Administración general';
+  static const String administracionGeneral = 'Superadministrador';
   static const String administracionGeneralAyuda =
-      'Mantiene las sedes y reparte a la gente entre ellas. La da quien '
-      'coordina, a quien decida.';
+      'Crea las sedes y pone a la gente en ellas. Solo lo designa otro '
+      'superadministrador.';
   static const String botonSedes = 'Sedes';
   static String cambiarSedesDe(String nombre) => 'Cambiar las sedes de $nombre';
   static String sedesDe(String nombre) => 'Sedes de $nombre';
@@ -1553,23 +1553,21 @@ abstract final class Textos {
       'Tiene que quedar en al menos una sede. Si ya no debe usar SIAN, '
       'desactive su cuenta en Usuarios.';
   static const String sedesPropias =
-      'Sus propias sedes las cambia otra persona de la administración general.';
+      'Sus propias sedes las cambia otro superadministrador.';
   static const String sedesGuardadas =
       'Sedes actualizadas. La persona las verá la próxima vez que abra SIAN.';
   static const String sedesSoloAdministracionGeneral =
-      'Las sedes y la asignación de personas a sedes las mantiene la '
-      'administración general.';
+      'Las sedes, y en qué sede está cada persona, los mantiene el '
+      'superadministrador.';
   static const String invitarFacultades =
       'Facultades con que entra (opcional). Entra en la sede donde está trabajando.';
   static const String adminGeneralPropia =
-      'La suya la cambia otra persona que coordine.';
-  static const String adminGeneralSoloCoordinacion =
-      'Solo quien coordina puede darla o quitarla.';
+      'El suyo lo cambia otro superadministrador.';
   static const String adminGeneralSinPanel =
-      'Un catedrático no tiene panel de administración: no podría usarla.';
+      'Un catedrático no tiene panel de administración: no podría ejercerlo.';
   static const String adminGeneralDada =
-      'Administración general concedida. La persona la verá la próxima vez que abra SIAN.';
-  static const String adminGeneralQuitada = 'Administración general retirada.';
+      'Designado superadministrador. Lo verá la próxima vez que abra SIAN.';
+  static const String adminGeneralQuitada = 'Ya no es superadministrador.';
 
   // ── Bloques de Catálogos (2.0.3) ──────────────────────────────────────────
   /// «2 facultades activas · 1 inactiva», o «Cargando…».
@@ -1596,4 +1594,17 @@ abstract final class Textos {
   static String resumenPersonas(int? total) => total == null
       ? 'Cargando…'
       : '$total ${total == 1 ? 'persona' : 'personas'} en todas las sedes';
+
+  // ── Todo de una persona en Usuarios (2.0.4) ───────────────────────────────
+  static const String usuariosEstaSede = 'Esta sede';
+  static const String usuariosTodasLasSedes = 'Todas las sedes';
+  static const String usuarioSedes = 'Sedes';
+  static const String usuarioDeOtraSede = 'de otra sede';
+  static String nombreDeRol(String rol) => switch (rol) {
+    'COORDINADOR' => 'Coordinador',
+    'ADMINISTRADORA' => 'Administradora',
+    'AUDITOR' => 'Auditor',
+    'CATEDRATICO' => 'Catedrático',
+    _ => rol,
+  };
 }
