@@ -332,6 +332,17 @@ class RepositorioAdministracion {
         .call<Object?>(conSede(<String, Object?>{'uid': uid, 'rol': rol}));
   }
 
+  /// Da o quita la administración general (2.0.2). La coordinación de la
+  /// sede lo hace con gente de su sede; el servidor lo vuelve a comprobar.
+  Future<void> cambiarAdminGeneral({
+    required String uid,
+    required bool valor,
+  }) async {
+    await _fn
+        .httpsCallable('cambiarAdminGeneral')
+        .call<Object?>(conSede(<String, Object?>{'uid': uid, 'valor': valor}));
+  }
+
   Future<void> cambiarEstado({
     required String uid,
     required bool activo,

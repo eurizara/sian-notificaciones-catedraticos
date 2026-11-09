@@ -283,6 +283,14 @@ class RepositorioAdminFalso extends RepositorioAdministracion {
   final List<UsuarioVista> usuarios;
   final List<AsientoVista> asientos;
 
+  /// Cambios de administración general pedidos (2.0.2).
+  final List<({String uid, bool valor})> cambiosAdminGeneral =
+      <({String uid, bool valor})>[];
+
+  @override
+  Future<void> cambiarAdminGeneral({required String uid, required bool valor}) async =>
+      cambiosAdminGeneral.add((uid: uid, valor: valor));
+
   @override
   Stream<List<InvitacionVista>> observarInvitaciones() =>
       Stream<List<InvitacionVista>>.value(invitaciones);

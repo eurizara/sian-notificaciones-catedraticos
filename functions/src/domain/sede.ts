@@ -282,3 +282,37 @@ export function sinSede(
   return restantes;
 }
 
+/**
+ * ¿Puede esta persona dar o quitar la administración general a otra? (2.0.2)
+ *
+ * La da quien coordina: la coordinación de una sede, a gente de su sede, o la
+ * administración general, a gente de cualquier sede. Se da solo a quien
+ * coordina en alguna sede, y nadie se la cambia a sí mismo: así siempre queda
+ * otra persona que pueda corregirlo.
+ *
+ * Devuelve `null` si puede, o el motivo por el que no.
+ */
+export function motivoParaNoCambiarAdminGeneral(entrada: {
+  readonly actorUid: string;
+  readonly actorEsAdminGeneral: boolean;
+  /** El rol de quien pide en la sede donde actúa. */
+  readonly actorRolEnSede: Rol | null;
+  readonly sedeId: string;
+  readonly objetivo: { readonly uid: string; readonly rol: Rol; readonly membresias?: unknown };
+  readonly valor: boolean;
+}): string | null {
+  const { objetivo } = entrada;
+  if (objetivo.uid === entrada.actorUid) {
+    return 'No puede cambiar su propia administración general.';
+  }
+  const coordinaAqui = entrada.actorRolEnSede === 'COORDINADOR';
+  const esDeSuSede = membresiasDe(objetivo)[entrada.sedeId] !== undefined;
+  if (!entrada.actorEsAdminGeneral && !(coordinaAqui && esDeSuSede)) {
+    return 'Solo la coordinación de la sede de esa persona, o la administración general, puede cambiarla.';
+  }
+  if (entrada.valor && !Object.values(membresiasDe(objetivo)).some((m) => m.rol === 'COORDINADOR')) {
+    return 'La administración general se da a quien coordina en alguna sede.';
+  }
+  return null;
+}
+

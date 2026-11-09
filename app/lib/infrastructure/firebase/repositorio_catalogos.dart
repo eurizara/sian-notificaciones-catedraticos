@@ -8,6 +8,8 @@ library;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
+import '../../core/sede_de_trabajo.dart';
+
 /// Un elemento de cualquier catálogo. Todos se ven y se mantienen igual.
 class ElementoCatalogo {
   const ElementoCatalogo({
@@ -145,7 +147,7 @@ class RepositorioPersonasYSedes {
     required String uid,
     required bool valor,
   }) => _fn.httpsCallable('cambiarAdminGeneral').call<Object?>(
-    <String, Object?>{'uid': uid, 'valor': valor},
+    conSede(<String, Object?>{'uid': uid, 'valor': valor}),
   );
 }
 

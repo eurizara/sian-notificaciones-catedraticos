@@ -1561,4 +1561,11 @@ abstract final class Textos {
       'administración general.';
   static const String invitarFacultades =
       'Facultades con que entra (opcional). Entra en la sede donde está trabajando.';
+  static const String adminGeneralPropia =
+      'La suya la cambia otra persona que coordine.';
+  static const String adminGeneralSoloCoordinadores =
+      'Solo se da a quien coordina en alguna sede.';
+  static const String adminGeneralDada =
+      'Administración general concedida. La persona la verá la próxima vez que abra SIAN.';
+  static const String adminGeneralQuitada = 'Administración general retirada.';
 }
