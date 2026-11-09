@@ -1,9 +1,8 @@
-/// SIAN — Personas y sedes (2.0.1 · RF-SED-02, RF-SED-06).
+/// SIAN — Las sedes de una persona (2.0.1 · RF-SED-02, RF-SED-06).
 ///
-/// La administración general reparte a la gente entre sedes: en cuáles está
-/// cada persona y con qué rol en cada una, y a quién se le da la
-/// administración general. Lo de dentro de cada sede —sus facultades, sus
-/// grupos— lo sigue manteniendo la coordinación de esa sede.
+/// La administración general decide en qué sedes está cada persona y con qué
+/// rol en cada una. Desde la 2.0.4 se abre desde Usuarios, donde se maneja
+/// todo lo de una persona: rol, facultades, sedes y administración general.
 library;
 
 import 'package:cloud_functions/cloud_functions.dart';
@@ -13,15 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/proveedores_catalogos.dart';
 import '../../infrastructure/firebase/repositorio_administracion.dart';
 import '../../infrastructure/firebase/repositorio_catalogos.dart';
-import '../shared/buscador.dart';
 import '../shared/textos.dart';
-import 'seccion_usuarios.dart';
-
-/// Toda la gente, de todas las sedes: solo la administración general la ve.
-final StreamProvider<List<UsuarioVista>> usuariosDeTodasLasSedesProvider =
-    StreamProvider<List<UsuarioVista>>(
-      (Ref ref) => ref.watch(repositorioAdminProvider).observarUsuarios(),
-    );
 
 const Map<String, String> _roles = <String, String>{
   'CATEDRATICO': 'Catedrático',
@@ -29,121 +20,6 @@ const Map<String, String> _roles = <String, String>{
   'AUDITOR': 'Auditor',
   'COORDINADOR': 'Coordinador',
 };
-
-class PersonasYSedes extends ConsumerStatefulWidget {
-  const PersonasYSedes({
-    required this.miUid,
-    this.mostrarTitulo = true,
-    super.key,
-  });
-
-  /// Sin título cuando va dentro de un bloque desplegable, que ya lo lleva.
-  final bool mostrarTitulo;
-
-  /// Quien está usando la aplicación: sus propias sedes las cambia otra
-  /// persona de la administración general.
-  final String miUid;
-
-  @override
-  ConsumerState<PersonasYSedes> createState() => _PersonasYSedesState();
-}
-
-class _PersonasYSedesState extends ConsumerState<PersonasYSedes> {
-  final TextEditingController _busqueda = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _busqueda.addListener(() => setState(() {}));
-  }
-
-  @override
-  void dispose() {
-    _busqueda.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData tema = Theme.of(context);
-    final List<ElementoCatalogo> sedes =
-        ref.watch(sedesProvider).value ?? const <ElementoCatalogo>[];
-    final Map<String, String> nombres = <String, String>{
-      for (final ElementoCatalogo s in sedes) s.id: s.nombre,
-    };
-    final AsyncValue<List<UsuarioVista>> personas = ref.watch(
-      usuariosDeTodasLasSedesProvider,
-    );
-    final List<UsuarioVista> todas = personas.value ?? const <UsuarioVista>[];
-    final List<UsuarioVista> vistas = todas
-        .where(
-          (UsuarioVista u) =>
-              coincide(_busqueda.text, <String>[u.nombre, u.correo]),
-        )
-        .toList();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        if (widget.mostrarTitulo) ...<Widget>[
-          Semantics(
-            header: true,
-            child: Text(
-              Textos.personasYSedes,
-              style: tema.textTheme.titleMedium,
-            ),
-          ),
-          const SizedBox(height: 4),
-        ],
-        Text(Textos.personasYSedesExplicacion, style: tema.textTheme.bodySmall),
-        const SizedBox(height: 8),
-        Buscador(
-          controlador: _busqueda,
-          etiqueta: Textos.buscarPersona,
-          resultados: _busqueda.text.trim().isEmpty ? null : vistas.length,
-        ),
-        if (personas.isLoading && todas.isEmpty)
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Center(child: CircularProgressIndicator()),
-          ),
-        for (final UsuarioVista u in vistas)
-          Card(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: ListTile(
-              title: Text(u.nombre.isEmpty ? u.correo : u.nombre),
-              subtitle: Text(
-                <String>[
-                  u.correo,
-                  for (final MapEntry<String, String> e
-                      in u.sedesConRol.entries)
-                    '${nombres[e.key] ?? e.key} · ${_roles[e.value] ?? e.value}',
-                  if (u.adminGeneral) Textos.administracionGeneral,
-                ].join('\n'),
-              ),
-              isThreeLine: true,
-              trailing: Tooltip(
-                message: Textos.cambiarSedesDe(
-                  u.nombre.isEmpty ? u.correo : u.nombre,
-                ),
-                child: TextButton(
-                  onPressed: () => showDialog<void>(
-                    context: context,
-                    builder: (BuildContext _) => DialogoSedes(
-                      persona: u,
-                      sedes: sedes,
-                      esUnoMismo: u.uid == widget.miUid,
-                    ),
-                  ),
-                  child: const Text(Textos.botonSedes),
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-}
 
 /// En qué sedes está una persona y con qué rol. Se guarda todo junto: primero
 /// altas y cambios, después bajas. La administración general se da en

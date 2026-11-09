@@ -25,7 +25,7 @@ import {
   esIdDeSede,
   membresiasDe,
   sedePrincipal,
-  motivoParaNoCambiarAdminGeneral,
+  motivoParaNoCambiarSuperadministrador,
   sinSede,
   type Membresias,
 } from '../domain/sede';
@@ -62,9 +62,9 @@ function leer(instantanea: QuerySnapshot): ElementoCatalogo[] {
  * para trabajar en ella. Reactivarla la devuelve tal como estaba.
  */
 /**
- * Quien pide tiene la administración general (RF-SED-06), activa. Se la da la
- * coordinación a quien decida (2.0.3); con ella mantiene las sedes y reparte a
- * la gente entre ellas.
+ * Quien pide es superadministrador (RF-SED-06; campo técnico `adminGeneral`):
+ * mantiene las sedes y pone a la gente en ellas. Solo otro superadministrador
+ * lo designa (2.0.4).
  */
 function exigirAdminGeneral(peticion: CallableRequest): { uid: string; correo: string; rol: Rol } {
   if (!peticion.auth) {
@@ -73,7 +73,7 @@ function exigirAdminGeneral(peticion: CallableRequest): { uid: string; correo: s
   const token = peticion.auth.token;
   const rol: Rol = (ROLES as readonly string[]).includes(token.rol as string) ? (token.rol as Rol) : 'CATEDRATICO';
   if (token.activo !== true || token.adminGeneral !== true) {
-    throw new HttpsError('permission-denied', 'Solo la administración general puede hacer esto.');
+    throw new HttpsError('permission-denied', 'Solo un superadministrador puede hacer esto.');
   }
   return { uid: peticion.auth.uid, correo: (token.email as string | undefined) ?? '', rol };
 }
@@ -292,29 +292,37 @@ export const quitarSede = onCall(OPCIONES_LLAMABLE, async (peticion) => {
  * Da o quita la administración general (RF-SED-06). Solo a quien coordina en
  * alguna sede, y nunca a uno mismo: así siempre queda alguien que la tenga.
  */
+/**
+ * Designa o retira a un superadministrador (2.0.4). Solo otro
+ * superadministrador; nunca a sí mismo ni al último.
+ */
 export const cambiarAdminGeneral = onCall(OPCIONES_LLAMABLE, async (peticion) => {
   if (!peticion.auth) {
     throw new HttpsError('unauthenticated', 'Hay que iniciar sesión.');
   }
   const token = peticion.auth.token;
-  const datos = (peticion.data ?? {}) as { uid?: unknown; valor?: unknown; sedeId?: unknown };
+  const datos = (peticion.data ?? {}) as { uid?: unknown; valor?: unknown };
   try {
     if (token.activo !== true) {
       throw new HttpsError('permission-denied', 'Su cuenta no está activa.');
     }
-    // 2.0.3: la da solo quien coordina, a gente de su sede (desde Usuarios).
-    const { sedeId, rol: rolEnSede } = sedeDeLaPeticion(token, datos.sedeId);
-    const actor = { uid: peticion.auth.uid, correo: (token.email as string | undefined) ?? '', rol: rolEnSede };
+    const rolGlobal: Rol = (ROLES as readonly string[]).includes(token.rol as string)
+      ? (token.rol as Rol)
+      : 'CATEDRATICO';
+    const actor = { uid: peticion.auth.uid, correo: (token.email as string | undefined) ?? '', rol: rolGlobal };
     const perfil = await perfilOError(datos.uid);
     if (typeof datos.valor !== 'boolean') {
-      throw new HttpsError('invalid-argument', 'Falta si se da o se quita.');
+      throw new HttpsError('invalid-argument', 'Falta si se designa o se retira.');
     }
-    const motivo = motivoParaNoCambiarAdminGeneral({
+    const superadministradores = (
+      await db.collection(RUTAS.usuarios).where('adminGeneral', '==', true).count().get()
+    ).data().count;
+    const motivo = motivoParaNoCambiarSuperadministrador({
       actorUid: actor.uid,
-      actorRolEnSede: rolEnSede,
-      sedeId,
+      actorEsSuperadministrador: token.adminGeneral === true,
       objetivo: perfil,
       valor: datos.valor,
+      superadministradores,
     });
     if (motivo !== null) {
       throw new HttpsError('permission-denied', motivo);
@@ -328,7 +336,7 @@ export const cambiarAdminGeneral = onCall(OPCIONES_LLAMABLE, async (peticion) =>
         actor,
         entidad: 'USUARIO',
         entidadId: perfil.uid,
-        resumen: `${datos.valor ? 'Se da' : 'Se quita'} la administración general a ${perfil.correo}`,
+        resumen: `${datos.valor ? 'Se designa' : 'Se retira'} como superadministrador a ${perfil.correo}`,
         datos: { valor: datos.valor },
       }),
     );

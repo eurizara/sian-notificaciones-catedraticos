@@ -1,9 +1,9 @@
 /// SIAN — Sección «Catálogos» del panel (2.0 · RF-CAT-01, RF-SED-06, RF-FAC-01).
 ///
-/// La coordinación mantiene las facultades de su sede; quien tiene la
-/// administración general —que le da la coordinación a quien decida—, además,
-/// las sedes y en qué sedes está cada persona. Cada bloque va contraído, con lo
-/// que contiene dicho en su encabezado: se abre el que se va a usar (2.0.3).
+/// Solo las listas (2.0.4): la coordinación mantiene las facultades de su
+/// sede; quien tiene la administración general, además, las sedes. A qué sede
+/// y facultad pertenece cada persona se decide en Usuarios. Cada bloque va
+/// contraído, con lo que contiene dicho en su encabezado (2.0.3).
 library;
 
 import 'package:flutter/material.dart';
@@ -16,7 +16,6 @@ import '../../domain/rol.dart';
 import '../../domain/sesion.dart';
 import '../shared/mantenimiento_catalogo.dart';
 import '../shared/textos.dart';
-import 'personas_y_sedes.dart';
 
 class SeccionCatalogos extends ConsumerWidget {
   const SeccionCatalogos({super.key});
@@ -71,15 +70,6 @@ class SeccionCatalogos extends ConsumerWidget {
               explicacion: Textos.catalogoSedesExplicacion,
               mostrarTitulo: false,
             ),
-          ),
-          BloqueDesplegable(
-            id: 'personas-y-sedes',
-            icono: Icons.manage_accounts_outlined,
-            titulo: Textos.personasYSedes,
-            resumen: Textos.resumenPersonas(
-              ref.watch(usuariosDeTodasLasSedesProvider).value?.length,
-            ),
-            child: PersonasYSedes(miUid: usuario.uid, mostrarTitulo: false),
           ),
         ] else
           // Que no parezca que falta algo: se dice quién lo mantiene.

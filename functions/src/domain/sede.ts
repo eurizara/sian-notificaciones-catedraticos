@@ -283,35 +283,47 @@ export function sinSede(
 }
 
 /**
- * ¿Puede esta persona dar o quitar la administración general a otra? (2.0.3)
+ * ¿Puede esta persona designar o retirar a un superadministrador? (2.0.4)
  *
- * La da **solo quien coordina**, a gente de su sede, y **a quien decida**: no
- * hace falta que también coordine. La única condición sobre quien la recibe es
- * que use el panel —coordinación, administración académica o auditoría—: un
- * catedrático no tiene panel y no podría usarla. Nadie se la cambia a sí mismo.
+ * El superadministrador (campo técnico `adminGeneral`) decide entre sedes:
+ * crea sedes y pone a la gente en ellas. Por eso **solo otro superadministrador
+ * lo designa**: si pudiera darlo la coordinación de una sede, cualquiera podría
+ * terminar metiendo gente en una sede que no le corresponde.
+ *
+ *   · Nadie se lo cambia a sí mismo.
+ *   · Siempre queda al menos uno: no se retira al último.
+ *   · Solo a quien usa el panel: un catedrático no tiene dónde ejercerlo.
+ *
+ * El primero se designa fuera de la aplicación (`scripts/migrar-sedes.py
+ * --admin-general`), para que nadie pueda dárselo desde dentro.
  *
  * Devuelve `null` si puede, o el motivo por el que no.
  */
-export function motivoParaNoCambiarAdminGeneral(entrada: {
+export function motivoParaNoCambiarSuperadministrador(entrada: {
   readonly actorUid: string;
-  /** El rol de quien pide en la sede donde actúa. */
-  readonly actorRolEnSede: Rol | null;
-  readonly sedeId: string;
-  readonly objetivo: { readonly uid: string; readonly rol: Rol; readonly membresias?: unknown };
+  readonly actorEsSuperadministrador: boolean;
+  readonly objetivo: {
+    readonly uid: string;
+    readonly rol: Rol;
+    readonly membresias?: unknown;
+    readonly adminGeneral?: boolean;
+  };
   readonly valor: boolean;
+  /** Cuántos superadministradores hay ahora, contando al objetivo si lo es. */
+  readonly superadministradores: number;
 }): string | null {
   const { objetivo } = entrada;
+  if (!entrada.actorEsSuperadministrador) {
+    return 'Solo un superadministrador puede designar o retirar a otro.';
+  }
   if (objetivo.uid === entrada.actorUid) {
-    return 'No puede cambiar su propia administración general.';
-  }
-  if (entrada.actorRolEnSede !== 'COORDINADOR') {
-    return 'Solo quien coordina puede dar o quitar la administración general.';
-  }
-  if (membresiasDe(objetivo)[entrada.sedeId] === undefined) {
-    return 'Esa persona no es de su sede.';
+    return 'No puede cambiar su propio rol de superadministrador.';
   }
   if (entrada.valor && !Object.values(membresiasDe(objetivo)).some((m) => m.rol !== 'CATEDRATICO')) {
-    return 'Un catedrático no tiene panel de administración: no podría usarla.';
+    return 'Un catedrático no tiene panel de administración: no podría ejercerlo.';
+  }
+  if (!entrada.valor && objetivo.adminGeneral === true && entrada.superadministradores <= 1) {
+    return 'Es el único superadministrador: designe a otro antes de retirarlo.';
   }
   return null;
 }
