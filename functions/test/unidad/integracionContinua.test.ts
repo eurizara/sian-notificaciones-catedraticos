@@ -31,6 +31,12 @@ describe('integración continua', () => {
     expect(bloqueDe('functions')).toMatch(/python3 -m unittest discover -s scripts -p 'test_\*\.py'/);
   });
 
+  it('un PR que cambia la aplicación tiene que subir su versión (07/11/2026)', () => {
+    const flutter = bloqueDe('flutter');
+    expect(flutter).toMatch(/fetch-depth: 0/);
+    expect(flutter).toMatch(/if: github\.event_name == 'pull_request'\n\s+run: python3 scripts\/verificar-version\.py "origin\/\$\{\{ github\.base_ref \}\}"/);
+  });
+
   it('todos corren en Linux (ubuntu-latest)', () => {
     const maquinas = [...ci.matchAll(/runs-on: (\S+)/g)].map((m) => m[1]);
     expect(maquinas).toHaveLength(5);

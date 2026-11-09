@@ -549,7 +549,7 @@ están protegidas: no se fusiona nada si alguno falla.
 | Dominio y Cloud Functions | Analizador estático, compilación de TypeScript, pruebas con cobertura, `npm audit` de lo que se despliega y, desde la 2.0, las pruebas de los guiones de operación (`scripts/test_*.py`) |
 | Reglas de seguridad (RNF-08) | Las pruebas de `firestore.rules` contra el emulador |
 | Búsqueda de secretos (RNF-10, RES-10) | Que no haya claves ni contraseñas en el repositorio |
-| Aplicación Flutter | `flutter analyze` sin una sola advertencia y `flutter test` |
+| Aplicación Flutter | En un pull request, **la versión sube si cambia la aplicación** (`scripts/verificar-version.py`, desde el 08/11/2026); `flutter analyze` sin una sola advertencia y `flutter test` |
 
 Los cuatro corren **en paralelo**, cada uno en su propia máquina Linux (`ubuntu-latest`). Un
 quinto trabajo, **Resumen de la integración**, los espera con `needs: [functions, reglas,

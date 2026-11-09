@@ -147,6 +147,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Toda la historia: el control de versión compara con la rama base.
+          fetch-depth: 0
+
+      # Un pull request que cambia la aplicación tiene que subir su versión.
+      # El 07/11/2026 la 2.0 llegó a desarrollo con el número 1.6.20: código
+      # nuevo, sin «Actualizar» y sin forma de saber qué se tenía delante.
+      # Va aquí, en la CI, y no en el despliegue: frena ANTES de fusionar.
+      - name: La versión sube si cambia la aplicación
+        if: github.event_name == 'pull_request'
+        run: python3 scripts/verificar-version.py "origin/${{ github.base_ref }}"
 
       # `app/` se genera con `flutter create` en la iteración 1.2. Hasta
       # entonces este trabajo pasa sin hacer nada, en lugar de fallar por un
