@@ -68,9 +68,19 @@ class MensajeRecibido {
     this.confirmadoEn,
     this.adjuntos = const <AdjuntoRecibido>[],
     this.respuestasSinLeer = 0,
+    this.sedeId = 'bdm',
+    this.facultadesDestino = const <String>[],
   });
 
   final String mensajeId;
+
+  /// La sede del aviso (2.0.8). Sin el campo, de antes de la 2.0: la inicial.
+  /// Quien está en varias sedes ve en su bandeja los de la sede de trabajo.
+  final String sedeId;
+
+  /// Si se envió a una o varias facultades, cuáles (2.0.8): se dice en la
+  /// fila, para que quien tiene dos facultades sepa por cuál le llegó.
+  final List<String> facultadesDestino;
   final String titulo;
   final String cuerpo;
 
@@ -155,6 +165,8 @@ class MensajeRecibido {
     confirmadoEn: confirmadoEn,
     adjuntos: adjuntos,
     respuestasSinLeer: n,
+    sedeId: sedeId,
+    facultadesDestino: facultadesDestino,
   );
 
   bool get llevaVoz => adjuntos.any((AdjuntoRecibido a) => a.esVoz);

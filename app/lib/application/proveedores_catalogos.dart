@@ -111,3 +111,31 @@ final facultadesDeLaSedeProvider =
         return Stream<List<ElementoCatalogo>>.value(const <ElementoCatalogo>[]);
       }
     });
+
+/// Mis facultades en una sede (2.0.8), de mi propio perfil (las reglas dejan
+/// leerlo a su dueño). Para decirle al catedrático dónde está. Si no se puede
+/// leer, vacío: no se inventa nada.
+final misFacultadesProvider =
+    StreamProvider.family<List<String>, ({String uid, String sede})>((
+      Ref ref,
+      ({String uid, String sede}) clave,
+    ) {
+      try {
+        return FirebaseFirestore.instance
+            .doc('usuarios/${clave.uid}')
+            .snapshots()
+            .map((DocumentSnapshot<Map<String, dynamic>> d) {
+              final Object? membresias = d.data()?['membresias'];
+              final Object? m = membresias is Map
+                  ? membresias[clave.sede]
+                  : null;
+              final Object? f = m is Map ? m['facultades'] : null;
+              return f is List
+                  ? f.map((Object? x) => '$x').toList()
+                  : const <String>[];
+            })
+            .handleError((Object _) {});
+      } on Object {
+        return Stream<List<String>>.value(const <String>[]);
+      }
+    });

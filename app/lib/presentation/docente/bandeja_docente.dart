@@ -12,7 +12,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../application/proveedores_catalogos.dart';
 import '../../application/proveedores_programacion.dart';
+import '../../application/proveedores_sede.dart';
+import '../../infrastructure/firebase/repositorio_catalogos.dart';
 import '../../core/entorno.dart';
 import '../../domain/repositorios.dart';
 import '../../domain/sesion.dart';
@@ -32,6 +35,7 @@ import 'instructivo_ios.dart';
 import 'realce_mensaje.dart';
 import 'respuesta_al_aviso.dart';
 import 'reproductor_adjuntos.dart';
+import 'sede_en_bandeja.dart';
 import 'tarjeta_notificaciones.dart';
 import '../shared/apertura.dart';
 import '../shared/tema.dart';
@@ -200,10 +204,19 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
   /// la respuesta. Se retiene, se pone primero, se despliega y se sube a él.
   void _atenderApertura(DestinoApertura destino, List<MensajeRecibido> todos) {
     ref.read(aperturaPendienteProvider.notifier).consumir();
-    if (!todos.any((MensajeRecibido m) => m.mensajeId == destino.avisoId)) {
+    final MensajeRecibido? aviso = todos
+        .where((MensajeRecibido m) => m.mensajeId == destino.avisoId)
+        .firstOrNull;
+    if (aviso == null) {
       // Fuera de lo cargado (muy antiguo, o ya no le corresponde): se queda en
       // la bandeja, que es lo que había.
       return;
+    }
+    // 2.0.8: un aviso de otra de sus sedes lo lleva a esa sede; si no, la
+    // notificación abriría una bandeja donde el aviso no está.
+    if (widget.usuario.sedes.containsKey(aviso.sedeId) &&
+        aviso.sedeId != ref.read(sedeDeTrabajoProvider)) {
+      ref.read(sedeDeTrabajoProvider.notifier).elegir(aviso.sedeId);
     }
     // Una búsqueda escrita podría esconderlo. Limpiarla suelta los retenidos,
     // así que va antes de retenerlo.
@@ -239,6 +252,10 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
     final AsyncValue<List<MensajeRecibido>> historial = ref.watch(
       historialProvider(usuario.uid),
     );
+    // 2.0.8: quien está en varias sedes ve los avisos de la de trabajo. La
+    // insignia del icono sigue contando todos: lo de otra sede no se olvida.
+    final String sede = ref.watch(sedeDeTrabajoProvider);
+    final bool variasSedes = usuario.sedes.length > 1;
 
     // La insignia del icono se pone al día con lo que la bandeja tiene ahora
     // mismo, no con lo que cambió. Antes esto escuchaba los cambios del
@@ -283,7 +300,12 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
             child: historial.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (Object e, StackTrace _) => _Error(detalle: e.toString()),
-              data: (List<MensajeRecibido> todos) {
+              data: (List<MensajeRecibido> deTodasLasSedes) {
+                final List<MensajeRecibido> todos = variasSedes
+                    ? deTodasLasSedes
+                          .where((MensajeRecibido m) => m.sedeId == sede)
+                          .toList()
+                    : deTodasLasSedes;
                 // Un aviso abierto desde una notificación. La bandeja atiende
                 // avisos; una conversación la atiende el panel, salvo que esta
                 // bandeja sea la aplicación entera (el catedrático).
@@ -296,7 +318,7 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if (mounted &&
                         ref.read(aperturaPendienteProvider) == pendiente) {
-                      _atenderApertura(pendiente, todos);
+                      _atenderApertura(pendiente, deTodasLasSedes);
                     }
                   });
                 }
@@ -353,6 +375,12 @@ class _BandejaDocenteState extends ConsumerState<BandejaDocente> {
                           // Lo primero: si hay versión nueva, lo demás que se
                           // vea puede estar desactualizado.
                           const AvisoDeVersionNueva(),
+                          // Dónde está, y lo que tiene en sus otras sedes.
+                          SedeEnBandeja(
+                            usuario: usuario,
+                            sede: sede,
+                            todos: deTodasLasSedes,
+                          ),
                           const TarjetaNotificaciones(),
                           // En Android, con todo concedido, los avisos se
                           // retenían si la app no podía trabajar en segundo
@@ -879,15 +907,21 @@ class _FilaState extends ConsumerState<_Fila> {
                                     : tema.colorScheme.onSurfaceVariant,
                               ),
                               const SizedBox(width: 6),
-                              Text(
-                                _etiquetaDeEstado(mensaje.estado),
-                                style: tema.textTheme.bodySmall?.copyWith(
-                                  color: mensaje.estaConfirmado
-                                      ? PaletaSian.de(context).confirmado
-                                      : tema.colorScheme.onSurfaceVariant,
+                              // Flexible: en un teléfono estrecho (o con letra
+                              // grande) el estado y la fecha no caben juntos y
+                              // la fila se desbordaba (2.0.8, WCAG 1.4.10).
+                              Expanded(
+                                child: Text(
+                                  _etiquetaDeEstado(mensaje.estado),
+                                  overflow: TextOverflow.ellipsis,
+                                  style: tema.textTheme.bodySmall?.copyWith(
+                                    color: mensaje.estaConfirmado
+                                        ? PaletaSian.de(context).confirmado
+                                        : tema.colorScheme.onSurfaceVariant,
+                                  ),
                                 ),
                               ),
-                              const Spacer(),
+                              const SizedBox(width: 8),
                               if (mensaje.entregadoEn != null)
                                 Text(
                                   formato.format(mensaje.entregadoEn!),
@@ -909,6 +943,28 @@ class _FilaState extends ConsumerState<_Fila> {
                             const SizedBox(height: 4),
                             Text(
                               Textos.enviadoPor(mensaje.emisor),
+                              style: tema.textTheme.bodySmall?.copyWith(
+                                color: tema.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                          // 2.0.8: por qué facultad le llegó.
+                          if (mensaje.facultadesDestino.isNotEmpty) ...<Widget>[
+                            const SizedBox(height: 2),
+                            Text(
+                              Textos.paraFacultades(
+                                _nombresDeFacultades(
+                                  mensaje.facultadesDestino,
+                                  ref
+                                          .watch(
+                                            facultadesDeLaSedeProvider(
+                                              mensaje.sedeId,
+                                            ),
+                                          )
+                                          .value ??
+                                      const <ElementoCatalogo>[],
+                                ),
+                              ),
                               style: tema.textTheme.bodySmall?.copyWith(
                                 color: tema.colorScheme.onSurfaceVariant,
                               ),
@@ -1242,3 +1298,16 @@ class _NadaEnEsteFiltro extends StatelessWidget {
     );
   }
 }
+
+/// Los nombres de unas facultades; la que no se encuentra, por su identificador.
+List<String> _nombresDeFacultades(
+  List<String> ids,
+  List<ElementoCatalogo> catalogo,
+) => <String>[
+  for (final String id in ids)
+    catalogo
+            .where((ElementoCatalogo f) => f.id == id)
+            .map((ElementoCatalogo f) => f.nombre)
+            .firstOrNull ??
+        id,
+];

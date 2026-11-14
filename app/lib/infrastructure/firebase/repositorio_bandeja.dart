@@ -12,6 +12,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../core/plataforma/consola.dart';
+import '../../core/sede_de_trabajo.dart';
 import '../../core/version.dart';
 import '../../domain/repositorios.dart';
 
@@ -231,12 +232,24 @@ class RepositorioBandejaFirebase implements RepositorioBandeja {
           abiertoEn: (datos['abiertoEn'] as Timestamp?)?.toDate(),
           confirmadoEn: (datos['confirmadoEn'] as Timestamp?)?.toDate(),
           adjuntos: adjuntos,
+          sedeId: sedeDelDocumento(mensaje),
+          facultadesDestino: _facultadesDestino(mensaje),
         ),
       );
     }
 
     return recibidos;
   }
+}
+
+/// Las facultades a las que se envió, si el aviso fue por facultad (2.0.8).
+List<String> _facultadesDestino(Map<String, dynamic> mensaje) {
+  final Map<Object?, Object?>? d = _comoMapa(mensaje['destinatarios']);
+  if (d == null || d['modo'] != 'FACULTAD') {
+    return const <String>[];
+  }
+  final Object? ids = d['facultadesIds'];
+  return ids is List ? ids.map((Object? f) => '$f').toList() : const <String>[];
 }
 
 /// Lee un mapa anidado sin presuponer el tipo de sus claves.

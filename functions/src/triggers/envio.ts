@@ -390,6 +390,7 @@ export const enviarInmediato = onCall(OPCIONES_LLAMABLE, async (peticion) => {
       OCURRENCIA_INMEDIATA,
       mensaje,
       resolucion.uids,
+      sujeto.sedeId,
     );
 
     await escribirAsiento(
@@ -435,6 +436,7 @@ async function escribirEntregasPendientes(
   refOcurrencia: DocumentReference,
   mensajeId: string,
   uids: readonly string[],
+  sedeId: string,
 ): Promise<Map<string, string>> {
   // El identificador que viajará en el push y volverá con el acuse (DT-31).
   const acuses = new Map<string, string>(
@@ -450,6 +452,9 @@ async function escribirEntregasPendientes(
         // catedrático es exactamente esa consulta (documento 05, 2.7).
         uid,
         mensajeId,
+        // La sede del aviso (2.0.8): la bandeja de quien está en varias sedes
+        // muestra la de trabajo, y las reglas podrán exigirla (2.0-f).
+        sedeId,
         estado: 'PENDIENTE',
         intentos: 0,
         creadaEn: FieldValue.serverTimestamp(),
@@ -979,6 +984,7 @@ export async function despacharMensaje(
     ocurrenciaId,
     mensaje,
     resolucion.uids,
+    sedeId,
   );
 
   return { total: resolucion.uids.length, entregados, fallidos };
@@ -995,6 +1001,7 @@ async function ejecutarDespacho(
     formato: readonly string[];
   },
   uids: readonly string[],
+  sedeId: string,
 ): Promise<{ entregados: number; fallidos: number; estadoFinal: string }> {
   const refOcurrencia = refMensaje.collection('ocurrencias').doc(ocurrenciaId);
 
@@ -1004,7 +1011,7 @@ async function ejecutarDespacho(
     totalDestinatarios: uids.length,
   });
 
-  const acuses = await escribirEntregasPendientes(refOcurrencia, refMensaje.id, uids);
+  const acuses = await escribirEntregasPendientes(refOcurrencia, refMensaje.id, uids, sedeId);
 
   const { entregados, fallidos } = await despachar(
     refOcurrencia,

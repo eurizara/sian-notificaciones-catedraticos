@@ -1596,6 +1596,29 @@ abstract final class Textos {
       ? 'Cargando…'
       : '$total ${total == 1 ? 'persona' : 'personas'} en todas las sedes';
 
+  // ── El catedrático en varias sedes (2.0.8) ───────────────────────────────
+  static String estaEnSede(String sede) => 'Está en la sede $sede';
+  static String susFacultades(List<String> facultades) => facultades.length == 1
+      ? 'Facultad: ${facultades.single}'
+      : 'Facultades: ${facultades.join(', ')}';
+  static const String cambiarDeSede = 'Cambiar de sede';
+  static String pendienteEnOtraSede(
+    String sede, {
+    required int sinLeer,
+    required int urgentes,
+  }) {
+    final String leer = sinLeer == 1 ? '1 sin leer' : '$sinLeer sin leer';
+    final String urg = urgentes == 0
+        ? ''
+        : urgentes == 1
+        ? ', 1 urgente sin confirmar'
+        : ', $urgentes urgentes sin confirmar';
+    return 'En $sede: $leer$urg. Ver';
+  }
+
+  static String paraFacultades(List<String> facultades) =>
+      'Para: ${facultades.join(', ')}';
+
   // ── Grupos coherentes con la sede y la facultad (2.0.7) ──────────────────
   static String grupoMiembrosFuera(int n, {required bool conFacultad}) {
     final String donde = conFacultad
