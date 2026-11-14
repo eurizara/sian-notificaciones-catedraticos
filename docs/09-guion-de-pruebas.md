@@ -908,3 +908,6 @@ Con una cuenta de superadministrador y otra de coordinación en una sola sede.
 | F-8 (2.0.7) | En Boca del Monte, abrir Grupos → Nuevo; cambiar arriba a Villa Nueva y volver a Grupos → Nuevo | En Villa Nueva aparecen las personas de Villa Nueva (María), no las de Boca del Monte |
 | F-9 (2.0.7) | En una sede con dos facultades, Grupo nuevo → Facultad: Psicología | Solo aparecen quienes tienen Psicología en esa sede |
 | F-10 (2.0.7) | Quitarle la facultad a un miembro de ese grupo y abrir el grupo | Aviso «Un miembro ya no es de esta sede con la facultad del grupo» y botón Quitarlos; al redactar a ese grupo, el conteo dice «1 que ya no tienen la facultad del grupo» |
+| F-11 (2.0.8) | Con una cuenta de catedrático en Boca del Monte y Villa Nueva, en el teléfono, abrir la bandeja | Arriba: «Está en la sede …» y sus facultades; solo los avisos de esa sede |
+| F-12 (2.0.8) | Enviar un aviso urgente desde Villa Nueva a esa persona mientras está en Boca del Monte | Debajo de la sede: «En Villa Nueva: 1 sin leer, 1 urgente sin confirmar»; al tocarlo pasa a Villa Nueva |
+| F-13 (2.0.8) | Tocar la notificación de un aviso de la otra sede | La aplicación cambia a esa sede y abre el aviso |

@@ -93,6 +93,7 @@ por sí misma que solo trae lo permitido. Eso choca con tres cosas:
    asiento de la propia migración.
 2. **Las entregas no llevan sede**, y el historial y los reportes las leen con consultas de
    grupo de colecciones. Hay que escribir `sedeId` en cada entrega nueva y migrar las viejas.
+   **Desde la 2.0.8 las entregas nuevas ya lo llevan**; falta decidir y migrar las viejas.
 3. **La lista de usuarios:** las reglas no pueden recorrer las membresías de una persona.
    Hace falta un campo `sedesIds` (lista) en cada perfil y en el token la lista de sedes donde
    se coordina, para comprobar `sedesIds.hasAny(...)`.

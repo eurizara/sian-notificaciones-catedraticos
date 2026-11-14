@@ -285,6 +285,7 @@ RF-CNF-05.
 |-------|------|-------------|
 | `uid` | string | **Duplica el identificador del documento a propósito.** Las consultas por grupo de colección no pueden filtrar por identificador de documento, y el historial del catedrático (RF-ENT-12) es exactamente esa consulta |
 | `mensajeId` | string | Desnormalizado, para poder mostrar el historial sin una lectura adicional por cada mensaje |
+| `sedeId` | string | La sede del aviso (desde la 2.0.8, en las entregas nuevas). Las anteriores no lo tienen; la bandeja toma la sede del mensaje. Es el dato que necesitan las reglas de la 2.0-f |
 | `estado` | string | Según la máquina de estados del documento 01, sección 10 |
 | `enviadoAFcmEn` | timestamp | |
 | `entregadoEn` | timestamp | |
