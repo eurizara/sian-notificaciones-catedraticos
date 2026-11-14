@@ -46,10 +46,14 @@ final Provider<RepositorioEnvio> repositorioEnvioProvider =
 
 /// A quién se puede elegir en un envío individual (U-6). Se pide al abrir el
 /// modo «Personas concretas» y se descarta al salir de la sección.
+///
+/// Mira la sede de trabajo (2.0.7): al cambiar de sede con la sección abierta
+/// seguía ofreciendo la gente de la anterior.
 final FutureProvider<List<PersonaDestinataria>> personasDestinatariasProvider =
-    FutureProvider.autoDispose<List<PersonaDestinataria>>(
-      (Ref ref) => ref.read(repositorioEnvioProvider).personas(),
-    );
+    FutureProvider.autoDispose<List<PersonaDestinataria>>((Ref ref) {
+      ref.watch(sedeDeTrabajoProvider);
+      return ref.read(repositorioEnvioProvider).personas();
+    });
 
 /// Todos, unos grupos o unas personas concretas (RF-USR-06).
 enum ModoDestino { todos, grupos, personas, facultades }

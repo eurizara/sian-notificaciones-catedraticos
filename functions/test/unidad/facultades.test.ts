@@ -66,6 +66,7 @@ describe('decidirOferta', () => {
       expect((e as ErrorValidacion).codigo).toBe('FACULTAD_EN_USO');
       expect((e as Error).message).toContain('La tienen 2 personas');
       expect((e as Error).message).toContain('Usuarios');
+      expect((e as Error).message).not.toContain('grupo');
     }
     try {
       decidirOferta({ ofrecer: false, catalogo: undefined, actual: { activa: true }, personas: 1 });
@@ -73,6 +74,26 @@ describe('decidirOferta', () => {
     } catch (e) {
       expect((e as Error).message).toContain('La tiene 1 persona');
     }
+  });
+});
+
+describe('2.0.7 · una facultad que usan grupos de la sede', () => {
+  it('no se retira, y se dice qué cambiar', () => {
+    try {
+      decidirOferta({ ofrecer: false, catalogo: SISTEMAS, actual: { activa: true }, personas: 0, grupos: 1 });
+      throw new Error('no lanzó');
+    } catch (e) {
+      expect((e as ErrorValidacion).codigo).toBe('FACULTAD_EN_USO');
+      expect((e as Error).message).toBe(
+        'La usa 1 grupo en esta sede. Primero cambie la facultad de esos grupos; después retírela de la sede.',
+      );
+    }
+  });
+
+  it('con personas y grupos, dice las dos cosas', () => {
+    expect(() =>
+      decidirOferta({ ofrecer: false, catalogo: SISTEMAS, actual: { activa: true }, personas: 1, grupos: 2 }),
+    ).toThrow('La tiene 1 persona y la usan 2 grupos en esta sede. Primero quítesela en Usuarios y cambie la facultad de esos grupos');
   });
 });
 

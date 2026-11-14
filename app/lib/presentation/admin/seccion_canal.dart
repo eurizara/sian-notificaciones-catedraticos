@@ -23,6 +23,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/proveedores_sede.dart';
 import '../../application/proveedores_sesion.dart';
 import '../../core/version.dart';
 import '../../domain/sesion.dart';
@@ -36,10 +37,13 @@ import 'borrador_prefijado.dart';
 final Provider<RepositorioCanal> repositorioCanalProvider =
     Provider<RepositorioCanal>((Ref ref) => RepositorioCanal());
 
+/// Mira la sede de trabajo (2.0.7): la revisión es de la gente de la sede, y
+/// sin esto se quedaba con la primera que se abrió.
 final FutureProvider<RevisionDeCanal> revisionDeCanalProvider =
-    FutureProvider<RevisionDeCanal>(
-      (Ref ref) => ref.read(repositorioCanalProvider).revisar(),
-    );
+    FutureProvider<RevisionDeCanal>((Ref ref) {
+      ref.watch(sedeDeTrabajoProvider);
+      return ref.read(repositorioCanalProvider).revisar();
+    });
 
 class SeccionCanal extends ConsumerWidget {
   const SeccionCanal({super.key});

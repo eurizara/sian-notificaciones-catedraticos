@@ -540,8 +540,14 @@ class RepositorioGruposFalso extends RepositorioGrupos {
   /// administrador académico no puede leer el padrón.
   final List<Elegible> personas;
 
+  /// Cuántas veces se pidió la lista: cambia de sede, se vuelve a pedir.
+  int vecesQuePidioElegibles = 0;
+
   @override
-  Future<List<Elegible>> elegibles() async => personas;
+  Future<List<Elegible>> elegibles() async {
+    vecesQuePidioElegibles += 1;
+    return personas;
+  }
 
   int vecesQueGuardo = 0;
   String? ultimoNombre;

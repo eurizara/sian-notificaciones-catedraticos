@@ -208,7 +208,7 @@ El identificador del documento es el UID de Firebase Authentication.
 | `creadoEn` | timestamp | |
 | `activo` | boolean | |
 | `sedeId` | string | Sede del grupo (2.0, RF-SED-01). Ausente = `bdm`. Un grupo de otra sede no se puede usar ni editar |
-| `facultadId` | string \| null | Facultad a la que pertenece (2.0, RF-FAC-03). Opcional |
+| `facultadId` | string \| null | Facultad a la que pertenece (2.0, RF-FAC-03). Opcional. Desde la 2.0.7 tiene que ofrecerse en la sede, y cada miembro tiene que tenerla allí (`guardarGrupo`); al enviar, quien la perdió queda fuera (`FUERA_DE_LA_FACULTAD`) |
 
 ### 2.4 `mensajes/{mensajeId}`
 

@@ -328,3 +328,51 @@ export function motivoParaNoCambiarSuperadministrador(entrada: {
   return null;
 }
 
+
+/**
+ * Los miembros de un grupo que no caben en él (2.0.7): no son de la sede del
+ * grupo o, si el grupo es de una facultad, no la tienen allí. Un uid sin
+ * perfil tampoco cabe. Un grupo es la gente de un lugar; si no, el envío la
+ * descarta en silencio y el conteo engaña.
+ */
+export function miembrosFueraDeLugar(
+  miembros: readonly string[],
+  perfiles: ReadonlyMap<string, { readonly rol: Rol; readonly membresias?: unknown }>,
+  sedeId: string,
+  facultadId: string | null,
+): string[] {
+  return miembros.filter((uid) => {
+    const perfil = perfiles.get(uid);
+    if (perfil === undefined) {
+      return true;
+    }
+    const m = membresiasDe(perfil)[sedeId];
+    if (m === undefined) {
+      return true;
+    }
+    return facultadId !== null && !m.facultades.includes(facultadId);
+  });
+}
+
+/** Lanza diciendo quiénes sobran y qué hacer (2.0.7). */
+export function exigirMiembrosEnLugar(
+  fuera: readonly { readonly uid: string; readonly nombre: string }[],
+  conFacultad: boolean,
+): void {
+  if (fuera.length === 0) {
+    return;
+  }
+  const n = fuera.length;
+  const nombres = fuera
+    .slice(0, 3)
+    .map((f) => f.nombre || f.uid)
+    .join(', ');
+  const resto = n > 3 ? ` y ${n - 3} más` : '';
+  const donde = conFacultad ? 'de esta sede con la facultad del grupo' : 'de esta sede';
+  throw new ErrorValidacion(
+    'MIEMBROS_FUERA_DE_LUGAR',
+    `${n === 1 ? 'Un miembro no es' : `${n} miembros no son`} ${donde}: ${nombres}${resto}. ` +
+      'Quítelos del grupo antes de guardar.',
+    { cuantos: String(n) },
+  );
+}

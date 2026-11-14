@@ -45,6 +45,17 @@ export async function contarPersonasConFacultad(sedeId: string, facultadId: stri
   return conteo.data().count;
 }
 
+/** Cuántos grupos de esa sede son de esa facultad (2.0.7). */
+export async function contarGruposConFacultad(sedeId: string, facultadId: string): Promise<number> {
+  const conteo = await db
+    .collection(RUTAS.grupos)
+    .where('sedeId', '==', sedeId)
+    .where('facultadId', '==', facultadId)
+    .count()
+    .get();
+  return conteo.data().count;
+}
+
 /** Los nombres de las sedes que hoy ofrecen esa facultad. */
 export async function sedesQueOfrecen(facultadId: string): Promise<string[]> {
   const sedes = await db.collection(RUTAS.sedes).get();

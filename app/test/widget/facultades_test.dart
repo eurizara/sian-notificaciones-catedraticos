@@ -129,7 +129,12 @@ void main() {
     ) async {
       final RepositorioGruposFalso grupos = RepositorioGruposFalso(
         personas: const <Elegible>[
-          Elegible(uid: 'u1', nombre: 'Ana', correo: 'a@umg.edu.gt'),
+          Elegible(
+            uid: 'u1',
+            nombre: 'Ana',
+            correo: 'a@umg.edu.gt',
+            facultades: <String>['derecho'],
+          ),
         ],
       );
       await tester.pumpWidget(

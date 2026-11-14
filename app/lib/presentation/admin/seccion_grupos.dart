@@ -316,10 +316,11 @@ class _EditorGrupoState extends ConsumerState<EditorGrupo> {
   /// los motivos de exclusión. Mejor no ofrecerlos.
   List<Elegible> _elegibles(List<Elegible> todos) {
     final String q = _busqueda.text.trim().toLowerCase();
+    final List<Elegible> caben = _quienesCaben(todos);
     if (q.isEmpty) {
-      return todos;
+      return caben;
     }
-    return todos
+    return caben
         .where(
           (Elegible u) =>
               u.nombre.toLowerCase().contains(q) ||
@@ -328,10 +329,28 @@ class _EditorGrupoState extends ConsumerState<EditorGrupo> {
         .toList();
   }
 
+  /// La gente de la sede que cabe en el grupo (2.0.7): si el grupo es de una
+  /// facultad, solo quien la tiene en esta sede.
+  List<Elegible> _quienesCaben(List<Elegible> todos) => _facultad == null
+      ? todos
+      : todos.where((Elegible u) => u.facultades.contains(_facultad)).toList();
+
   @override
   Widget build(BuildContext context) {
     final ThemeData tema = Theme.of(context);
     final AsyncValue<List<Elegible>> usuarios = ref.watch(elegiblesProvider);
+    // Miembros que ya no caben: dejaron la sede, perdieron la facultad, o se
+    // cambió la facultad del grupo. Se dice y se ofrece quitarlos de un toque;
+    // el servidor no deja guardar con ellos (2.0.7).
+    final Set<String> caben = <String>{
+      for (final Elegible u in _quienesCaben(
+        usuarios.value ?? const <Elegible>[],
+      ))
+        u.uid,
+    };
+    final List<String> fuera = usuarios.hasValue
+        ? _elegidos.where((String uid) => !caben.contains(uid)).toList()
+        : const <String>[];
 
     return AlertDialog(
       title: Text(
@@ -392,6 +411,14 @@ class _EditorGrupoState extends ConsumerState<EditorGrupo> {
                 ],
                 onChanged: (String? v) => setState(() => _facultad = v),
               ),
+              if (_facultad != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    Textos.grupoSoloDeLaFacultad,
+                    style: tema.textTheme.bodySmall,
+                  ),
+                ),
             ],
             const SizedBox(height: 16),
 
@@ -410,6 +437,35 @@ class _EditorGrupoState extends ConsumerState<EditorGrupo> {
                   ),
               ],
             ),
+            if (fuera.isNotEmpty) ...<Widget>[
+              Semantics(
+                liveRegion: true,
+                child: Card(
+                  color: tema.colorScheme.errorContainer,
+                  child: ListTile(
+                    leading: Icon(
+                      Icons.warning_amber_outlined,
+                      color: tema.colorScheme.onErrorContainer,
+                    ),
+                    title: Text(
+                      Textos.grupoMiembrosFuera(
+                        fuera.length,
+                        conFacultad: _facultad != null,
+                      ),
+                      style: TextStyle(
+                        color: tema.colorScheme.onErrorContainer,
+                      ),
+                    ),
+                    trailing: TextButton(
+                      onPressed: () =>
+                          setState(() => _elegidos.removeAll(fuera)),
+                      child: const Text(Textos.grupoQuitarlos),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
             const SizedBox(height: 8),
 
             TextField(

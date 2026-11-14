@@ -162,6 +162,7 @@ async function leerPadron(
       activo: d.get('activo') === true,
       miembros: (d.get('miembros') as string[] | undefined) ?? [],
       sedeId: sedeDelDocumento(d.data()),
+      facultadId: (d.get('facultadId') as string | null | undefined) ?? null,
     }));
 
   return { usuarios, grupos, facultades: [] };

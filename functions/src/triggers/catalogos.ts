@@ -42,6 +42,7 @@ import {
   reemplazarMembresias,
 } from '../infrastructure/repositorios';
 import {
+  contarGruposConFacultad,
   contarPersonasConFacultad,
   leerCatalogoDeFacultades,
   leerFacultades,
@@ -244,6 +245,7 @@ export const ofrecerFacultad = onCall(OPCIONES_LLAMABLE, async (peticion) => {
       catalogo,
       actual: actual.exists ? { activa: actual.get('activa') !== false } : undefined,
       personas: datos.ofrecer ? 0 : await contarPersonasConFacultad(sedeId, facultadId),
+      grupos: datos.ofrecer ? 0 : await contarGruposConFacultad(sedeId, facultadId),
     });
     if (cambio === null) {
       return { sedeId, facultadId, ofrecida: datos.ofrecer };
