@@ -317,6 +317,7 @@ cualquiera habría podido saber cuántos compañeros contestaron.
 | `emisorUid` | string | Quien emitió el aviso. Es el campo por el que filtra la consulta del emisor **y** el que evalúan las reglas |
 | `emisorNombre` | string | Copiado por la misma razón |
 | `tituloAviso` | string | Copiado al crear el hilo: el emisor tiene que saber de qué le hablan sin abrir el aviso |
+| `sedeId` | string | La sede del aviso (desde la 2.0.9, en los hilos nuevos): Respuestas muestra los de la sede de trabajo. Sin el campo, `bdm` |
 | `turnos` | number | Cuántas intervenciones lleva |
 | `sinLeerEmisor` | number | Lo que le falta leer al emisor. Cada lado pone a cero **su** contador |
 | `sinLeerCatedratico` | number | Ídem, del otro lado. Desde 1.6.15, mientras sea mayor que cero el aviso aparece en «Sin leer» en la bandeja del catedrático (consulta de grupo por `uid` y `sinLeerCatedratico > 0`) |

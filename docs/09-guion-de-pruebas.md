@@ -911,3 +911,4 @@ Con una cuenta de superadministrador y otra de coordinación en una sola sede.
 | F-11 (2.0.8) | Con una cuenta de catedrático en Boca del Monte y Villa Nueva, en el teléfono, abrir la bandeja | Arriba: «Está en la sede …» y sus facultades; solo los avisos de esa sede |
 | F-12 (2.0.8) | Enviar un aviso urgente desde Villa Nueva a esa persona mientras está en Boca del Monte | Debajo de la sede: «En Villa Nueva: 1 sin leer, 1 urgente sin confirmar»; al tocarlo pasa a Villa Nueva |
 | F-13 (2.0.8) | Tocar la notificación de un aviso de la otra sede | La aplicación cambia a esa sede y abre el aviso |
+| F-14 (2.0.9) | Con una cuenta que coordina en dos sedes, abrir Bitácora, Usuarios → Invitaciones y Respuestas; cambiar de sede | Cada una muestra solo lo de la sede de trabajo, y cambia al cambiar de sede |

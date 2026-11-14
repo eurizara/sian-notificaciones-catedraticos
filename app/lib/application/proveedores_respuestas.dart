@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../domain/sesion.dart';
 import '../infrastructure/firebase/repositorio_respuestas.dart';
+import 'proveedores_sede.dart';
 import 'proveedores_sesion.dart';
 
 final Provider<RepositorioRespuestas> repositorioRespuestasProvider =
@@ -21,10 +22,16 @@ final avisosConRespuestasProvider = StreamProvider<List<AvisoConRespuestas>>((
   if (sesion is! SesionActiva || !sesion.usuario.rol.esEmisor) {
     return Stream<List<AvisoConRespuestas>>.value(const <AvisoConRespuestas>[]);
   }
+  // 2.0.9: las de la sede de trabajo, como todo lo demás del panel.
+  final String sede = ref.watch(sedeDeTrabajoProvider);
   return ref
       .watch(repositorioRespuestasProvider)
       .observarHilosDelEmisor(sesion.usuario.uid)
-      .map(agruparPorAviso);
+      .map(
+        (List<Hilo> hilos) => agruparPorAviso(
+          hilos.where((Hilo h) => h.sedeId == sede).toList(),
+        ),
+      );
 });
 
 /// El número junto a la sección: respuestas que el emisor no ha leído.

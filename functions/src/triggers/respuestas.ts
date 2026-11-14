@@ -38,6 +38,7 @@ import {
   type LadoHilo,
   vistaPrevia,
 } from '../domain/respuesta';
+import { sedeDelDocumento } from '../domain/sede';
 import type { Rol } from '../domain/tipos';
 import { FieldValue, OPCIONES_LLAMABLE, RUTAS, Timestamp, db } from '../infrastructure/firebase';
 import { escribirAsiento, nombreDe } from '../infrastructure/repositorios';
@@ -181,6 +182,9 @@ export const responderAviso = onCall(OPCIONES_LLAMABLE, async (peticion) => {
           // Copiado para que el emisor sepa de qué le hablan sin abrir el
           // aviso, igual que el nombre del emisor viaja con el mensaje.
           tituloAviso,
+          // La sede del aviso (2.0.9): quien emite en varias sedes ve en
+          // Respuestas las de la sede donde trabaja.
+          sedeId: sedeDelDocumento(mensaje.data()),
           creadoEn: FieldValue.serverTimestamp(),
           ...cambios,
         });
