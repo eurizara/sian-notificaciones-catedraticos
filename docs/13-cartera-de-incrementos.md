@@ -1,6 +1,6 @@
 # 13 · Cartera de incrementos
 
-**Versión:** 1.3 · 6 de noviembre de 2026
+**Versión:** 1.4 · 14 de noviembre de 2026 (alineada con la 2.0 tal como quedó en desarrollo, 2.0.10)
 
 **Qué es este documento.** La **única lista** de lo que falta por hacer en SIAN y en qué
 orden se pide. Cada propuesta, del responsable o del equipo, se registra aquí **antes** de
@@ -53,41 +53,47 @@ responsable el 06/11/2026.
 
 | Orden | ID | Incremento | Tipo | Prioridad | Estado | Versión | PR | Actualizado |
 |---|---|---|---|---|---|---|---|---|
-| 1 | DT-35 | Tocar la notificación de una respuesta no la abre en iPhone | Corrección | Media | En QA | 1.6.20 | #226, #229 | 2026-11-07 |
+| 1 | DT-35 | Tocar la notificación de una respuesta no la abre en iPhone | Corrección | Media | En producción | 1.6.20 | #226, #229, #230 | 2026-11-14 |
 
 ### B. Funcionalidades nuevas aprobadas el 23/09/2026 y pedidas el 06/11/2026
 
 Origen: los pedidos del responsable del 23/09/2026 (sedes y repositorio, aprobados ese día;
 documento 12) y del 06/11/2026 (facultades, catálogos, caja chica y encuestas, aprobados ese día con sus diez
-decisiones; documento 14). **Ninguna está empezada.**
+decisiones; documento 14). **La 2.0 está en desarrollo** (2.0.10 en dev desde el 14/11/2026,
+esperando la prueba del responsable antes de pasar a QA). **De la 2.1 en adelante, ninguna está
+empezada**; el 14/11/2026 se alinearon con lo que la 2.0 dejó hecho (ver «Alineación con la 2.0»
+en cada ficha y el documento 14, sección 8).
 
 **2.0 · Varias sedes, facultades y mantenimiento de catálogos** (una sola migración)
 
 | Orden | ID | Incremento | Tipo | Prioridad | Estado | Versión | PR | Actualizado |
 |---|---|---|---|---|---|---|---|---|
-| 2 | RF-SED-01 | Cada aviso, grupo, carpeta y registro de bitácora pertenece a una sede | Funcionalidad | Alta | En desarrollo | 2.0 | #232 | 2026-11-07 |
-| 3 | RF-SED-02 | Una persona en varias sedes, con un rol en cada una | Funcionalidad | Alta | En desarrollo | 2.0 | #231 + 2.0.1 | 2026-11-07 |
-| 4 | RF-SED-03 | «Enviar a todos» significa todos los de la sede elegida | Funcionalidad | Alta | En desarrollo | 2.0 | #232 | 2026-11-07 |
-| 5 | RF-SED-04 | Quien está en más de una sede elige en cuál trabaja; con una sola, no se le pregunta | Funcionalidad | Alta | En desarrollo | 2.0 | #235 | 2026-11-07 |
-| 6 | RF-SED-05 | Nadie ve ni modifica nada de una sede a la que no pertenece | Seguridad | Alta | En desarrollo | 2.0 | #232 | 2026-11-07 |
-| 7 | RF-SED-06 | Rol de administración general: crea sedes y asigna a sus coordinadores | Funcionalidad | Alta | En desarrollo | 2.0 | #234 + 2.0.1 | 2026-11-07 |
-| 8 | RF-FAC-01 | Cada sede tiene facultades; una persona pertenece a una o varias | Funcionalidad | Alta | En desarrollo | 2.0 | #234, 2.0-e2 | 2026-11-07 |
-| 9 | RF-FAC-02 | Un aviso puede dirigirse a toda una facultad | Funcionalidad | Alta | En desarrollo | 2.0 | #232, 2.0-e2 | 2026-11-07 |
-| 10 | RF-FAC-03 | Los grupos pueden pertenecer a una facultad y se filtran por ella | Funcionalidad | Media | En desarrollo | 2.0 | #232, 2.0-e2 | 2026-11-07 |
-| 11 | RF-FAC-04 | Con una sola facultad o ninguna, no se pregunta ni se muestra | Funcionalidad | Media | En desarrollo | 2.0 | 2.0-e2 | 2026-11-07 |
-| 12 | RF-FAC-05 | Los reportes se filtran por facultad | Funcionalidad | Media | Aprobada | 2.0 | — | 2026-11-06 |
-| 13 | RF-CAT-01 | Pantalla de mantenimiento por catálogo: buscador, alta, edición, activar/desactivar | Funcionalidad | Alta | En desarrollo | 2.0 | #234 | 2026-11-07 |
-| 14 | RF-CAT-02 | Lo que está en uso no se borra: se desactiva y conserva su nombre | Funcionalidad | Alta | En desarrollo | 2.0 | #234 | 2026-11-07 |
-| 15 | RF-CAT-03 | Sin nombres repetidos en el mismo catálogo y sede | Funcionalidad | Media | En desarrollo | 2.0 | #234 | 2026-11-07 |
-| 16 | RF-CAT-04 | Cada cambio de un catálogo queda en la bitácora | Seguridad | Media | En desarrollo | 2.0 | #234 | 2026-11-07 |
-| 17 | RF-CAT-05 | Cada catálogo lo mantiene solo su rol; los demás solo lo usan | Seguridad | Alta | En desarrollo | 2.0 | #234 | 2026-11-07 |
+| 2 | RF-SED-01 | Cada aviso, grupo, carpeta y registro de bitácora pertenece a una sede (desde 2.0.8 también las entregas y desde 2.0.9 las respuestas nuevas) | Funcionalidad | Alta | En dev | 2.0.10 | #232, #246, #247 | 2026-11-14 |
+| 3 | RF-SED-02 | Una persona en varias sedes, con un rol y sus facultades en cada una | Funcionalidad | Alta | En dev | 2.0.10 | #231, #239, #243, #244 | 2026-11-14 |
+| 4 | RF-SED-03 | «Enviar a todos» significa todos los de la sede elegida | Funcionalidad | Alta | En dev | 2.0.10 | #232 | 2026-11-14 |
+| 5 | RF-SED-04 | Quien está en más de una sede elige en cuál trabaja y siempre ve en cuál está (también el catedrático, con lo pendiente de las otras y la sede en la notificación) | Funcionalidad | Alta | En dev | 2.0.10 | #235, #246, #248 | 2026-11-14 |
+| 6 | RF-SED-05 | Nadie ve ni modifica nada de una sede a la que no pertenece (en la app y en el servidor; en las reglas, con la 2.0-f) | Seguridad | Alta | En dev | 2.0.10 | #232, #245, #247 | 2026-11-14 |
+| 7 | RF-SED-06 | Superadministrador (campo técnico `adminGeneral`): crea sedes y pone a la gente en ellas; solo lo designa otro superadministrador | Funcionalidad | Alta | En dev | 2.0.10 | #234, #239, #242 | 2026-11-14 |
+| 8 | RF-FAC-01 | Facultades en tres niveles: catálogo único de la UMG → las que ofrece cada sede → las de cada persona en cada sede | Funcionalidad | Alta | En dev | 2.0.10 | #234, #236, #244 | 2026-11-14 |
+| 9 | RF-FAC-02 | Un aviso puede dirigirse a toda una facultad | Funcionalidad | Alta | En dev | 2.0.10 | #232, #236 | 2026-11-14 |
+| 10 | RF-FAC-03 | Los grupos pueden pertenecer a una facultad, se filtran por ella y solo admiten a quien la tiene | Funcionalidad | Media | En dev | 2.0.10 | #232, #236, #245 | 2026-11-14 |
+| 11 | RF-FAC-04 | Con una sola facultad o ninguna, no se pregunta ni se muestra | Funcionalidad | Media | En dev | 2.0.10 | #236 | 2026-11-14 |
+| 12 | RF-FAC-05 | Los reportes se filtran por facultad (Entregas, Alcance, Respuestas; caja chica en la 2.2) | Funcionalidad | Media | Aprobada | 2.0 | — | 2026-11-14 |
+| 13 | RF-CAT-01 | Pantalla de mantenimiento por catálogo: buscador, alta, edición, activar/desactivar | Funcionalidad | Alta | En dev | 2.0.10 | #234, #241 | 2026-11-14 |
+| 14 | RF-CAT-02 | Lo que está en uso no se borra ni se retira: se desactiva y conserva su nombre (una facultad que tiene alguien o un grupo no se retira de la sede) | Funcionalidad | Alta | En dev | 2.0.10 | #234, #244, #245 | 2026-11-14 |
+| 15 | RF-CAT-03 | Sin nombres repetidos en el mismo catálogo | Funcionalidad | Media | En dev | 2.0.10 | #234 | 2026-11-14 |
+| 16 | RF-CAT-04 | Cada cambio de un catálogo queda en la bitácora | Seguridad | Media | En dev | 2.0.10 | #234 | 2026-11-14 |
+| 17 | RF-CAT-05 | Cada catálogo lo mantiene solo su rol: sedes y facultades de la UMG, el superadministrador; lo que ofrece una sede, su coordinación | Seguridad | Alta | En dev | 2.0.10 | #234, #244 | 2026-11-14 |
+| 17a | 2.0-f | Las reglas exigen la sede, y lo viejo sin sede (entregas, respuestas) se completa | Seguridad | Alta | Aprobada · espera 3 decisiones | 2.0 | — | 2026-11-14 |
+| 17b | SED-DES | Al desactivar una sede con personas, decir cuántas quedarían sin sede activa | Mejora | Media | Propuesta | 2.0 | — | 2026-11-14 |
+| 17c | PROM-2.0 | Promoción de la 2.0 a QA y producción: respaldo, migración de sedes y catálogo en cada ambiente | Operación | Alta | Aprobada · espera indicación del responsable | 2.0.10 | — | 2026-11-14 |
 
 **2.1 · Caja chica, base**
 
 | Orden | ID | Incremento | Tipo | Prioridad | Estado | Versión | PR | Actualizado |
 |---|---|---|---|---|---|---|---|---|
-| 18 | RF-CCH-01 | La coordinación crea la caja de cada sede y facultad y registra su carga inicial | Funcionalidad | Alta | Aprobada | 2.1 | — | 2026-11-06 |
-| 19 | RF-CCH-02 | La coordinación asigna uno o varios catedráticos como operadores | Funcionalidad | Alta | Aprobada | 2.1 | — | 2026-11-06 |
+| 18 | RF-CCH-01 | La coordinación de la sede crea la caja de cada facultad que la sede ofrece y registra su carga inicial | Funcionalidad | Alta | Aprobada | 2.1 | — | 2026-11-06 |
+| 19 | RF-CCH-02 | La coordinación asigna como operadores a uno o varios catedráticos de esa sede con esa facultad | Funcionalidad | Alta | Aprobada | 2.1 | — | 2026-11-06 |
 | 20 | RF-CCH-03 | Solo los operadores registran entradas y salidas | Seguridad | Alta | Aprobada | 2.1 | — | 2026-11-06 |
 | 21 | RF-CCH-04 | Cada movimiento lleva fecha, tipo, monto, observación y quién lo registró | Funcionalidad | Alta | Aprobada | 2.1 | — | 2026-11-06 |
 | 22 | RF-CCH-05 | Catálogos de tipos de entrada y de salida (donaciones, aportes, publicidad, pastel, almuerzos, convivios…) | Funcionalidad | Alta | Aprobada | 2.1 | — | 2026-11-06 |
@@ -96,7 +102,7 @@ decisiones; documento 14). **Ninguna está empezada.**
 | 25 | RF-CCH-08 | El saldo lo calcula el servidor, en la misma transacción que el movimiento | Seguridad | Alta | Aprobada | 2.1 | — | 2026-11-06 |
 | 26 | RF-CCH-09 | Ninguna salida deja el saldo en negativo | Seguridad | Alta | Aprobada | 2.1 | — | 2026-11-06 |
 | 27 | RF-CCH-10 | Los movimientos no se editan ni se borran; se corrigen con una anulación | Seguridad | Alta | Aprobada | 2.1 | — | 2026-11-06 |
-| 28 | RF-CCH-11 | Todos los catedráticos de la sede y facultad ven solo el saldo; el kárdex, solo los encargados | Funcionalidad | Alta | Aprobada | 2.1 | — | 2026-11-06 |
+| 28 | RF-CCH-11 | Los catedráticos con esa facultad en esa sede ven solo el saldo (en su sede de trabajo); el kárdex, solo los encargados | Funcionalidad | Alta | Aprobada | 2.1 | — | 2026-11-06 |
 | 29 | RF-CCH-15 | Cada catedrático ve sus propios aportes; solo los encargados ven los de todos | Seguridad | Alta | Aprobada | 2.1 | — | 2026-11-06 |
 | 30 | RF-CCH-16 | Aportes periódicos (cuota con monto y frecuencia), eventuales o de monto libre | Funcionalidad | Alta | Aprobada | 2.1 | — | 2026-11-06 |
 
@@ -184,9 +190,9 @@ decisiones; documento 14). **Ninguna está empezada.**
 
 | Orden | ID | Incremento | Tipo | Prioridad | Estado | Versión | PR | Actualizado |
 |---|---|---|---|---|---|---|---|---|
-| 71 | DOC-07 | Estados viejos en el resumen del documento 07 (DT-07, DT-21, DT-23) | Documentación | Baja | En dev | — | #222 | 2026-11-06 |
+| 71 | DOC-07 | Estados viejos en el resumen del documento 07 (DT-07, DT-21, DT-23) | Documentación | Baja | En producción | 1.6.20 | #222 | 2026-11-14 |
 | 72 | DOC-CAT | El guion de la cátedra dice 12 pasos de despliegue y son 15 | Documentación | Baja | Aprobada | — | — | 2026-11-06 |
-| 73 | DOC-14 | Análisis de facultades, catálogos, caja chica y encuestas | Documentación | Alta | En desarrollo | — | #223 | 2026-11-06 |
+| 73 | DOC-14 | Análisis de facultades, catálogos, caja chica y encuestas (alineado con la 2.0 el 14/11/2026) | Documentación | Alta | En producción · alineación en dev | 1.6.20 | #223, #224 | 2026-11-14 |
 
 ### H. Bloqueadas por algo externo
 
@@ -254,7 +260,7 @@ decisiones; documento 14). **Ninguna está empezada.**
 
 ### DT-35 · Tocar la notificación de una respuesta no la abre en iPhone
 
-- **Estado:** En QA (1.6.20, PR #229, 2026-11-07); el PR a producción es el #230 · **Prioridad:** Media · **Origen:** responsable, 2026-09-24
+- **Estado:** En producción (1.6.20, 2026-11-14, PR #230) · **Prioridad:** Media · **Origen:** responsable, 2026-09-24
 - **Problema:** en Android, tocar la notificación abre la respuesta. En iPhone la aplicación
   se queda en la bandeja. Desde 1.6.15 la respuesta devuelve el aviso a «Sin leer», así que
   no se pierde, pero no se llega directo a ella.
@@ -273,7 +279,7 @@ decisiones; documento 14). **Ninguna está empezada.**
 - **Accesibilidad y usabilidad:** heurística de Nielsen «estado visible del sistema»: la
   persona debe ver la respuesta que motivó la notificación.
 - **Documentos tocados:** 07 (DT-35), 09, manual del catedrático.
-- **Historial:** 2026-09-24 Aprobada · 2026-09-28 mitigada en producción (1.6.0, 1.6.15) · 2026-11-06 En dev (1.6.20, PR #226): causa probable encontrada y corregida con reintentos, más diagnóstico `apertura`
+- **Historial:** 2026-09-24 Aprobada · 2026-09-28 mitigada en producción (1.6.0, 1.6.15) · 2026-11-06 En dev (1.6.20, PR #226): causa probable encontrada y corregida con reintentos, más diagnóstico `apertura` · 2026-11-07 En QA (PR #229) · 2026-11-14 probada en QA por el responsable y En producción (PR #230)
 
 ### S-4 · Exigir App Check en las funciones
 
@@ -345,21 +351,25 @@ decisiones; documento 14). **Ninguna está empezada.**
 
 ### 2.0 · Varias sedes (RF-SED-01 a RF-SED-06)
 
-- **Estado:** Aprobada (2026-09-23), sin empezar · **Prioridad:** Alta · **Origen:** responsable, pedido del 23/09/2026: «esto puede crecer a nuevas sedes y cada usuario puede pertenecer a diferentes sedes»
+- **Estado:** En dev (2.0.10, 2026-11-14) · **Prioridad:** Alta · **Origen:** responsable, pedido del 23/09/2026: «esto puede crecer a nuevas sedes y cada usuario puede pertenecer a diferentes sedes»
 - **Propuesta:** un solo proyecto con los datos separados por sede, no un proyecto por sede.
-  Las membresías (`membresias: { bdm: 'COORDINADOR', … }`) viajan en el token de sesión,
+  Las membresías (`membresias: { bdm: { rol: 'COORDINADOR', facultades: [...] }, … }`) se
+  guardan en el perfil y las sedes con su rol viajan en el token de sesión,
   como hoy el rol. Un selector de sede en la barra, que solo aparece con más de una sede.
   Migración en siete pasos, de ampliar y después contraer: la app vieja sigue funcionando
   hasta que las reglas exigen la sede. Detalle en el documento 12, sección 6, y en el ADR-009.
 - **Criterios de aceptación (uno por requisito):**
-  - [ ] RF-SED-01 · Mensajes, grupos, bitácora y carpetas llevan `sedeId`; un guion idempotente pone `bdm` en todo lo existente
-  - [ ] RF-SED-02 · Una persona tiene un rol distinto en cada sede
-  - [ ] RF-SED-03 · «Enviar a todos» resuelve solo dentro de la sede elegida
-  - [ ] RF-SED-04 · El selector aparece solo con más de una sede
-  - [ ] RF-SED-05 · Una persona de la sede A no ve nada de la B: avisos, grupos ni bitácora
-  - [ ] RF-SED-06 · Solo la administración general crea sedes y asigna coordinadores
-  - [ ] Respaldo de producción verificado antes de migrar; correr la migración dos veces deja lo mismo
-  - [ ] Probado en desarrollo y QA con datos parecidos a los de producción
+  - [x] RF-SED-01 · Mensajes, grupos y bitácora llevan `sedeId` (entregas desde 2.0.8, respuestas desde 2.0.9); un guion idempotente pone `bdm` en lo existente. Las carpetas, con la 2.4
+  - [x] RF-SED-02 · Una persona tiene un rol (y sus facultades) distinto en cada sede
+  - [x] RF-SED-03 · «Enviar a todos» resuelve solo dentro de la sede elegida
+  - [x] RF-SED-04 · El selector aparece solo con más de una sede; el catedrático ve siempre dónde está (2.0.8) y la notificación dice la sede (2.0.10)
+  - [x] RF-SED-05 · En la aplicación y en el servidor, una persona de la sede A no ve nada de la B (avisos, grupos, usuarios, invitaciones, respuestas, bitácora: 2.0.7 a 2.0.9)
+  - [ ] RF-SED-05 · Lo mismo exigido en las reglas de Firestore (2.0-f)
+  - [x] RF-SED-06 · Solo el superadministrador crea sedes y pone gente en ellas (2.0.4)
+  - [x] Correr la migración dos veces deja lo mismo (desarrollo, 07/11 y 08/11)
+  - [ ] Probado por el responsable en desarrollo (2.0.10, casos F-1 a F-15 del documento 09)
+  - [ ] Respaldo de QA y de producción verificado antes de migrar (PROM-2.0)
+  - [ ] Probado en QA con datos parecidos a los de producción
 - **Avance por pasos** (ADR-009, «Plan de implementación»):
   - [x] 2.0-a (PR #231, en desarrollo) · Membresías con rol por sede; `sedes` y `adminGeneral` en el token; todos los claims desde `claimsDe` (corrige que cambiar un rol borraba `recibeAvisos` del token)
   - [x] 2.0-b (PR #232, en desarrollo) · Avisos, grupos y bitácora con `sedeId`; «todos» dentro de la sede; envío a una facultad; Alcance, grupos y usuarios por sede
@@ -376,9 +386,11 @@ decisiones; documento 14). **Ninguna está empezada.**
   - [x] 2.0.7 (PR #245) · Corrección (reporte del 14/11/2026): grupos coherentes con la sede y la facultad. La lista de gente para un grupo, el envío individual y la revisión del canal se quedaban con la sede anterior; un grupo de una facultad solo admite a quien la tiene; el servidor lo exige al guardar y al enviar
   - [x] 2.0.8 (PR #246) · Corrección (14/11/2026): el catedrático que está en varias sedes ve siempre en qué sede está y con qué facultades; su bandeja muestra los avisos de esa sede, dice cuántos tiene sin leer en las otras (y si hay urgentes), y una notificación de otra sede lo cambia a ella. Las entregas nuevas llevan `sedeId`
   - [x] 2.0.9 (PR #247) · Corrección (14/11/2026): pantallas de administración que mezclaban sedes: bitácora, invitaciones y respuestas, solo de la sede de trabajo
-  - [ ] 2.0.10 · Mejora (propuesta del 14/11/2026, aprobada por el responsable el mismo día): la sede en el título de la notificación para quien está en más de una sede, «Villa Nueva · Simulacro»; también en los recordatorios de urgentes
-  - [ ] Propuesta: al desactivar una sede con personas, avisar cuántas quedarían sin sede activa
-  - [ ] 2.0-f · Las reglas exigen la sede, con pruebas cruzadas. **Espera decisión del responsable** sobre la bitácora vieja, las entregas y la lista de usuarios (ADR-009, «2.0-f: lo que falta decidir»)
+  - [x] 2.0.10 (PR #248) · Mejora (propuesta del 14/11/2026, aprobada por el responsable el mismo día): la sede en el título de la notificación para quien está en más de una sede, «Villa Nueva · Simulacro»; también en los recordatorios de urgentes
+  - [ ] SED-DES (Propuesta) · Al desactivar una sede con personas, avisar cuántas quedarían sin sede activa
+  - [ ] RF-FAC-05 · Reportes por facultad (ficha de la ampliación)
+  - [ ] 2.0-f · Las reglas exigen la sede, con pruebas cruzadas. **Espera decisión del responsable** sobre la bitácora vieja, las entregas y la lista de usuarios (ADR-009, «2.0-f: lo que falta decidir»). Desde la 2.0.8 y 2.0.9 lo nuevo ya lleva sede; falta completar lo viejo
+  - [ ] PROM-2.0 · Pasar la 2.0 a QA cuando el responsable lo indique (ficha propia)
 - **Pruebas:** reglas por sede contra el emulador, dominio («todos» por sede), migración
   contra el emulador, guion en el documento 09; regresión completa.
 - **Accesibilidad y usabilidad:** la sede actual siempre visible (estado del sistema); el
@@ -387,21 +399,24 @@ decisiones; documento 14). **Ninguna está empezada.**
 
 ### 2.0 (ampliación) · Facultades y mantenimiento de catálogos (RF-FAC-01 a 05, RF-CAT-01 a 05)
 
-- **Estado:** Aprobada (2026-11-06), versión 2.0 · **Prioridad:** Alta · **Origen:** responsable, 06/11/2026: «en el manejo de sedes también hay que agregar el manejo de facultades … a todos estos catálogos … hay que crear un [mantenimiento]»
-- **Propuesta:** facultades dentro de la sede, en la **misma migración** de la 2.0; una
-  pantalla de mantenimiento común para todos los catálogos. Análisis en el documento 14,
-  secciones 2 y 3.
+- **Estado:** En dev (2.0.10, 2026-11-14), salvo RF-FAC-05 · **Prioridad:** Alta · **Origen:** responsable, 06/11/2026: «en el manejo de sedes también hay que agregar el manejo de facultades … a todos estos catálogos … hay que crear un [mantenimiento]»
+- **Propuesta:** facultades en la **misma migración** de la 2.0; una pantalla de mantenimiento
+  común para todos los catálogos. Análisis en el documento 14, secciones 2 y 3. **Cambio del
+  08/11/2026 (2.0.6):** «el nivel más alto es la sede, luego facultad»: la facultad dejó de ser
+  propia de cada sede y pasó a un catálogo único de la UMG; cada sede elige de él las que
+  ofrece, y a cada persona solo se le asignan las que su sede ofrece (ADR-009, sección 2.0.6).
 - **Criterios de aceptación:**
-  - [ ] RF-FAC-01 · Facultades por sede; una persona en una o varias
-  - [ ] RF-FAC-02 · Avisos a toda una facultad
-  - [ ] RF-FAC-03 · Grupos por facultad
-  - [ ] RF-FAC-04 · Con una facultad o ninguna, no se muestra
-  - [ ] RF-FAC-05 · Reportes filtrables por facultad
-  - [ ] RF-CAT-01 · Mantenimiento con buscador, alta, edición, activar/desactivar
-  - [ ] RF-CAT-02 · Lo que está en uso se desactiva, no se borra
-  - [ ] RF-CAT-03 · Sin nombres repetidos
-  - [ ] RF-CAT-04 · Cambios en la bitácora
-  - [ ] RF-CAT-05 · Cada catálogo, solo su rol
+  - [x] RF-FAC-01 · Catálogo único → oferta de cada sede → facultades de cada persona por sede (2.0.6)
+  - [x] RF-FAC-02 · Avisos a toda una facultad
+  - [x] RF-FAC-03 · Grupos por facultad, solo con quien la tiene (2.0.7)
+  - [x] RF-FAC-04 · Con una facultad o ninguna, no se muestra
+  - [ ] RF-FAC-05 · Reportes filtrables por facultad: Entregas, Alcance y Respuestas (la caja chica, en la 2.2)
+  - [x] RF-CAT-01 · Mantenimiento con buscador, alta, edición, activar/desactivar
+  - [x] RF-CAT-02 · Lo que está en uso se desactiva, no se borra ni se retira
+  - [x] RF-CAT-03 · Sin nombres repetidos
+  - [x] RF-CAT-04 · Cambios en la bitácora
+  - [x] RF-CAT-05 · Cada catálogo, solo su rol
+  - [ ] Decisión 11 (nueva, 14/11/2026): ¿una facultad puede tener **coordinación propia** dentro de la sede, o la coordina la sede? Es la pregunta 2 de la sección 2 del documento 14, que quedó sin hacer; importa antes de la caja chica
   - [x] Decisión 3: por ahora solo Ingeniería en Sistemas (2026-11-06)
   - [x] Decisión 2: una persona puede estar en varias facultades (2026-11-06)
 - **Pruebas:** reglas por sede y facultad contra el emulador; widget del mantenimiento común;
@@ -435,9 +450,22 @@ decisiones; documento 14). **Ninguna está empezada.**
   - [ ] RF-CCH-16 · Aportes periódicos, eventuales o de monto libre
   - [ ] RF-CCH-17 · Cuotas periódicas al día o pendientes
   - [x] Decisiones 7 y 9: aportes periódicos, eventuales y libres; sin aprobación de una segunda persona (2026-11-06)
+- **Alineación con la 2.0 (14/11/2026):** la caja chica se apoya en lo que la 2.0 dejó hecho,
+  con las mismas reglas que ya rigen grupos y facultades:
+  - La caja es de una **facultad que la sede ofrece** (`sedes/{s}/cajas/{facultadId}`). No se
+    puede retirar de la sede una facultad que tiene caja (igual que con personas y grupos, 2.0.6
+    y 2.0.7).
+  - **Operadores y aportantes** son catedráticos **de esa sede con esa facultad**. Quien deja la
+    sede o pierde la facultad deja de poder registrar: el servidor lo comprueba en cada
+    movimiento, como el envío comprueba la facultad del grupo (`FUERA_DE_LA_FACULTAD`).
+  - El catedrático ve el saldo y sus aportes **de su sede de trabajo**, con el mismo aviso de lo
+    que tiene en otras sedes que tiene la bandeja (2.0.8).
+  - La crea y le pone operadores la **coordinación de la sede** (rol en esa sede) y, en cualquier
+    sede, el superadministrador. Cada movimiento queda en la bitácora **de esa sede** (2.0.9).
+  - Faltan cuatro decisiones (12 a 15, documento 14, sección 8).
 - **Pruebas:** dominio (saldo, anulación, negativo, tipos que exigen catedrático), reglas
   (nadie escribe movimientos desde el cliente), concurrencia (dos movimientos a la vez),
-  regresión completa.
+  operadores y aportantes fuera de la sede o facultad, regresión completa.
 - **Accesibilidad y usabilidad:** montos con formato de quetzales y lectura clara para
   lectores de pantalla; confirmación antes de registrar una salida; errores que dicen qué hacer.
 
@@ -456,6 +484,12 @@ decisiones; documento 14). **Ninguna está empezada.**
   - [ ] RF-ENC-07 · Recordatorio
   - [ ] RF-ENC-08 · Exportar a CSV
   - [x] Decisión 10: crean y ven resultados quienes pueden emitir avisos (2026-11-06)
+- **Alineación con la 2.0 (14/11/2026):** no cambia lo aprobado; hereda lo hecho. Los
+  destinatarios se resuelven igual que un aviso (sede de trabajo, facultad, grupos con su
+  facultad, personas); la crea quien puede emitir **en esa sede**; la encuesta lleva `sedeId`
+  y su participación también; el catedrático ve las de su sede de trabajo con lo pendiente en
+  las otras, y la notificación dice la sede si está en varias (2.0.8 y 2.0.10). Los resultados
+  se pueden ver por facultad (RF-FAC-05).
 - **Pruebas:** reglas (una respuesta por persona; en anónimas, ninguna regla ni consulta une
   respuesta y persona), dominio de resultados, regresión completa.
 - **Accesibilidad y usabilidad:** preguntas navegables con el tabulador; progreso visible;
@@ -475,6 +509,13 @@ decisiones; documento 14). **Ninguna está empezada.**
   - [ ] RF-REP-04 · Dan y quitan acceso a una carpeta por grupos
   - [ ] RF-REP-07 · Ejecutables y comprimidos se rechazan
   - [ ] La coordinación ve el cupo usado
+- **Alineación con la 2.0 (14/11/2026):** las carpetas ya estaban pensadas por sede; ahora
+  el acceso por **grupos** respeta solo la facultad (un grupo de una facultad solo tiene a quien
+  la tiene, 2.0.7). Dos puntos para decidir (16 y 17, documento 14, sección 8):
+  - **El cupo de 2 GB por sede no cabe en la cuota gratuita con tres sedes o más** (5 GB en
+    total). Con dos sedes, 4 GB, cabe.
+  - Dar acceso a una carpeta a **toda una facultad**, además de por grupos, como ya se hace con
+    los avisos.
 - **Pruebas:** reglas (un catedrático no sube ni lista carpetas), dominio (cupo, tipos,
   acceso), regresión completa.
 - **Accesibilidad y usabilidad:** subir con progreso visible y opción de cancelar; errores
@@ -493,11 +534,49 @@ decisiones; documento 14). **Ninguna está empezada.**
   - [ ] Quitarle el acceso a un grupo surte efecto de inmediato
   - [ ] DT-04 · Un catedrático no puede descargar un adjunto que no le corresponde, aunque conozca la ruta
   - [ ] REP-AV (opcional, Propuesta) · Aviso automático de archivo nuevo en una carpeta
+- **Alineación con la 2.0 (14/11/2026):** el catedrático ve las carpetas de **su sede de
+  trabajo**, con aviso de lo nuevo en las otras (como la bandeja, 2.0.8); quien pierde el grupo
+  o la facultad pierde el acceso de inmediato.
 - **Pruebas:** reglas y función de enlace; de punta a punta en QA: subir un PDF, verlo
   como catedrático del grupo y **no** verlo como catedrático de otro grupo.
 - **Accesibilidad y usabilidad:** nombres de archivo legibles por lectores de pantalla,
   tamaño y tipo visibles antes de descargar.
 - **Documentos tocados:** 05, 07 (DT-04), 09, 10, manual del catedrático.
+
+### 2.0-f · Las reglas exigen la sede
+
+- **Estado:** Aprobada, espera tres decisiones del responsable · **Prioridad:** Alta · **Origen:** ADR-009, plan de implementación (paso «contraer»)
+- **Problema:** hoy la separación por sede la cumplen la aplicación y el servidor, pero las
+  reglas de Firestore todavía dejan leer a quien coordina lo de cualquier sede. Para que las
+  reglas lo exijan, cada consulta tiene que pedir la sede, y lo viejo que no la tiene dejaría
+  de verse.
+- **Decisiones pendientes** (ADR-009, «2.0-f: lo que falta decidir»; documento 14, sección 8):
+  - [ ] F1 · Bitácora anterior a la 2.0: ponerle `sedeId: 'bdm'` (recomendado) o que solo la vea el superadministrador
+  - [ ] F2 · Entregas y respuestas anteriores a la 2.0.8/2.0.9: completarles la sede desde su aviso (recomendado)
+  - [ ] F3 · Lista de sedes en cada perfil (`sedesIds`) y en el token, para que las reglas comprueben la sede de una persona (recomendado)
+- **Criterios de aceptación:**
+  - [ ] Ninguna consulta de la aplicación trae documentos de otra sede (pruebas cruzadas contra el emulador)
+  - [ ] Lo viejo se sigue viendo donde corresponde
+  - [ ] Migración idempotente, probada en desarrollo y QA antes de producción
+
+### SED-DES · Al desactivar una sede con personas, decir cuántas quedarían sin sede activa
+
+- **Estado:** Propuesta · **Prioridad:** Media · **Origen:** revisión del 08/11/2026
+- **Problema:** desactivar una sede no saca a nadie de ella; quien solo está en esa sede queda
+  con su única sede inactiva sin que nadie lo sepa.
+- **Propuesta:** antes de desactivarla, decir cuántas personas solo están en esa sede, igual
+  que al retirar una facultad (2.0.6).
+
+### PROM-2.0 · Pasar la 2.0 a QA y a producción
+
+- **Estado:** Aprobada, espera la indicación del responsable (la dará después de probar la 2.0.10 en desarrollo) · **Prioridad:** Alta · **Origen:** responsable, 14/11/2026
+- **Pasos:**
+  - [ ] PR `develop → qa` (lo fusiona el equipo con los checks en verde)
+  - [ ] Respaldo del día de QA comprobado
+  - [ ] `migrar-sedes.py` en QA: primero el plan, luego `--aplicar`, y una segunda corrida sin cambios (incluye el catálogo único de facultades)
+  - [ ] Designar al superadministrador en QA (lo hace el responsable)
+  - [ ] Prueba del responsable en QA con el guion del documento 09 (F-1 a F-15)
+  - [ ] PR `qa → main`: lo fusiona y aprueba el responsable; antes, lo mismo en producción
 
 ### ALC-1 · Alcance muestra a quién no le aparecen los avisos
 
@@ -599,7 +678,7 @@ decisiones; documento 14). **Ninguna está empezada.**
 
 ### DOC-07 · Estados viejos en el resumen del documento 07
 
-- **Estado:** En dev (PR #222) · **Prioridad:** Baja · **Origen:** revisión del 2026-11-06
+- **Estado:** En producción (1.6.20, 2026-11-14, PR #222) · **Prioridad:** Baja · **Origen:** revisión del 2026-11-06
 - **Problema:** el resumen decía «Pagada (en desarrollo y QA)» para DT-07, DT-21 y DT-23, que
   están en producción desde la 1.5.11 (2026-09-14).
 - **Criterios de aceptación:**
@@ -615,13 +694,15 @@ decisiones; documento 14). **Ninguna está empezada.**
 
 ### DOC-14 · Análisis de facultades, catálogos, caja chica y encuestas
 
-- **Estado:** En desarrollo (PR #223) · **Prioridad:** Alta · **Origen:** responsable, 06/11/2026
+- **Estado:** En producción (1.6.20, 2026-11-14); la alineación del 14/11 (sección 8), en dev · **Prioridad:** Alta · **Origen:** responsable, 06/11/2026
 - **Criterios de aceptación:**
   - [x] Documento 14 con lo pedido, modelo, riesgos, decisiones y orden recomendado
   - [x] Requisitos propuestos en el documento 01, sección 3.10
   - [x] Una fila por requisito en esta cartera
   - [x] Seis de las diez decisiones resueltas (2026-11-06, PR #224)
   - [x] Orden aprobado y las cuatro decisiones restantes resueltas (2026-11-06)
+  - [x] Alineado con la 2.0 tal como quedó (sección 8, 2026-11-14)
+  - [ ] Decisiones 11 a 17 de la sección 8, del responsable
 
 ### DT-14 · Los correos de la cuenta caen en No deseado (C-4)
 
@@ -655,3 +736,4 @@ cada deuda pagada, en el 07. En resumen:
 | 1.6.0 a 1.6.17 | 2026-09-28 | C-6, U-1 a U-7, App Check en observación (S-4), fallos del aparato (S-5 / DT-34), carga inicial (S-7), dependencias mensuales y rotación de VAPID (S-8, S-9), mensajes de 1000 caracteres, plantillas (RF-MSG-14), respuestas en «Sin leer» |
 | 1.6.18 | 2026-10-15 | Mantenimiento de octubre y resumen de la sonda |
 | 1.6.19 | 2026-11-03 | Mantenimiento de noviembre (MNT-11), demostraciones de CI/CD (DEM-1) y esta cartera (DOC-13) |
+| 1.6.20 | 2026-11-14 | En iPhone, tocar la notificación de una respuesta lleva a ella (DT-35); análisis de facultades, caja chica y encuestas (DOC-14) |
