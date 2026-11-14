@@ -291,3 +291,44 @@ Las diez se respondieron el 06/11/2026.
 | 8 | ¿Foto del comprobante en las salidas? | **Resuelta** | **No** |
 | 9 | ¿Aprobación de una segunda persona para salidas grandes? | **Resuelta** | **No** |
 | 10 | ¿Quién crea encuestas y quién ve los resultados? | **Resuelta** | **Los mismos que pueden emitir avisos** (coordinación y administración) |
+
+---
+
+## 8. Alineación con la 2.0 tal como quedó (14/11/2026)
+
+Este análisis se escribió el 06/11/2026, antes de construir la 2.0. Entre el 07 y el 14/11 la
+2.0 llegó a la 2.0.10 en desarrollo y cambió tres cosas que afectan lo que sigue:
+
+1. **La facultad tiene tres niveles** (2.0.6, «el nivel más alto es la sede, luego
+   facultad»): un catálogo único de la UMG, las que ofrece cada sede y las de cada persona en
+   cada sede. Donde la sección 2 dice `sedes/{sedeId}/facultades`, hoy eso es lo que **ofrece**
+   la sede; la facultad en sí está en `facultades/{id}`.
+2. **Lo que está en uso no se retira**: una facultad que tiene alguien, o un grupo, no se puede
+   retirar de la sede (2.0.6, 2.0.7). Un grupo de una facultad solo admite a quien la tiene.
+3. **Todo se ve por sede de trabajo**, también para el catedrático, que ve siempre dónde está,
+   lo pendiente en sus otras sedes y la sede en la notificación (2.0.8 a 2.0.10).
+
+**Qué cambia en lo que sigue:**
+
+- **Caja chica (2.1, 2.2):** la caja es de una facultad que la sede ofrece; no se retira una
+  facultad que tiene caja; operadores y aportantes son catedráticos de esa sede con esa
+  facultad, y quien la pierde deja de registrar; el catedrático ve lo de su sede de trabajo.
+- **Encuestas (2.3):** sin cambios de fondo; heredan los destinatarios, la sede y la
+  notificación de los avisos.
+- **Repositorio (2.4, 2.5):** el acceso por grupos ya respeta la facultad; el cupo por sede
+  hay que revisarlo (decisión 16).
+
+**Decisiones nuevas o que quedaron sin hacer**, para el responsable:
+
+| # | Pregunta | Recomendación |
+|---|---|---|
+| 11 | ¿Una facultad puede tener **coordinación propia** dentro de la sede, o la coordina la sede? | **La coordina la sede** por ahora; si hace falta, se agrega después sin migrar |
+| 12 | ¿Quién crea una caja y le asigna operadores? | **La coordinación de la sede** y, en cualquier sede, el superadministrador |
+| 13 | ¿Los tipos de entrada y salida son de cada sede o una lista única de la UMG? | **De cada sede**, mantenidos por su coordinación (como se aprobó en RF-CCH-05): son costumbres de cada lugar |
+| 14 | ¿Solo quetzales? (era la 7 de la sección 4.6) | **Sí** |
+| 15 | ¿Operadores y aportantes solo de esa sede y facultad, y pierden el acceso si dejan la facultad? | **Sí**, como los grupos |
+| 16 | El cupo aprobado es **2 GB por sede**; con tres sedes o más se pasa de la cuota gratuita (5 GB en total) | **Un cupo total de 4 GB que el superadministrador reparte entre sedes**; pasarse cuesta poco (centavos de dólar por GB al mes), pero el sistema hoy cuesta 0 |
+| 17 | ¿Una carpeta se puede abrir a **toda una facultad**, además de por grupos? | **Sí**, como el envío de avisos a una facultad |
+
+Y las tres de la 2.0-f (ADR-009): F1 bitácora vieja, F2 entregas y respuestas viejas, F3 lista
+de sedes en el perfil.
