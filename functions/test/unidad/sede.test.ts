@@ -17,6 +17,7 @@ import {
   conFacultadesEnSede,
   conRolEnSede,
   elegirSede,
+  enVariasSedes,
   esIdDeSede,
   exigirMiembrosEnLugar,
   membresiasDe,
@@ -29,6 +30,7 @@ import {
   sedesDeMembresias,
   sedesDelToken,
   sinSede,
+  tituloConSede,
 } from '../../src/domain/sede';
 
 describe('membresiasDe: un perfil de antes de la 2.0 es de la sede inicial', () => {
@@ -463,5 +465,31 @@ describe('2.0.7 · quién cabe en un grupo', () => {
         true,
       ),
     ).toThrow('4 miembros no son de esta sede con la facultad del grupo: A, B, c y 1 más.');
+  });
+});
+
+describe('2.0.10 · la sede en la notificación', () => {
+  it('solo a quien está en más de una sede', () => {
+    expect(
+      enVariasSedes([
+        { uid: 'una', rol: 'CATEDRATICO', membresias: { bdm: { rol: 'CATEDRATICO', facultades: [] } } },
+        {
+          uid: 'dos',
+          rol: 'CATEDRATICO',
+          membresias: {
+            bdm: { rol: 'CATEDRATICO', facultades: [] },
+            'villa-nueva': { rol: 'CATEDRATICO', facultades: [] },
+          },
+        },
+        // De antes de la 2.0: una sola, la inicial.
+        { uid: 'vieja', rol: 'CATEDRATICO' },
+      ]),
+    ).toEqual(new Set(['dos']));
+  });
+
+  it('el título lleva la sede delante; sin nombre, queda igual', () => {
+    expect(tituloConSede('Simulacro', 'Villa Nueva')).toBe('Villa Nueva · Simulacro');
+    expect(tituloConSede('Simulacro', '  ')).toBe('Simulacro');
+    expect(tituloConSede('Simulacro', null)).toBe('Simulacro');
   });
 });

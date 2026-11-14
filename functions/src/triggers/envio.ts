@@ -37,9 +37,9 @@ import {
   personasElegibles,
   resolverDestinatarios,
 } from '../application/resolverDestinatarios';
-import { sedeDelDocumento } from '../domain/sede';
+import { enVariasSedes, sedeDelDocumento, tituloConSede } from '../domain/sede';
 import { sedeDeLaPeticion } from '../application/sedeDeLaPeticion';
-import { leerFacultades } from '../infrastructure/sedes';
+import { leerFacultades, nombreDeSede } from '../infrastructure/sedes';
 import { LARGO_DE_ACUSE, armarSeña, cabecerasDeEnvio } from '../domain/acuse';
 import {
   type SuscripcionWeb,
@@ -391,6 +391,7 @@ export const enviarInmediato = onCall(OPCIONES_LLAMABLE, async (peticion) => {
       mensaje,
       resolucion.uids,
       sujeto.sedeId,
+      enVariasSedes(usuarios),
     );
 
     await escribirAsiento(
@@ -471,6 +472,15 @@ async function escribirEntregasPendientes(
   return acuses;
 }
 
+/** Lo que hace falta para poner la sede en el título (2.0.10). */
+interface SedeEnLaNotificacion {
+  readonly nombre: string;
+  /** Quienes están en más de una sede: solo a ellos se les dice. */
+  readonly variasSedes: ReadonlySet<string>;
+}
+
+const SIN_SEDE_EN_LA_NOTIFICACION: SedeEnLaNotificacion = { nombre: '', variasSedes: new Set() };
+
 /**
  * Manda el aviso a todos los dispositivos de cada destinatario.
  *
@@ -489,6 +499,7 @@ async function despachar(
     formato: readonly string[];
   },
   uids: readonly string[],
+  sede: SedeEnLaNotificacion = SIN_SEDE_EN_LA_NOTIFICACION,
 ): Promise<{ entregados: number; fallidos: number }> {
   const esUrgente = mensaje.tipo === 'URGENTE';
 
@@ -505,6 +516,12 @@ async function despachar(
     // Para que la notificación pueda decir «lleva nota de voz» sin abrir nada.
     formato: mensaje.formato.join(','),
   };
+
+  // 2.0.10: a quien está en varias sedes, el título dice de cuál es el aviso.
+  // Lo arma el servidor, no el worker: así llega igual a los aparatos que
+  // todavía no se actualizaron.
+  const cargaDe = (uid: string): Record<string, string> =>
+    sede.variasSedes.has(uid) ? { ...carga, titulo: tituloConSede(mensaje.titulo, sede.nombre) } : carga;
 
   let entregados = 0;
   let fallidos = 0;
@@ -524,8 +541,8 @@ async function despachar(
         suscripciones.map(async (s) => {
           const acuseId = acuses.get(uid);
           const datos: Record<string, string> = acuseId
-            ? { ...carga, ac: armarSeña(refOcurrencia.id, uid, acuseId) }
-            : carga;
+            ? { ...cargaDe(uid), ac: armarSeña(refOcurrencia.id, uid, acuseId) }
+            : cargaDe(uid);
           const r = await enviarPorWebPush(s, datos);
           const previo = porWebPush.get(uid);
           porWebPush.set(uid, {
@@ -557,8 +574,8 @@ async function despachar(
       // cuál es la que se mostró cuando el worker conteste (DT-31).
       const acuseId = acuses.get(uid);
       const datos: Record<string, string> = acuseId
-        ? { ...carga, ac: armarSeña(refOcurrencia.id, uid, acuseId) }
-        : carga;
+        ? { ...cargaDe(uid), ac: armarSeña(refOcurrencia.id, uid, acuseId) }
+        : cargaDe(uid);
 
       for (const token of tokens) {
         envios.push({
@@ -985,6 +1002,7 @@ export async function despacharMensaje(
     mensaje,
     resolucion.uids,
     sedeId,
+    enVariasSedes(usuarios),
   );
 
   return { total: resolucion.uids.length, entregados, fallidos };
@@ -1002,6 +1020,7 @@ async function ejecutarDespacho(
   },
   uids: readonly string[],
   sedeId: string,
+  variasSedes: ReadonlySet<string> = new Set(),
 ): Promise<{ entregados: number; fallidos: number; estadoFinal: string }> {
   const refOcurrencia = refMensaje.collection('ocurrencias').doc(ocurrenciaId);
 
@@ -1013,12 +1032,16 @@ async function ejecutarDespacho(
 
   const acuses = await escribirEntregasPendientes(refOcurrencia, refMensaje.id, uids, sedeId);
 
+  // Solo se lee el nombre de la sede si alguien lo va a ver.
+  const sede: SedeEnLaNotificacion =
+    variasSedes.size > 0 ? { nombre: await nombreDeSede(sedeId), variasSedes } : SIN_SEDE_EN_LA_NOTIFICACION;
   const { entregados, fallidos } = await despachar(
     refOcurrencia,
     refMensaje.id,
     acuses,
     mensaje,
     uids,
+    sede,
   );
 
   const estadoFinal = fallidos === 0 ? 'ENVIADO' : 'ENVIADO_CON_FALLOS';

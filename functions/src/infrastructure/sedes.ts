@@ -26,6 +26,12 @@ export async function leerFacultades(sedeId: string): Promise<FacultadResuelta[]
   return instantanea.docs.map((d) => ({ id: d.id, activa: d.get('activa') !== false }));
 }
 
+/** El nombre visible de una sede («Villa Nueva»); si no se puede leer, su identificador. */
+export async function nombreDeSede(sedeId: string): Promise<string> {
+  const d = await db.collection(RUTAS.sedes).doc(sedeId).get();
+  return (d.get('nombre') as string | undefined) ?? sedeId;
+}
+
 /** El catálogo único de facultades (2.0.6). */
 export async function leerCatalogoDeFacultades(): Promise<ElementoCatalogo[]> {
   return leer(await db.collection(RUTAS.catalogoFacultades).get());
