@@ -361,7 +361,7 @@ mucho una vez por minuto.
 
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
-| `que` | string | `arranque` · `registro-dispositivo` · `suscripcion-propia` · `worker` · `notificacion` · `app-check` · `no-controlado` |
+| `que` | string | `arranque` · `registro-dispositivo` · `suscripcion-propia` · `worker` · `notificacion` · `app-check` · `no-controlado` · `apertura` (diagnóstico de DT-35, 1.6.20) |
 | `aparato` | string | Identificador **al azar** que genera la aplicación y guarda en el navegador. No está ligado a ninguna cuenta |
 | `plataforma` | string | `WEB_IOS` · `WEB_ANDROID` · `WEB_ESCRITORIO` · `OTRA` |
 | `version` | string | Versión de la aplicación, o vacío |
