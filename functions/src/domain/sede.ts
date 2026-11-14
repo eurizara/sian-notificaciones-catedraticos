@@ -376,3 +376,23 @@ export function exigirMiembrosEnLugar(
     { cuantos: String(n) },
   );
 }
+
+/**
+ * Quiénes están en más de una sede (2.0.10): a ellos la notificación les dice
+ * de qué sede es el aviso. A los demás no: con una sola, sería ruido.
+ */
+export function enVariasSedes(
+  usuarios: readonly { readonly uid: string; readonly rol: Rol; readonly membresias?: unknown }[],
+): Set<string> {
+  return new Set(usuarios.filter((u) => Object.keys(membresiasDe(u)).length > 1).map((u) => u.uid));
+}
+
+/**
+ * El título de la notificación con la sede delante: «Villa Nueva · Simulacro»
+ * (2.0.10). El service worker antepone «URGENTE · » si lo es, así que queda
+ * «URGENTE · Villa Nueva · Simulacro»: lo más importante, primero.
+ */
+export function tituloConSede(titulo: string, nombreSede: string | null | undefined): string {
+  const sede = (nombreSede ?? '').trim();
+  return sede === '' ? titulo : `${sede} · ${titulo}`;
+}

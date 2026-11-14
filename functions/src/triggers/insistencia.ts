@@ -31,6 +31,9 @@ import {
 } from '../domain/acuse';
 import { FieldValue, RUTAS, aTimestamp, db } from '../infrastructure/firebase';
 import { avisarAPersona } from './envio';
+import { SEDE_INICIAL, enVariasSedes, sedeDelDocumento, tituloConSede } from '../domain/sede';
+import type { Rol } from '../domain/tipos';
+import { nombreDeSede } from '../infrastructure/sedes';
 
 /** Cuántas entregas se reintentan por ciclo. */
 const MAX_POR_CICLO = 30;
@@ -65,6 +68,11 @@ export async function insistirDondeNoHuboAcuse(ahora: Date): Promise<number> {
   }
 
   const contenidos = new Map<string, Record<string, string> | null>();
+  // 2.0.10: la sede en el título, para quien está en varias. Se lee una vez
+  // por aviso, por persona y por sede, no una vez por entrega.
+  const sedeDelAviso = new Map<string, string>();
+  const enVarias = new Map<string, boolean>();
+  const nombres = new Map<string, string>();
   let insistidos = 0;
 
   for (const entrega of candidatas.docs) {
@@ -98,6 +106,7 @@ export async function insistirDondeNoHuboAcuse(ahora: Date): Promise<number> {
 
       if (!contenidos.has(mensajeId)) {
         const mensaje = await db.collection(RUTAS.mensajes).doc(mensajeId).get();
+        sedeDelAviso.set(mensajeId, sedeDelDocumento(mensaje.data()));
         contenidos.set(
           mensajeId,
           mensaje.exists
@@ -123,9 +132,27 @@ export async function insistirDondeNoHuboAcuse(ahora: Date): Promise<number> {
         reintentadoEn: FieldValue.serverTimestamp(),
       });
 
+      if (!enVarias.has(uid)) {
+        const perfil = await db.collection(RUTAS.usuarios).doc(uid).get();
+        enVarias.set(
+          uid,
+          enVariasSedes([
+            { uid, rol: (perfil.get('rol') as Rol | undefined) ?? 'CATEDRATICO', membresias: perfil.get('membresias') as unknown },
+          ]).has(uid),
+        );
+      }
+      let titulo = carga.titulo ?? '';
+      if (enVarias.get(uid) === true) {
+        const sedeId = sedeDelAviso.get(mensajeId) ?? SEDE_INICIAL;
+        if (!nombres.has(sedeId)) {
+          nombres.set(sedeId, await nombreDeSede(sedeId));
+        }
+        titulo = tituloConSede(titulo, nombres.get(sedeId));
+      }
+
       const { entregado } = await avisarAPersona(
         uid,
-        { ...carga, ac: armarSeña(ocurrenciaId, uid, acuseId) },
+        { ...carga, titulo, ac: armarSeña(ocurrenciaId, uid, acuseId) },
         carga.tipo === 'URGENTE',
       );
       if (!entregado) {
