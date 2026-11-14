@@ -14,6 +14,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../infrastructure/firebase/repositorio_administracion.dart';
+import '../../application/proveedores_sede.dart';
 import '../shared/tema.dart';
 import '../shared/buscador.dart';
 import '../shared/textos.dart';
@@ -30,9 +31,18 @@ class FiltroBitacora extends Notifier<String> {
 final NotifierProvider<FiltroBitacora, String> filtroBitacoraProvider =
     NotifierProvider<FiltroBitacora, String>(FiltroBitacora.new);
 
+/// Lo de la sede de trabajo (2.0.9). Un asiento sin sede es de antes de la
+/// 2.0, o del catálogo único de facultades, y se lee como de la inicial.
 final bitacoraProvider = StreamProvider<List<AsientoVista>>((Ref ref) {
   final String tipo = ref.watch(filtroBitacoraProvider);
-  return ref.watch(repositorioAdminProvider).observarBitacora(tipo: tipo);
+  final String sede = ref.watch(sedeDeTrabajoProvider);
+  return ref
+      .watch(repositorioAdminProvider)
+      .observarBitacora(tipo: tipo)
+      .map(
+        (List<AsientoVista> todos) =>
+            todos.where((AsientoVista a) => a.sedeId == sede).toList(),
+      );
 });
 
 /// Los eventos que ya puede generar el sistema hoy. Crece con cada iteración.

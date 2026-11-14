@@ -11,6 +11,8 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
+import '../../core/sede_de_trabajo.dart';
+
 /// Quién escribió un turno.
 enum LadoHilo {
   catedratico('CATEDRATICO'),
@@ -58,9 +60,14 @@ class Hilo {
     this.ultimaVista = '',
     this.ultimoLado = LadoHilo.catedratico,
     this.actualizadoEn,
+    this.sedeId = 'bdm',
   });
 
   final String mensajeId;
+
+  /// La sede del aviso (2.0.9). Sin el campo —conversaciones anteriores—, la
+  /// inicial, como todo lo de antes de la 2.0.
+  final String sedeId;
 
   /// El catedrático. Es también el identificador del hilo.
   final String uid;
@@ -272,6 +279,7 @@ class RepositorioRespuestas {
       ultimaVista: (ultimo['vista'] as String?) ?? '',
       ultimoLado: LadoHilo.desde(ultimo['lado']),
       actualizadoEn: (x['actualizadoEn'] as Timestamp?)?.toDate(),
+      sedeId: sedeDelDocumento(x),
     );
   }
 }

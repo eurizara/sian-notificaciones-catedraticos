@@ -19,6 +19,7 @@ class InvitacionVista {
     required this.nombre,
     required this.consumida,
     this.creadaEn,
+    this.sedeId = 'bdm',
   });
 
   final String correo;
@@ -26,6 +27,9 @@ class InvitacionVista {
   final String nombre;
   final bool consumida;
   final DateTime? creadaEn;
+
+  /// La sede a la que invita (2.0.9). Sin el campo, la inicial.
+  final String sedeId;
 }
 
 /// Usuario tal como se muestra en el panel.
@@ -100,7 +104,11 @@ class AsientoVista {
     required this.entidadId,
     required this.resumen,
     this.ocurridoEn,
+    this.sedeId = 'bdm',
   });
+
+  /// La sede del asiento (2.0.9). Sin el campo, la inicial.
+  final String sedeId;
 
   final String tipo;
   final String actorCorreo;
@@ -176,6 +184,7 @@ class RepositorioAdministracion {
           nombre: (x['nombre'] as String?) ?? '',
           consumida: x['consumida'] == true,
           creadaEn: (x['creadaEn'] as Timestamp?)?.toDate(),
+          sedeId: sedeDelDocumento(x),
         );
       }).toList();
 
@@ -250,6 +259,7 @@ class RepositorioAdministracion {
               entidadId: (x['entidadId'] as String?) ?? '',
               resumen: (x['resumen'] as String?) ?? '',
               ocurridoEn: (x['ocurridoEn'] as Timestamp?)?.toDate(),
+              sedeId: sedeDelDocumento(x),
             );
           }).toList(),
     );

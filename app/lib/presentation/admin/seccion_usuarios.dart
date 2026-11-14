@@ -22,9 +22,18 @@ final Provider<RepositorioAdministracion> repositorioAdminProvider =
       (Ref ref) => RepositorioAdministracion(),
     );
 
-final invitacionesProvider = StreamProvider<List<InvitacionVista>>(
-  (Ref ref) => ref.watch(repositorioAdminProvider).observarInvitaciones(),
-);
+/// Las invitaciones a la sede de trabajo (2.0.9): las de otra sede no son de
+/// quien coordina esta.
+final invitacionesProvider = StreamProvider<List<InvitacionVista>>((Ref ref) {
+  final String sede = ref.watch(sedeDeTrabajoProvider);
+  return ref
+      .watch(repositorioAdminProvider)
+      .observarInvitaciones()
+      .map(
+        (List<InvitacionVista> todas) =>
+            todas.where((InvitacionVista i) => i.sedeId == sede).toList(),
+      );
+});
 
 /// La gente de la sede de trabajo (2.0, RF-SED-05): un coordinador
 /// administra a los de su sede, y el servidor rechaza lo demás.
