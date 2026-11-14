@@ -295,6 +295,7 @@ primero sin `--aplicar`.
 | Ambiente | Corrido | Resultado |
 |---|---|---|
 | Desarrollo | 07/11/2026, con `--facultad-a-todos` | 114 de 114 escritas: sede y facultad creadas, 8 perfiles, 3 grupos, 101 mensajes. La segunda corrida no tuvo nada que hacer |
+| Desarrollo | 08/11/2026 (2.0.6, catálogo único) | 2 de 2 escritas: Ingeniería en Sistemas y Psicología pasan al catálogo `facultades/` con su mismo identificador; sin conflictos. La segunda corrida no tuvo nada que hacer |
 | QA | Pendiente | — |
 | Producción | Pendiente | — |
 

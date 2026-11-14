@@ -40,16 +40,18 @@ export type CambioDeOferta = 'alta' | 'reactivada' | 'retirada';
  * Qué hacer al pedir que una sede ofrezca —o deje de ofrecer— una facultad.
  * `null` si ya está como se pide. Lanza con un mensaje que dice qué hacer.
  *
- * `personas`: cuántas de esa sede la tienen asignada (solo importa al
- * retirarla).
+ * `personas`: cuántas de esa sede la tienen asignada, y `grupos`, cuántos
+ * grupos de la sede son de esa facultad (2.0.7). Solo importan al retirarla.
  */
 export function decidirOferta(entrada: {
   readonly ofrecer: boolean;
   readonly catalogo: FacultadDelCatalogo | undefined;
   readonly actual: OfertaActual | undefined;
   readonly personas: number;
+  readonly grupos?: number;
 }): CambioDeOferta | null {
   const { ofrecer, catalogo, actual, personas } = entrada;
+  const grupos = entrada.grupos ?? 0;
   if (ofrecer) {
     if (catalogo === undefined) {
       throw new ErrorValidacion('FACULTAD_INEXISTENTE', 'Esa facultad no está en el catálogo.');
@@ -68,12 +70,23 @@ export function decidirOferta(entrada: {
   if (actual === undefined || !actual.activa) {
     return null;
   }
-  if (personas > 0) {
-    const quien = personas === 1 ? 'La tiene 1 persona' : `La tienen ${personas} personas`;
+  if (personas > 0 || grupos > 0) {
+    const partes: string[] = [];
+    const pasos: string[] = [];
+    if (personas > 0) {
+      partes.push(personas === 1 ? 'la tiene 1 persona' : `la tienen ${personas} personas`);
+      pasos.push('quítesela en Usuarios');
+    }
+    if (grupos > 0) {
+      partes.push(grupos === 1 ? 'la usa 1 grupo' : `la usan ${grupos} grupos`);
+      pasos.push('cambie la facultad de esos grupos');
+    }
+    const frase = partes.join(' y ');
     throw new ErrorValidacion(
       'FACULTAD_EN_USO',
-      `${quien} en esta sede. Quítesela primero en Usuarios y después retírela de la sede.`,
-      { personas: String(personas) },
+      `${frase.charAt(0).toUpperCase()}${frase.slice(1)} en esta sede. Primero ${pasos.join(' y ')}; ` +
+        'después retírela de la sede.',
+      { personas: String(personas), grupos: String(grupos) },
     );
   }
   return 'retirada';

@@ -47,6 +47,12 @@ export interface GrupoResuelto {
   readonly miembros: readonly string[];
   /** Sin el campo, la sede inicial (2.0). */
   readonly sedeId?: string;
+  /**
+   * La facultad del grupo (RF-FAC-03). Con ella, solo recibe el miembro que
+   * hoy tiene esa facultad en la sede (2.0.7): si se la quitaron, el grupo no
+   * se la vuelve a dar por la puerta de atrás.
+   */
+  readonly facultadId?: string | null;
 }
 
 /** Una facultad del catálogo de la sede, ya leída (RF-FAC-02). */
@@ -108,6 +114,8 @@ export function resolverDestinatarios(
   }
 
   const candidatos: string[] = [];
+  /** uid → facultades que le exigen sus grupos; `null`: ninguna (2.0.7). */
+  const facultadExigida = new Map<string, Set<string> | null>();
 
   switch (destinatarios.modo) {
     case 'TODOS':
@@ -188,6 +196,21 @@ export function resolverDestinatarios(
           );
         }
         candidatos.push(...g.miembros);
+        // 2.0.7: quién exige facultad. Basta un grupo sin facultad que lo
+        // incluya para que no se le exija ninguna.
+        const f = g.facultadId ?? null;
+        for (const m of g.miembros) {
+          const previa = facultadExigida.get(m);
+          if (!facultadExigida.has(m)) {
+            facultadExigida.set(m, f === null ? null : new Set([f]));
+          } else if (previa !== null && previa !== undefined) {
+            if (f === null) {
+              facultadExigida.set(m, null);
+            } else {
+              previa.add(f);
+            }
+          }
+        }
       }
       break;
     }
@@ -245,6 +268,13 @@ export function resolverDestinatarios(
     // antes de enviar.
     if (!recibeAvisos(membresia.rol, usuario.recibeAvisos)) {
       excluidos.push({ uid, motivo: 'ROL_NO_RECIBE' });
+      continue;
+    }
+
+    // 2.0.7: en un grupo de una facultad, quien ya no la tiene en esta sede.
+    const exigidas = facultadExigida.get(uid);
+    if (exigidas !== null && exigidas !== undefined && !membresia.facultades.some((f) => exigidas.has(f))) {
+      excluidos.push({ uid, motivo: 'FUERA_DE_LA_FACULTAD' });
       continue;
     }
 

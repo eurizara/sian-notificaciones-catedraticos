@@ -37,11 +37,16 @@ class Elegible {
     required this.uid,
     required this.nombre,
     required this.correo,
+    this.facultades = const <String>[],
   });
 
   final String uid;
   final String nombre;
   final String correo;
+
+  /// Sus facultades en la sede de trabajo (2.0.7): en un grupo de una
+  /// facultad solo se ofrece a quien la tiene.
+  final List<String> facultades;
 }
 
 /// Grupo tal como se muestra y se edita.
@@ -147,6 +152,9 @@ class RepositorioGrupos {
         uid: (m['uid'] as String?) ?? '',
         nombre: (m['nombre'] as String?) ?? '',
         correo: (m['correo'] as String?) ?? '',
+        facultades: ((m['facultades'] as List<Object?>?) ?? const <Object?>[])
+            .map((Object? f) => '$f')
+            .toList(),
       );
     }).toList();
   }

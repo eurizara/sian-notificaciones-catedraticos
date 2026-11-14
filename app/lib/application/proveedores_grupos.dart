@@ -43,10 +43,15 @@ final gruposActivosProvider = Provider<AsyncValue<List<GrupoDetalle>>>((
       );
 });
 
-/// Quiénes pueden meterse en un grupo.
+/// Quiénes pueden meterse en un grupo: la gente de la sede de trabajo.
 ///
 /// Por Function, no leyendo `usuarios`: un administrador académico no tiene
 /// permiso sobre el padrón, y administrar grupos no debería dárselo.
-final elegiblesProvider = FutureProvider<List<Elegible>>(
-  (Ref ref) => ref.watch(repositorioGruposProvider).elegibles(),
-);
+///
+/// Mira la sede de trabajo (2.0.7): sin eso, la lista se pedía una vez y al
+/// cambiar de sede seguía ofreciendo la gente de la anterior — en Villa Nueva
+/// no aparecía nadie de Villa Nueva.
+final elegiblesProvider = FutureProvider<List<Elegible>>((Ref ref) {
+  ref.watch(sedeDeTrabajoProvider);
+  return ref.watch(repositorioGruposProvider).elegibles();
+});

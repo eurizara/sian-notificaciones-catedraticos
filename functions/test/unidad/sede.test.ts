@@ -9,6 +9,7 @@
 
 import { claimsDe, decidirActivacion, type PerfilUsuario } from '../../src/application/activarSesion';
 import { ErrorAutorizacion, ErrorValidacion } from '../../src/domain/errores';
+import type { Rol } from '../../src/domain/tipos';
 import {
   FACULTAD_INICIAL,
   MAXIMO_DE_SEDES,
@@ -17,7 +18,9 @@ import {
   conRolEnSede,
   elegirSede,
   esIdDeSede,
+  exigirMiembrosEnLugar,
   membresiasDe,
+  miembrosFueraDeLugar,
   motivoParaNoCambiarSuperadministrador,
   perteneceASede,
   rolEnSede,
@@ -415,5 +418,50 @@ describe('2.0.4 · el superadministrador', () => {
     expect(
       motivoParaNoCambiarSuperadministrador({ ...base, superadministradores: 1, objetivo: otroSuper, valor: false }),
     ).toMatch(/único superadministrador/);
+  });
+});
+
+
+describe('2.0.7 · quién cabe en un grupo', () => {
+  const perfiles = new Map<string, { rol: Rol; membresias?: unknown }>([
+    ['ana', { rol: 'CATEDRATICO', membresias: { bdm: { rol: 'CATEDRATICO', facultades: ['psicologia'] } } }],
+    ['beto', { rol: 'CATEDRATICO', membresias: { 'villa-nueva': { rol: 'CATEDRATICO', facultades: ['psicologia'] } } }],
+    ['carla', { rol: 'CATEDRATICO', membresias: { bdm: { rol: 'CATEDRATICO', facultades: [] } } }],
+    // De antes de la 2.0: es de bdm, sin facultades.
+    ['vieja', { rol: 'CATEDRATICO' }],
+  ]);
+
+  it('sin facultad: los de la sede', () => {
+    expect(miembrosFueraDeLugar(['ana', 'beto', 'carla', 'vieja', 'borrado'], perfiles, 'bdm', null)).toEqual([
+      'beto',
+      'borrado',
+    ]);
+  });
+
+  it('con facultad: los de la sede que la tienen allí', () => {
+    expect(miembrosFueraDeLugar(['ana', 'beto', 'carla', 'vieja'], perfiles, 'bdm', 'psicologia')).toEqual([
+      'beto',
+      'carla',
+      'vieja',
+    ]);
+    expect(miembrosFueraDeLugar(['beto'], perfiles, 'villa-nueva', 'psicologia')).toEqual([]);
+  });
+
+  it('el mensaje dice cuántos, quiénes (hasta tres) y qué hacer', () => {
+    expect(() => exigirMiembrosEnLugar([], true)).not.toThrow();
+    expect(() => exigirMiembrosEnLugar([{ uid: 'b', nombre: 'Beto' }], false)).toThrow(
+      'Un miembro no es de esta sede: Beto. Quítelos del grupo antes de guardar.',
+    );
+    expect(() =>
+      exigirMiembrosEnLugar(
+        [
+          { uid: 'a', nombre: 'A' },
+          { uid: 'b', nombre: 'B' },
+          { uid: 'c', nombre: '' },
+          { uid: 'd', nombre: 'D' },
+        ],
+        true,
+      ),
+    ).toThrow('4 miembros no son de esta sede con la facultad del grupo: A, B, c y 1 más.');
   });
 });

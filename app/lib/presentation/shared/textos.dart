@@ -909,6 +909,8 @@ abstract final class Textos {
     'SIN_PERFIL' => '$cuantos sin perfil en el sistema',
     'ROL_NO_RECIBE' =>
       '$cuantos por su rol: solo los catedráticos reciben avisos',
+    'OTRA_SEDE' => '$cuantos que ya no son de esta sede',
+    'FUERA_DE_LA_FACULTAD' => '$cuantos que ya no tienen la facultad del grupo',
     _ => '$cuantos por «$motivo»',
   };
 
@@ -1593,6 +1595,20 @@ abstract final class Textos {
   static String resumenPersonas(int? total) => total == null
       ? 'Cargando…'
       : '$total ${total == 1 ? 'persona' : 'personas'} en todas las sedes';
+
+  // ── Grupos coherentes con la sede y la facultad (2.0.7) ──────────────────
+  static String grupoMiembrosFuera(int n, {required bool conFacultad}) {
+    final String donde = conFacultad
+        ? 'de esta sede con la facultad del grupo'
+        : 'de esta sede';
+    return n == 1
+        ? 'Un miembro ya no es $donde. No recibirá los avisos del grupo.'
+        : '$n miembros ya no son $donde. No recibirán los avisos del grupo.';
+  }
+
+  static const String grupoQuitarlos = 'Quitarlos';
+  static const String grupoSoloDeLaFacultad =
+      'Solo aparecen las personas de esta sede que tienen la facultad del grupo.';
 
   // ── Catálogo único de facultades y lo que ofrece cada sede (2.0.6) ────────
   static const String catalogoFacultadesUnico = 'Facultades de la UMG';

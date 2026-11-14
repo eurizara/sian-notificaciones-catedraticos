@@ -902,6 +902,9 @@ Con una cuenta de superadministrador y otra de coordinación en una sola sede.
 | F-2 | Superadministrador: **Facultades que ofrece cada sede** → elegir Villa Nueva → marcar Psicología | «Psicología: se ofrece en Villa Nueva.» |
 | F-3 | Coordinación: Catálogos → **Facultades de su sede** | No hay «Agregar facultad»; se ven las de la lista de la UMG con casillas |
 | F-4 | Superadministrador: Usuarios → una persona de Villa Nueva → Sedes → Cambiar | Debajo de Villa Nueva, «Facultades en Villa Nueva» con solo las que ofrece; marcar Psicología y guardar |
-| F-5 | Coordinación (o superadministrador) de Villa Nueva: desmarcar Psicología en lo que ofrece la sede | No se retira: «La tiene 1 persona en esta sede. Quítesela primero en Usuarios…» |
+| F-5 | Coordinación (o superadministrador) de Villa Nueva: desmarcar Psicología en lo que ofrece la sede | No se retira: «La tiene 1 persona en esta sede. Primero quítesela en Usuarios; después retírela de la sede.» (si la usa un grupo, también lo dice) |
 | F-6 | Quitarle Psicología a esa persona y repetir F-5 | Se retira: «Psicología: ya no se ofrece en Villa Nueva.» |
 | F-7 | Superadministrador: desactivar en la lista de la UMG una facultad que alguna sede ofrece | No se desactiva: dice qué sedes la ofrecen |
+| F-8 (2.0.7) | En Boca del Monte, abrir Grupos → Nuevo; cambiar arriba a Villa Nueva y volver a Grupos → Nuevo | En Villa Nueva aparecen las personas de Villa Nueva (María), no las de Boca del Monte |
+| F-9 (2.0.7) | En una sede con dos facultades, Grupo nuevo → Facultad: Psicología | Solo aparecen quienes tienen Psicología en esa sede |
+| F-10 (2.0.7) | Quitarle la facultad a un miembro de ese grupo y abrir el grupo | Aviso «Un miembro ya no es de esta sede con la facultad del grupo» y botón Quitarlos; al redactar a ese grupo, el conteo dice «1 que ya no tienen la facultad del grupo» |

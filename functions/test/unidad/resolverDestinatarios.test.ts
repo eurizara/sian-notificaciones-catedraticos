@@ -446,3 +446,31 @@ describe('2.0 · enviar a una facultad (RF-FAC-02)', () => {
     ).toEqual(['ana', 'carla']);
   });
 });
+
+describe('2.0.7 · un grupo de una facultad', () => {
+  const PERSONAS: CandidatoDestinatario[] = [
+    persona('ana', { membresias: { bdm: { rol: 'CATEDRATICO', facultades: ['psicologia'] } } }),
+    // Se le quitó Psicología después de meterla en el grupo.
+    persona('beto', { membresias: { bdm: { rol: 'CATEDRATICO', facultades: ['ing-sistemas'] } } }),
+  ];
+  const PSICO: GrupoResuelto = { id: 'g-psico', activo: true, miembros: ['ana', 'beto'], sedeId: 'bdm', facultadId: 'psicologia' };
+  const LIBRE: GrupoResuelto = { id: 'g-libre', activo: true, miembros: ['beto'], sedeId: 'bdm' };
+
+  it('solo recibe quien hoy tiene la facultad del grupo, y consta por qué', () => {
+    const r = resolverDestinatarios({ modo: 'GRUPOS', gruposIds: ['g-psico'] }, PERSONAS, [PSICO], null, 'bdm');
+    expect(r.uids).toEqual(['ana']);
+    expect(r.excluidos).toEqual([{ uid: 'beto', motivo: 'FUERA_DE_LA_FACULTAD' }]);
+  });
+
+  it('si además está en un grupo sin facultad, recibe', () => {
+    const r = resolverDestinatarios(
+      { modo: 'GRUPOS', gruposIds: ['g-psico', 'g-libre'] },
+      PERSONAS,
+      [PSICO, LIBRE],
+      null,
+      'bdm',
+    );
+    expect(r.uids).toEqual(['ana', 'beto']);
+    expect(r.excluidos).toEqual([]);
+  });
+});

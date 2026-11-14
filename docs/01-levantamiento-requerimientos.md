@@ -371,7 +371,7 @@ uno en la [cartera](13-cartera-de-incrementos.md).
 |----|-----------|:---:|:---:|
 | RF-FAC-01 | Cada sede puede tener facultades; una persona pertenece a una o varias facultades de su sede. Desde la 2.0.6, en tres niveles: un catálogo único de la UMG, las que ofrece cada sede (elegidas de él) y las de cada persona en cada sede (solo entre las que su sede ofrece) | B | 2.0 |
 | RF-FAC-02 | Un aviso puede dirigirse a toda una facultad | B | 2.0 |
-| RF-FAC-03 | Los grupos pueden pertenecer a una facultad, y se filtran por ella | B | 2.0 |
+| RF-FAC-03 | Los grupos pueden pertenecer a una facultad, y se filtran por ella. Desde la 2.0.7, un grupo de una facultad solo admite personas de la sede que la tienen, y quien la pierde deja de recibir sus avisos | B | 2.0 |
 | RF-FAC-04 | Con una sola facultad o ninguna, la aplicación no pregunta ni muestra la facultad | B | 2.0 |
 | RF-FAC-05 | Los reportes se pueden filtrar por facultad | P | 2.0 |
 | RF-CAT-01 | Cada catálogo tiene una pantalla de mantenimiento con buscador, alta, edición y activar/desactivar | B | 2.0 |

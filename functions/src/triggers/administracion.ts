@@ -26,7 +26,9 @@ import {
   conFacultadesEnSede,
   conRolEnSede,
   esIdDeFacultad,
+  exigirMiembrosEnLugar,
   membresiasDe,
+  miembrosFueraDeLugar,
   perteneceASede,
   rolEnSede,
   sedeDelDocumento,
@@ -500,11 +502,41 @@ export const guardarGrupo = onCall(OPCIONES_LLAMABLE, async (peticion) => {
 
     // Un grupo es de una sede (RF-SED-01): la de quien lo crea. Editar uno de
     // otra sede se responde como si no existiera.
+    let facultadPrevia: string | null = null;
     if (grupoId) {
       const previo = await ref.get();
       if (!previo.exists || sedeDelDocumento(previo.data()) !== solicitante.sedeId) {
         throw new HttpsError('not-found', 'Ese grupo no existe.');
       }
+      facultadPrevia = (previo.get('facultadId') as string | null | undefined) ?? null;
+    }
+
+    // 2.0.7: la facultad tiene que ofrecerse en la sede, y cada miembro tiene
+    // que ser de la sede (y de esa facultad, si el grupo tiene una).
+    const facultadDelGrupo = facultadId === undefined ? facultadPrevia : facultadId;
+    if (facultadDelGrupo !== null) {
+      const ofrecidas = await leerFacultades(solicitante.sedeId);
+      if (!ofrecidas.some((f) => f.id === facultadDelGrupo && f.activa)) {
+        throw new HttpsError('invalid-argument', 'Esa facultad no se ofrece en esta sede.');
+      }
+    }
+    if (grupo.miembros.length > 0) {
+      const perfiles = await db.getAll(
+        ...grupo.miembros.map((uid) => db.collection(RUTAS.usuarios).doc(uid)),
+      );
+      const porUid = new Map(
+        perfiles
+          .filter((p) => p.exists)
+          .map((p) => [p.id, { rol: (p.get('rol') as Rol | undefined) ?? 'CATEDRATICO', membresias: p.get('membresias') as unknown }]),
+      );
+      const nombres = new Map(perfiles.map((p) => [p.id, (p.get('nombre') as string | undefined) ?? '']));
+      exigirMiembrosEnLugar(
+        miembrosFueraDeLugar(grupo.miembros, porUid, solicitante.sedeId, facultadDelGrupo).map((uid) => ({
+          uid,
+          nombre: nombres.get(uid) ?? '',
+        })),
+        facultadDelGrupo !== null,
+      );
     }
 
     await ref.set(
@@ -630,6 +662,11 @@ export const destinatariosElegibles = onCall(OPCIONES_LLAMABLE, async (peticion)
       uid: d.id,
       nombre: (d.get('nombre') as string | undefined) ?? d.id,
       correo: (d.get('correo') as string | undefined) ?? '',
+      // 2.0.7: sus facultades EN esta sede, para ofrecer en un grupo de una
+      // facultad solo a quien la tiene.
+      facultades: membresiasDe({ rol: (d.get('rol') as Rol | undefined) ?? 'CATEDRATICO', membresias: d.get('membresias') as unknown })[
+        solicitante.sedeId
+      ]?.facultades ?? [],
     }));
 
   elegibles.sort((a, b) => a.nombre.localeCompare(b.nombre));
