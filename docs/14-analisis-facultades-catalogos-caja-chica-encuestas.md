@@ -200,7 +200,7 @@ nota en un saldo que no cuadra.
    libre. Requisitos RF-CCH-16 y RF-CCH-17.
 5. ¿Las salidas llevan **foto del comprobante**? — **resuelta: no.**
 6. ¿Una salida grande necesita **aprobación** de una segunda persona? — **resuelta: no.**
-7. ¿Solo quetzales? — *pendiente* (se propone que sí)
+7. ¿Solo quetzales? — **resuelta el 23/11/2026: sí** (decisión 14 de la sección 8).
 
 ---
 
@@ -320,15 +320,17 @@ Este análisis se escribió el 06/11/2026, antes de construir la 2.0. Entre el 0
 
 **Decisiones nuevas o que quedaron sin hacer**, para el responsable:
 
-| # | Pregunta | Recomendación |
-|---|---|---|
-| 11 | ¿Una facultad puede tener **coordinación propia** dentro de la sede, o la coordina la sede? | **La coordina la sede** por ahora; si hace falta, se agrega después sin migrar |
-| 12 | ¿Quién crea una caja y le asigna operadores? | **La coordinación de la sede** y, en cualquier sede, el superadministrador |
-| 13 | ¿Los tipos de entrada y salida son de cada sede o una lista única de la UMG? | **De cada sede**, mantenidos por su coordinación (como se aprobó en RF-CCH-05): son costumbres de cada lugar |
-| 14 | ¿Solo quetzales? (era la 7 de la sección 4.6) | **Sí** |
-| 15 | ¿Operadores y aportantes solo de esa sede y facultad, y pierden el acceso si dejan la facultad? | **Sí**, como los grupos |
-| 16 | El cupo aprobado es **2 GB por sede**; con tres sedes o más se pasa de la cuota gratuita (5 GB en total) | **Un cupo total de 4 GB que el superadministrador reparte entre sedes**; pasarse cuesta poco (centavos de dólar por GB al mes), pero el sistema hoy cuesta 0 |
-| 17 | ¿Una carpeta se puede abrir a **toda una facultad**, además de por grupos? | **Sí**, como el envío de avisos a una facultad |
+| # | Pregunta | Recomendación | Decisión del responsable (23/11/2026) |
+|---|---|---|---|
+| 11 | ¿Una facultad puede tener **coordinación propia** dentro de la sede, o la coordina la sede? | La coordina la sede por ahora | **Sí: cada facultad puede tener su coordinador, que solo ve y maneja lo de su facultad** (RF-FAC-06) |
+| 12 | ¿Quién crea una caja y le asigna operadores? | La coordinación de la sede y el superadministrador | **La coordinación de la sede, la de la facultad y el superadministrador en cualquier sede** |
+| 13 | ¿Los tipos de entrada y salida son de cada sede o una lista única de la UMG? | De cada sede | **De cada sede, mantenidos por su coordinación** |
+| 14 | ¿Solo quetzales? | Sí | **Sí** |
+| 15 | ¿Operadores y aportantes solo de esa sede y facultad, y pierden el acceso si dejan la facultad? | Sí | **Sí, como los grupos** |
+| 16 | Cupo de almacenamiento | Cupo total de 4 GB repartido por el superadministrador | **Cupo total de 4 GB repartido por el superadministrador, que se pueda ampliar con una alerta del costo extra** |
+| 17 | ¿Una carpeta se puede abrir a toda una facultad, además de por grupos? | Sí | **Sí** |
 
-Y las tres de la 2.0-f (ADR-009): F1 bitácora vieja, F2 entregas y respuestas viejas, F3 lista
-de sedes en el perfil.
+Y las tres de la 2.0-f (ADR-009), **decididas el 23/11/2026** como se recomendó: F1, la bitácora
+anterior a la 2.0 se marca como de Boca del Monte, con constancia en la propia bitácora; F2, las
+entregas y respuestas viejas toman la sede de su aviso; F3, cada perfil y la sesión llevan la
+lista de sus sedes. SED-DES se aprobó el mismo día (2.0.11).

@@ -16,11 +16,15 @@ import 'package:sian/presentation/shared/tema.dart';
 import 'package:sian/presentation/shared/textos.dart';
 
 class _FuenteEnMemoria implements FuenteCatalogo {
-  _FuenteEnMemoria(List<ElementoCatalogo> inicial) : _elementos = inicial {
+  _FuenteEnMemoria(List<ElementoCatalogo> inicial, {this.rechazoAlDesactivar})
+    : _elementos = inicial {
     _canal.add(ordenarCatalogo(_elementos));
   }
 
   List<ElementoCatalogo> _elementos;
+
+  /// Lo que responde el servidor si no deja desactivar (SED-DES).
+  final String? rechazoAlDesactivar;
   final StreamController<List<ElementoCatalogo>> _canal =
       StreamController<List<ElementoCatalogo>>.broadcast();
   final List<Map<String, Object?>> guardados = <Map<String, Object?>>[];
@@ -42,6 +46,13 @@ class _FuenteEnMemoria implements FuenteCatalogo {
       'nombre': nombre,
       'activa': activa,
     });
+    final String? rechazo = rechazoAlDesactivar;
+    if (activa == false && rechazo != null) {
+      throw FirebaseFunctionsException(
+        code: 'invalid-argument',
+        message: rechazo,
+      );
+    }
     if (id == null &&
         _elementos.any(
           (ElementoCatalogo e) =>
@@ -74,9 +85,13 @@ class _FuenteEnMemoria implements FuenteCatalogo {
 
 Future<_FuenteEnMemoria> _montar(
   WidgetTester tester,
-  List<ElementoCatalogo> inicial,
-) async {
-  final _FuenteEnMemoria fuente = _FuenteEnMemoria(inicial);
+  List<ElementoCatalogo> inicial, {
+  String? rechazoAlDesactivar,
+}) async {
+  final _FuenteEnMemoria fuente = _FuenteEnMemoria(
+    inicial,
+    rechazoAlDesactivar: rechazoAlDesactivar,
+  );
   await tester.pumpWidget(
     MaterialApp(
       theme: TemaSian.claro(),
@@ -208,6 +223,32 @@ void main() {
     );
     expect(find.text(Textos.catalogoInactiva), findsOneWidget);
   });
+
+  testWidgets(
+    'SED-DES: si el servidor no deja desactivar, dice por qué y da tiempo a leerlo',
+    (WidgetTester tester) async {
+      const String motivo =
+          '«Villa Nueva» es la única sede activa de 1 persona: María. Antes '
+          'de desactivarla, póngalas en otra sede o desactive sus cuentas en '
+          'Usuarios.';
+      await _montar(tester, <ElementoCatalogo>[
+        sistemas,
+      ], rechazoAlDesactivar: motivo);
+      await tester.tap(find.text(Textos.grupoDesactivar));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.widgetWithText(FilledButton, Textos.grupoDesactivar),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 750));
+      expect(find.text(motivo), findsOneWidget);
+      // Pasados los 4 segundos de siempre, sigue a la vista.
+      await tester.pump(const Duration(seconds: 6));
+      expect(find.text(motivo), findsOneWidget);
+      expect(find.text(Textos.catalogoInactiva), findsNothing);
+      await tester.pumpAndSettle(const Duration(seconds: 5));
+    },
+  );
 
   testWidgets('con muchas filas aparece el buscador, y filtra sin tildes', (
     WidgetTester tester,

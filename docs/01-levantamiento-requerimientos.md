@@ -352,8 +352,8 @@ orden y la estrategia están en el [documento 12](12-plan-evolucion-1.6-2.x.md).
 | RF-SED-06 | El superadministrador crea sedes y pone a la gente en ellas, con su rol en cada una | D | 2.0 |
 | RF-REP-01 | Coordinación y administración crean, renombran y borran carpetas, hasta dos niveles | D | 2.4 |
 | RF-REP-02 | Coordinación y administración suben archivos de tipos permitidos, de hasta 25 MB | D | 2.4 |
-| RF-REP-03 | Cada sede tiene un cupo de almacenamiento (2 GB por omisión) que no se puede superar | D | 2.4 |
-| RF-REP-04 | El acceso a una carpeta se concede por grupos | D | 2.4 |
+| RF-REP-03 | Hay un cupo total de almacenamiento (4 GB, dentro de la cuota gratuita) que el superadministrador reparte entre las sedes; cada sede no puede superar el suyo. Se puede ampliar, con un aviso claro del costo extra antes de confirmarlo (decisión del 23/11/2026) | D | 2.4 |
+| RF-REP-04 | El acceso a una carpeta se concede por grupos o a toda una facultad de la sede (decisión del 23/11/2026) | D | 2.4 |
 | RF-REP-05 | El catedrático ve y descarga solo las carpetas de sus grupos | D | 2.5 |
 | RF-REP-06 | La descarga se hace con un enlace que caduca, y queda en la bitácora | D | 2.5 |
 | RF-REP-07 | No se aceptan ejecutables ni archivos comprimidos | D | 2.4 |
@@ -374,13 +374,14 @@ uno en la [cartera](13-cartera-de-incrementos.md).
 | RF-FAC-03 | Los grupos pueden pertenecer a una facultad, y se filtran por ella. Desde la 2.0.7, un grupo de una facultad solo admite personas de la sede que la tienen, y quien la pierde deja de recibir sus avisos | B | 2.0 |
 | RF-FAC-04 | Con una sola facultad o ninguna, la aplicación no pregunta ni muestra la facultad | B | 2.0 |
 | RF-FAC-05 | Los reportes se pueden filtrar por facultad | P | 2.0 |
+| RF-FAC-06 | Una facultad puede tener coordinación propia dentro de la sede, que solo ve y maneja lo de su facultad (decisión del 23/11/2026) | B | 2.0.x |
 | RF-CAT-01 | Cada catálogo tiene una pantalla de mantenimiento con buscador, alta, edición y activar/desactivar | B | 2.0 |
 | RF-CAT-02 | Un elemento en uso no se borra: se desactiva y se conserva su nombre en lo ya registrado | B | 2.0 |
 | RF-CAT-03 | No se aceptan nombres repetidos dentro del mismo catálogo y sede | B | 2.0 |
 | RF-CAT-04 | Cada alta, cambio o baja de un catálogo queda en la bitácora | B | 2.0 |
 | RF-CAT-05 | Cada catálogo lo mantiene solo el rol indicado en el documento 14; los demás solo lo usan | B | 2.0 |
-| RF-CCH-01 | La coordinación crea la caja chica de cada sede y facultad y registra su carga inicial | B | 2.1 |
-| RF-CCH-02 | La coordinación asigna uno o varios catedráticos como operadores de una caja | B | 2.1 |
+| RF-CCH-01 | La coordinación de la sede o de la facultad, o el superadministrador en cualquier sede, crea la caja de cada facultad que la sede ofrece y registra su carga inicial. Solo quetzales | B | 2.1 |
+| RF-CCH-02 | Los mismos asignan como operadores a uno o varios catedráticos de esa sede con esa facultad; quien deja la sede o la facultad deja de poder registrar | B | 2.1 |
 | RF-CCH-03 | Solo los operadores registran entradas y salidas | B | 2.1 |
 | RF-CCH-04 | Cada movimiento lleva fecha, tipo, monto, observación y quién lo registró | B | 2.1 |
 | RF-CCH-05 | Los tipos de entrada y de salida son catálogos que mantiene la coordinación | B | 2.1 |

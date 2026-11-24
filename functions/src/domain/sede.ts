@@ -396,3 +396,56 @@ export function tituloConSede(titulo: string, nombreSede: string | null | undefi
   const sede = (nombreSede ?? '').trim();
   return sede === '' ? titulo : `${sede} · ${titulo}`;
 }
+
+/**
+ * Quiénes quedarían sin ninguna sede activa si se desactiva esta (SED-DES,
+ * 2.0.11). Solo cuentan las cuentas activas: una desactivada ya no entra.
+ * Desactivar una sede no saca a nadie de ella; sin esto, quien solo estaba
+ * ahí se quedaba con su única sede inactiva sin que nadie lo supiera.
+ */
+export function personasQueQuedanSinSede(
+  perfiles: readonly {
+    readonly uid: string;
+    readonly nombre?: string;
+    readonly activo: boolean;
+    readonly rol: Rol;
+    readonly membresias?: unknown;
+  }[],
+  sedesActivas: ReadonlySet<string>,
+  sedeQueSeDesactiva: string,
+): { uid: string; nombre: string }[] {
+  return perfiles
+    .filter((p) => {
+      if (!p.activo) {
+        return false;
+      }
+      const sedes = Object.keys(membresiasDe(p));
+      return (
+        sedes.includes(sedeQueSeDesactiva) &&
+        sedes.every((s) => s === sedeQueSeDesactiva || !sedesActivas.has(s))
+      );
+    })
+    .map((p) => ({ uid: p.uid, nombre: p.nombre ?? '' }));
+}
+
+/** Lanza diciendo cuántos y quiénes (hasta tres), y qué hacer (SED-DES). */
+export function exigirQueNadieQuedeSinSede(
+  nombreSede: string,
+  afectados: readonly { readonly uid: string; readonly nombre: string }[],
+): void {
+  if (afectados.length === 0) {
+    return;
+  }
+  const n = afectados.length;
+  const nombres = afectados
+    .slice(0, 3)
+    .map((a) => a.nombre || a.uid)
+    .join(', ');
+  const resto = n > 3 ? ` y ${n - 3} más` : '';
+  throw new ErrorValidacion(
+    'SEDE_CON_PERSONAS',
+    `«${nombreSede}» es la única sede activa de ${n === 1 ? '1 persona' : `${n} personas`}: ${nombres}${resto}. ` +
+      'Antes de desactivarla, póngalas en otra sede o desactive sus cuentas en Usuarios.',
+    { personas: String(n) },
+  );
+}
