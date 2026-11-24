@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/sesion.dart';
 import '../infrastructure/firebase/repositorio_respuestas.dart';
 import 'proveedores_sede.dart';
-import 'proveedores_sesion.dart';
 
 final Provider<RepositorioRespuestas> repositorioRespuestasProvider =
     Provider<RepositorioRespuestas>((Ref ref) => RepositorioRespuestas());
@@ -18,15 +17,16 @@ final Provider<RepositorioRespuestas> repositorioRespuestasProvider =
 final avisosConRespuestasProvider = StreamProvider<List<AvisoConRespuestas>>((
   Ref ref,
 ) {
-  final Sesion sesion = ref.watch(sesionActualProvider);
-  if (sesion is! SesionActiva || !sesion.usuario.rol.esEmisor) {
+  // Con el rol en la sede de trabajo (2.0.13).
+  final UsuarioSesion? usuario = ref.watch(usuarioEnSedeProvider);
+  if (usuario == null || !usuario.rol.esEmisor) {
     return Stream<List<AvisoConRespuestas>>.value(const <AvisoConRespuestas>[]);
   }
   // 2.0.9: las de la sede de trabajo, como todo lo demás del panel.
   final String sede = ref.watch(sedeDeTrabajoProvider);
   return ref
       .watch(repositorioRespuestasProvider)
-      .observarHilosDelEmisor(sesion.usuario.uid)
+      .observarHilosDelEmisor(usuario.uid)
       .map(
         (List<Hilo> hilos) => agruparPorAviso(
           hilos.where((Hilo h) => h.sedeId == sede).toList(),

@@ -24,7 +24,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/proveedores_sede.dart';
-import '../../application/proveedores_sesion.dart';
 import '../../core/version.dart';
 import '../../domain/sesion.dart';
 import '../../infrastructure/firebase/repositorio_canal.dart';
@@ -331,11 +330,10 @@ class _VersionesState extends ConsumerState<_Versiones> {
     final PaletaSian paleta = PaletaSian.de(context);
     final List<VersionesDePersona> atrasados = widget.clasificacion.atrasados;
     final int reemplazados = widget.clasificacion.reemplazados;
-    final Sesion sesion = ref.watch(sesionActualProvider);
-    final bool puedeRetirar =
-        sesion is SesionActiva && sesion.usuario.rol.administraUsuarios;
-    final bool puedeRecordar =
-        sesion is SesionActiva && sesion.usuario.rol.esEmisor;
+    // Con el rol en la sede de trabajo (2.0.13).
+    final UsuarioSesion? usuario = ref.watch(usuarioEnSedeProvider);
+    final bool puedeRetirar = usuario?.rol.administraUsuarios ?? false;
+    final bool puedeRecordar = usuario?.rol.esEmisor ?? false;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

@@ -12,7 +12,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/proveedores_catalogos.dart';
 import '../../application/proveedores_sede.dart';
-import '../../application/proveedores_sesion.dart';
 import '../../domain/rol.dart';
 import '../../domain/sesion.dart';
 import '../shared/mantenimiento_catalogo.dart';
@@ -24,11 +23,12 @@ class SeccionCatalogos extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final Sesion sesion = ref.watch(sesionActualProvider);
-    if (sesion is! SesionActiva) {
+    // Con el rol en la sede de trabajo (2.0.13).
+    final UsuarioSesion? enSede = ref.watch(usuarioEnSedeProvider);
+    if (enSede == null) {
       return const SizedBox.shrink();
     }
-    final UsuarioSesion usuario = sesion.usuario;
+    final UsuarioSesion usuario = enSede;
     // Las facultades son las de la sede donde se está trabajando (2.0).
     final String sede = ref.watch(sedeDeTrabajoProvider);
     final String nombreSede =

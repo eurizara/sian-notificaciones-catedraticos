@@ -12,6 +12,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/proveedores_sede.dart';
 import '../../application/proveedores_sesion.dart';
 import '../../domain/sesion.dart';
 import '../admin/panel_admin.dart';
@@ -89,12 +90,17 @@ class _EnrutadorState extends ConsumerState<Enrutador> {
       // parecía un botón muerto. El estado de sesión aún dice «rechazada»
       // porque el rechazo es lo último que ocurrió, no lo que toca mostrar.
       SesionRechazada() => _pantallaSinSesion(),
-      SesionActiva(:final usuario) =>
-        usuario.rol.usaPanelAdministrativo
-            ? PanelAdmin(usuario: usuario)
-            : BandejaDocente(usuario: usuario),
+      // Con el rol de la sede donde trabaja (2.0.13), no el de su principal.
+      SesionActiva(:final usuario) => _segunRol(
+        ref.watch(usuarioEnSedeProvider) ?? usuario,
+      ),
     };
   }
+
+  Widget _segunRol(UsuarioSesion usuario) =>
+      usuario.rol.usaPanelAdministrativo
+      ? PanelAdmin(usuario: usuario)
+      : BandejaDocente(usuario: usuario);
 
   Widget _pantallaSinSesion() => _mostrandoRegistro
       ? PantallaRegistro(
