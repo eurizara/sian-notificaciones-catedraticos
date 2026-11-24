@@ -15,7 +15,16 @@ comporta nada:
     facultad que alguna sede ya tenía, con su mismo identificador: así lo que
     ya está asignado a cada persona sigue valiendo. Si dos sedes tienen el
     mismo nombre con identificadores distintos, no adivina: lo avisa y no
-    crea la segunda (la decide el superadministrador).
+    crea la segunda (la decide el superadministrador);
+  · (2.0-f, decisiones del 23/11/2026) completa lo viejo que no dice sede:
+    F1, la bitácora anterior a la 2.0 pasa a ser de `bdm`, y un asiento de la
+    propia migración lo hace constar; F2, entregas y respuestas (`hilos`)
+    toman la sede de su aviso; F3, cada perfil guarda `sedesIds` y
+    `sedesCoordina`, las listas que leen las reglas. También las invitaciones
+    sin sede pasan a `bdm`.
+
+Escribe por tandas de 500 (`batchWrite`), así que miles de entregas no tardan
+lo que tardarían una por una.
 
 NO toca la bitácora: es inmutable (RF-BIT-03), y un asiento sin sede se lee como
 de `bdm`. Tampoco borra ni reescribe nada que ya tenga su dato: es idempotente,
@@ -31,6 +40,7 @@ Usa el token de la CLI de Firebase (`npx firebase projects:list` lo refresca) y
 nunca lo imprime: curl lo recibe por la entrada estándar. Antes de correrlo en
 producción, el respaldo diario tiene que estar al día (documento 11).
 """
+import datetime
 import json
 import os
 import re
@@ -53,6 +63,8 @@ def a_valor(v):
     """Un valor de Python como `Value` de la API REST de Firestore."""
     if isinstance(v, bool):
         return {'booleanValue': v}
+    if isinstance(v, datetime.datetime):
+        return {'timestampValue': v.astimezone(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}
     if isinstance(v, str):
         return {'stringValue': v}
     if isinstance(v, int):
@@ -95,9 +107,24 @@ def clave_de_nombre(nombre):
     return re.sub(r'\s+', ' ', sin_tildes.lower()).strip()
 
 
+def campos_de_sedes(membresias):
+    """Como `camposDeSedes` del servidor: las listas que leen las reglas (F3)."""
+    ids = sorted(membresias.keys())
+    coordina = [s for s in ids
+                if isinstance(membresias.get(s), dict) and membresias[s].get('rol') in ('COORDINADOR', 'AUDITOR')]
+    return {'sedesIds': ids, 'sedesCoordina': coordina}
+
+
+def sede_de_ruta(ruta, campos, sede_de_mensaje):
+    """La sede de una entrega o un hilo: la de su aviso (F2). Sin aviso conocido, la inicial."""
+    mensaje_id = campos.get('mensajeId') or (ruta.split('/')[1] if ruta.startswith('mensajes/') else '')
+    return sede_de_mensaje.get(mensaje_id, SEDE_INICIAL)
+
+
 def planificar(*, usuarios, grupos, mensajes, existe_sede, existe_facultad,
                facultad_a_todos=False, admin_general=None,
-               facultades_por_sede=(), catalogo=None):
+               facultades_por_sede=(), catalogo=None,
+               invitaciones=(), bitacora=(), entregas=(), hilos=(), ahora=None):
     """
     Cada operación es (ruta, cambios, debe_existir). `debe_existir=False` solo
     crea si no está; `True` solo actualiza lo que ya está. Así ninguna operación
@@ -110,7 +137,8 @@ def planificar(*, usuarios, grupos, mensajes, existe_sede, existe_facultad,
     ops = []
     resumen = {'sede': 0, 'facultad': 0, 'usuarios': 0, 'facultad_a_perfiles': 0,
                'admin_general': 0, 'grupos': 0, 'mensajes': 0,
-               'catalogo_facultades': 0, 'conflictos': []}
+               'catalogo_facultades': 0, 'listas_de_sedes': 0, 'invitaciones': 0,
+               'bitacora': 0, 'entregas': 0, 'hilos': 0, 'conflictos': []}
 
     if not existe_sede:
         ops.append((f'sedes/{SEDE_INICIAL}', {'nombre': NOMBRE_SEDE_INICIAL, 'activa': True}, False))
@@ -159,6 +187,11 @@ def planificar(*, usuarios, grupos, mensajes, existe_sede, existe_facultad,
                     membresias = nuevas
                     cambios['membresias'] = nuevas
                     resumen['facultad_a_perfiles'] += 1
+        # F3: las listas que leen las reglas, al día con las membresías.
+        listas = campos_de_sedes(membresias)
+        if d.get('sedesIds') != listas['sedesIds'] or d.get('sedesCoordina') != listas['sedesCoordina']:
+            cambios.update(listas)
+            resumen['listas_de_sedes'] += 1
         if correo_admin and (d.get('correo') or '').strip().lower() == correo_admin:
             admin_encontrado = True
             if d.get('adminGeneral') is not True:
@@ -167,11 +200,40 @@ def planificar(*, usuarios, grupos, mensajes, existe_sede, existe_facultad,
         if cambios:
             ops.append((f'usuarios/{uid}', cambios, True))
 
-    for coleccion, docs in (('grupos', grupos), ('mensajes', mensajes)):
+    for coleccion, docs in (('grupos', grupos), ('mensajes', mensajes), ('invitaciones', invitaciones)):
         for doc_id, d in docs:
             if not d.get('sedeId'):
                 ops.append((f'{coleccion}/{doc_id}', {'sedeId': SEDE_INICIAL}, True))
                 resumen[coleccion] += 1
+
+    # F1: la bitácora anterior a la 2.0 es de la sede inicial. Solo clasifica:
+    # no cambia lo que registra, y la migración deja su propio asiento.
+    for doc_id, d in bitacora:
+        if not d.get('sedeId'):
+            ops.append((f'bitacora/{doc_id}', {'sedeId': SEDE_INICIAL}, True))
+            resumen['bitacora'] += 1
+    if resumen['bitacora'] > 0:
+        cuando = ahora or datetime.datetime.now(datetime.timezone.utc)
+        ops.append((f"bitacora/migracion-2-0-f-{cuando.strftime('%Y%m%d%H%M%S')}", {
+            'tipo': 'MIGRACION_SEDES',
+            'actorUid': 'sistema',
+            'actorCorreo': '',
+            'actorRol': 'SISTEMA',
+            'entidad': 'BITACORA',
+            'entidadId': 'bitacora',
+            'resumen': (f"Migración 2.0-f: {resumen['bitacora']} asientos anteriores a la 2.0 se "
+                        'clasifican como de Boca del Monte. No cambia lo que registran.'),
+            'sedeId': SEDE_INICIAL,
+            'ocurridoEn': cuando,
+        }, False))
+
+    # F2: entregas y respuestas toman la sede de su aviso.
+    sede_de_mensaje = {doc_id: (d.get('sedeId') or SEDE_INICIAL) for doc_id, d in mensajes}
+    for clave, docs in (('entregas', entregas), ('hilos', hilos)):
+        for ruta, d in docs:
+            if not d.get('sedeId'):
+                ops.append((ruta, {'sedeId': sede_de_ruta(ruta, d, sede_de_mensaje)}, True))
+                resumen[clave] += 1
 
     if correo_admin and not admin_encontrado:
         raise ValueError('No hay ningún perfil con ese correo para la administración general.')
@@ -181,6 +243,24 @@ def planificar(*, usuarios, grupos, mensajes, existe_sede, existe_facultad,
 # ---------------------------------------------------------------------------
 # Lectura y escritura contra Firestore
 # ---------------------------------------------------------------------------
+
+TAMANO_TANDA = 500
+
+
+def tandas(ops, tamano=TAMANO_TANDA):
+    """Las operaciones en tandas de a lo sumo 500, el máximo de `batchWrite`."""
+    return [ops[i:i + tamano] for i in range(0, len(ops), tamano)]
+
+
+def escritura(raiz, op):
+    """Una operación del plan como escritura de `batchWrite`, con su precondición."""
+    ruta, cambios, debe_existir = op
+    return {
+        'update': {'name': f'{raiz}/{ruta}', 'fields': {k: a_valor(v) for k, v in cambios.items()}},
+        'updateMask': {'fieldPaths': list(cambios.keys())},
+        'currentDocument': {'exists': debe_existir},
+    }
+
 
 def _curl(cfg, metodo, url, cuerpo=None):
     args = ['curl', '-s', '-K', '-', '-X', metodo, url]
@@ -222,12 +302,23 @@ def main(argv):
 
     facultades_por_sede = [(sede, fid, d) for sede, _ in todos('sedes') for fid, d in hijos(f'sedes/{sede}', 'facultades')]
 
+    def grupo_de_colecciones(coleccion):
+        """(ruta relativa, campos) de toda una colección, a cualquier profundidad."""
+        q = {'structuredQuery': {'from': [{'collectionId': coleccion, 'allDescendants': True}]}}
+        filas = _curl(cfg, 'POST', f'{base}:runQuery', q)
+        if isinstance(filas, dict) and 'error' in filas:
+            raise SystemExit(f"Firestore respondió: {filas['error'].get('message')}")
+        return [(x['document']['name'].split('/documents/', 1)[1], campos(x['document']))
+                for x in filas if 'document' in x]
+
     ops, resumen = planificar(
         usuarios=todos('usuarios'), grupos=todos('grupos'), mensajes=todos('mensajes'),
         existe_sede=existe(f'sedes/{SEDE_INICIAL}'),
         existe_facultad=existe(f'sedes/{SEDE_INICIAL}/facultades/{FACULTAD_INICIAL}'),
         facultad_a_todos=facultad_a_todos, admin_general=admin,
         facultades_por_sede=facultades_por_sede, catalogo=dict(todos('facultades')),
+        invitaciones=todos('invitaciones'), bitacora=todos('bitacora'),
+        entregas=grupo_de_colecciones('entregas'), hilos=grupo_de_colecciones('hilos'),
     )
     print(f'Proyecto {proyecto} · {"APLICANDO" if aplicar else "solo el plan (sin escribir)"}')
     conflictos = resumen.pop('conflictos')
@@ -239,15 +330,18 @@ def main(argv):
     if not aplicar or not ops:
         return 0
 
+    raiz = f'projects/{proyecto}/databases/(default)/documents'
     fallidas = 0
-    for ruta, cambios, debe_existir in ops:
-        mascara = '&'.join(f'updateMask.fieldPaths={k}' for k in cambios)
-        pre = f'currentDocument.exists={"true" if debe_existir else "false"}'
-        r = _curl(cfg, 'PATCH', f'{base}/{ruta}?{mascara}&{pre}',
-                  {'fields': {k: a_valor(v) for k, v in cambios.items()}})
+    for tanda in tandas(ops):
+        r = _curl(cfg, 'POST', f'{base}:batchWrite', {'writes': [escritura(raiz, op) for op in tanda]})
         if 'error' in r:
-            fallidas += 1
-            print(f'  FALLÓ {ruta}: {r["error"].get("message", "")[:120]}')
+            fallidas += len(tanda)
+            print(f'  FALLÓ una tanda de {len(tanda)}: {r["error"].get("message", "")[:120]}')
+            continue
+        for op, estado in zip(tanda, r.get('status', [])):
+            if estado.get('code', 0) != 0:
+                fallidas += 1
+                print(f'  FALLÓ {op[0]}: {estado.get("message", "")[:120]}')
     print(f'Escritas {len(ops) - fallidas} de {len(ops)}.')
     return 0 if fallidas == 0 else 1
 

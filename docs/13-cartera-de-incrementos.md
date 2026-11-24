@@ -84,8 +84,8 @@ en cada ficha y el documento 14, sección 8).
 | 15 | RF-CAT-03 | Sin nombres repetidos en el mismo catálogo | Funcionalidad | Media | En dev | 2.0.10 | #234 | 2026-11-14 |
 | 16 | RF-CAT-04 | Cada cambio de un catálogo queda en la bitácora | Seguridad | Media | En dev | 2.0.10 | #234 | 2026-11-14 |
 | 17 | RF-CAT-05 | Cada catálogo lo mantiene solo su rol: sedes y facultades de la UMG, el superadministrador; lo que ofrece una sede, su coordinación | Seguridad | Alta | En dev | 2.0.10 | #234, #244 | 2026-11-14 |
-| 17a | 2.0-f | Las reglas exigen la sede, y lo viejo sin sede (bitácora, entregas, respuestas) se completa | Seguridad | Alta | Aprobada (decisiones F1 a F3 tomadas el 23/11) | 2.0 | — | 2026-11-23 |
-| 17b | SED-DES | No se desactiva la única sede activa de nadie: se dice cuántas personas y quiénes | Mejora | Media | En desarrollo | 2.0.11 | — | 2026-11-23 |
+| 17a | 2.0-f | Las reglas exigen la sede, y lo viejo sin sede (bitácora, entregas, respuestas) se completa | Seguridad | Alta | En desarrollo (2.0.12 ampliar; 2.0.13 contraer) | 2.0.12 | — | 2026-11-23 |
+| 17b | SED-DES | No se desactiva la única sede activa de nadie: se dice cuántas personas y quiénes | Mejora | Media | En dev | 2.0.11 | #250 | 2026-11-23 |
 | 17d | RF-FAC-06 | Una facultad puede tener coordinación propia, que solo ve y maneja lo de su facultad | Funcionalidad | Alta | Aprobada | 2.0.x | — | 2026-11-23 |
 | 17c | PROM-2.0 | Promoción de la 2.0 a QA y producción: respaldo, migración de sedes y catálogo en cada ambiente | Operación | Alta | Aprobada · espera indicación del responsable | 2.0.10 | — | 2026-11-14 |
 
@@ -388,7 +388,8 @@ en cada ficha y el documento 14, sección 8).
   - [x] 2.0.8 (PR #246) · Corrección (14/11/2026): el catedrático que está en varias sedes ve siempre en qué sede está y con qué facultades; su bandeja muestra los avisos de esa sede, dice cuántos tiene sin leer en las otras (y si hay urgentes), y una notificación de otra sede lo cambia a ella. Las entregas nuevas llevan `sedeId`
   - [x] 2.0.9 (PR #247) · Corrección (14/11/2026): pantallas de administración que mezclaban sedes: bitácora, invitaciones y respuestas, solo de la sede de trabajo
   - [x] 2.0.10 (PR #248) · Mejora (propuesta del 14/11/2026, aprobada por el responsable el mismo día): la sede en el título de la notificación para quien está en más de una sede, «Villa Nueva · Simulacro»; también en los recordatorios de urgentes
-  - [ ] 2.0.11 · SED-DES: no se desactiva la única sede activa de nadie (aprobada el 23/11/2026)
+  - [x] 2.0.11 (PR #250) · SED-DES: no se desactiva la única sede activa de nadie (aprobada el 23/11/2026)
+  - [ ] 2.0.12 · 2.0-f, ampliar: consultas por sede, todo asiento con sede, listas de sedes en los perfiles, migración F1 a F3
   - [ ] RF-FAC-06 · Coordinación propia de una facultad (aprobada el 23/11/2026; ficha propia)
   - [ ] RF-FAC-05 · Reportes por facultad (ficha de la ampliación)
   - [ ] 2.0-f · Las reglas exigen la sede, con pruebas cruzadas. Decisiones F1 a F3 tomadas el 23/11/2026 (ADR-009); lista para construir
@@ -550,7 +551,7 @@ en cada ficha y el documento 14, sección 8).
 
 ### 2.0-f · Las reglas exigen la sede
 
-- **Estado:** Aprobada; las tres decisiones se tomaron el 23/11/2026 · **Prioridad:** Alta · **Origen:** ADR-009, plan de implementación (paso «contraer»)
+- **Estado:** En desarrollo: 2.0.12 (ampliar) y 2.0.13 (contraer) · **Prioridad:** Alta · **Origen:** ADR-009, plan de implementación (paso «contraer»)
 - **Problema:** hoy la separación por sede la cumplen la aplicación y el servidor, pero las
   reglas de Firestore todavía dejan leer a quien coordina lo de cualquier sede. Para que las
   reglas lo exijan, cada consulta tiene que pedir la sede, y lo viejo que no la tiene dejaría
@@ -560,13 +561,15 @@ en cada ficha y el documento 14, sección 8).
   - [x] F2 · Entregas y respuestas anteriores a la 2.0.8/2.0.9: toman la sede de su aviso (23/11/2026)
   - [x] F3 · Lista de sedes en cada perfil (`sedesIds`) y en el token (23/11/2026)
 - **Criterios de aceptación:**
-  - [ ] Ninguna consulta de la aplicación trae documentos de otra sede (pruebas cruzadas contra el emulador)
-  - [ ] Lo viejo se sigue viendo donde corresponde
-  - [ ] Migración idempotente, probada en desarrollo y QA antes de producción
+  - [x] 2.0.12 · La aplicación pide a Firestore todo filtrado por sede; todo asiento lleva sede (con prueba que lee el código); perfiles con `sedesIds`/`sedesCoordina`
+  - [x] 2.0.12 · Migración F1 a F3 en desarrollo: 1399 de 1399, segunda corrida sin cambios
+  - [ ] 2.0.13 · Las reglas exigen la sede, con pruebas cruzadas contra el emulador (nadie lee nada de otra sede)
+  - [ ] Lo viejo se sigue viendo donde corresponde (probado por el responsable)
+  - [ ] Migración en QA y producción antes de desplegar (PROM-2.0)
 
 ### SED-DES · Al desactivar una sede con personas, decir cuántas quedarían sin sede activa
 
-- **Estado:** En desarrollo (2.0.11) · **Prioridad:** Media · **Origen:** revisión del 08/11/2026 · aprobada por el responsable el 23/11/2026
+- **Estado:** En dev (2.0.11, PR #250) · **Prioridad:** Media · **Origen:** revisión del 08/11/2026 · aprobada por el responsable el 23/11/2026
 - **Problema:** desactivar una sede no saca a nadie de ella; quien solo está en esa sede queda
   con su única sede inactiva sin que nadie lo sepa.
 - **Propuesta:** al desactivarla, el servidor calcula qué cuentas activas se quedarían sin

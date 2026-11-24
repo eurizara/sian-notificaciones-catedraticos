@@ -152,6 +152,9 @@ function asiento(
     resumen,
     datos,
     origen: 'PANEL_WEB',
+    // La sede donde actúa quien lo hace (2.0-f): sin ella, el asiento no se
+    // veía en la bitácora de ninguna sede.
+    sedeId: solicitante.sedeId,
   });
 }
 

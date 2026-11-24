@@ -28,6 +28,7 @@ import type { Invitacion } from '../domain/invitacion';
 import {
   SEDE_INICIAL,
   membresiasDe,
+  sedePrincipal,
   sedesDeMembresias,
   type Membresias,
   type SedesDelToken,
@@ -193,6 +194,7 @@ export function decidirActivacion(solicitud: SolicitudActivacion): ResultadoActi
         rol: perfil.rol,
         resumen: 'Intento de acceso con una cuenta desactivada',
         ahora,
+        sedeId: sedePrincipal(membresiasDe(perfil)),
         // La credencial NO se borra: RN-10 dice que un usuario desactivado
         // conserva su historial y puede reactivarse.
         borrarCredencial: false,
@@ -211,6 +213,7 @@ export function decidirActivacion(solicitud: SolicitudActivacion): ResultadoActi
         resumen: `${correo} inició sesión como ${perfil.rol}`,
         datos: { proveedorAuth: solicitud.proveedorAuth },
         ocurridoEn: ahora,
+        sedeId: sedePrincipal(membresiasDe(perfil)),
       }),
     };
   }
@@ -284,6 +287,7 @@ export function decidirActivacion(solicitud: SolicitudActivacion): ResultadoActi
         invitacionCreadaPor: invitacion.creadaPor,
       },
       ocurridoEn: ahora,
+      sedeId: invitacion.sedeId ?? SEDE_INICIAL,
     }),
   };
 }
@@ -297,6 +301,7 @@ function rechazo(args: {
   ahora: Date;
   borrarCredencial: boolean;
   datos?: Record<string, unknown>;
+  sedeId?: string;
 }): ResultadoActivacion {
   return {
     tipo: 'RECHAZADO',
@@ -310,6 +315,8 @@ function rechazo(args: {
       resumen: args.resumen,
       datos: { motivo: args.motivo, ...(args.datos ?? {}) },
       ocurridoEn: args.ahora,
+      // Sin perfil no hay sede: la inicial (2.0-f).
+      sedeId: args.sedeId ?? SEDE_INICIAL,
     }),
   };
 }

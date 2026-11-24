@@ -30,6 +30,9 @@ describe('2.0.5 · membresías: quitar una sede', () => {
     expect((await ref.get()).get('membresias')).toEqual({
       'villa-nueva': { rol: 'CATEDRATICO', facultades: [] },
     });
+    // 2.0-f (F3): las listas que leen las reglas van con las membresías.
+    expect((await ref.get()).get('sedesIds')).toEqual(['villa-nueva']);
+    expect((await ref.get()).get('sedesCoordina')).toEqual([]);
   });
 
   it('la trampa que causó el defecto: fusionar NO borra la clave quitada', async () => {

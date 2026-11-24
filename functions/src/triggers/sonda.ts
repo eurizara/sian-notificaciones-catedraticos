@@ -60,6 +60,7 @@ import {
 } from '../domain/dispositivo';
 import { resumirVersiones, versionMasAlta } from '../domain/version';
 import { crearAsiento } from '../domain/bitacora';
+import { membresiasDe, sedePrincipal } from '../domain/sede';
 import type { Rol } from '../domain/tipos';
 import { fallosDeLasUltimas24Horas, olvidarFallosViejos } from './fallos';
 import { OPCIONES_LLAMABLE, RUTAS, db } from '../infrastructure/firebase';
@@ -230,6 +231,16 @@ async function retirarRegistro(
     .doc(dispositivo.id)
     .delete();
 
+  // La sede principal de la persona (2.0-f), para que el retiro se vea en la
+  // bitácora de su sede.
+  const perfil = await db.collection(RUTAS.usuarios).doc(dispositivo.uid).get();
+  const sedeId = sedePrincipal(
+    membresiasDe({
+      rol: (perfil.get('rol') as Rol | undefined) ?? 'CATEDRATICO',
+      membresias: perfil.get('membresias') as unknown,
+    }),
+  );
+
   await escribirAsiento(
     crearAsiento({
       tipo: 'DISPOSITIVO_RETIRADO',
@@ -246,6 +257,7 @@ async function retirarRegistro(
         ...(nota ? { nota } : {}),
         ultimaActividad: dispositivo.ultimaActividad?.toISOString() ?? null,
       },
+      sedeId,
     }),
   );
 }

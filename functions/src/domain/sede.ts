@@ -449,3 +449,33 @@ export function exigirQueNadieQuedeSinSede(
     { personas: String(n) },
   );
 }
+
+/**
+ * Lo que el perfil guarda, además de las membresías, para que las reglas de
+ * Firestore puedan decidir por sede (2.0-f, decisión F3 del 23/11/2026):
+ * en qué sedes está (`sedesIds`) y en cuáles coordina o audita
+ * (`sedesCoordina`). Las reglas no pueden recorrer un mapa; una lista, sí.
+ *
+ * Va en el perfil y no en el token: con quince sedes de nombre largo, el token
+ * pasaría de los 1000 bytes que admite Firebase.
+ */
+export function camposDeSedes(membresias: Membresias): { sedesIds: string[]; sedesCoordina: string[] } {
+  const ids = Object.keys(membresias).sort();
+  return {
+    sedesIds: ids,
+    sedesCoordina: ids.filter((s) => {
+      const rol = membresias[s]?.rol;
+      return rol === 'COORDINADOR' || rol === 'AUDITOR';
+    }),
+  };
+}
+
+/**
+ * La sede principal según el token, con la misma regla que `sedePrincipal`:
+ * la inicial si es de ella; si no, la primera. Para dar sede a lo que hace una
+ * persona fuera de una sede concreta (iniciar sesión, registrar un aparato).
+ */
+export function sedePrincipalDelToken(token: Readonly<Record<string, unknown>>, rolGlobal: Rol): string {
+  const ids = Object.keys(sedesDelToken(token, rolGlobal)).sort();
+  return ids.includes(SEDE_INICIAL) ? SEDE_INICIAL : (ids[0] ?? SEDE_INICIAL);
+}

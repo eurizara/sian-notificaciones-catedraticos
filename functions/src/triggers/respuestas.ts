@@ -201,6 +201,7 @@ export const responderAviso = onCall(OPCIONES_LLAMABLE, async (peticion) => {
 
       return {
         repetido: false as const,
+        sedeId: sedeDelDocumento(mensaje.data()),
         lado,
         hiloUid,
         creadoPor,
@@ -226,6 +227,7 @@ export const responderAviso = onCall(OPCIONES_LLAMABLE, async (peticion) => {
             : `Contestó en el hilo de ${hecho.hiloUid} del aviso ${mensajeId}`,
         datos: { mensajeId, hiloUid: hecho.hiloUid, lado: hecho.lado },
         origen: hecho.lado === 'CATEDRATICO' ? 'APP_DOCENTE' : 'PANEL_WEB',
+        sedeId: hecho.sedeId,
       }),
     );
 

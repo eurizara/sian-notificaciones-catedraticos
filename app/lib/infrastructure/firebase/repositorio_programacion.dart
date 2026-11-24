@@ -400,8 +400,15 @@ class RepositorioProgramacion {
   /// consulta de lista**. Pedir todos y quedarse con los suyos no devuelve
   /// «los suyos»: devuelve `permission-denied`. La consulta tiene que declarar
   /// por sí misma que es segura.
-  Stream<List<MensajeProgramado>> observarProgramados({String? soloDe}) {
+  Stream<List<MensajeProgramado>> observarProgramados({
+    String? soloDe,
+    String? sede,
+  }) {
     Query<Map<String, dynamic>> consulta = _db.collection('mensajes');
+    // 2.0-f: la sede en la consulta, para que las reglas puedan exigirla.
+    if (sede != null) {
+      consulta = consulta.where('sedeId', isEqualTo: sede);
+    }
 
     if (soloDe != null) {
       consulta = consulta.where('creadoPor', isEqualTo: soloDe);
