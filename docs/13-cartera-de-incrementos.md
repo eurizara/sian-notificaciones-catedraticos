@@ -84,8 +84,9 @@ en cada ficha y el documento 14, sección 8).
 | 15 | RF-CAT-03 | Sin nombres repetidos en el mismo catálogo | Funcionalidad | Media | En dev | 2.0.10 | #234 | 2026-11-14 |
 | 16 | RF-CAT-04 | Cada cambio de un catálogo queda en la bitácora | Seguridad | Media | En dev | 2.0.10 | #234 | 2026-11-14 |
 | 17 | RF-CAT-05 | Cada catálogo lo mantiene solo su rol: sedes y facultades de la UMG, el superadministrador; lo que ofrece una sede, su coordinación | Seguridad | Alta | En dev | 2.0.10 | #234, #244 | 2026-11-14 |
-| 17a | 2.0-f | Las reglas exigen la sede, y lo viejo sin sede (entregas, respuestas) se completa | Seguridad | Alta | Aprobada · espera 3 decisiones | 2.0 | — | 2026-11-14 |
-| 17b | SED-DES | Al desactivar una sede con personas, decir cuántas quedarían sin sede activa | Mejora | Media | Propuesta | 2.0 | — | 2026-11-14 |
+| 17a | 2.0-f | Las reglas exigen la sede, y lo viejo sin sede (bitácora, entregas, respuestas) se completa | Seguridad | Alta | Aprobada (decisiones F1 a F3 tomadas el 23/11) | 2.0 | — | 2026-11-23 |
+| 17b | SED-DES | No se desactiva la única sede activa de nadie: se dice cuántas personas y quiénes | Mejora | Media | En desarrollo | 2.0.11 | — | 2026-11-23 |
+| 17d | RF-FAC-06 | Una facultad puede tener coordinación propia, que solo ve y maneja lo de su facultad | Funcionalidad | Alta | Aprobada | 2.0.x | — | 2026-11-23 |
 | 17c | PROM-2.0 | Promoción de la 2.0 a QA y producción: respaldo, migración de sedes y catálogo en cada ambiente | Operación | Alta | Aprobada · espera indicación del responsable | 2.0.10 | — | 2026-11-14 |
 
 **2.1 · Caja chica, base**
@@ -387,9 +388,10 @@ en cada ficha y el documento 14, sección 8).
   - [x] 2.0.8 (PR #246) · Corrección (14/11/2026): el catedrático que está en varias sedes ve siempre en qué sede está y con qué facultades; su bandeja muestra los avisos de esa sede, dice cuántos tiene sin leer en las otras (y si hay urgentes), y una notificación de otra sede lo cambia a ella. Las entregas nuevas llevan `sedeId`
   - [x] 2.0.9 (PR #247) · Corrección (14/11/2026): pantallas de administración que mezclaban sedes: bitácora, invitaciones y respuestas, solo de la sede de trabajo
   - [x] 2.0.10 (PR #248) · Mejora (propuesta del 14/11/2026, aprobada por el responsable el mismo día): la sede en el título de la notificación para quien está en más de una sede, «Villa Nueva · Simulacro»; también en los recordatorios de urgentes
-  - [ ] SED-DES (Propuesta) · Al desactivar una sede con personas, avisar cuántas quedarían sin sede activa
+  - [ ] 2.0.11 · SED-DES: no se desactiva la única sede activa de nadie (aprobada el 23/11/2026)
+  - [ ] RF-FAC-06 · Coordinación propia de una facultad (aprobada el 23/11/2026; ficha propia)
   - [ ] RF-FAC-05 · Reportes por facultad (ficha de la ampliación)
-  - [ ] 2.0-f · Las reglas exigen la sede, con pruebas cruzadas. **Espera decisión del responsable** sobre la bitácora vieja, las entregas y la lista de usuarios (ADR-009, «2.0-f: lo que falta decidir»). Desde la 2.0.8 y 2.0.9 lo nuevo ya lleva sede; falta completar lo viejo
+  - [ ] 2.0-f · Las reglas exigen la sede, con pruebas cruzadas. Decisiones F1 a F3 tomadas el 23/11/2026 (ADR-009); lista para construir
   - [ ] PROM-2.0 · Pasar la 2.0 a QA cuando el responsable lo indique (ficha propia)
 - **Pruebas:** reglas por sede contra el emulador, dominio («todos» por sede), migración
   contra el emulador, guion en el documento 09; regresión completa.
@@ -416,7 +418,7 @@ en cada ficha y el documento 14, sección 8).
   - [x] RF-CAT-03 · Sin nombres repetidos
   - [x] RF-CAT-04 · Cambios en la bitácora
   - [x] RF-CAT-05 · Cada catálogo, solo su rol
-  - [ ] Decisión 11 (nueva, 14/11/2026): ¿una facultad puede tener **coordinación propia** dentro de la sede, o la coordina la sede? Es la pregunta 2 de la sección 2 del documento 14, que quedó sin hacer; importa antes de la caja chica
+  - [x] Decisión 11 (23/11/2026): **cada facultad puede tener su coordinador**, que solo ve y maneja lo de su facultad → RF-FAC-06, Aprobada
   - [x] Decisión 3: por ahora solo Ingeniería en Sistemas (2026-11-06)
   - [x] Decisión 2: una persona puede estar en varias facultades (2026-11-06)
 - **Pruebas:** reglas por sede y facultad contra el emulador; widget del mantenimiento común;
@@ -462,7 +464,10 @@ en cada ficha y el documento 14, sección 8).
     que tiene en otras sedes que tiene la bandeja (2.0.8).
   - La crea y le pone operadores la **coordinación de la sede** (rol en esa sede) y, en cualquier
     sede, el superadministrador. Cada movimiento queda en la bitácora **de esa sede** (2.0.9).
-  - Faltan cuatro decisiones (12 a 15, documento 14, sección 8).
+  - Decisiones del 23/11/2026 (documento 14, sección 8): la crean y le asignan operadores la
+    **coordinación de la sede, la de la facultad** (RF-FAC-06) y el superadministrador; los
+    tipos de entrada y salida son **de cada sede**, de su coordinación; **solo quetzales**;
+    operadores y aportantes **solo de esa sede y facultad**.
 - **Pruebas:** dominio (saldo, anulación, negativo, tipos que exigen catedrático), reglas
   (nadie escribe movimientos desde el cliente), concurrencia (dos movimientos a la vez),
   operadores y aportantes fuera de la sede o facultad, regresión completa.
@@ -511,11 +516,11 @@ en cada ficha y el documento 14, sección 8).
   - [ ] La coordinación ve el cupo usado
 - **Alineación con la 2.0 (14/11/2026):** las carpetas ya estaban pensadas por sede; ahora
   el acceso por **grupos** respeta solo la facultad (un grupo de una facultad solo tiene a quien
-  la tiene, 2.0.7). Dos puntos para decidir (16 y 17, documento 14, sección 8):
-  - **El cupo de 2 GB por sede no cabe en la cuota gratuita con tres sedes o más** (5 GB en
-    total). Con dos sedes, 4 GB, cabe.
-  - Dar acceso a una carpeta a **toda una facultad**, además de por grupos, como ya se hace con
-    los avisos.
+  la tiene, 2.0.7). Decidido el 23/11/2026 (documento 14, sección 8):
+  - **Cupo total de 4 GB** (dentro de la cuota gratuita) que el superadministrador reparte
+    entre sedes; se puede **ampliar**, con una alerta clara del costo extra antes de
+    confirmarlo (RF-REP-03).
+  - Una carpeta se puede abrir a **toda una facultad**, además de por grupos (RF-REP-04).
 - **Pruebas:** reglas (un catedrático no sube ni lista carpetas), dominio (cupo, tipos,
   acceso), regresión completa.
 - **Accesibilidad y usabilidad:** subir con progreso visible y opción de cancelar; errores
@@ -545,15 +550,15 @@ en cada ficha y el documento 14, sección 8).
 
 ### 2.0-f · Las reglas exigen la sede
 
-- **Estado:** Aprobada, espera tres decisiones del responsable · **Prioridad:** Alta · **Origen:** ADR-009, plan de implementación (paso «contraer»)
+- **Estado:** Aprobada; las tres decisiones se tomaron el 23/11/2026 · **Prioridad:** Alta · **Origen:** ADR-009, plan de implementación (paso «contraer»)
 - **Problema:** hoy la separación por sede la cumplen la aplicación y el servidor, pero las
   reglas de Firestore todavía dejan leer a quien coordina lo de cualquier sede. Para que las
   reglas lo exijan, cada consulta tiene que pedir la sede, y lo viejo que no la tiene dejaría
   de verse.
 - **Decisiones pendientes** (ADR-009, «2.0-f: lo que falta decidir»; documento 14, sección 8):
-  - [ ] F1 · Bitácora anterior a la 2.0: ponerle `sedeId: 'bdm'` (recomendado) o que solo la vea el superadministrador
-  - [ ] F2 · Entregas y respuestas anteriores a la 2.0.8/2.0.9: completarles la sede desde su aviso (recomendado)
-  - [ ] F3 · Lista de sedes en cada perfil (`sedesIds`) y en el token, para que las reglas comprueben la sede de una persona (recomendado)
+  - [x] F1 · Bitácora anterior a la 2.0: se le pone `sedeId: 'bdm'`, con constancia en la propia bitácora (decidido el 23/11/2026)
+  - [x] F2 · Entregas y respuestas anteriores a la 2.0.8/2.0.9: toman la sede de su aviso (23/11/2026)
+  - [x] F3 · Lista de sedes en cada perfil (`sedesIds`) y en el token (23/11/2026)
 - **Criterios de aceptación:**
   - [ ] Ninguna consulta de la aplicación trae documentos de otra sede (pruebas cruzadas contra el emulador)
   - [ ] Lo viejo se sigue viendo donde corresponde
@@ -561,11 +566,17 @@ en cada ficha y el documento 14, sección 8).
 
 ### SED-DES · Al desactivar una sede con personas, decir cuántas quedarían sin sede activa
 
-- **Estado:** Propuesta · **Prioridad:** Media · **Origen:** revisión del 08/11/2026
+- **Estado:** En desarrollo (2.0.11) · **Prioridad:** Media · **Origen:** revisión del 08/11/2026 · aprobada por el responsable el 23/11/2026
 - **Problema:** desactivar una sede no saca a nadie de ella; quien solo está en esa sede queda
   con su única sede inactiva sin que nadie lo sepa.
-- **Propuesta:** antes de desactivarla, decir cuántas personas solo están en esa sede, igual
-  que al retirar una facultad (2.0.6).
+- **Propuesta:** al desactivarla, el servidor calcula qué cuentas activas se quedarían sin
+  ninguna sede activa y lo impide, diciendo cuántas, quiénes y qué hacer, igual que al retirar
+  una facultad (2.0.6).
+- **Criterios de aceptación:**
+  - [x] Solo cuentan las cuentas activas cuya única sede activa es esa (también un perfil de antes de la 2.0 en `bdm`)
+  - [x] El mensaje dice cuántas, quiénes (hasta tres) y qué hacer
+  - [x] En Catálogos el mensaje se queda 10 segundos y se puede cerrar
+  - [ ] Probado por el responsable en desarrollo (caso F-16 del documento 09)
 
 ### PROM-2.0 · Pasar la 2.0 a QA y a producción
 
@@ -577,6 +588,21 @@ en cada ficha y el documento 14, sección 8).
   - [ ] Designar al superadministrador en QA (lo hace el responsable)
   - [ ] Prueba del responsable en QA con el guion del documento 09 (F-1 a F-15)
   - [ ] PR `qa → main`: lo fusiona y aprueba el responsable; antes, lo mismo en producción
+
+### RF-FAC-06 · Coordinación propia de una facultad
+
+- **Estado:** Aprobada (23/11/2026) · **Prioridad:** Alta · **Origen:** decisión 11 del responsable (documento 14, sección 8)
+- **Problema:** hoy la coordinación es de la sede entera. Una facultad con su propio
+  coordinador (por ejemplo, Psicología en Boca del Monte) no tiene cómo manejar solo lo suyo.
+- **Propuesta:** un rol de coordinación **por facultad dentro de la sede**: ve y maneja la gente,
+  los grupos, los avisos y, en la 2.1, la caja de su facultad; no lo de las otras. Se diseña
+  junto con la 2.0-f, porque las reglas tienen que conocerlo. Va antes de la caja chica, que
+  lo usa (decisión 12).
+- **Criterios de aceptación:**
+  - [ ] Se asigna en Usuarios, por sede y facultad, por la coordinación de la sede o el superadministrador
+  - [ ] Ve y envía solo a la gente de su facultad; sus grupos solo de su facultad
+  - [ ] No ve ni cambia nada de otra facultad ni de otra sede (pruebas cruzadas)
+  - [ ] El servidor y las reglas lo exigen, no solo la aplicación
 
 ### ALC-1 · Alcance muestra a quién no le aparecen los avisos
 
@@ -702,7 +728,7 @@ en cada ficha y el documento 14, sección 8).
   - [x] Seis de las diez decisiones resueltas (2026-11-06, PR #224)
   - [x] Orden aprobado y las cuatro decisiones restantes resueltas (2026-11-06)
   - [x] Alineado con la 2.0 tal como quedó (sección 8, 2026-11-14)
-  - [ ] Decisiones 11 a 17 de la sección 8, del responsable
+  - [x] Decisiones 11 a 17 de la sección 8, tomadas por el responsable el 23/11/2026
 
 ### DT-14 · Los correos de la cuenta caen en No deseado (C-4)
 

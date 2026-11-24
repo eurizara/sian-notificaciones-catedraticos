@@ -98,8 +98,13 @@ por sí misma que solo trae lo permitido. Eso choca con tres cosas:
    Hace falta un campo `sedesIds` (lista) en cada perfil y en el token la lista de sedes donde
    se coordina, para comprobar `sedesIds.hasAny(...)`.
 
-Con una sola sede ninguno de los tres cambia lo que se ve hoy; por eso el 2.0-f espera la
-decisión del responsable y no bloquea probar lo demás en desarrollo.
+Con una sola sede ninguno de los tres cambia lo que se ve hoy; por eso el 2.0-f esperó la
+decisión del responsable y no bloqueó probar lo demás en desarrollo.
+
+**Decididas el 23/11/2026, las tres como se recomendó:** (1) la migración pone `sedeId: 'bdm'`
+a la bitácora anterior a la 2.0, con un asiento de la propia migración que lo hace constar;
+(2) las entregas y los hilos de respuesta sin sede la toman de su aviso; (3) cada perfil lleva
+`sedesIds` y el token la lista de sedes, para que las reglas comprueben `hasAny`.
 
 **Compatibilidad durante la migración.** Un perfil sin `membresias` y un token sin `sedes`
 equivalen a la sede inicial (`bdm`) con su rol de siempre (`membresiasDe`, `sedesDelToken`).

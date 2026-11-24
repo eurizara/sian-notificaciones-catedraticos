@@ -19,11 +19,13 @@ import {
   elegirSede,
   enVariasSedes,
   esIdDeSede,
+  exigirQueNadieQuedeSinSede,
   exigirMiembrosEnLugar,
   membresiasDe,
   miembrosFueraDeLugar,
   motivoParaNoCambiarSuperadministrador,
   perteneceASede,
+  personasQueQuedanSinSede,
   rolEnSede,
   sedeDelDocumento,
   sedePrincipal,
@@ -491,5 +493,59 @@ describe('2.0.10 · la sede en la notificación', () => {
     expect(tituloConSede('Simulacro', 'Villa Nueva')).toBe('Villa Nueva · Simulacro');
     expect(tituloConSede('Simulacro', '  ')).toBe('Simulacro');
     expect(tituloConSede('Simulacro', null)).toBe('Simulacro');
+  });
+});
+
+describe('SED-DES (2.0.11) · desactivar una sede no deja a nadie sin sede activa', () => {
+  const perfiles = [
+    { uid: 'maria', nombre: 'María', activo: true, rol: 'CATEDRATICO' as Rol, membresias: { 'villa-nueva': { rol: 'CATEDRATICO', facultades: [] } } },
+    // Está también en bdm, que sigue activa: no queda sin sede.
+    {
+      uid: 'eze',
+      nombre: 'Eze',
+      activo: true,
+      rol: 'COORDINADOR' as Rol,
+      membresias: {
+        bdm: { rol: 'COORDINADOR', facultades: [] },
+        'villa-nueva': { rol: 'COORDINADOR', facultades: [] },
+      },
+    },
+    // Su otra sede ya está inactiva: también queda sin sede activa.
+    {
+      uid: 'ana',
+      nombre: 'Ana',
+      activo: true,
+      rol: 'CATEDRATICO' as Rol,
+      membresias: {
+        cerrada: { rol: 'CATEDRATICO', facultades: [] },
+        'villa-nueva': { rol: 'CATEDRATICO', facultades: [] },
+      },
+    },
+    // Cuenta desactivada: no cuenta.
+    { uid: 'ida', nombre: 'Ida', activo: false, rol: 'CATEDRATICO' as Rol, membresias: { 'villa-nueva': { rol: 'CATEDRATICO', facultades: [] } } },
+    // De antes de la 2.0: es de bdm.
+    { uid: 'vieja', activo: true, rol: 'CATEDRATICO' as Rol },
+  ];
+  const activas = new Set(['bdm', 'villa-nueva']);
+
+  it('cuenta solo a las cuentas activas cuya única sede activa es esa', () => {
+    expect(personasQueQuedanSinSede(perfiles, activas, 'villa-nueva').map((p) => p.uid)).toEqual(['maria', 'ana']);
+  });
+
+  it('la sede inicial también: un perfil de antes de la 2.0 es de bdm', () => {
+    expect(personasQueQuedanSinSede(perfiles, activas, 'bdm').map((p) => p.uid)).toEqual(['vieja']);
+  });
+
+  it('el mensaje dice cuántos, quiénes y qué hacer; sin nadie, no lanza', () => {
+    expect(() => exigirQueNadieQuedeSinSede('Villa Nueva', [])).not.toThrow();
+    expect(() => exigirQueNadieQuedeSinSede('Villa Nueva', [{ uid: 'maria', nombre: 'María' }])).toThrow(
+      '«Villa Nueva» es la única sede activa de 1 persona: María. Antes de desactivarla, póngalas en otra sede o desactive sus cuentas en Usuarios.',
+    );
+    expect(() =>
+      exigirQueNadieQuedeSinSede(
+        'Villa Nueva',
+        ['a', 'b', 'c', 'd', 'e'].map((u) => ({ uid: u, nombre: '' })),
+      ),
+    ).toThrow('de 5 personas: a, b, c y 2 más.');
   });
 });

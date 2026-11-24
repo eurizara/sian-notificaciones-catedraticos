@@ -913,3 +913,4 @@ Con una cuenta de superadministrador y otra de coordinación en una sola sede.
 | F-13 (2.0.8) | Tocar la notificación de un aviso de la otra sede | La aplicación cambia a esa sede y abre el aviso |
 | F-14 (2.0.9) | Con una cuenta que coordina en dos sedes, abrir Bitácora, Usuarios → Invitaciones y Respuestas; cambiar de sede | Cada una muestra solo lo de la sede de trabajo, y cambia al cambiar de sede |
 | F-15 (2.0.10) | Enviar un aviso desde Villa Nueva a una persona que está en dos sedes y a otra que está solo en Villa Nueva | A la primera la notificación dice «Villa Nueva · …»; a la segunda, solo el título |
+| F-16 (2.0.11) | Superadministrador: Catálogos → Sedes → desactivar Villa Nueva mientras María solo está en Villa Nueva | No se desactiva: «“Villa Nueva” es la única sede activa de 1 persona: María…»; el mensaje se queda unos 10 segundos. Si María está también en Boca del Monte, sí se desactiva |

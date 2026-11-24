@@ -201,8 +201,15 @@ class _MantenimientoCatalogoState extends State<MantenimientoCatalogo> {
         activa: !desactivar,
       );
     } on FirebaseFunctionsException catch (error) {
+      // El servidor dice qué hacer («es la única sede activa de 2 personas…»,
+      // SED-DES): con los 4 segundos de siempre no da tiempo a leerlo. Se
+      // queda 10 y se puede cerrar (WCAG 2.2.1, tiempo suficiente).
       avisos.showSnackBar(
-        SnackBar(content: Text(error.message ?? Textos.catalogoNoSeGuardo)),
+        SnackBar(
+          content: Text(error.message ?? Textos.catalogoNoSeGuardo),
+          duration: const Duration(seconds: 10),
+          showCloseIcon: true,
+        ),
       );
     }
   }

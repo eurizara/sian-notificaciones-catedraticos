@@ -27,7 +27,9 @@ import {
   conFacultadesEnSede,
   conRolEnSede,
   esIdDeSede,
+  exigirQueNadieQuedeSinSede,
   membresiasDe,
+  personasQueQuedanSinSede,
   sedePrincipal,
   motivoParaNoCambiarSuperadministrador,
   sinSede,
@@ -99,13 +101,30 @@ export const guardarSede = onCall(OPCIONES_LLAMABLE, async (peticion) => {
   const { uid: actorUid, correo, rol } = exigirAdminGeneral(peticion);
 
   try {
-    const decision = decidirGuardado(
-      peticion.data as Record<string, unknown>,
-      leer(await db.collection(RUTAS.sedes).get()),
-    );
+    const sedes = leer(await db.collection(RUTAS.sedes).get());
+    const decision = decidirGuardado(peticion.data as Record<string, unknown>, sedes);
     const { elemento } = decision;
     if (decision.cambios.length === 0) {
       return { id: elemento.id, nuevo: false };
+    }
+    // SED-DES (2.0.11): no se desactiva la única sede activa de nadie.
+    const previa = sedes.find((x) => x.id === elemento.id);
+    if (previa?.activa === true && !elemento.activa) {
+      const usuarios = await db.collection(RUTAS.usuarios).get();
+      exigirQueNadieQuedeSinSede(
+        elemento.nombre,
+        personasQueQuedanSinSede(
+          usuarios.docs.map((d) => ({
+            uid: d.id,
+            nombre: (d.get('nombre') as string | undefined) ?? '',
+            activo: d.get('activo') === true,
+            rol: (d.get('rol') as Rol | undefined) ?? 'CATEDRATICO',
+            membresias: d.get('membresias') as unknown,
+          })),
+          new Set(sedes.filter((x) => x.activa).map((x) => x.id)),
+          elemento.id,
+        ),
+      );
     }
     await db
       .collection(RUTAS.sedes)
