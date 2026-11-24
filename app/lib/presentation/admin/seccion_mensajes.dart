@@ -22,7 +22,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/proveedores_grupos.dart';
 import '../../application/proveedores_programacion.dart';
-import '../../application/proveedores_sesion.dart';
 import '../../core/audio/grabacion.dart';
 import '../../core/audio/grabadora.dart';
 import '../../core/plataforma/selector_archivo.dart';
@@ -654,14 +653,15 @@ class _SeccionMensajesState extends ConsumerState<SeccionMensajes> {
         WidgetsBinding.instance.addPostFrameCallback((_) => _tomarBorrador());
       }
     });
-    final Sesion sesion = ref.watch(sesionActualProvider);
+    // Con el rol en la sede de trabajo (2.0.13).
+    final UsuarioSesion? usuario = ref.watch(usuarioEnSedeProvider);
     // Se consulta la MATRIZ, no la bandera suelta: el coordinador puede
     // siempre, y la bandera existe para que él decida qué administradoras
     // pueden (documento 01, sección 2.2).
     final bool puedeUrgentes =
-        sesion is SesionActiva &&
-        sesion.usuario.rol.puedeEmitirUrgentes(
-          autorizacionFina: sesion.usuario.puedeEmitirUrgentes,
+        usuario != null &&
+        usuario.rol.puedeEmitirUrgentes(
+          autorizacionFina: usuario.puedeEmitirUrgentes,
         );
 
     return SingleChildScrollView(

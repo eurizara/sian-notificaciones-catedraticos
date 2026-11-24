@@ -57,6 +57,29 @@ class UsuarioSesion {
     }
     return (sedes.keys.toList()..sort()).first;
   }
+
+  /// Su rol en una sede (2.0.13). Sin sedes en el token, el de siempre.
+  Rol rolEn(String sede) => sedes[sede] ?? rol;
+
+  /// La misma persona con el rol que tiene en [sede] (2.0.13).
+  ///
+  /// La aplicación decidía qué mostrar —panel o bandeja, qué secciones— con
+  /// [rol], que es el de su sede principal. Quien coordina en Villa Nueva y da
+  /// clases en Boca del Monte no veía el panel en Villa Nueva; y al revés, veía
+  /// un panel que las reglas (2.0-f) le negarían. Lo que se ve depende de la
+  /// sede donde se trabaja.
+  UsuarioSesion enSede(String sede) => UsuarioSesion(
+    uid: uid,
+    correo: correo,
+    nombre: nombre,
+    rol: rolEn(sede),
+    activo: activo,
+    puedeEmitirUrgentes: puedeEmitirUrgentes,
+    puedeCrearRecurrentes: puedeCrearRecurrentes,
+    recibeAvisos: recibeAvisos,
+    adminGeneral: adminGeneral,
+    sedes: sedes,
+  );
 }
 
 /// La sede con que nació SIAN, Boca del Monte (ADR-009).

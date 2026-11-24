@@ -8,6 +8,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sian/application/proveedores_sede.dart';
 import 'package:sian/application/proveedores_sesion.dart';
 import 'package:sian/domain/repositorios.dart';
 import 'package:sian/domain/rol.dart';
@@ -313,5 +314,50 @@ void main() {
 
       expect(find.byType(PantallaRechazo), findsNothing);
     });
+  });
+
+  group('2.0.13 · lo que se ve depende del rol en la sede de trabajo', () {
+    const UsuarioSesion dosRoles = UsuarioSesion(
+      uid: 'mixto',
+      correo: 'mixto@umg.edu.gt',
+      nombre: 'Mixto',
+      // Su rol en la sede principal (bdm), que es lo que se miraba antes.
+      rol: Rol.catedratico,
+      activo: true,
+      sedes: <String, Rol>{
+        'bdm': Rol.catedratico,
+        'villa-nueva': Rol.coordinador,
+      },
+    );
+
+    test('el rol en cada sede', () {
+      expect(dosRoles.rolEn('bdm'), Rol.catedratico);
+      expect(dosRoles.rolEn('villa-nueva'), Rol.coordinador);
+      expect(dosRoles.enSede('villa-nueva').rol, Rol.coordinador);
+      expect(dosRoles.enSede('villa-nueva').sedes, dosRoles.sedes);
+      // Un token de antes de la 2.0, sin sedes: el rol de siempre.
+      expect(usuarioDePrueba(rol: Rol.auditor).rolEn('bdm'), Rol.auditor);
+    });
+
+    testWidgets(
+      'catedrático en Boca del Monte y coordinador en Villa Nueva: bandeja en una, panel en la otra',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(montar(const SesionActiva(dosRoles)));
+        await tester.pump();
+        final ProviderContainer c = ProviderScope.containerOf(
+          tester.element(find.byType(Enrutador)),
+        );
+        c.read(sedeDeTrabajoProvider.notifier).elegir('bdm');
+        await tester.pump();
+        expect(find.byType(BandejaDocente), findsOneWidget);
+        expect(find.byType(PanelAdmin), findsNothing);
+
+        c.read(sedeDeTrabajoProvider.notifier).elegir('villa-nueva');
+        await tester.pump();
+        expect(find.byType(PanelAdmin), findsOneWidget);
+        expect(find.byType(BandejaDocente), findsNothing);
+        expect(c.read(usuarioEnSedeProvider)?.rol, Rol.coordinador);
+      },
+    );
   });
 }

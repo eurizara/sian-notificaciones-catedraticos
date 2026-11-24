@@ -389,7 +389,9 @@ en cada ficha y el documento 14, sección 8).
   - [x] 2.0.9 (PR #247) · Corrección (14/11/2026): pantallas de administración que mezclaban sedes: bitácora, invitaciones y respuestas, solo de la sede de trabajo
   - [x] 2.0.10 (PR #248) · Mejora (propuesta del 14/11/2026, aprobada por el responsable el mismo día): la sede en el título de la notificación para quien está en más de una sede, «Villa Nueva · Simulacro»; también en los recordatorios de urgentes
   - [x] 2.0.11 (PR #250) · SED-DES: no se desactiva la única sede activa de nadie (aprobada el 23/11/2026)
-  - [ ] 2.0.12 · 2.0-f, ampliar: consultas por sede, todo asiento con sede, listas de sedes en los perfiles, migración F1 a F3
+  - [x] 2.0.12 (PR #251) · 2.0-f, ampliar: consultas por sede, todo asiento con sede, listas de sedes en los perfiles, migración F1 a F3
+  - [ ] 2.0.13 · Corrección: lo que se ve (panel o bandeja, secciones) depende del rol en la sede de trabajo, no del de la sede principal
+  - [ ] 2.0.14 · 2.0-f, contraer: las reglas de Firestore exigen la sede (RF-SED-05)
   - [ ] RF-FAC-06 · Coordinación propia de una facultad (aprobada el 23/11/2026; ficha propia)
   - [ ] RF-FAC-05 · Reportes por facultad (ficha de la ampliación)
   - [ ] 2.0-f · Las reglas exigen la sede, con pruebas cruzadas. Decisiones F1 a F3 tomadas el 23/11/2026 (ADR-009); lista para construir

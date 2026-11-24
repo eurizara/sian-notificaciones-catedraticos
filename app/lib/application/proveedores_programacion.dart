@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../domain/sesion.dart';
 import '../infrastructure/firebase/repositorio_programacion.dart';
-import 'proveedores_sesion.dart';
 import 'proveedores_sede.dart';
 
 final Provider<RepositorioProgramacion> repositorioProgramacionProvider =
@@ -18,11 +17,12 @@ final Provider<RepositorioProgramacion> repositorioProgramacionProvider =
 /// porque Firestore no evalúa las reglas fila por fila en una lista: una
 /// consulta que pida más de lo permitido se rechaza entera.
 final programadosProvider = StreamProvider<List<MensajeProgramado>>((Ref ref) {
-  final Sesion sesion = ref.watch(sesionActualProvider);
+  // Con el rol en la sede de trabajo (2.0.13): quien coordina en una sede y
+  // emite en otra ve todos los avisos solo donde coordina.
+  final UsuarioSesion? usuario = ref.watch(usuarioEnSedeProvider);
 
-  final String? soloDe =
-      sesion is SesionActiva && !sesion.usuario.rol.veMensajesDeTodos
-      ? sesion.usuario.uid
+  final String? soloDe = usuario != null && !usuario.rol.veMensajesDeTodos
+      ? usuario.uid
       : null;
 
   // Solo los de la sede de trabajo (2.0). Desde la 2.0.12 la sede va en la

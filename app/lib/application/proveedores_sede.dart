@@ -47,3 +47,15 @@ class SedeDeTrabajoNotifier extends Notifier<String> {
 
 final NotifierProvider<SedeDeTrabajoNotifier, String> sedeDeTrabajoProvider =
     NotifierProvider<SedeDeTrabajoNotifier, String>(SedeDeTrabajoNotifier.new);
+
+/// La persona con el rol que tiene en la sede de trabajo (2.0.13): lo que se
+/// le muestra —panel o bandeja, secciones, qué puede pedir— depende de ese
+/// rol, no del de su sede principal. Nulo sin sesión.
+final Provider<UsuarioSesion?> usuarioEnSedeProvider =
+    Provider<UsuarioSesion?>((Ref ref) {
+      final Sesion sesion = ref.watch(sesionActualProvider);
+      if (sesion is! SesionActiva) {
+        return null;
+      }
+      return sesion.usuario.enSede(ref.watch(sedeDeTrabajoProvider));
+    });
