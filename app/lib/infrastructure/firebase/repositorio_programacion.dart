@@ -419,8 +419,11 @@ class RepositorioProgramacion {
         .limit(100)
         .snapshots()
         .asyncMap((QuerySnapshot<Map<String, dynamic>> s) async {
-          final QuerySnapshot<Map<String, dynamic>> grupos = await _db
-              .collection('grupos')
+          // Solo los grupos de la sede (2.0-f): las reglas no dejan pedir
+          // los de todas.
+          final QuerySnapshot<Map<String, dynamic>> grupos = await (sede == null
+                  ? _db.collection('grupos')
+                  : _db.collection('grupos').where('sedeId', isEqualTo: sede))
               .get();
           final Map<String, String> nombresPorId = <String, String>{
             for (final QueryDocumentSnapshot<Map<String, dynamic>> g
