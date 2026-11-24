@@ -106,6 +106,15 @@ a la bitácora anterior a la 2.0, con un asiento de la propia migración que lo 
 (2) las entregas y los hilos de respuesta sin sede la toman de su aviso; (3) cada perfil lleva
 `sedesIds` y el token la lista de sedes, para que las reglas comprueben `hasAny`.
 
+**Cómo se hizo (2.0.12, ampliar):** la lista de sedes donde se coordina **no va en el token
+sino en el perfil** (`sedesCoordina`): con 15 sedes de nombre largo el token pasaría de los
+1000 bytes de Firebase. La regla de `usuarios` lee el perfil de quien consulta
+(`get(/usuarios/$(uid))`, una lectura por consulta) y exige
+`resource.data.sedesIds.hasAny(yo.sedesCoordina)`; se comprobó en el emulador que Firestore
+acepta así una consulta `array-contains` de una sede propia y rechaza la de una ajena. La
+aplicación ya pide todo filtrado por sede, y todo asiento lleva sede. Las reglas se endurecen
+en la 2.0.13 (contraer).
+
 **Compatibilidad durante la migración.** Un perfil sin `membresias` y un token sin `sedes`
 equivalen a la sede inicial (`bdm`) con su rol de siempre (`membresiasDe`, `sedesDelToken`).
 El campo `rol` sigue diciendo el rol en la sede principal, porque las versiones de la

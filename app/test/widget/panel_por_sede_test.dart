@@ -7,6 +7,7 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sian/application/proveedores_programacion.dart';
 import 'package:sian/application/proveedores_respuestas.dart';
 import 'package:sian/application/proveedores_sede.dart';
 import 'package:sian/application/proveedores_sesion.dart';
@@ -161,4 +162,37 @@ void main() {
       <String>['Aviso de Villa Nueva'],
     );
   });
+
+  test(
+    '2.0-f: los avisos se piden a la base de datos ya filtrados por sede',
+    () async {
+      final RepositorioProgramacionFalso programacion =
+          RepositorioProgramacionFalso();
+      final ProviderContainer c = ProviderContainer(
+        overrides: [
+          sesionActualProvider.overrideWithValue(
+            const SesionActiva(
+              UsuarioSesion(
+                uid: 'yo',
+                correo: 'yo@umg.edu.gt',
+                nombre: 'Yo',
+                rol: Rol.coordinador,
+                activo: true,
+                sedes: <String, Rol>{
+                  'bdm': Rol.coordinador,
+                  'villa-nueva': Rol.coordinador,
+                },
+              ),
+            ),
+          ),
+          repositorioProgramacionProvider.overrideWithValue(programacion),
+        ],
+      );
+      addTearDown(c.dispose);
+      c.read(sedeDeTrabajoProvider.notifier).elegir('villa-nueva');
+      c.listen(programadosProvider, (_, _) {});
+      await c.read(programadosProvider.future);
+      expect(programacion.sedePedida, 'villa-nueva');
+    },
+  );
 }

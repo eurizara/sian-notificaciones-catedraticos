@@ -37,7 +37,7 @@ import {
   personasElegibles,
   resolverDestinatarios,
 } from '../application/resolverDestinatarios';
-import { enVariasSedes, sedeDelDocumento, tituloConSede } from '../domain/sede';
+import { SEDE_INICIAL, enVariasSedes, sedeDelDocumento, tituloConSede } from '../domain/sede';
 import { sedeDeLaPeticion } from '../application/sedeDeLaPeticion';
 import { leerFacultades, nombreDeSede } from '../infrastructure/sedes';
 import { LARGO_DE_ACUSE, armarSeña, cabecerasDeEnvio } from '../domain/acuse';
@@ -474,12 +474,14 @@ async function escribirEntregasPendientes(
 
 /** Lo que hace falta para poner la sede en el título (2.0.10). */
 interface SedeEnLaNotificacion {
+  /** La sede del aviso: también la de los asientos que deja el envío. */
+  readonly id: string;
   readonly nombre: string;
   /** Quienes están en más de una sede: solo a ellos se les dice. */
   readonly variasSedes: ReadonlySet<string>;
 }
 
-const SIN_SEDE_EN_LA_NOTIFICACION: SedeEnLaNotificacion = { nombre: '', variasSedes: new Set() };
+const SIN_SEDE_EN_LA_NOTIFICACION: SedeEnLaNotificacion = { id: SEDE_INICIAL, nombre: '', variasSedes: new Set() };
 
 /**
  * Manda el aviso a todos los dispositivos de cada destinatario.
@@ -628,7 +630,7 @@ async function despachar(
       }
     });
 
-    await retirarTokensMuertos(muertos);
+    await retirarTokensMuertos(muertos, sede.id);
 
     const lote = db.batch();
     for (const [uid, resultado] of porUid) {
@@ -679,6 +681,8 @@ async function despachar(
  */
 export async function retirarTokensMuertos(
   muertos: readonly { uid: string; token: string }[],
+  /** La sede del aviso que destapó los registros muertos (2.0-f). */
+  sedeId: string = SEDE_INICIAL,
 ): Promise<void> {
   if (muertos.length === 0) {
     return;
@@ -735,6 +739,7 @@ export async function retirarTokensMuertos(
         resumen: 'Su registro de notificaciones ya no existía al enviar un aviso',
         datos: { motivo: 'TOKEN_RECHAZADO_AL_ENVIAR' },
         origen: 'PLANIFICADOR',
+        sedeId,
       }),
     ),
   );
@@ -1033,8 +1038,11 @@ async function ejecutarDespacho(
   const acuses = await escribirEntregasPendientes(refOcurrencia, refMensaje.id, uids, sedeId);
 
   // Solo se lee el nombre de la sede si alguien lo va a ver.
-  const sede: SedeEnLaNotificacion =
-    variasSedes.size > 0 ? { nombre: await nombreDeSede(sedeId), variasSedes } : SIN_SEDE_EN_LA_NOTIFICACION;
+  const sede: SedeEnLaNotificacion = {
+    id: sedeId,
+    nombre: variasSedes.size > 0 ? await nombreDeSede(sedeId) : '',
+    variasSedes,
+  };
   const { entregados, fallidos } = await despachar(
     refOcurrencia,
     refMensaje.id,

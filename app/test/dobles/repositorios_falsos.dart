@@ -295,17 +295,18 @@ class RepositorioAdminFalso extends RepositorioAdministracion {
       cambiosAdminGeneral.add((uid: uid, valor: valor));
 
   @override
-  Stream<List<InvitacionVista>> observarInvitaciones() =>
+  Stream<List<InvitacionVista>> observarInvitaciones({String? sede}) =>
       Stream<List<InvitacionVista>>.value(invitaciones);
 
   @override
-  Stream<List<UsuarioVista>> observarUsuarios() =>
+  Stream<List<UsuarioVista>> observarUsuarios({String? sede}) =>
       Stream<List<UsuarioVista>>.value(usuarios);
 
   @override
   Stream<List<AsientoVista>> observarBitacora({
     String? tipo,
     int limite = 100,
+    String? sede,
   }) => Stream<List<AsientoVista>>.value(
     tipo == null || tipo.isEmpty
         ? asientos
@@ -559,7 +560,7 @@ class RepositorioGruposFalso extends RepositorioGrupos {
       <({String grupoId, bool activo})>[];
 
   @override
-  Stream<List<GrupoDetalle>> observarGrupos() =>
+  Stream<List<GrupoDetalle>> observarGrupos({String? sede}) =>
       Stream<List<GrupoDetalle>>.value(grupos);
 
   @override
@@ -609,9 +610,16 @@ class RepositorioProgramacionFalso extends RepositorioProgramacion {
   /// pedir todos no devuelve «los suyos», devuelve `permission-denied`.
   String? filtradoPor;
 
+  /// La sede que pidió la última consulta (2.0-f).
+  String? sedePedida;
+
   @override
-  Stream<List<MensajeProgramado>> observarProgramados({String? soloDe}) {
+  Stream<List<MensajeProgramado>> observarProgramados({
+    String? soloDe,
+    String? sede,
+  }) {
     filtradoPor = soloDe;
+    sedePedida = sede;
     return Stream<List<MensajeProgramado>>.value(programados);
   }
 

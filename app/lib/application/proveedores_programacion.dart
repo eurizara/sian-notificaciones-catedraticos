@@ -25,12 +25,12 @@ final programadosProvider = StreamProvider<List<MensajeProgramado>>((Ref ref) {
       ? sesion.usuario.uid
       : null;
 
-  // Solo los de la sede de trabajo (2.0). Hasta que las reglas exijan la sede
-  // (2.0-f) el filtro es aquí; después irá en la consulta.
+  // Solo los de la sede de trabajo (2.0). Desde la 2.0.12 la sede va en la
+  // consulta; el filtro de aquí queda como segunda defensa.
   final String sede = ref.watch(sedeDeTrabajoProvider);
   return ref
       .watch(repositorioProgramacionProvider)
-      .observarProgramados(soloDe: soloDe)
+      .observarProgramados(soloDe: soloDe, sede: sede)
       .map(
         (List<MensajeProgramado> todos) => todos
             .where((MensajeProgramado m) => m.sedeId == sede)

@@ -75,6 +75,20 @@
       ]
     },
     {
+      "collectionGroup": "mensajes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "sedeId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "creadoEn",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "bitacora",
       "queryScope": "COLLECTION",
       "fields": [
@@ -113,6 +127,20 @@
         {
           "fieldPath": "ocurridoEn",
           "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "bitacora",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "sedeId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "ocurridoEn",
+          "order": "DESCENDING"
         }
       ]
     },

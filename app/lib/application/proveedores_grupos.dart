@@ -20,7 +20,7 @@ final gruposProvider = StreamProvider<List<GrupoDetalle>>((Ref ref) {
   final String sede = ref.watch(sedeDeTrabajoProvider);
   return ref
       .watch(repositorioGruposProvider)
-      .observarGrupos()
+      .observarGrupos(sede: sede)
       .map(
         (List<GrupoDetalle> todos) =>
             todos.where((GrupoDetalle g) => g.sedeId == sede).toList(),

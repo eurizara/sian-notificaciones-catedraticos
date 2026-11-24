@@ -28,7 +28,7 @@ final invitacionesProvider = StreamProvider<List<InvitacionVista>>((Ref ref) {
   final String sede = ref.watch(sedeDeTrabajoProvider);
   return ref
       .watch(repositorioAdminProvider)
-      .observarInvitaciones()
+      .observarInvitaciones(sede: sede)
       .map(
         (List<InvitacionVista> todas) =>
             todas.where((InvitacionVista i) => i.sedeId == sede).toList(),
@@ -41,7 +41,7 @@ final usuariosProvider = StreamProvider<List<UsuarioVista>>((Ref ref) {
   final String sede = ref.watch(sedeDeTrabajoProvider);
   return ref
       .watch(repositorioAdminProvider)
-      .observarUsuarios()
+      .observarUsuarios(sede: sede)
       .map(
         (List<UsuarioVista> todos) =>
             todos.where((UsuarioVista u) => u.perteneceA(sede)).toList(),

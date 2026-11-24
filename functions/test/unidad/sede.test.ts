@@ -14,6 +14,7 @@ import {
   FACULTAD_INICIAL,
   MAXIMO_DE_SEDES,
   SEDE_INICIAL,
+  camposDeSedes,
   conFacultadesEnSede,
   conRolEnSede,
   elegirSede,
@@ -547,5 +548,25 @@ describe('SED-DES (2.0.11) · desactivar una sede no deja a nadie sin sede activ
         ['a', 'b', 'c', 'd', 'e'].map((u) => ({ uid: u, nombre: '' })),
       ),
     ).toThrow('de 5 personas: a, b, c y 2 más.');
+  });
+});
+
+describe('2.0-f (F3) · las listas de sedes que leen las reglas', () => {
+  it('en qué sedes está y en cuáles coordina o audita, ordenadas', () => {
+    expect(
+      camposDeSedes({
+        'villa-nueva': { rol: 'COORDINADOR', facultades: [] },
+        bdm: { rol: 'CATEDRATICO', facultades: ['ing-sistemas'] },
+        otra: { rol: 'AUDITOR', facultades: [] },
+        cuarta: { rol: 'ADMINISTRADORA', facultades: [] },
+      }),
+    ).toEqual({ sedesIds: ['bdm', 'cuarta', 'otra', 'villa-nueva'], sedesCoordina: ['otra', 'villa-nueva'] });
+  });
+
+  it('un catedrático no coordina ninguna', () => {
+    expect(camposDeSedes({ bdm: { rol: 'CATEDRATICO', facultades: [] } })).toEqual({
+      sedesIds: ['bdm'],
+      sedesCoordina: [],
+    });
   });
 });

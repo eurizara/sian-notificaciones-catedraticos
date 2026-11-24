@@ -7,7 +7,7 @@ import type { AsientoBitacora } from '../domain/bitacora';
 import { decidirCarga, type Invitacion } from '../domain/invitacion';
 import type { Rol } from '../domain/tipos';
 import { DOC_CONFIGURACION, FieldValue, RUTAS, aTimestamp, db } from './firebase';
-import { membresiasDe, type Membresias } from '../domain/sede';
+import { camposDeSedes, membresiasDe, type Membresias } from '../domain/sede';
 
 // ---------------------------------------------------------------------------
 // Bitácora — RF-BIT-01, RF-BIT-02, RF-BIT-03
@@ -255,7 +255,9 @@ export async function guardarPerfil(perfil: PerfilUsuario): Promise<void> {
         : { recibeAvisos: perfil.recibeAvisos }),
       puedeCrearRecurrentes: perfil.puedeCrearRecurrentes,
       zonaHoraria: perfil.zonaHoraria,
-      ...(perfil.membresias === undefined ? {} : { membresias: perfil.membresias }),
+      ...(perfil.membresias === undefined
+        ? {}
+        : { membresias: perfil.membresias, ...camposDeSedes(membresiasDe(perfil)) }),
       creadoEn: FieldValue.serverTimestamp(),
       actualizadoEn: FieldValue.serverTimestamp(),
     },
@@ -296,6 +298,8 @@ export async function reemplazarMembresias(
     .doc(uid)
     .update({
       membresias,
+      // 2.0-f: las listas que leen las reglas, siempre al día con las membresías.
+      ...camposDeSedes(membresias),
       ...(rol === undefined ? {} : { rol }),
       actualizadoEn: FieldValue.serverTimestamp(),
     });

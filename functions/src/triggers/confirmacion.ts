@@ -25,6 +25,7 @@ import { podiaAcusar } from '../domain/acuse';
 import { exigirPermiso } from '../domain/autorizacion';
 import { crearAsiento } from '../domain/bitacora';
 import { ErrorDominio } from '../domain/errores';
+import { sedeDelDocumento } from '../domain/sede';
 import type { EstadoEntrega, Rol } from '../domain/tipos';
 import { FieldValue, OPCIONES_LLAMABLE, RUTAS, db } from '../infrastructure/firebase';
 import { escribirAsiento } from '../infrastructure/repositorios';
@@ -178,6 +179,8 @@ export const confirmarLectura = onCall(OPCIONES_LLAMABLE, async (peticion) => {
       .doc(mensajeId)
       .update({ 'resumenEntrega.confirmados': FieldValue.increment(1) });
 
+    // La sede del aviso (2.0-f): la confirmación se ve en la bitácora de esa sede.
+    const sedeDelAviso = sedeDelDocumento((await db.collection(RUTAS.mensajes).doc(mensajeId).get()).data());
     await escribirAsiento(
       crearAsiento({
         tipo: 'LECTURA_CONFIRMADA',
@@ -191,6 +194,7 @@ export const confirmarLectura = onCall(OPCIONES_LLAMABLE, async (peticion) => {
           estadoAnterior: hallazgo.estado,
         },
         origen: 'APP_DOCENTE',
+        sedeId: sedeDelAviso,
       }),
     );
 

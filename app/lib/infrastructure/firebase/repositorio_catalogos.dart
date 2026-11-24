@@ -130,11 +130,17 @@ class FuenteCatalogoFacultades implements FuenteCatalogo {
 
   @override
   Future<void> guardar({required String nombre, String? id, bool? activa}) {
-    return _fn.httpsCallable('guardarFacultad').call<Object?>(<String, Object?>{
-      'id': ?id,
-      'nombre': nombre,
-      'activa': ?activa,
-    });
+    // Con la sede de trabajo: el catálogo es de toda la UMG, pero el asiento
+    // va a la bitácora de la sede donde se trabaja (2.0-f).
+    return _fn
+        .httpsCallable('guardarFacultad')
+        .call<Object?>(
+          conSede(<String, Object?>{
+            'id': ?id,
+            'nombre': nombre,
+            'activa': ?activa,
+          }),
+        );
   }
 }
 

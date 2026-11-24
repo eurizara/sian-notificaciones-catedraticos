@@ -286,7 +286,11 @@ Crea `sedes/bdm` (Boca del Monte) y `sedes/bdm/facultades/ing-sistemas` (Ingenie
 Sistemas), da a cada perfil sin membresías la de omisión y pone `sedeId: 'bdm'` a mensajes y
 grupos. **Desde la 2.0.6** también llena el catálogo único `facultades/` con cada facultad
 que ya tenía alguna sede, con su mismo identificador; si dos sedes usan el mismo nombre con
-identificadores distintos, no adivina: lo muestra como «AVISO» y no crea la segunda. **No toca la bitácora**, que es inmutable: un asiento sin sede se lee como de `bdm`.
+identificadores distintos, no adivina: lo muestra como «AVISO» y no crea la segunda.
+**Desde la 2.0.12 (2.0-f)** también completa lo viejo sin sede —bitácora, entregas, respuestas,
+invitaciones— y las listas `sedesIds`/`sedesCoordina` de cada perfil, por tandas de 500.
+**Se corre antes de desplegar la 2.0.12 en un ambiente**: la aplicación ya pide los datos
+filtrados por sede, y lo que no la tenga no se vería. **No toca la bitácora**, que es inmutable: un asiento sin sede se lee como de `bdm`.
 Es idempotente (la segunda corrida no escribe nada) y cada escritura lleva una
 precondición: crea solo lo que no existe y actualiza solo lo que sí. Sus pruebas corren en
 la integración continua. **Antes de producción:** respaldo del día comprobado, y correrlo
@@ -296,6 +300,7 @@ primero sin `--aplicar`.
 |---|---|---|
 | Desarrollo | 07/11/2026, con `--facultad-a-todos` | 114 de 114 escritas: sede y facultad creadas, 8 perfiles, 3 grupos, 101 mensajes. La segunda corrida no tuvo nada que hacer |
 | Desarrollo | 08/11/2026 (2.0.6, catálogo único) | 2 de 2 escritas: Ingeniería en Sistemas y Psicología pasan al catálogo `facultades/` con su mismo identificador; sin conflictos. La segunda corrida no tuvo nada que hacer |
+| Desarrollo | 23/11/2026 (2.0-f, antes de desplegar la 2.0.12) | 1399 de 1399 escritas, por tandas: listas de sedes en 8 perfiles, 9 invitaciones, 1097 asientos de bitácora más el de la migración, 271 entregas y 13 hilos. La segunda corrida no tuvo nada que hacer |
 | QA | Pendiente | — |
 | Producción | Pendiente | — |
 

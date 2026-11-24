@@ -153,6 +153,8 @@ El identificador del documento es el UID de Firebase Authentication.
 | `puedeCrearRecurrentes` | boolean | Sí | Autorización fina para el rol Administradora |
 | `zonaHoraria` | string | No | Heredada de la configuración institucional si está vacía |
 | `membresias` | map | No (2.0) | Sedes a las que pertenece: `{ bdm: { rol: 'CATEDRATICO', facultades: ['ing-sistemas'] } }`. **Ausente equivale a `{ bdm: { rol, facultades: [] } }`**: así los perfiles de antes de la 2.0 siguen igual hasta que la migración lo escribe. Las altas nuevas nacen con él. Máximo 15 sedes, para que el token no pase de 1000 bytes. **Se escribe entero con `update` (`reemplazarMembresias`), nunca con `set(..., {merge: true})`**: el merge mezcla los mapas y no borra la sede que se quita (corregido en la 2.0.5) |
+| `sedesIds` | array de string | No (2.0.12) | Las sedes de `membresias`, ordenadas. Lo leen las consultas (`array-contains`) y las reglas: no pueden recorrer un mapa |
+| `sedesCoordina` | array de string | No (2.0.12) | Las sedes donde coordina o audita. Las reglas lo leen del perfil de quien consulta para decidir qué personas puede ver; va aquí y no en el token, que con 15 sedes pasaría de 1000 bytes |
 | `adminGeneral` | boolean | No (2.0) | **Superadministrador** (el nombre técnico del campo se conservó para no migrar perfiles ni tokens): crea sedes y pone a la gente en ellas (RF-SED-06). Solo lo designa otro superadministrador; el primero, con `scripts/migrar-sedes.py --admin-general`. Siempre queda al menos uno. Ausente = `false` |
 | `creadoEn` | timestamp | Sí | |
 | `actualizadoEn` | timestamp | Sí | |
@@ -396,7 +398,7 @@ Colección de nivel raíz, **inmutable** (RF-BIT-03).
 | `datos` | map | Detalle estructurado, sin datos personales innecesarios |
 | `ocurridoEn` | timestamp | UTC |
 | `origen` | string | `PANEL_WEB` · `APP_DOCENTE` · `PLANIFICADOR` |
-| `sedeId` | string | Sede donde ocurrió (2.0). Ausente en lo que no es de una sede (un inicio de sesión) y en lo anterior a la 2.0, que es de `bdm`. La bitácora no se reescribe: lo viejo sin sede se lee como de `bdm` |
+| `sedeId` | string | Sede donde ocurrió (2.0). **Desde la 2.0.12 todo asiento la lleva** (lo de una persona fuera de una sede —iniciar sesión, un aparato— va a su sede principal; un acceso rechazado sin perfil, a `bdm`); una prueba de la CI lo exige. Lo anterior se clasificó como de `bdm` con la migración 2.0-f (decisión F1 del 23/11/2026), que deja su propio asiento `MIGRACION_SEDES`: solo clasifica, no cambia lo que se registró |
 | `hashPrevio` | string | Encadenamiento opcional contra manipulación (RF-BIT-10) |
 
 ### 2.10 `invitaciones/{correoNormalizado}`

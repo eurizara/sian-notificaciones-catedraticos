@@ -95,10 +95,13 @@ class RepositorioGrupos {
   ///
   /// Los inactivos se listan a propósito: un grupo desactivado sigue
   /// existiendo para el historial, y esconderlo haría creer que se borró.
-  Stream<List<GrupoDetalle>> observarGrupos() {
-    return _db.collection('grupos').snapshots().map((
-      QuerySnapshot<Map<String, dynamic>> s,
-    ) {
+  ///
+  /// Con [sede], solo los de esa sede: la consulta la pide (2.0-f).
+  Stream<List<GrupoDetalle>> observarGrupos({String? sede}) {
+    final Query<Map<String, dynamic>> consulta = sede == null
+        ? _db.collection('grupos')
+        : _db.collection('grupos').where('sedeId', isEqualTo: sede);
+    return consulta.snapshots().map((QuerySnapshot<Map<String, dynamic>> s) {
       final List<GrupoDetalle> lista = s.docs.map((
         QueryDocumentSnapshot<Map<String, dynamic>> d,
       ) {

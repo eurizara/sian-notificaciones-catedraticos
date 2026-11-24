@@ -29,6 +29,7 @@ import {
   puedeRecibirNotificaciones,
 } from '../domain/dispositivo';
 import { ErrorDominio, ErrorValidacion } from '../domain/errores';
+import { sedePrincipalDelToken } from '../domain/sede';
 import type { Rol } from '../domain/tipos';
 import { FieldValue, OPCIONES_LLAMABLE, RUTAS, db } from '../infrastructure/firebase';
 import { escribirAsiento } from '../infrastructure/repositorios';
@@ -182,6 +183,9 @@ export const registrarDispositivo = onCall(OPCIONES_LLAMABLE, async (peticion) =
           motivoSinRecepcion: motivo,
         },
         origen: 'APP_DOCENTE',
+        // La sede principal de la persona (2.0-f): registrar un aparato no es
+        // de ninguna sede en particular.
+        sedeId: sedePrincipalDelToken(peticion.auth.token, rol),
       }),
     );
 

@@ -24,6 +24,7 @@ import { decidirOferta, exigirQueNingunaSedeLaOfrezca } from '../domain/facultad
 import { ErrorAutorizacion, ErrorDominio } from '../domain/errores';
 import { claimsDe, type PerfilUsuario } from '../application/activarSesion';
 import {
+  SEDE_INICIAL,
   conFacultadesEnSede,
   conRolEnSede,
   esIdDeSede,
@@ -204,6 +205,9 @@ export const guardarFacultad = onCall(OPCIONES_LLAMABLE, async (peticion) => {
         entidadId: `facultades/${elemento.id}`,
         resumen: `Facultad «${elemento.nombre}» (catálogo): ${decision.cambios.join(', ')}`,
         datos: { catalogo: 'facultades', id: elemento.id, cambios: decision.cambios },
+        // El catálogo es de toda la UMG; el asiento va a la sede donde trabaja
+        // quien lo cambia (2.0-f).
+        sedeId: esIdDeSede(datos.sedeId) ? datos.sedeId : SEDE_INICIAL,
       }),
     );
     return { id: elemento.id, nuevo: decision.nuevo };
@@ -459,6 +463,7 @@ export const cambiarAdminGeneral = onCall(OPCIONES_LLAMABLE, async (peticion) =>
         entidadId: perfil.uid,
         resumen: `${datos.valor ? 'Se designa' : 'Se retira'} como superadministrador a ${perfil.correo}`,
         datos: { valor: datos.valor },
+        sedeId: sedePrincipal(membresiasDe(perfil)),
       }),
     );
     return { uid: perfil.uid, adminGeneral: datos.valor };

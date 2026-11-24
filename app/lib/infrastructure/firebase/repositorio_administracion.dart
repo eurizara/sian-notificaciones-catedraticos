@@ -170,8 +170,13 @@ class RepositorioAdministracion {
 
   // --- Lecturas ------------------------------------------------------------
 
-  Stream<List<InvitacionVista>> observarInvitaciones() {
-    return _db.collection('invitaciones').snapshots().map((
+  /// Con [sede], solo las de esa sede: la consulta la pide, no se filtra
+  /// después (2.0-f, para que las reglas puedan exigirla).
+  Stream<List<InvitacionVista>> observarInvitaciones({String? sede}) {
+    final Query<Map<String, dynamic>> consulta = sede == null
+        ? _db.collection('invitaciones')
+        : _db.collection('invitaciones').where('sedeId', isEqualTo: sede);
+    return consulta.snapshots().map((
       QuerySnapshot<Map<String, dynamic>> s,
     ) {
       final List<InvitacionVista> lista = s.docs.map((
@@ -199,8 +204,13 @@ class RepositorioAdministracion {
     });
   }
 
-  Stream<List<UsuarioVista>> observarUsuarios() {
-    return _db.collection('usuarios').snapshots().map((
+  /// Con [sede], la gente de esa sede (`sedesIds`, 2.0-f); sin ella, todas,
+  /// que solo puede pedir el superadministrador.
+  Stream<List<UsuarioVista>> observarUsuarios({String? sede}) {
+    final Query<Map<String, dynamic>> consulta = sede == null
+        ? _db.collection('usuarios')
+        : _db.collection('usuarios').where('sedesIds', arrayContains: sede);
+    return consulta.snapshots().map((
       QuerySnapshot<Map<String, dynamic>> s,
     ) {
       final List<UsuarioVista> lista = s.docs.map((
@@ -240,8 +250,14 @@ class RepositorioAdministracion {
   Stream<List<AsientoVista>> observarBitacora({
     String? tipo,
     int limite = 100,
+    String? sede,
   }) {
     Query<Map<String, dynamic>> consulta = _db.collection('bitacora');
+    // 2.0-f: la sede va en la consulta. Con ella, los 100 últimos son los 100
+    // últimos de esa sede, no los de todas recortados después.
+    if (sede != null) {
+      consulta = consulta.where('sedeId', isEqualTo: sede);
+    }
     if (tipo != null && tipo.isNotEmpty) {
       consulta = consulta.where('tipo', isEqualTo: tipo);
     }

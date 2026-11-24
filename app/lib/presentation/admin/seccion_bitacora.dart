@@ -38,7 +38,7 @@ final bitacoraProvider = StreamProvider<List<AsientoVista>>((Ref ref) {
   final String sede = ref.watch(sedeDeTrabajoProvider);
   return ref
       .watch(repositorioAdminProvider)
-      .observarBitacora(tipo: tipo)
+      .observarBitacora(tipo: tipo, sede: sede)
       .map(
         (List<AsientoVista> todos) =>
             todos.where((AsientoVista a) => a.sedeId == sede).toList(),
