@@ -151,7 +151,14 @@ describe('Perfil de usuario', () => {
     await assertFails(getDoc(doc(db, 'usuarios', UID.otroCatedratico)));
   });
 
-  it('el coordinador y el auditor leen cualquier perfil', async () => {
+  it('el coordinador y el auditor leen los perfiles de las sedes donde coordinan o auditan (2.0-f)', async () => {
+    // Sus perfiles dicen dónde coordinan (`sedesCoordina`, 2.0.12): las reglas
+    // lo leen de ahí.
+    await entorno.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, 'usuarios', UID.coordinador), { rol: 'COORDINADOR', sedesIds: ['bdm'], sedesCoordina: ['bdm'] });
+      await setDoc(doc(db, 'usuarios', UID.auditor), { rol: 'AUDITOR', sedesIds: ['bdm'], sedesCoordina: ['bdm'] });
+    });
     await assertSucceeds(
       getDoc(doc(contexto(UID.coordinador, 'COORDINADOR'), 'usuarios', UID.catedratico)),
     );
@@ -694,3 +701,78 @@ describe('2.0.6 · Catálogo único de facultades', () => {
   });
 });
 
+describe('2.0-f · las reglas exigen la sede (2.0.14)', () => {
+  const VN = 'villa-nueva';
+  const COORD_VN = 'uid-coord-vn';
+  const MIXTO = 'uid-mixto';
+  const SUPER = 'uid-super';
+
+  beforeEach(async () => {
+    await entorno.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, 'usuarios', COORD_VN), { rol: 'COORDINADOR', sedesIds: [VN], sedesCoordina: [VN] });
+      // Catedrático en Boca del Monte y coordinador en Villa Nueva.
+      await setDoc(doc(db, 'usuarios', MIXTO), { rol: 'CATEDRATICO', sedesIds: ['bdm', VN], sedesCoordina: [VN] });
+      await setDoc(doc(db, 'usuarios', 'uid-de-vn'), { rol: 'CATEDRATICO', sedesIds: [VN], sedesCoordina: [] });
+      await setDoc(doc(db, 'usuarios', 'uid-de-bdm'), { rol: 'CATEDRATICO', sedesIds: ['bdm'], sedesCoordina: [] });
+      await setDoc(doc(db, 'grupos', 'g-vn'), { nombre: 'Psicología VN', sedeId: VN });
+      await setDoc(doc(db, 'mensajes', 'm-vn'), { titulo: 'Aviso VN', sedeId: VN, creadoPor: COORD_VN, destinatariosUids: ['uid-de-vn'] });
+      await setDoc(doc(db, 'mensajes', 'm-vn', 'ocurrencias', 'o-1', 'entregas', 'uid-de-vn'), {
+        uid: 'uid-de-vn', mensajeId: 'm-vn', sedeId: VN, estado: 'ENTREGADO',
+      });
+      await setDoc(doc(db, 'bitacora', 'b-vn'), { tipo: 'GRUPO_CREADO', sedeId: VN });
+      await setDoc(doc(db, 'invitaciones', 'nueva@umg.edu.gt'), { rolAsignado: 'CATEDRATICO', sedeId: VN });
+    });
+  });
+
+  const coordVN = () => contexto(COORD_VN, 'COORDINADOR', true, { sedes: { [VN]: 'COORDINADOR' } });
+  const mixto = () => contexto(MIXTO, 'CATEDRATICO', true, { sedes: { bdm: 'CATEDRATICO', [VN]: 'COORDINADOR' } });
+
+  it('usuarios: la coordinación ve a la gente de su sede, no la de otra', async () => {
+    const db = coordVN();
+    await assertSucceeds(getDocs(query(collection(db, 'usuarios'), where('sedesIds', 'array-contains', VN))));
+    await assertFails(getDocs(query(collection(db, 'usuarios'), where('sedesIds', 'array-contains', 'bdm'))));
+    await assertFails(getDocs(collection(db, 'usuarios')));
+    await assertFails(getDoc(doc(db, 'usuarios', 'uid-de-bdm')));
+  });
+
+  it('grupos, avisos, bitácora e invitaciones: los de su sede, y la consulta tiene que pedirla', async () => {
+    const db = coordVN();
+    for (const c of ['grupos', 'mensajes', 'bitacora', 'invitaciones']) {
+      await assertSucceeds(getDocs(query(collection(db, c), where('sedeId', '==', VN))));
+      await assertFails(getDocs(query(collection(db, c), where('sedeId', '==', 'bdm'))));
+      await assertFails(getDocs(collection(db, c)));
+    }
+    await assertFails(getDoc(doc(db, 'grupos', 'g-1')));
+    await assertFails(getDoc(doc(db, 'mensajes', 'm-1')));
+    await assertFails(getDoc(doc(db, 'bitacora', 'b-1')));
+  });
+
+  it('con un rol distinto en cada sede, manda el de la sede del documento', async () => {
+    const db = mixto();
+    await assertSucceeds(getDocs(query(collection(db, 'bitacora'), where('sedeId', '==', VN))));
+    // En Boca del Monte es catedrático: no ve la bitácora ni los avisos ajenos.
+    await assertFails(getDocs(query(collection(db, 'bitacora'), where('sedeId', '==', 'bdm'))));
+    await assertFails(getDoc(doc(db, 'mensajes', 'm-1')));
+    await assertSucceeds(getDocs(query(collection(db, 'usuarios'), where('sedesIds', 'array-contains', VN))));
+    await assertFails(getDocs(query(collection(db, 'usuarios'), where('sedesIds', 'array-contains', 'bdm'))));
+  });
+
+  it('entregas: la coordinación, las de su sede; el catedrático, solo las suyas', async () => {
+    await assertSucceeds(
+      getDocs(query(collectionGroup(coordVN(), 'entregas'), where('sedeId', '==', VN))),
+    );
+    await assertFails(getDocs(collectionGroup(coordVN(), 'entregas')));
+    const catedratico = contexto('uid-de-vn', 'CATEDRATICO', true, { sedes: { [VN]: 'CATEDRATICO' } });
+    await assertSucceeds(
+      getDocs(query(collectionGroup(catedratico, 'entregas'), where('uid', '==', 'uid-de-vn'))),
+    );
+    await assertSucceeds(getDoc(doc(catedratico, 'mensajes', 'm-vn')));
+  });
+
+  it('el superadministrador ve a la gente y la bitácora de todas las sedes', async () => {
+    const db = contexto(SUPER, 'COORDINADOR', true, { sedes: { bdm: 'COORDINADOR' }, adminGeneral: true });
+    await assertSucceeds(getDocs(collection(db, 'usuarios')));
+    await assertSucceeds(getDocs(query(collection(db, 'bitacora'), where('sedeId', '==', VN))));
+  });
+});

@@ -568,6 +568,13 @@ Documento único con los parámetros globales.
 Esquema conceptual. La implementación completa vive en `firestore.rules` y se valida con
 pruebas automatizadas (RNF-08).
 
+**Desde la 2.0.14 (2.0-f) las reglas exigen la sede.** El permiso se mira con el rol en la
+sede del documento (`rolEn(sedeDe(resource.data))`; sin `sedeId`, `bdm`). Usuarios: los de
+las sedes donde se coordina o audita, según `sedesCoordina` del propio perfil, o todos para el
+superadministrador. Grupos, avisos, entregas, bitácora e invitaciones: los de su sede. Una
+consulta que no pida la sede (`where('sedeId', '==', …)` o `sedesIds array-contains`) se
+rechaza entera. El esquema de abajo es el de antes de la 2.0 y se conserva como referencia.
+
 ```javascript
 rules_version = '2';
 service cloud.firestore {

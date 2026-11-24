@@ -113,7 +113,14 @@ sino en el perfil** (`sedesCoordina`): con 15 sedes de nombre largo el token pas
 `resource.data.sedesIds.hasAny(yo.sedesCoordina)`; se comprobó en el emulador que Firestore
 acepta así una consulta `array-contains` de una sede propia y rechaza la de una ajena. La
 aplicación ya pide todo filtrado por sede, y todo asiento lleva sede. Las reglas se endurecen
-en la 2.0.13 (contraer).
+en la 2.0.14 (contraer).
+
+**Contraer (2.0.14):** las reglas exigen la sede en usuarios, grupos, avisos, ocurrencias,
+entregas, bitácora e invitaciones, con el rol **en la sede del documento**. En QA y
+producción el orden es: respaldo, migración, y después desplegar (la aplicación 2.0.13 o
+posterior y estas reglas van juntas). Un aparato con una versión anterior a la 2.0.13 que
+abra el panel de coordinación verá errores de permiso hasta que toque «Actualizar»; la
+bandeja del catedrático no cambia.
 
 **Compatibilidad durante la migración.** Un perfil sin `membresias` y un token sin `sedes`
 equivalen a la sede inicial (`bdm`) con su rol de siempre (`membresiasDe`, `sedesDelToken`).

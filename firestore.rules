@@ -64,6 +64,46 @@ service cloud.firestore {
       return activo() && claims().get('adminGeneral', false) == true;
     }
 
+    // ---------------------------------------------------------------------
+    // 2.0-f (2.0.14): las reglas exigen la sede.
+    //
+    // El permiso se mira con el rol EN LA SEDE del documento, no con el rol
+    // global: quien coordina en Villa Nueva y es catedrático en Boca del
+    // Monte no coordina en Boca del Monte. Un documento sin `sedeId` es de
+    // antes de la 2.0 y es de `bdm`, igual que en el servidor
+    // (`sedeDelDocumento`); la migración 2.0-f se lo puso a todo.
+    //
+    // Firestore no filtra con las reglas: una consulta que pida más de lo
+    // permitido se rechaza entera. Por eso, desde la 2.0.12, la aplicación
+    // pide cada lista con `where('sedeId', '==', sede)`.
+    // ---------------------------------------------------------------------
+
+    function rolEn(sedeId) {
+      return !activo() ? ''
+        : ('sedes' in claims()) ? claims().sedes.get(sedeId, '')
+        : (sedeId == 'bdm' ? rol() : '');
+    }
+
+    function coordinaOAuditaEn(sedeId) {
+      return rolEn(sedeId) in ['COORDINADOR', 'AUDITOR'];
+    }
+
+    function emiteEn(sedeId) {
+      return rolEn(sedeId) in ['COORDINADOR', 'ADMINISTRADORA'];
+    }
+
+    function sedeDe(datos) {
+      return datos.get('sedeId', 'bdm');
+    }
+
+    // Las sedes donde coordina o audita quien consulta, de SU perfil
+    // (`sedesCoordina`, 2.0.12). No van en el token: con 15 sedes pasaría de
+    // 1000 bytes. Una lectura por consulta.
+    function sedesQueCoordino() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid))
+               .data.get('sedesCoordina', []);
+    }
+
     // Lo que el propio usuario SÍ puede editar de su perfil (RF-USR-08).
     //
     // Es una lista blanca a propósito. Con una lista negra, cualquier campo
@@ -81,8 +121,14 @@ service cloud.firestore {
     // Escritura: solo campos de perfil no privilegiados, y solo el dueño.
     // ---------------------------------------------------------------------
 
+    // 2.0-f: la coordinación y la auditoría, solo la gente de las sedes donde
+    // coordinan o auditan (la consulta pide `sedesIds array-contains sede`);
+    // el superadministrador, toda.
     match /usuarios/{uid} {
-      allow read: if esDueno(uid) || esCoordinador() || esAuditor();
+      allow read: if esDueno(uid)
+                  || esAdminGeneral()
+                  || (activo()
+                      && resource.data.get('sedesIds', ['bdm']).hasAny(sedesQueCoordino()));
 
       // Alta y baja pasan siempre por Cloud Functions (RF-AUT-03, RF-AUT-08).
       allow create, delete: if false;
@@ -106,8 +152,9 @@ service cloud.firestore {
     // por Function, que valida el límite de 200 miembros (DT-08).
     // ---------------------------------------------------------------------
 
+    // 2.0-f: solo los grupos de una sede a la que se pertenece.
     match /grupos/{grupoId} {
-      allow read: if activo();
+      allow read: if esAdminGeneral() || esDeLaSede(sedeDe(resource.data));
       allow write: if false;
     }
 
@@ -119,9 +166,9 @@ service cloud.firestore {
     // ---------------------------------------------------------------------
 
     match /mensajes/{mensajeId} {
-      allow read: if esCoordinador()
-                  || esAuditor()
-                  || (esEmisor() && resource.data.creadoPor == request.auth.uid)
+      // 2.0-f: la coordinación y la auditoría, los avisos de su sede.
+      allow read: if coordinaOAuditaEn(sedeDe(resource.data))
+                  || (activo() && resource.data.creadoPor == request.auth.uid)
                   || (autenticado()
                       && request.auth.uid in resource.data.get('destinatariosUids', []));
 
@@ -129,12 +176,16 @@ service cloud.firestore {
       // edita ni se borra) no puede quedar a criterio del cliente.
       allow write: if false;
 
+      // La ocurrencia no repite la sede: se mira en su aviso (una lectura).
       match /ocurrencias/{ocurrenciaId} {
-        allow read: if esCoordinador() || esAuditor() || esEmisor();
+        allow read: if emiteEn(sedeDe(get(/databases/$(database)/documents/mensajes/$(mensajeId)).data))
+                    || coordinaOAuditaEn(sedeDe(get(/databases/$(database)/documents/mensajes/$(mensajeId)).data));
         allow write: if false;
 
         match /entregas/{uid} {
-          allow read: if esDueno(uid) || esCoordinador() || esAuditor() || esEmisor();
+          allow read: if esDueno(uid)
+                      || emiteEn(sedeDe(resource.data))
+                      || coordinaOAuditaEn(sedeDe(resource.data));
           // Incluida la confirmación de lectura: es irreversible y con valor
           // probatorio, así que solo la escribe el servidor (RF-CNF-04).
           allow write: if false;
@@ -212,9 +263,8 @@ service cloud.firestore {
 
     match /{rutaEntregas=**}/entregas/{entregaId} {
       allow read: if (autenticado() && resource.data.uid == request.auth.uid)
-                  || esCoordinador()
-                  || esAuditor()
-                  || esEmisor();
+                  || emiteEn(sedeDe(resource.data))
+                  || coordinaOAuditaEn(sedeDe(resource.data));
       allow write: if false;
     }
 
@@ -223,8 +273,9 @@ service cloud.firestore {
     // Coordinador y Auditor (RF-BIT-04).
     // ---------------------------------------------------------------------
 
+    // 2.0-f: la de su sede (todo asiento la lleva desde la 2.0.12).
     match /bitacora/{eventoId} {
-      allow read: if esCoordinador() || esAuditor();
+      allow read: if esAdminGeneral() || coordinaOAuditaEn(sedeDe(resource.data));
       allow create, update, delete: if false;
     }
 
@@ -241,8 +292,9 @@ service cloud.firestore {
     // invitaciones/{correo} — lista blanca institucional (RF-AUT-03).
     // ---------------------------------------------------------------------
 
+    // 2.0-f: las de la sede donde se coordina.
     match /invitaciones/{correo} {
-      allow read: if esCoordinador();
+      allow read: if esAdminGeneral() || rolEn(sedeDe(resource.data)) == 'COORDINADOR';
       allow write: if false;
     }
 
